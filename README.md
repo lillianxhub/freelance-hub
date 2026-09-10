@@ -15,7 +15,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 |     2 | ณัฏฐดนย์ สาริกา      | 673380511-9  | Section2 | `nattadol_673380511-9` | TODO: หน้าที่    |
 |     3 | กรมภัฏ พิริยะ      | 673380262-4   | Section2 | `kompat_673380262-4_02` | TODO: หน้าที่    |
 |     4 | ถิรวัฒน์ อุจินา      | 673380039-7   | Section 2 | `thirawat_673380039-7_02` | TODO: หน้าที่    |
-|     5 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
+|     5 | กันตวิชญ์ นาคนวล      | 673380027-4   | Section 1 | `kantavit_673380027-4_01` | TODO: หน้าที่    |
 
 ## Tech Stack
 
