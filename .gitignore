@@ -32,4 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-.docs
+resource
+
+### Local environment ###
+.env

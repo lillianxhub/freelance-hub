@@ -586,7 +586,14 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ```text
 freelance-hub/
-├─ code/                         # Spring Boot source และ configuration
+├─ code/                         # Spring Boot source และ deployable configuration
+│  ├─ src/
+│  ├─ Dockerfile
+│  ├─ docker-compose.yml
+│  ├─ .dockerignore
+│  ├─ .env.example
+│  ├─ pom.xml
+│  └─ mvnw
 ├─ test/                         # การทดสอบทั้งหมด/รายงานผลทดสอบ
 ├─ doc/
 │  ├─ diagrams/
@@ -607,8 +614,6 @@ freelance-hub/
 │  ├─ data-dictionary.md
 │  └─ use-case-description.md
 ├─ img/                          # รูปและไฟล์มัลติมีเดีย
-├─ Dockerfile
-├─ docker-compose.yml
 ├─ README.md
 └─ REQUIREMENTS.md
 ```
@@ -634,7 +639,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 
 - ระบบต้อง deploy และเข้าถึงได้จริงผ่าน public URL ในวันนำเสนอ
 - deploy ตัวแอปและ PostgreSQL บน Cloud/Server พร้อม environment variables สำหรับ secrets
-- มี `Dockerfile` สำหรับ application และ `docker-compose.yml` สำหรับ local application + database
+- มี `code/Dockerfile` สำหรับ application และ `code/docker-compose.yml` สำหรับ local application + database โดย deploy ด้วย Root Directory `code`
 - Swagger UI ต้องเปิดใช้งานได้บน deployment
 - test ทั้งหมดต้องผ่านและมี test report
 - frontend ต้องเชื่อม backend และสาธิต flow หลักในหัวข้อ 14 ได้จริง
