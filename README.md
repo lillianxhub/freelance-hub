@@ -1,102 +1,144 @@
 # Freelance Hub
 
-ระบบจัดการงานสำหรับ Freelancer ที่รวมการติดตามเวลาทำงาน การจัดการลูกค้าและโปรเจกต์ การคำนวณรายได้ การออกใบแจ้งหนี้ และ productivity analytics ไว้ในที่เดียว
+Freelance Hub คือระบบบริหารงานสำหรับ Freelancer ที่รวมการจัดการลูกค้า โปรเจกต์ และงานย่อยไว้ในที่เดียว
+ระบบรองรับการจับเวลาทำงาน คำนวณรายได้ และสร้างใบแจ้งหนี้จากเวลาที่บันทึก
+ผู้ใช้สามารถติดตามสถานะการชำระเงิน วิเคราะห์เวลาทำงาน และดู productivity insights ผ่าน Dashboard
+โปรเจกต์พัฒนาด้วย Spring Boot, Thymeleaf และ PostgreSQL ตาม Layered Architecture
 
-> **สถานะโครงการ:** อยู่ระหว่างเริ่มต้นพัฒนา ปัจจุบัน repository มี Spring Boot skeleton และเอกสาร requirements ฟีเจอร์ธุรกิจด้านล่างเป็นขอบเขตที่วางแผนไว้สำหรับ MVP
+> **Project Status:** กำลังพัฒนา — ข้อมูลที่ขึ้นต้นด้วย `TODO` เป็น placeholder ที่ทีมต้องอัปเดตก่อนส่งงาน
 
-## ฟีเจอร์หลักของ MVP
+## สมาชิกกลุ่ม
 
-- จัดการลูกค้าหลายราย โปรเจกต์ และงานย่อย
-- จับเวลาแบบ real-time และเพิ่ม time entry ย้อนหลัง
-- แยกเวลาที่เรียกเก็บเงินได้และเรียกเก็บไม่ได้
-- รองรับงานแบบรายชั่วโมงและ fixed price
-- คำนวณรายได้จากเวลาและอัตราค่าจ้าง
-- สร้าง invoice จากรายการเวลาและส่งออกเป็น PDF
-- ติดตาม invoice แบบ draft, issued, paid, overdue และ void
-- dashboard สรุปเวลา รายได้ billable utilization และสถานะโปรเจกต์
-- วิเคราะห์ productivity ตามช่วงเวลา ลูกค้า และโปรเจกต์
+| ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section       | Branch                         | หน้าที่รับผิดชอบ |
+| ----: | --------------------- | ------------ | ------------- | ------------------------------ | ---------------- |
+|     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2     | `petpinyo_673380073-7_02`      | PM/DevOps        |
+|     2 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
+|     3 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
+|     4 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
+|     5 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
 
-รายละเอียดทั้งหมดอยู่ใน [REQUIREMENTS.md](./REQUIREMENTS.md)
+> ลบแถวที่ไม่ใช้ก่อนส่งงาน สมาชิกแต่ละคนต้องใช้ branch รูปแบบ `ชื่อ_รหัสนักศึกษา_section`
 
-## Technology Stack
+## Tech Stack
 
-| ส่วน | เทคโนโลยี |
-|---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 4.2.0-SNAPSHOT |
-| Web | Spring MVC / REST API |
-| Persistence | Spring Data JPA |
-| Database | PostgreSQL |
-| Build | Maven Wrapper |
-| Test | Spring Boot Test, JPA Test, MVC Test |
+| ส่วน              | เทคโนโลยี                                                       |
+| ----------------- | --------------------------------------------------------------- |
+| Backend           | Java 17, Spring Boot 4.0.0                                      |
+| Web / API         | Spring MVC, RESTful API                                         |
+| Frontend          | Thymeleaf, HTML, CSS, JavaScript                                |
+| Persistence       | Spring Data JPA / Hibernate                                     |
+| Database          | PostgreSQL 16                                                   |
+| Migration         | Flyway — TODO: เพิ่ม dependency และ migration scripts           |
+| API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
+| Testing           | JUnit 5, Mockito, Spring Boot Test                              |
+| Build             | Maven Wrapper                                                   |
+| Deployment        | Docker, Docker Compose, TODO: Cloud provider                    |
 
-## สถาปัตยกรรมที่วางแผนไว้
+## System Architecture
 
-โครงการใช้แนวทาง **modular monolith** และจัด package ตาม feature เพื่อให้แต่ละ domain แยกจากกันชัดเจน แต่ยัง build และ deploy เป็น application เดียว
+ระบบใช้ **Layered Architecture** โดยแต่ละ request ต้องไหลตามลำดับและห้าม Controller เรียก Repository โดยตรง
 
 ```text
-src/main/java/th/ac/kku/freelance_hub/
-├─ common/          # config, security, exception และ web utilities
-├─ auth/            # authentication และ authorization
-├─ user/            # profile และ user settings
-├─ client/          # ข้อมูลลูกค้า
-├─ project/         # โปรเจกต์และ task
-├─ timetracking/    # timer และ time entry
-├─ invoice/         # invoice, line item, payment และ PDF
-├─ finance/         # รายรับและค่าใช้จ่าย
-└─ analytics/       # dashboard และรายงาน
+Presentation Layer (REST Controller / Web Controller / Thymeleaf)
+                              |
+                              v
+Service Layer (Business Logic / Validation / Transaction)
+                              |
+                              v
+Repository Layer (Spring Data JPA / Data Access)
+                              |
+                              v
+Domain Layer (Entity / Value Object / Enum)
+                              |
+                              v
+                         PostgreSQL
 ```
 
-แต่ละ feature สามารถแบ่งชั้นย่อยเป็น `api`, `application`, `domain` และ `infrastructure` โดยไม่ส่ง JPA entity ออกผ่าน API โดยตรง
+ใช้ DTO และ Mapper แยก API contract ออกจาก JPA Entity และใช้ Constructor Injection สำหรับ dependency ทั้งหมด
 
-## สิ่งที่ต้องติดตั้ง
+## Database Design (ER Diagram)
 
-- JDK 17
-- PostgreSQL 15 หรือใหม่กว่า
+ฐานข้อมูลที่วางแผนไว้ประกอบด้วยอย่างน้อย 10 ตาราง ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks`, `time_entries`, `invoices`, `invoice_items`, `payments` และ `transactions`
+
+ความสัมพันธ์หลัก:
+
+- One-to-One: `users` → `user_profiles`
+- One-to-Many: `clients` → `projects`
+- One-to-Many: `projects` → `tasks` และ `time_entries`
+- One-to-Many: `invoices` → `invoice_items` และ `payments`
+
+> **TODO:** เพิ่ม ER Diagram ที่ `doc/diagrams/er-diagram.png` และแสดงด้วย `![ER Diagram](doc/diagrams/er-diagram.png)`
+
+ดูรายละเอียด field และ constraint ที่ [Data Dictionary](doc/data-dictionary.md)
+
+## Installation & Setup
+
+### Prerequisites
+
 - Git
+- Docker Desktop หรือ Docker Engine พร้อม Docker Compose
+- JDK 17 กรณีต้องการรันโดยไม่ใช้ Docker
 
-ไม่จำเป็นต้องติดตั้ง Maven แยก เนื่องจากโครงการมี Maven Wrapper ให้แล้ว
+### Clone Repository
 
-ตรวจสอบ Java:
+```bash
+git clone <TODO: repository-url>
+cd freelance-hub/code
+```
+
+### Environment Variables
+
+คัดลอกไฟล์ตัวอย่างเป็น `.env` แล้วเปลี่ยนรหัสผ่านสำหรับเครื่องของตนเอง
+
+PowerShell:
 
 ```powershell
-java -version
+Copy-Item .env.example .env
 ```
 
-## การติดตั้งและรันโครงการ
+macOS/Linux:
 
-### 1. Clone repository
-
-```powershell
-git clone <repository-url>
-cd freelance-hub
+```bash
+cp .env.example .env
 ```
 
-### 2. สร้างฐานข้อมูล
+| Variable                     | Description                     | Development Default     |
+| ---------------------------- | ------------------------------- | ----------------------- |
+| `POSTGRES_DB`                | ชื่อฐานข้อมูล                   | `freelance_hub`         |
+| `POSTGRES_USER`              | ผู้ใช้ PostgreSQL               | `freelance_hub`         |
+| `POSTGRES_PASSWORD`          | รหัสผ่าน PostgreSQL             | `freelance_hub_dev`     |
+| `POSTGRES_PORT`              | PostgreSQL port บนเครื่อง       | `5432`                  |
+| `APP_PORT`                   | Application port บนเครื่อง      | `8080`                  |
+| `SPRING_DATASOURCE_URL`      | JDBC URL สำหรับ deploy          | กำหนดโดย Docker Compose |
+| `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ deploy | กำหนดโดย Docker Compose |
+| `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ deploy | กำหนดโดย Docker Compose |
 
-ตัวอย่างด้วย PostgreSQL CLI:
+ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
 
-```sql
-CREATE DATABASE freelance_hub;
-CREATE USER freelance_hub_user WITH PASSWORD 'change-me';
-GRANT ALL PRIVILEGES ON DATABASE freelance_hub TO freelance_hub_user;
+## How to Run
+
+### Docker Compose — วิธีที่แนะนำ
+
+คำสั่งทั้งหมดรันจากโฟลเดอร์ `code/`:
+
+```bash
+docker compose up --build
 ```
 
-### 3. ตั้งค่าการเชื่อมต่อฐานข้อมูล
+- Web application: <http://localhost:8080>
+- PostgreSQL: `localhost:5432`
 
-ไฟล์ `application.properties` ในปัจจุบันมีเพียงชื่อ application จึงต้องกำหนด datasource ก่อนเริ่มใช้ JPA สามารถตั้งค่าผ่าน environment variables ใน PowerShell ได้ดังนี้:
+หยุดระบบโดยเก็บข้อมูลฐานข้อมูลไว้:
 
-```powershell
-$env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/freelance_hub"
-$env:SPRING_DATASOURCE_USERNAME = "freelance_hub_user"
-$env:SPRING_DATASOURCE_PASSWORD = "change-me"
+```bash
+docker compose down
 ```
 
-ไม่ควร commit รหัสผ่านหรือ secret ลง repository สำหรับ production ควรใช้ secret manager หรือ environment variables ของระบบ deploy
+### Maven Wrapper
 
-### 4. รัน application
+ต้องมี PostgreSQL ทำงานอยู่และกำหนด datasource environment variables ก่อนรัน
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -108,116 +150,126 @@ macOS/Linux:
 ./mvnw spring-boot:run
 ```
 
-เมื่อเริ่มสำเร็จ application จะให้บริการโดยค่าเริ่มต้นที่ `http://localhost:8080`
+## API Documentation
 
-> โครงการอ้างอิง Spring Boot รุ่น `4.2.0-SNAPSHOT` จึงอาจต้องเชื่อมต่อ Spring Snapshot Repository ในการดาวน์โหลด dependency ครั้งแรก
+- Base URL: `http://localhost:8080/api/v1`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-## การ Build และทดสอบ
+> **TODO:** Swagger/OpenAPI ยังต้องเพิ่มใน `pom.xml` และ configuration ก่อน URL ข้างต้นจะใช้งานได้
 
-รัน automated tests:
+| Resource       | Endpoint               |
+| -------------- | ---------------------- |
+| Authentication | `/api/v1/auth`         |
+| Clients        | `/api/v1/clients`      |
+| Projects       | `/api/v1/projects`     |
+| Time entries   | `/api/v1/time-entries` |
+| Timer          | `/api/v1/timer`        |
+| Invoices       | `/api/v1/invoices`     |
+| Analytics      | `/api/v1/analytics`    |
+
+รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
+
+## How to Run Tests
+
+รัน automated tests จาก `code/`:
+
+Windows:
 
 ```powershell
 .\mvnw.cmd test
 ```
 
-สร้าง executable JAR:
+macOS/Linux:
 
-```powershell
-.\mvnw.cmd clean package
+```bash
+./mvnw test
 ```
 
-ไฟล์ที่ build แล้วจะอยู่ภายใน `target/` และรันได้ด้วย:
+สร้าง package พร้อมรัน tests:
 
-```powershell
-java -jar target/freelance-hub-0.0.1-SNAPSHOT.jar
+```bash
+./mvnw clean verify
 ```
 
-## API ที่วางแผนไว้
+Maven test result อยู่ใน `code/target/surefire-reports/` ส่วน test plan, exported report และหลักฐานการทดสอบสำหรับส่งงานเก็บใน `test/reports/`
 
-REST API ใช้ prefix `/api/v1` โดยแบ่ง resource หลักดังนี้:
+## Deployment URL
 
-| Resource | ตัวอย่าง Endpoint | หน้าที่ |
-|---|---|---|
-| Authentication | `/api/v1/auth` | สมัครและเข้าสู่ระบบ |
-| Clients | `/api/v1/clients` | จัดการลูกค้า |
-| Projects | `/api/v1/projects` | จัดการโปรเจกต์และ task |
-| Time entries | `/api/v1/time-entries` | บันทึกและค้นหาเวลาทำงาน |
-| Timer | `/api/v1/timer` | เริ่ม หยุด และดู timer ปัจจุบัน |
-| Invoices | `/api/v1/invoices` | สร้าง ออก ยกเลิก และดาวน์โหลด invoice |
-| Analytics | `/api/v1/analytics` | KPI และข้อมูลวิเคราะห์ |
-| Reports | `/api/v1/reports` | ส่งออกรายงาน |
+| Environment | URL                                                  | Status       |
+| ----------- | ---------------------------------------------------- | ------------ |
+| Production  | TODO: `https://your-app.example.com`                 | Not deployed |
+| Swagger UI  | TODO: `https://your-app.example.com/swagger-ui.html` | Not deployed |
 
-Endpoint เหล่านี้เป็น API contract ระดับสูงที่ยังต้องพัฒนา ดูรายละเอียดและ business rules ใน [REQUIREMENTS.md](./REQUIREMENTS.md#8-api-ระดับสูง)
+การ deploy ให้กำหนด **Root Directory เป็น `code`** ระบบ Cloud จะพบ `Dockerfile`, `pom.xml`, Maven Wrapper และ source code ครบโดยไม่ต้อง deploy `doc/`, `test/` หรือ `img/`
 
-## Business Rules สำคัญ
+Production ควรใช้ Managed PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` และ `SPRING_DATASOURCE_PASSWORD` ผ่าน secret/environment settings ของผู้ให้บริการ
 
-- ผู้ใช้มี timer ที่กำลังทำงานได้ครั้งละหนึ่งรายการ
-- เก็บวันเวลาในฐานข้อมูลเป็น UTC และแสดงตาม timezone ของผู้ใช้
-- time entry เก็บ rate snapshot เพื่อไม่ให้การเปลี่ยนราคาแก้รายได้ย้อนหลัง
-- time entry หนึ่งรายการต้องไม่ถูกเรียกเก็บซ้ำ
-- invoice ที่ออกแล้วเก็บ snapshot ของผู้ขาย ลูกค้า ภาษี และรายการ
-- invoice ที่ออกแล้วแก้ยอดไม่ได้ หากต้องแก้ให้ void และสร้างฉบับใหม่
-- ยอดเงินต่างสกุลจะไม่ถูกรวมกันโดยไม่มีการแปลงอัตราแลกเปลี่ยน
-- ผู้ใช้เข้าถึงได้เฉพาะข้อมูลที่ตนเองเป็นเจ้าของ
+> **TODO:** ระบุ Cloud provider, public URL, database provider และขั้นตอน deploy จริงก่อนส่งงาน
 
-## แนวทางการพัฒนา
-
-### ลำดับการพัฒนา
-
-1. **Foundation:** database migration, authentication, user, client และ project
-2. **Time Tracking:** task, time entry, timer และการคำนวณรายได้
-3. **Invoice & Finance:** invoice lifecycle, payment และ PDF
-4. **Analytics:** dashboard, productivity insights, export และ hardening
-
-### หลักการสำหรับโค้ด
-
-- ใช้ Flyway สำหรับเปลี่ยน schema และไม่ใช้ `ddl-auto=update` ใน production
-- validation และ authorization ต้องอยู่ที่ server เสมอ
-- ใช้ DTO สำหรับ request/response และกำหนด transaction boundary ใน application service
-- จำนวนเงินใช้ `BigDecimal` พร้อม ISO 4217 currency code
-- เขียน unit test สำหรับ calculation และ integration test สำหรับ workflow หลัก
-- ห้าม log password, token, secret หรือข้อมูลการเงินที่ละเอียดอ่อน
-
-## โครงสร้าง repository ปัจจุบัน
+## Project Structure
 
 ```text
 freelance-hub/
-├─ src/
-│  ├─ main/
-│  │  ├─ java/th/ac/kku/freelance_hub/
-│  │  └─ resources/
-│  └─ test/
-├─ REQUIREMENTS.md
-├─ HELP.md
-├─ pom.xml
-├─ mvnw
-└─ mvnw.cmd
+├── code/                         # Deployable Spring Boot application
+│   ├── .mvn/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/th/ac/kku/freelance_hub/
+│   │   │   │   ├── config/
+│   │   │   │   ├── controller/api/
+│   │   │   │   ├── controller/web/
+│   │   │   │   ├── service/impl/
+│   │   │   │   ├── repository/
+│   │   │   │   ├── domain/entity/
+│   │   │   │   ├── domain/enums/
+│   │   │   │   ├── domain/valueobject/
+│   │   │   │   ├── dto/request/
+│   │   │   │   ├── dto/response/
+│   │   │   │   ├── mapper/
+│   │   │   │   ├── exception/
+│   │   │   │   └── security/
+│   │   │   └── resources/
+│   │   │       ├── db/migration/
+│   │   │       ├── static/
+│   │   │       └── templates/
+│   │   └── test/
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── .dockerignore
+│   ├── .env.example
+│   ├── pom.xml
+│   └── mvnw
+├── test/                         # Test plan, reports, and evidence
+├── doc/                          # Documents, diagrams, and slides
+│   ├── diagrams/
+│   └── slide/
+├── img/                          # Images and media
+├── README.md
+└── REQUIREMENTS.md
 ```
 
-## Documentation
+## เอกสารโครงการ
 
-- [Software Requirements Specification](./REQUIREMENTS.md)
-- [Spring Boot generated help](./HELP.md)
+- [Software Requirements Specification](REQUIREMENTS.md)
+- [SOLID Analysis](doc/solid-analysis.md)
+- [Design Patterns](doc/design-patterns.md)
+- [Data Dictionary](doc/data-dictionary.md)
+- [Use Case Description](doc/use-case-description.md)
+- [Diagram Checklist](doc/diagrams/README.md)
 
-## การมีส่วนร่วม
+## Git Workflow
 
-ก่อนเริ่มพัฒนา feature ใหม่:
+- `main`: production และ version ที่ส่งมอบ
+- `develop`: integration branch
+- branch ส่วนตัว: `ชื่อ_รหัสนักศึกษา_section`
+- รวมงานผ่าน Pull Request และมี reviewer อย่างน้อย 1 คน
+- สมาชิกแต่ละคนต้องมี meaningful commits อย่างน้อย 15 ครั้งและใช้บัญชี GitHub ของตนเอง
 
-1. อ่าน requirement และ acceptance criteria ที่เกี่ยวข้อง
-2. สร้าง branch จาก branch หลัก เช่น `feature/time-tracking`
-3. เพิ่ม migration และ automated tests ที่จำเป็น
-4. รัน `mvnw.cmd test` ให้ผ่านก่อนเปิด pull request
-5. อัปเดตเอกสารเมื่อ API หรือ business rule เปลี่ยน
+Commit message format: `<type>: <สิ่งที่ทำ>`
 
-รูปแบบ commit message ที่แนะนำ:
-
-```text
-feat: add time entry creation
-fix: prevent duplicate running timers
-docs: update invoice requirements
-test: cover invoice total calculation
-```
+ตัวอย่าง `feat: add time tracking API`, `fix: prevent duplicate timer`, `test: add invoice service tests` และ `docs: update ER diagram`
 
 ## License
 
-ยังไม่ได้กำหนด License สำหรับโครงการนี้ ก่อนนำไปเผยแพร่หรือใช้งานภายนอกควรเพิ่มไฟล์ `LICENSE` และระบุเงื่อนไขการใช้งานให้ชัดเจน
+TODO: เลือก License และเพิ่มไฟล์ `LICENSE` ก่อนเผยแพร่โครงการ
