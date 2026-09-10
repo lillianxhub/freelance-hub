@@ -12,7 +12,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section       | Branch                         | หน้าที่รับผิดชอบ |
 | ----: | --------------------- | ------------ | ------------- | ------------------------------ | ---------------- |
 |     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2     | `petpinyo_673380073-7_02`      | PM/DevOps        |
-|     2 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
+|     2 | ณัฏฐดนย์ สาริกา      | 673380511-9  | Section2 | `nattadol_673380511-9` | TODO: หน้าที่    |
 |     3 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
 |     4 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
 |     5 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
