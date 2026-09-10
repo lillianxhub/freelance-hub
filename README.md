@@ -5,7 +5,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 ผู้ใช้สามารถติดตามสถานะการชำระเงิน วิเคราะห์เวลาทำงาน และดู productivity insights ผ่าน Dashboard
 โปรเจกต์พัฒนาด้วย Spring Boot, Thymeleaf และ PostgreSQL ตาม Layered Architecture
 
-> **Project Status:** กำลังพัฒนา — ข้อมูลที่ขึ้นต้นด้วย `TODO` เป็น placeholder ที่ทีมต้องอัปเดตก่อนส่งงาน
+> **Project Status:** กำลังพัฒนา
 
 ## สมาชิกกลุ่ม
 
@@ -17,21 +17,19 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 |     4 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
 |     5 | TODO: ชื่อสมาชิก      | TODO: รหัส   | TODO: Section | `TODO: name_studentid_section` | TODO: หน้าที่    |
 
-> ลบแถวที่ไม่ใช้ก่อนส่งงาน สมาชิกแต่ละคนต้องใช้ branch รูปแบบ `ชื่อ_รหัสนักศึกษา_section`
-
 ## Tech Stack
 
 | ส่วน              | เทคโนโลยี                                                       |
 | ----------------- | --------------------------------------------------------------- |
 | Backend           | Java 17, Spring Boot 4.0.0                                      |
+| Build Tool        | Maven                                                           |
+| Database          | PostgreSQL 16                                                   |
+| ORM               | Spring Data JPA / Hibernate                                     |
 | Web / API         | Spring MVC, RESTful API                                         |
 | Frontend          | Thymeleaf, HTML, CSS, JavaScript                                |
-| Persistence       | Spring Data JPA / Hibernate                                     |
-| Database          | PostgreSQL 16                                                   |
-| Migration         | Flyway — TODO: เพิ่ม dependency และ migration scripts           |
 | API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
-| Build             | Maven Wrapper                                                   |
+| Version Control   | Git + Github                                                    |
 | Deployment        | Docker, Docker Compose, TODO: Cloud provider                    |
 
 ## System Architecture
