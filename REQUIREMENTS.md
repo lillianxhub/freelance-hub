@@ -17,29 +17,28 @@
 
 ## 1. ภาพรวมระบบ
 
-Freelance Hub เป็นเว็บแอปพลิเคชันสำหรับช่วย Freelancer จัดการลูกค้า โปรเจกต์ งานย่อย และเวลาทำงานในที่เดียว ระบบนำเวลาที่บันทึกไปคำนวณรายได้ สร้างใบแจ้งหนี้ และสรุปข้อมูลเชิงวิเคราะห์เพื่อช่วยให้ผู้ใช้เห็นประสิทธิภาพการทำงานและสถานะทางการเงินของตนเอง
+Freelance Hub เป็นเว็บแอปพลิเคชันสำหรับช่วย Freelancer จัดการลูกค้า โปรเจกต์ งานย่อย และเวลาทำงานในที่เดียว ระบบสรุปข้อมูลการทำงานและ productivity เพื่อช่วยให้ผู้ใช้เห็นภาระงาน รูปแบบการใช้เวลา และประสิทธิภาพของตนเอง
 
 ### 1.1 ปัญหาที่ต้องการแก้ไข
 
 - ข้อมูลลูกค้า โปรเจกต์ และเวลาทำงานกระจัดกระจายหลายระบบ
-- การคำนวณชั่วโมงและค่าจ้างด้วยตนเองมีโอกาสผิดพลาด
-- ติดตามไม่ได้ว่างานใดเรียกเก็บเงินแล้วหรือยัง
-- มองภาพรวมรายได้ ภาระงาน และ productivity ได้ยาก
+- การบันทึกชั่วโมงทำงานด้วยตนเองมีโอกาสผิดพลาด
+- ข้อมูลลูกค้า โปรเจกต์ และงานย่อยไม่เป็นระบบ
+- มองภาพรวมภาระงานและ productivity ได้ยาก
 
 ### 1.2 เป้าหมาย
 
 - บันทึกเวลาได้รวดเร็วทั้งแบบจับเวลาและกรอกย้อนหลัง
 - จัดการลูกค้าหลายรายและโปรเจกต์หลายโปรเจกต์ได้อย่างเป็นระบบ
-- คำนวณรายได้จากชั่วโมง อัตราค่าจ้าง และค่าใช้จ่ายได้ถูกต้อง
-- สร้างและติดตามสถานะใบแจ้งหนี้ได้
 - แสดง dashboard และ productivity insights ที่นำไปใช้ตัดสินใจได้
+- ออกแบบข้อมูล MVP ให้รองรับการขยายในอนาคตโดยไม่ทำให้ workflow ปัจจุบันซับซ้อน
 
 ### 1.3 ตัวชี้วัดความสำเร็จของ MVP
 
 - ผู้ใช้สร้างลูกค้า โปรเจกต์ และเริ่มจับเวลาได้ภายใน 3 นาทีหลังลงทะเบียน
-- ผู้ใช้สร้าง invoice จากรายการเวลาที่ยังไม่ถูกเรียกเก็บได้โดยไม่ต้องคำนวณยอดเอง
-- ยอดรวมใน invoice ตรงกับผลรวมรายการ เวลา/ราคา ส่วนลด และภาษีตามกฎธุรกิจ 100%
-- dashboard แสดงข้อมูลเวลาทำงานและรายได้ตามช่วงวันที่ได้ถูกต้อง
+- ผู้ใช้บันทึกและค้นหา time entry ตามลูกค้า โปรเจกต์ และช่วงวันที่ได้โดยไม่ต้องใช้เครื่องมือภายนอก
+- dashboard แสดงข้อมูลเวลาทำงานตามช่วงวันที่ได้ถูกต้อง
+- productivity metrics ตรงกับ time entries ภายใต้ตัวกรองเดียวกัน 100%
 
 ---
 
@@ -47,28 +46,16 @@ Freelance Hub เป็นเว็บแอปพลิเคชันสำห
 
 ### 2.1 ขอบเขต MVP
 
-1. ลงทะเบียน เข้าสู่ระบบ และจัดการโปรไฟล์ Freelancer
-2. จัดการข้อมูลลูกค้าและข้อมูลสำหรับออก invoice
-3. จัดการโปรเจกต์ งานย่อย อัตราค่าจ้าง งบประมาณ และสถานะงาน
-4. จับเวลาแบบ real-time และเพิ่ม/แก้ไข time entry ด้วยตนเอง
-5. แยกเวลาที่เรียกเก็บเงินได้ (billable) และเรียกเก็บไม่ได้ (non-billable)
-6. คำนวณรายได้ตามอัตรารายชั่วโมง หรือเก็บยอด fixed price ของโปรเจกต์
-7. สร้าง invoice จาก time entries หรือเพิ่มรายการเอง
-8. ส่งออก invoice เป็น PDF และติดตามสถานะการชำระเงิน
-9. dashboard สรุปเวลา รายได้ โปรเจกต์ และ productivity
-10. ค้นหา กรอง เรียงลำดับ และแบ่งหน้ารายการหลัก
+1. Authentication และจัดการโปรไฟล์ Freelancer
+2. Client Management สำหรับลูกค้าหลายราย
+3. Project และ Task Management พร้อมสถานะและงบประมาณเวลา
+4. Time Tracking แบบ real-time และ manual entry
+5. Dashboard, Analytics และ Productivity Insights
+6. ค้นหา กรอง เรียงลำดับ และแบ่งหน้ารายการหลัก
 
-### 2.2 นอกขอบเขต MVP
+### 2.2 ขอบเขตที่ไม่รวมใน MVP
 
-- Payment gateway และการรับชำระเงินออนไลน์
-- ระบบบัญชีเต็มรูปแบบและการยื่นภาษี
-- การเชื่อมต่อธนาคารหรือกระทบยอดบัญชีอัตโนมัติ
-- แอปมือถือ native และการติดตามกิจกรรมหน้าจอ
-- การทำงานร่วมกันหลายคนใน workspace เดียว
-- การส่งอีเมล invoice อัตโนมัติและ recurring invoice
-- การรองรับหลายสกุลเงินภายใน invoice เดียว
-
-รายการเหล่านี้สามารถพัฒนาในระยะถัดไปได้โดยไม่เปลี่ยนแกนข้อมูลของ MVP
+Income, Expense, Invoice และ Payment รวมถึง payment gateway ระบบภาษี และฟีเจอร์บัญชีทั้งหมดอยู่นอกขอบเขตเอกสารฉบับนี้
 
 ---
 
@@ -78,7 +65,7 @@ Freelance Hub เป็นเว็บแอปพลิเคชันสำห
 
 | บทบาท | ความสามารถ |
 |---|---|
-| Freelancer | จัดการข้อมูลทั้งหมดที่ตนเองเป็นเจ้าของ เช่น ลูกค้า โปรเจกต์ เวลา invoice และ analytics |
+| Freelancer | จัดการข้อมูลทั้งหมดที่ตนเองเป็นเจ้าของ เช่น โปรไฟล์ ลูกค้า โปรเจกต์ task เวลา และ analytics |
 | Admin (ระยะถัดไป) | ดูแลบัญชีผู้ใช้และสถานะระบบ โดยไม่มีสิทธิ์อ่านข้อมูลธุรกิจส่วนตัวโดยค่าเริ่มต้น |
 
 ### 3.2 หลักการเข้าถึงข้อมูล
@@ -101,8 +88,8 @@ Freelance Hub เป็นเว็บแอปพลิเคชันสำห
 | FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้ | Must |
 | FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must |
 | FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้ | Must |
-| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ ที่อยู่ เลขประจำตัวผู้เสียภาษี logo และข้อมูลธนาคารสำหรับ invoice ได้ | Must |
-| FR-AUTH-05 | ผู้ใช้กำหนด timezone สกุลเงินหลัก รูปแบบวันที่ และอัตราภาษีเริ่มต้นได้ | Must |
+| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ ที่อยู่ และรูปโปรไฟล์ได้ | Must |
+| FR-AUTH-05 | ผู้ใช้กำหนด timezone และรูปแบบวันที่ได้ | Must |
 | FR-AUTH-06 | ผู้ใช้ขอ reset password ผ่านอีเมลได้ | Should |
 
 ### 4.2 Client Management
@@ -112,7 +99,7 @@ Freelance Hub เป็นเว็บแอปพลิเคชันสำห
 | FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้ | Must |
 | FR-CLI-02 | ลูกค้าประกอบด้วยชื่อบุคคล/บริษัท อีเมล โทรศัพท์ ที่อยู่ เลขผู้เสียภาษี และหมายเหตุ | Must |
 | FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้ | Must |
-| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์ เวลา รายได้ และ invoice ที่เกี่ยวข้อง | Must |
+| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์ | Must |
 | FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ | Must |
 
 ### 4.3 Project และ Task Management
@@ -121,13 +108,11 @@ Freelance Hub เป็นเว็บแอปพลิเคชันสำห
 |---|---|---|
 | FR-PRJ-01 | ผู้ใช้สร้างโปรเจกต์และผูกกับลูกค้าหนึ่งรายได้ | Must |
 | FR-PRJ-02 | โปรเจกต์ประกอบด้วยชื่อ รายละเอียด วันที่เริ่ม/สิ้นสุด สี สถานะ และสกุลเงิน | Must |
-| FR-PRJ-03 | รองรับรูปแบบคิดค่าจ้าง `HOURLY` และ `FIXED_PRICE` | Must |
-| FR-PRJ-04 | โปรเจกต์ hourly กำหนด hourly rate และงบประมาณชั่วโมงหรือจำนวนเงินได้ | Must |
-| FR-PRJ-05 | โปรเจกต์ fixed price กำหนดมูลค่างานได้ และยังบันทึกเวลาเพื่อวิเคราะห์ต้นทุนได้ | Must |
-| FR-PRJ-06 | สถานะโปรเจกต์ประกอบด้วย `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` | Must |
-| FR-PRJ-07 | ผู้ใช้สร้าง แก้ไข ปิดงาน และเรียงลำดับ task ภายในโปรเจกต์ได้ | Must |
-| FR-PRJ-08 | ระบบแสดงเวลาที่ใช้ เทียบงบประมาณ และมูลค่าที่เกิดขึ้นของแต่ละโปรเจกต์ | Must |
-| FR-PRJ-09 | ระบบแจ้งเตือนเมื่อใช้เวลาหรืองบประมาณถึงเกณฑ์ 80% และ 100% | Should |
+| FR-PRJ-03 | โปรเจกต์กำหนดเป้าหมายชั่วโมงและสถานะงานได้ โดยยังไม่คำนวณรายได้ใน MVP | Must |
+| FR-PRJ-04 | สถานะโปรเจกต์ประกอบด้วย `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` | Must |
+| FR-PRJ-05 | ผู้ใช้สร้าง แก้ไข ปิดงาน และเรียงลำดับ task ภายในโปรเจกต์ได้ | Must |
+| FR-PRJ-06 | ระบบแสดงเวลาที่ใช้เทียบกับเป้าหมายชั่วโมงของแต่ละโปรเจกต์ | Must |
+| FR-PRJ-07 | ระบบแจ้งเตือนเมื่อใช้เวลาถึงเกณฑ์ 80% และ 100% ของเป้าหมาย | Should |
 
 ### 4.4 Time Tracking
 
@@ -135,73 +120,43 @@ Freelance Hub เป็นเว็บแอปพลิเคชันสำห
 |---|---|---|
 | FR-TIME-01 | ผู้ใช้เริ่ม หยุด และยกเลิก timer โดยเลือกโปรเจกต์ และเลือก task ได้ | Must |
 | FR-TIME-02 | ผู้ใช้มี timer ที่กำลังทำงานได้สูงสุดหนึ่งรายการในเวลาเดียวกัน | Must |
-| FR-TIME-03 | ระบบเก็บเวลาเริ่ม เวลาสิ้นสุด ระยะเวลา คำอธิบาย และสถานะ billable | Must |
+| FR-TIME-03 | ระบบเก็บเวลาเริ่ม เวลาสิ้นสุด ระยะเวลา และคำอธิบาย | Must |
 | FR-TIME-04 | ผู้ใช้เพิ่มเวลาแบบ manual ด้วยวัน เวลาเริ่ม/สิ้นสุด หรือระยะเวลาได้ | Must |
-| FR-TIME-05 | ผู้ใช้แก้ไขและลบ time entry ที่ยังไม่ถูกผูกกับ invoice ได้ | Must |
+| FR-TIME-05 | ผู้ใช้แก้ไขและลบ time entry ที่ยังไม่ถูกล็อกหรือสรุปผลแล้วได้ | Must |
 | FR-TIME-06 | ผู้ใช้ดูรายการเวลาแบบรายวัน รายสัปดาห์ และตามช่วงวันที่ได้ | Must |
-| FR-TIME-07 | ผู้ใช้กรองรายการตามลูกค้า โปรเจกต์ task สถานะ billable และสถานะ invoice ได้ | Must |
-| FR-TIME-08 | ระบบคำนวณมูลค่า time entry จาก duration และ rate snapshot ขณะบันทึก | Must |
+| FR-TIME-07 | ผู้ใช้กรองรายการตามลูกค้า โปรเจกต์ task และช่วงวันที่ได้ | Must |
+| FR-TIME-08 | ระบบคำนวณ duration ของรายการและรวมชั่วโมงตามช่วงวันที่ได้ โดยยังไม่คำนวณมูลค่าเงิน | Must |
 | FR-TIME-09 | ผู้ใช้คัดลอกรายการเวลาเดิมเพื่อบันทึกซ้ำได้ | Could |
 
-### 4.5 Income และ Expense
-
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-FIN-01 | ระบบคำนวณรายได้ที่เกิดขึ้นจากรายการ billable ของโปรเจกต์ hourly ได้ | Must |
-| FR-FIN-02 | ระบบแยกยอดเป็น unbilled, invoiced, paid และ overdue ได้ | Must |
-| FR-FIN-03 | ผู้ใช้บันทึกรายรับอื่นหรือค่าใช้จ่ายของโปรเจกต์ พร้อมวันที่ หมวดหมู่ จำนวนเงิน และหมายเหตุได้ | Should |
-| FR-FIN-04 | ผู้ใช้ดูรายได้สุทธิประมาณการจากรายรับหักค่าใช้จ่ายในช่วงวันที่ได้ | Should |
-| FR-FIN-05 | จำนวนเงินทุกค่าต้องเก็บพร้อมรหัสสกุลเงินและไม่คำนวณรวมข้ามสกุลเงิน | Must |
-
-### 4.6 Invoice Management
-
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-INV-01 | ผู้ใช้สร้าง invoice แบบ draft โดยเลือกลูกค้า โปรเจกต์ และ time entries ที่ยังไม่ถูก invoice ได้ | Must |
-| FR-INV-02 | ผู้ใช้เพิ่ม แก้ไข หรือลบ line item ด้วยตนเองได้ขณะ invoice เป็น draft | Must |
-| FR-INV-03 | invoice ต้องมีเลขที่ไม่ซ้ำ วันที่ออก วันครบกำหนด ผู้ขาย ลูกค้า สกุลเงิน และหมายเหตุ | Must |
-| FR-INV-04 | ระบบคำนวณ subtotal ส่วนลด ภาษี และยอดสุทธิอัตโนมัติ | Must |
-| FR-INV-05 | สถานะ invoice ประกอบด้วย `DRAFT`, `ISSUED`, `PAID`, `OVERDUE`, `VOID` | Must |
-| FR-INV-06 | ผู้ใช้เปลี่ยน draft เป็น issued และบันทึกวันที่/ยอดชำระได้ | Must |
-| FR-INV-07 | ระบบระบุ invoice เป็น overdue เมื่อพ้น due date และยังมียอดค้างชำระ | Must |
-| FR-INV-08 | ผู้ใช้ดาวน์โหลด invoice เป็น PDF ที่มีข้อมูลครบถ้วนได้ | Must |
-| FR-INV-09 | time entry หนึ่งรายการต้องไม่ถูกเรียกเก็บซ้ำใน invoice ที่ไม่ใช่สถานะ `VOID` | Must |
-| FR-INV-10 | invoice ที่ issued แล้วต้องเก็บ snapshot ข้อมูลผู้ขาย ลูกค้า rate ภาษี และรายการ ณ เวลาออกเอกสาร | Must |
-| FR-INV-11 | ผู้ใช้ส่ง invoice ทางอีเมลและดูประวัติการส่งได้ | Could |
-
-### 4.7 Dashboard, Analytics และ Productivity Insights
+### 4.5 Dashboard, Analytics และ Productivity Insights (MVP)
 
 | ID | Requirement | Priority |
 |---|---|---|
 | FR-ANA-01 | dashboard แสดงชั่วโมงวันนี้ สัปดาห์นี้ เดือนนี้ และแนวโน้มเทียบช่วงก่อนหน้า | Must |
-| FR-ANA-02 | dashboard แสดง billable utilization = billable hours / tracked hours | Must |
-| FR-ANA-03 | dashboard แสดงรายได้ unbilled, invoiced, paid และ overdue แยกตามสกุลเงิน | Must |
-| FR-ANA-04 | ผู้ใช้ดูสัดส่วนเวลาและรายได้แยกตามลูกค้า โปรเจกต์ และช่วงวันที่ได้ | Must |
+| FR-ANA-02 | dashboard แสดง tracked hours และ utilization ของเวลาที่กำหนดให้วิเคราะห์ได้ | Must |
+| FR-ANA-03 | ผู้ใช้ดูสัดส่วนเวลาแยกตามลูกค้า โปรเจกต์ และช่วงวันที่ได้ | Must |
+| FR-ANA-04 | dashboard แสดงจำนวนโปรเจกต์ active, completed และงานที่ใกล้เกินเป้าหมายชั่วโมง | Must |
 | FR-ANA-05 | ระบบแสดงค่าเฉลี่ยชั่วโมงต่อวัน วัน/ช่วงเวลาที่ทำงานมากที่สุด และโปรเจกต์ที่ใช้เวลาสูงสุด | Should |
-| FR-ANA-06 | ระบบแสดง effective hourly rate ของ fixed-price project = มูลค่าโปรเจกต์ / ชั่วโมงที่บันทึก | Should |
-| FR-ANA-07 | ระบบแสดง budget burn และประมาณการว่ามีแนวโน้มเกินงบหรือไม่ | Should |
-| FR-ANA-08 | ผู้ใช้ส่งออกรายงาน time entries และรายได้เป็น CSV ได้ | Should |
+| FR-ANA-06 | ระบบแสดง project progress เทียบกับเป้าหมายชั่วโมงและแจ้งเตือนเมื่อถึง 80%/100% | Should |
+| FR-ANA-07 | ระบบแสดง productivity trend เทียบระหว่างช่วงวันที่เลือกกับช่วงก่อนหน้า | Should |
+| FR-ANA-08 | ผู้ใช้ส่งออกรายงาน time entries เป็น CSV ได้ | Should |
 
 ---
 
 ## 5. กฎธุรกิจ (Business Rules)
+
+กฎใน MVP เน้นข้อมูลเวลา สถานะงาน และการวิเคราะห์ productivity
 
 | ID | กฎ |
 |---|---|
 | BR-01 | เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด และ duration ต้องมากกว่า 0 |
 | BR-02 | timer ที่ยังทำงานจะมี `started_at` แต่ไม่มี `ended_at`; ระบบคำนวณ duration เมื่อหยุด |
 | BR-03 | time entry ต้องอยู่ภายใต้โปรเจกต์ ส่วน task เป็นข้อมูลที่ไม่บังคับ |
-| BR-04 | rate ของ time entry ใช้ลำดับ: rate ที่ระบุใน entry > project rate > default rate ของผู้ใช้ |
-| BR-05 | เมื่อสร้าง time entry ต้องเก็บ rate เป็น snapshot เพื่อไม่ให้การแก้ rate ในอนาคตเปลี่ยนรายได้ย้อนหลัง |
-| BR-06 | รายได้ hourly = `duration_minutes / 60 × rate_snapshot` โดยปัดเศษจำนวนเงินตามสกุลเงินตอนแสดงผล |
-| BR-07 | เวลาของ fixed-price project ไม่เพิ่มมูลค่าโปรเจกต์ แต่ใช้คำนวณ effective hourly rate |
-| BR-08 | invoice subtotal = ผลรวม `quantity × unit_price` ของ line items |
-| BR-09 | invoice total = subtotal − discount + tax และต้องไม่ติดลบ |
-| BR-10 | invoice ที่ issued แล้วแก้ไขยอดไม่ได้ หากต้องแก้ให้ void และสร้างฉบับใหม่ |
-| BR-11 | การ void invoice ต้องคืน time entries ให้เป็น unbilled |
-| BR-12 | การ archive ลูกค้าหรือโปรเจกต์ไม่ลบประวัติ และไม่อนุญาตให้เริ่ม timer ใหม่ในรายการนั้น |
-| BR-13 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC และแสดงผลตาม timezone ของผู้ใช้ |
-| BR-14 | analytics ต้องไม่นับ timer ที่ยังไม่หยุดจนกว่าจะระบุเป็นข้อมูลประมาณการอย่างชัดเจน |
+| BR-04 | time entry ใน MVP ไม่คำนวณรายได้และไม่ต้องมี rate |
+| BR-05 | time entry ใน MVP เก็บ duration และข้อมูลบริบทของงาน โดยไม่คำนวณรายได้ |
+| BR-06 | การ archive ลูกค้าหรือโปรเจกต์ไม่ลบประวัติ และไม่อนุญาตให้เริ่ม timer ใหม่ในรายการนั้น |
+| BR-07 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC และแสดงผลตาม timezone ของผู้ใช้ |
+| BR-08 | analytics ต้องไม่นับ timer ที่ยังไม่หยุดจนกว่าจะระบุเป็นข้อมูลประมาณการอย่างชัดเจน |
 
 ---
 
@@ -215,41 +170,19 @@ Acceptance criteria:
 
 - Given ผู้ใช้มีโปรเจกต์ ACTIVE, when กดเริ่ม timer, then ระบบสร้าง running entry และแสดงเวลาที่ผ่านไป
 - Given มี timer ทำงานอยู่, when เริ่ม timer ใหม่, then ระบบต้องปฏิเสธหรือให้หยุด timer เดิมก่อน
-- When กดหยุด, then ระบบบันทึก end time, duration และมูลค่าตาม rate snapshot
+- When กดหยุด, then ระบบบันทึก end time และ duration
 - When refresh หรือเข้าสู่ระบบอีกครั้ง, then timer ที่กำลังทำงานยังแสดงสถานะและเวลาถูกต้อง
-
-### US-02: สร้าง invoice จากเวลา
-
-**ในฐานะ** Freelancer **ฉันต้องการ** เลือกเวลาที่ยังไม่เรียกเก็บเพื่อสร้าง invoice **เพื่อให้** เรียกเก็บเงินได้รวดเร็วและไม่ซ้ำ
-
-Acceptance criteria:
-
-- ระบบแสดงเฉพาะ time entries แบบ billable ของลูกค้านั้นที่ยังไม่อยู่ใน invoice
-- ระบบรวมรายการและคำนวณ subtotal, discount, tax และ total อัตโนมัติ
-- เมื่อออก invoice แล้ว time entries เหล่านั้นต้องมีสถานะ invoiced และเลือกซ้ำไม่ได้
-- PDF ต้องแสดงเลข invoice ผู้ขาย ลูกค้า รายการ ยอดรวม วันออก และวันครบกำหนดตรงกับข้อมูลในระบบ
 
 ### US-03: ดู productivity
 
-**ในฐานะ** Freelancer **ฉันต้องการ** ดูเวลาทำงานและสัดส่วน billable **เพื่อให้** ปรับรูปแบบการทำงานและเลือกงานได้ดีขึ้น
+**ในฐานะ** Freelancer **ฉันต้องการ** ดูเวลาทำงานและ productivity **เพื่อให้** ปรับรูปแบบการทำงานและเลือกงานได้ดีขึ้น
 
 Acceptance criteria:
 
 - ผู้ใช้เลือกช่วงวันที่และ timezone ได้
-- ระบบแสดง tracked hours, billable hours และ utilization ของช่วงที่เลือก
+- ระบบแสดง tracked hours, utilization และ project progress ของช่วงที่เลือก
 - ผลรวมใน dashboard ต้องตรงกับ time entries ภายใต้ตัวกรองเดียวกัน
 - กรณีไม่มีข้อมูลต้องแสดงค่า 0 และ empty state โดยไม่เกิดข้อผิดพลาด
-
-### US-04: ติดตามรายได้และ invoice ค้างชำระ
-
-**ในฐานะ** Freelancer **ฉันต้องการ** เห็นยอดที่ยังไม่ออก invoice และยอดค้างชำระ **เพื่อให้** ติดตามกระแสเงินสดได้
-
-Acceptance criteria:
-
-- dashboard แยก unbilled, invoiced, paid และ overdue อย่างชัดเจน
-- ยอดแต่ละสถานะต้องแยกตามสกุลเงิน
-- invoice ที่พ้นกำหนดและยังไม่ชำระต้องปรากฏใน overdue
-- เมื่อบันทึกชำระครบ ยอดต้องย้ายไป paid และไม่อยู่ใน overdue
 
 ---
 
@@ -264,12 +197,6 @@ erDiagram
     PROJECT ||--o{ TASK : contains
     PROJECT ||--o{ TIME_ENTRY : records
     TASK ||--o{ TIME_ENTRY : categorizes
-    CLIENT ||--o{ INVOICE : receives
-    PROJECT ||--o{ INVOICE : billed_for
-    INVOICE ||--|{ INVOICE_ITEM : contains
-    TIME_ENTRY o|--o| INVOICE_ITEM : billed_as
-    PROJECT ||--o{ TRANSACTION : has
-    INVOICE ||--o{ PAYMENT : receives
 ```
 
 ### 7.1 Entity ที่แนะนำ
@@ -277,19 +204,15 @@ erDiagram
 | Entity | Field สำคัญ |
 |---|---|
 | `User` | id, email, passwordHash, role, enabled |
-| `UserProfile` | id, userId, displayName, phone, address, taxId, timezone, defaultCurrency, defaultTaxRate, invoiceProfile |
+| `UserProfile` | id, userId, displayName, phone, address, timezone |
 | `Client` | id, ownerId, name, companyName, email, phone, address, taxId, status |
-| `Project` | id, ownerId, clientId, name, billingType, hourlyRate, fixedPrice, currency, budget, status, startDate, endDate |
+| `Project` | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate |
 | `Task` | id, projectId, name, description, status, sortOrder |
-| `TimeEntry` | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes, billable, rateSnapshot, invoiceItemId |
-| `Invoice` | id, ownerId, clientId, projectId, invoiceNumber, issueDate, dueDate, status, currency, subtotal, discount, tax, total, snapshots |
-| `InvoiceItem` | id, invoiceId, timeEntryId, description, quantity, unit, unitPrice, amount, sortOrder |
-| `Payment` | id, invoiceId, paidAt, amount, method, reference, note |
-| `Transaction` | id, ownerId, projectId, type, category, occurredOn, amount, currency, note |
+| `TimeEntry` | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes |
 
-ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ invoice
+ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ project
 
-ระบบมีมากกว่า 6 ตาราง และแสดงความสัมพันธ์ที่ใบงานกำหนดครบ ได้แก่ `User`–`UserProfile` แบบ One-to-One และ `Client`–`Project`, `Project`–`Task`, `Invoice`–`InvoiceItem` แบบ One-to-Many ต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
+ระบบมี 6 ตาราง และแสดงความสัมพันธ์ที่ใบงานกำหนดครบ ได้แก่ `User`–`UserProfile` แบบ One-to-One และ `Client`–`Project`, `Project`–`Task`, `Project`–`TimeEntry` แบบ One-to-Many ต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
 
 ---
 
@@ -312,15 +235,8 @@ REST API ใช้ prefix `/api/v1` และตอบกลับเป็น J
 | POST | `/timer/start` | เริ่ม timer |
 | POST | `/timer/stop` | หยุด timer ปัจจุบัน |
 | GET | `/timer/current` | ดู timer ปัจจุบัน |
-| GET/POST | `/invoices` | รายการ/สร้าง invoice |
-| GET/PATCH | `/invoices/{id}` | ดู/แก้ draft invoice |
-| POST | `/invoices/{id}/issue` | ออก invoice |
-| POST | `/invoices/{id}/void` | ยกเลิก invoice |
-| POST | `/invoices/{id}/payments` | บันทึกการชำระเงิน |
-| GET | `/invoices/{id}/pdf` | ดาวน์โหลด PDF |
 | GET | `/analytics/summary` | KPI ตามช่วงวันที่ |
 | GET | `/analytics/time-breakdown` | วิเคราะห์เวลา |
-| GET | `/analytics/income-breakdown` | วิเคราะห์รายได้ |
 | GET | `/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV |
 
 ข้อกำหนดร่วมของ API:
@@ -328,7 +244,7 @@ REST API ใช้ prefix `/api/v1` และตอบกลับเป็น J
 - list endpoint รองรับ `page`, `size`, `sort` และตัวกรองที่เกี่ยวข้อง
 - validation error ใช้ HTTP 400, ไม่ผ่านการยืนยันตัวตนใช้ 401, ไม่มีสิทธิ์ใช้ 403, ไม่พบข้อมูลใช้ 404 และข้อมูลขัดแย้งใช้ 409
 - error response มี `timestamp`, `status`, `code`, `message`, `fieldErrors` และ `traceId`
-- จำนวนเงินส่งเป็น decimal และ currency ใช้ ISO 4217; วันใช้ ISO 8601
+- วันและเวลาใช้ ISO 8601 และบันทึก timestamp เป็น UTC
 - ต้องมี CRUD ครบอย่างน้อย 2 resource หลัก โดยกำหนดให้ `Client` และ `Project` เป็น resource ขั้นต่ำ
 - endpoint ที่สร้างข้อมูลสำเร็จใช้ 201, อ่าน/แก้ไขสำเร็จใช้ 200, ลบหรือ archive ที่ไม่ส่ง body ใช้ 204 และข้อผิดพลาดใช้ 400/404/409/500 ตามกรณี
 - ใช้ `@Valid` และ Bean Validation กับ request DTO ทุก endpoint ที่รับข้อมูล
@@ -351,8 +267,8 @@ REST API ใช้ prefix `/api/v1` และตอบกลับเป็น J
 
 - API ทั่วไปควรตอบกลับภายใน 500 ms ที่ percentile 95 ภายใต้ข้อมูลผู้ใช้ไม่เกิน 100,000 time entries (ไม่รวม PDF/export)
 - dashboard ช่วงไม่เกิน 1 ปีควรตอบกลับภายใน 2 วินาที
-- transaction สำคัญ เช่น หยุด timer, issue invoice และบันทึก payment ต้องเป็น atomic
-- ป้องกันการสร้าง invoice หรือหยุด timer ซ้ำจาก request ซ้ำด้วย transaction/locking หรือ idempotency
+- transaction สำคัญ เช่น หยุด timer และเปลี่ยนสถานะ project ต้องเป็น atomic
+- ป้องกันการหยุด timer ซ้ำหรือสร้างรายการซ้ำจาก request ซ้ำด้วย transaction/locking หรือ idempotency
 - ฐานข้อมูล production ต้องสำรองทุกวันและมีขั้นตอนทดสอบ restore
 
 ### 9.3 Usability และ Accessibility
@@ -369,7 +285,7 @@ REST API ใช้ prefix `/api/v1` และตอบกลับเป็น J
 - มี unit test สำหรับ business calculation และ integration test สำหรับ flow สำคัญ
 - ใช้ database migration เช่น Flyway; ห้ามแก้ schema production ด้วย `ddl-auto=update`
 - log แบบ structured พร้อม request/trace ID และมี health check
-- เก็บ audit event สำหรับ issue/void invoice และการบันทึก/แก้ payment
+- เก็บ audit event สำหรับ authentication, การเปลี่ยนสถานะ project และการแก้ time entry
 - ใช้ JUnit 5, Mockito และ Spring Boot Test ตามชนิดของการทดสอบ
 - Service ต้องรับ dependency ด้วย constructor injection เท่านั้น
 - Controller ห้ามเรียก Repository โดยตรง และทุกชั้นต้องไม่ข้ามลำดับ Layered Architecture
@@ -452,16 +368,10 @@ flowchart LR
 
 - Task และ time entry CRUD
 - Start/stop timer พร้อม concurrency protection
-- การคำนวณ duration, rate snapshot และ billable amount
+- การคำนวณ duration และชั่วโมงรวม โดยยังไม่คำนวณมูลค่าเงิน
 - หน้ารายวัน/สัปดาห์และตัวกรอง
 
-### Phase 3 — Invoice และ Finance
-
-- Invoice draft, line items และเลขเอกสาร
-- Issue, void, overdue และ payment tracking
-- สร้าง PDF และ income status summary
-
-### Phase 4 — Analytics และ Hardening
+### Phase 3 — Analytics และ Hardening (MVP)
 
 - Dashboard และ breakdown reports
 - CSV export และ productivity insights
@@ -471,13 +381,12 @@ flowchart LR
 
 ## 12. Testing Requirements
 
-- **Unit tests:** duration, hourly income, invoice totals, tax/discount, status transition, utilization และ effective hourly rate
-- **Repository tests:** ownership filtering, date range, unbilled entries และ overdue invoice query
-- **Integration tests:** register/login, start-stop timer, create-issue-void invoice และ record payment
+- **Unit tests:** duration, status transition, target-hours progress และ utilization
+- **Repository tests:** ownership filtering, date range, project/task และ time-entry queries
+- **Integration tests:** register/login, client/project CRUD, start-stop timer และ analytics summary
 - **Security tests:** ผู้ใช้ A ต้องไม่อ่านหรือแก้ข้อมูลของผู้ใช้ B แม้ทราบ resource ID
-- **PDF verification:** ข้อมูลและยอดใน PDF ต้องตรงกับ invoice snapshot
 - **Timezone tests:** time entry ที่ข้ามวัน UTC ต้องอยู่ในวันที่ถูกต้องตาม timezone ผู้ใช้
-- **Concurrency tests:** การ start timer พร้อมกันและ issue invoice ซ้ำต้องไม่สร้างข้อมูลซ้ำ
+- **Concurrency tests:** การ start timer พร้อมกันต้องไม่สร้างรายการซ้ำ
 
 Definition of Done ของแต่ละ feature:
 
@@ -494,19 +403,14 @@ Definition of Done ของแต่ละ feature:
 ### Assumptions สำหรับ MVP
 
 - ระบบเป็น single-user workspace: หนึ่งบัญชีมีเจ้าของคนเดียว
-- ผู้ใช้กำหนดสกุลเงินต่อโปรเจกต์และ invoice แต่ dashboard ไม่แปลงอัตราแลกเปลี่ยน
-- การชำระเงินถูกบันทึกด้วยตนเอง ไม่มี payment gateway
-- PDF invoice ใช้เอกสารภาษาไทยและข้อมูลภาษีที่ผู้ใช้กรอกเอง ระบบไม่รับรองการยื่นภาษี
-- MVP รองรับ partial payment ใน data model แม้ UI รุ่นแรกอาจเริ่มจาก paid เต็มจำนวน
+- MVP ใช้ time tracking เพื่อวิเคราะห์ชั่วโมงและ productivity เท่านั้น ไม่คำนวณรายได้และไม่ออก Invoice
 
 ### คำถามที่ควรยืนยัน
 
 1. ต้องรองรับทีม/พนักงานหลายคนใน workspace ตั้งแต่รุ่นแรกหรือไม่
-2. invoice ต้องเป็นไปตามข้อกำหนดใบกำกับภาษีไทยเต็มรูปแบบหรือเป็นเพียงใบแจ้งหนี้ทั่วไป
-3. ต้องรองรับ VAT 7%, withholding tax และเอกสารหัก ณ ที่จ่ายใน MVP หรือไม่
-4. ต้องการ frontend framework ใด และจะอยู่ repository เดียวกับ backend หรือแยก repository
-5. ต้องส่ง invoice ทางอีเมลและแจ้งเตือนก่อน/หลังวันครบกำหนดในรุ่นแรกหรือไม่
-6. การปัดเวลาเพื่อคิดเงินต้องใช้เวลาจริง หรือปัดเป็นช่วง เช่น ทุก 6/15/30 นาที
+2. ต้องการ timezone และรูปแบบวันเวลาใดเป็นค่าเริ่มต้น
+3. ต้องการ deploy provider ใดสำหรับ public URL
+4. ต้องการ retention period ของ time entries และ audit logs เท่าใด
 
 ---
 
@@ -514,13 +418,15 @@ Definition of Done ของแต่ละ feature:
 
 MVP ถือว่าพร้อมส่งมอบเมื่อผู้ใช้สามารถทำ flow ต่อไปนี้ได้ครบโดยไม่มีการคำนวณภายนอก:
 
-1. สมัครและตั้งค่าโปรไฟล์สำหรับออก invoice
-2. สร้างลูกค้า โปรเจกต์ และ task
-3. จับเวลาหรือเพิ่มเวลาย้อนหลัง และเห็นยอด billable
-4. เลือกรายการเวลาสร้าง invoice พร้อมภาษี/ส่วนลด
-5. ออกและดาวน์โหลด invoice PDF แล้วบันทึกการชำระเงิน
-6. ดู dashboard ที่ยอดเวลา รายได้ และสถานะ invoice ตรงกับข้อมูลต้นทาง
+1. สมัคร เข้าสู่ระบบ และจัดการโปรไฟล์
+2. สร้างและจัดการลูกค้า โปรเจกต์ และ task
+3. จับเวลาหรือเพิ่มเวลาย้อนหลัง พร้อมแก้ไขและลบรายการที่ยังไม่ถูกล็อก
+4. ดูชั่วโมงทำงานตามวัน สัปดาห์ ช่วงวันที่ ลูกค้า และโปรเจกต์
+5. ดู dashboard ที่มี tracked hours, utilization และสถานะโปรเจกต์
+6. ดู productivity insights เช่น ค่าเฉลี่ยชั่วโมงต่อวันและการใช้เป้าหมายชั่วโมง
 7. ข้อมูลของบัญชีหนึ่งไม่สามารถเข้าถึงได้จากบัญชีอื่น
+
+ขอบเขตการเงินและ Invoice ไม่ถูกใช้เป็นเกณฑ์ acceptance ของ MVP
 
 ---
 
@@ -555,7 +461,7 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ต้องจัดทำ `doc/solid-analysis.md` ระบุ Principle, ไฟล์/คลาส, เลขบรรทัด และเหตุผลสั้น ๆ โดยเลขบรรทัดต้องตรวจและอัปเดตก่อนส่งงาน
 
-## 17. Design Patterns ที่กำหนดใช้
+## 17. Design Patterns ที่กำหนดใช้ใน MVP
 
 ### 17.1 Enterprise / Architectural Patterns
 
@@ -567,16 +473,16 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 | Pattern | การใช้งานที่วางแผนไว้ | ปัญหาที่แก้ |
 |---|---|---|
-| Strategy | `BillingCalculationStrategy` แยก hourly และ fixed-price calculation | เพิ่มวิธีคิดค่าจ้างได้โดยไม่แก้เงื่อนไขขนาดใหญ่ |
-| State | `InvoiceState` ควบคุม transition ของ DRAFT, ISSUED, PAID, OVERDUE และ VOID | ป้องกัน transition หรือ operation ที่ผิดสถานะ |
-| Observer | Spring Application Event สำหรับ invoice issued/paid/overdue | แยก notification และ audit ออกจาก transaction หลัก |
+| Strategy | `ProductivityMetricStrategy` แยกวิธีคำนวณ utilization, average hours และ project progress | เพิ่ม metric ใหม่ได้โดยไม่แก้ analytics service เดิม |
+| State | `ProjectState` ควบคุม transition ของ PLANNED, ACTIVE, ON_HOLD, COMPLETED และ ARCHIVED | ป้องกันการเริ่มจับเวลาหรือแก้ task ในสถานะที่ไม่อนุญาต |
+| Observer | Spring Application Event เมื่อ timer หยุดหรือโปรเจกต์ถึง 80%/100% ของเป้าหมาย | แยก analytics update และ notification ออกจาก time tracking service |
 
 ห้ามเพิ่ม pattern เพียงเพื่อให้ครบจำนวน ทุก pattern ต้องมี use case, test และอธิบายเหตุผลได้ ต้องจัดทำ `doc/design-patterns.md` เป็นตาราง Pattern, ปัญหาที่แก้, ไฟล์/คลาสที่ใช้ พร้อม Class Diagram
 
 ## 18. Database และ Migration Deliverables
 
-- มีอย่างน้อย 6 ตาราง โดยแบบจำลองปัจจุบันกำหนด 10 ตาราง: users, user_profiles, clients, projects, tasks, time_entries, invoices, invoice_items, payments และ transactions
-- มี One-to-One ระหว่าง users กับ user_profiles และ One-to-Many อย่างน้อยระหว่าง clients กับ projects และ invoices กับ invoice_items
+- มีอย่างน้อย 6 ตาราง: users, user_profiles, clients, projects, tasks และ time_entries
+- มี One-to-One ระหว่าง users กับ user_profiles และ One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
 - กำหนด Foreign Key Constraint และ index สำหรับ owner, relation, status และ date fields ที่ใช้ค้นหาบ่อย
 - กำหนด Cascade และ Fetch Type อย่างมีเหตุผล หลีกเลี่ยง `CascadeType.ALL` และ `EAGER` โดยไม่มีความจำเป็น
 - ใช้ Flyway migration ใน `code/src/main/resources/db/migration/`
@@ -607,7 +513,7 @@ freelance-hub/
 │  │  ├─ er-diagram.*
 │  │  ├─ component.*
 │  │  ├─ deployment.*
-│  │  └─ invoice-state.*
+│  │  └─ project-state.*
 │  ├─ slide/
 │  ├─ solid-analysis.md
 │  ├─ design-patterns.md
@@ -618,7 +524,7 @@ freelance-hub/
 └─ REQUIREMENTS.md
 ```
 
-Diagram บังคับ ได้แก่ Use Case พร้อมคำอธิบาย, Domain Model, Class Diagram ที่ระบุ Design Pattern, Sequence อย่างน้อย 3 scenario, Activity, ER/Database Schema, Component, Deployment และ State Diagram ของ Invoice
+Diagram บังคับ ได้แก่ Use Case พร้อมคำอธิบาย, Domain Model, Class Diagram ที่ระบุ Design Pattern, Sequence อย่างน้อย 3 scenario, Activity, ER/Database Schema, Component, Deployment และ State Diagram ของ Project
 
 README ขั้นส่งมอบต้องมีชื่อและคำอธิบายระบบ 3–5 บรรทัด, ตารางสมาชิก, Tech Stack, System Architecture, ER Diagram, Installation, How to Run, API Documentation, How to Run Tests, Deployment URL และ Project Structure
 
@@ -630,7 +536,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - สมาชิกต้องตั้ง `git config user.name` และ `user.email` ให้ตรงบัญชี GitHub และ commit/push ด้วยบัญชีตนเอง
 - สมาชิกแต่ละคนต้องมี commit ที่มีความหมายอย่างน้อย 15 commits และกระจายตลอดช่วงพัฒนา
 - ทุกการรวมงานต้องผ่าน Pull Request และมี reviewer อย่างน้อย 1 คน
-- commit message ใช้รูปแบบ `<type>: <สิ่งที่ทำ>` เช่น `feat: add time entry API`, `fix: prevent duplicate timer`, `test: add invoice tests` และ `docs: update ER diagram`
+- commit message ใช้รูปแบบ `<type>: <สิ่งที่ทำ>` เช่น `feat: add time entry API`, `fix: prevent duplicate timer`, `test: add project tests` และ `docs: update ER diagram`
 - repository ต้องเป็น public หรือเชิญอาจารย์เป็น collaborator
 - README ต้องระบุชื่อ รหัส Section branch และหน้าที่ของสมาชิกทุกคน
 - ห้ามให้สมาชิกคนอื่น commit/push แทน ห้าม outsource และห้ามคัดลอกโค้ดจากกลุ่มอื่น สมาชิกทุกคนต้องอธิบายโค้ดที่ตนรับผิดชอบได้
@@ -659,3 +565,9 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - [ ] automated tests ผ่านและมี Test Report
 - [ ] diagrams และเอกสาร SOLID/Design Patterns/Data Dictionary ครบ
 - [ ] slide นำเสนออยู่ใน `doc/slide/`
+
+---
+
+## 22. แผนงานทีม
+
+รายละเอียดการแบ่งงาน 5 คน, Sprint, Scrum ceremony, Progress ทุกวันเสาร์, Definition of Done และ release checklist อยู่ใน [SCHEDULE.md](SCHEDULE.md)

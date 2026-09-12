@@ -1,9 +1,11 @@
 # Freelance Hub
 
 Freelance Hub คือระบบบริหารงานสำหรับ Freelancer ที่รวมการจัดการลูกค้า โปรเจกต์ และงานย่อยไว้ในที่เดียว
-ระบบรองรับการจับเวลาทำงาน คำนวณรายได้ และสร้างใบแจ้งหนี้จากเวลาที่บันทึก
-ผู้ใช้สามารถติดตามสถานะการชำระเงิน วิเคราะห์เวลาทำงาน และดู productivity insights ผ่าน Dashboard
+ระบบรองรับการจับเวลาทำงานแบบ real-time และ manual entry พร้อมสรุปชั่วโมงการทำงาน
+ผู้ใช้สามารถวิเคราะห์เวลาทำงานและดู productivity insights ผ่าน Dashboard
 โปรเจกต์พัฒนาด้วย Spring Boot, Thymeleaf และ PostgreSQL ตาม Layered Architecture
+
+> **MVP Scope:** Authentication, Client Management, Project/Task Management, Time Tracking และ Dashboard/Analytics/Productivity Insights ส่วน Income, Expense และ Invoice เป็น Post-MVP
 
 > **Project Status:** กำลังพัฒนา
 
@@ -56,14 +58,14 @@ Domain Layer (Entity / Value Object / Enum)
 
 ## Database Design (ER Diagram)
 
-ฐานข้อมูลที่วางแผนไว้ประกอบด้วยอย่างน้อย 10 ตาราง ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks`, `time_entries`, `invoices`, `invoice_items`, `payments` และ `transactions`
+ฐานข้อมูล MVP ประกอบด้วย 6 ตารางหลัก ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา
 
 ความสัมพันธ์หลัก:
 
 - One-to-One: `users` → `user_profiles`
 - One-to-Many: `clients` → `projects`
 - One-to-Many: `projects` → `tasks` และ `time_entries`
-- One-to-Many: `invoices` → `invoice_items` และ `payments`
+- ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
 
 > **TODO:** เพิ่ม ER Diagram ที่ `doc/diagrams/er-diagram.png` และแสดงด้วย `![ER Diagram](doc/diagrams/er-diagram.png)`
 
@@ -91,12 +93,14 @@ cd freelance-hub/code
 PowerShell:
 
 ```powershell
+cd code
 Copy-Item .env.example .env
 ```
 
 macOS/Linux:
 
 ```bash
+cd code
 cp .env.example .env
 ```
 
@@ -163,8 +167,9 @@ macOS/Linux:
 | Projects       | `/api/v1/projects`     |
 | Time entries   | `/api/v1/time-entries` |
 | Timer          | `/api/v1/timer`        |
-| Invoices       | `/api/v1/invoices`     |
 | Analytics      | `/api/v1/analytics`    |
+
+Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
 
@@ -250,6 +255,7 @@ freelance-hub/
 ## เอกสารโครงการ
 
 - [Software Requirements Specification](REQUIREMENTS.md)
+- [MVP Team Schedule](SCHEDULE.md)
 - [SOLID Analysis](doc/solid-analysis.md)
 - [Design Patterns](doc/design-patterns.md)
 - [Data Dictionary](doc/data-dictionary.md)
@@ -266,7 +272,7 @@ freelance-hub/
 
 Commit message format: `<type>: <สิ่งที่ทำ>`
 
-ตัวอย่าง `feat: add time tracking API`, `fix: prevent duplicate timer`, `test: add invoice service tests` และ `docs: update ER diagram`
+ตัวอย่าง `feat: add time tracking API`, `fix: prevent duplicate timer`, `test: add project service tests` และ `docs: update ER diagram`
 
 ## License
 
