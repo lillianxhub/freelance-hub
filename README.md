@@ -255,6 +255,7 @@ freelance-hub/
 ## เอกสารโครงการ
 
 - [Software Requirements Specification](REQUIREMENTS.md)
+- [MVP Team Schedule](SCHEDULE.md)
 - [SOLID Analysis](doc/solid-analysis.md)
 - [Design Patterns](doc/design-patterns.md)
 - [Data Dictionary](doc/data-dictionary.md)
