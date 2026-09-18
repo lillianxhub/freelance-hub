@@ -11,13 +11,13 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 
 ## สมาชิกกลุ่ม
 
-| ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section       | Branch                         | หน้าที่รับผิดชอบ |
-| ----: | --------------------- | ------------ | ------------- | ------------------------------ | ---------------- |
-|     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2     | `petpinyo_673380073-7_02`      | PM/DevOps        |
-|     2 | ณัฏฐดนย์ สาริกา      | 673380511-9  | Section2 | `nattadol_673380511-9_02` | TODO: หน้าที่    |
-|     3 | กรมภัฏ พิริยะ      | 673380262-4   | Section2 | `kompat_673380262-4_02` | TODO: หน้าที่    |
-|     4 | ถิรวัฒน์ อุจินา      | 673380039-7   | Section 2 | `thirawat_673380039-7_02` | TODO: หน้าที่    |
-|     5 | กันตวิชญ์ นาคนวล      | 673380027-4   | Section 1 | `kantavit_673380027-4_01` | TODO: หน้าที่    |
+| ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section   | Branch                         | หน้าที่รับผิดชอบ                     |
+| ----: | --------------------- | ------------ | --------- | ------------------------------ | ------------------------------------ |
+|     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2 | `petpinyo_673380073-7_02`      | Authentication, Security, PM/DevOps  |
+|     2 | ถิรวัฒน์ อุจินา       | 673380039-7  | Section 2 | `thirawat_673380039-7_02`      | Client Management                    |
+|     3 | กันตวิชญ์ นาคนวล      | 673380027-4  | Section 1 | `kantavit_673380027-4_01`      | Project และ Task Management          |
+|     4 | กรมภัฏ พิริยะ         | 673380262-4  | Section 2 | `kompat_673380262-4_02`        | Time Tracking                        |
+|     5 | ณัฏฐดนย์ สาริกา       | 673380511-9  | Section 2 | `nattadol_673380511-9_02`      | Dashboard, Analytics และ Frontend    |
 
 ## Tech Stack
 
@@ -28,7 +28,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | Database          | PostgreSQL 16                                                   |
 | ORM               | Spring Data JPA / Hibernate                                     |
 | Web / API         | Spring MVC, RESTful API                                         |
-| Frontend          | Thymeleaf, HTML, CSS, JavaScript                                |
+| Frontend          | React                                                           |
 | API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
 | Version Control   | Git + Github                                                    |
