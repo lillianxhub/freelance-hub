@@ -1,35 +1,46 @@
-name: freelance-hub
-
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: freelance_hub_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-freelance_hub}
-      POSTGRES_USER: ${POSTGRES_USER:-freelance_hub}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-freelance_hub_dev}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+    networks:
+      - freelance-hub-network
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-freelance_hub}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-freelance_hub}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-freelance_hub_dev}
-    ports:
-      - "${APP_PORT:-8080}:8080"
+    container_name: freelance_hub_app
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: true
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    networks:
+      - freelance-hub-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+
+networks:
+  freelance-hub-network:
+    driver: bridge

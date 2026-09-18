@@ -1,6 +1,12 @@
 .git
-.github
-.vscode
+.gitignore
 .env
-target
-**/.DS_Store
+*.md
+README.md
+target/
+!target/*.jar
+test/
+doc/
+img/
+.Demo/
+.Demo.zip
