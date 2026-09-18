@@ -67,7 +67,8 @@ Domain Layer (Entity / Value Object / Enum)
 - One-to-Many: `projects` → `tasks` และ `time_entries`
 - ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
 
-> **TODO:** เพิ่ม ER Diagram ที่ `doc/diagrams/er-diagram.png` และแสดงด้วย `![ER Diagram](doc/diagrams/er-diagram.png)`
+ดู schema และความสัมพันธ์ฉบับออกแบบได้ที่ [ER Diagram](doc/diagrams/er-diagram.md)
+และโครงสร้าง JPA Entity ที่ [Domain Class Diagram](doc/diagrams/class-diagram.md)
 
 ดูรายละเอียด field และ constraint ที่ [Data Dictionary](doc/data-dictionary.md)
 

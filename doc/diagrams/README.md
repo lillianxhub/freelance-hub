@@ -14,3 +14,8 @@
 
 เก็บ source ของ diagram (เช่น PlantUML หรือ Mermaid) ควบคู่กับไฟล์ภาพที่ export แล้ว
 
+## Diagram ที่ออกแบบแล้ว
+
+- [ER Diagram](er-diagram.md)
+- [Domain Class Diagram](class-diagram.md)
+
