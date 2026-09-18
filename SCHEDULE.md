@@ -18,13 +18,13 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 
 ชื่อด้านล่างอ้างอิงจาก Git history ให้ตรวจสอบชื่อ-นามสกุล รหัสนักศึกษา Section และ branch ก่อนส่งงาน
 
-| สมาชิก | งานหลักที่ต้อง implement | งานย่อยและ Definition of Done | เอกสาร/หลักฐาน |
+| Branch | งานหลักที่ต้อง implement | งานย่อยและ Definition of Done | เอกสาร/หลักฐาน |
 |---|---|---|---|
-| เพชรภิญโญ ธนศิรินรากร | Authentication และ Security | User/UserProfile One-to-One, register/login/logout, password hash, session/token, authorization ตาม owner, `@RestControllerAdvice` ส่วน auth, unit/integration/security tests | Use Case auth, security flow, SOLID Dependency Inversion, auth sequence diagram |
-| F-Thirawat-M | Client Management | Client entity/repository/service/DTO/mapper/controller, CRUD ครบ, validation email/contact, archive, pagination/sorting, ownership test, API test | Client use case/sequence, Client data dictionary, CRUD API examples |
-| kantavit447 | Project และ Task Management | Project/Task relation, target hours, status `PLANNED/ACTIVE/ON_HOLD/COMPLETED/ARCHIVED`, state transition, CRUD, validation, not-found/conflict tests | Domain model, class diagram, Project state diagram, State pattern analysis |
-| kompeez | Time Tracking | timer start/stop/current, manual time entry, duration calculation, one-running-timer constraint, UTC/timezone, duplicate request protection, tests | Time Tracking sequence/activity, SRP/OCP/LSP analysis, API test evidence |
-| Nattadol | Dashboard/Analytics และ Frontend | summary queries, tracked hours, utilization, project progress, productivity metrics, empty/loading/error state, Thymeleaf screens, integration tests | Component/deployment diagram, ISP analysis, dashboard screenshots, demo script |
+| `petpinyo_673380073-7_02` | Authentication และ Security | User/UserProfile One-to-One, register/login/logout, password hash, session/token, authorization ตาม owner, `@RestControllerAdvice` ส่วน auth, unit/integration/security tests | Use Case auth, security flow, SOLID Dependency Inversion, auth sequence diagram |
+| `thirawat_673380039-7_02` | Client Management | Client entity/repository/service/DTO/mapper/controller, CRUD ครบ, validation email/contact, archive, pagination/sorting, ownership test, API test | Client use case/sequence, Client data dictionary, CRUD API examples |
+| `kantavit_673380027-4_01` | Project และ Task Management | Project/Task relation, target hours, status `PLANNED/ACTIVE/ON_HOLD/COMPLETED/ARCHIVED`, state transition, CRUD, validation, not-found/conflict tests | Domain model, class diagram, Project state diagram, State pattern analysis |
+| `kompat_673380262-4_02` | Time Tracking | timer start/stop/current, manual time entry, duration calculation, one-running-timer constraint, UTC/timezone, duplicate request protection, tests | Time Tracking sequence/activity, SRP/OCP/LSP analysis, API test evidence |
+| `nattadol_673380511-9_02` | Dashboard/Analytics และ Frontend | summary queries, tracked hours, utilization, project progress, productivity metrics, empty/loading/error state, Thymeleaf screens, integration tests | Component/deployment diagram, ISP analysis, dashboard screenshots, demo script |
 
 ### งานที่ทุกคนต้องทำร่วมกัน
 
