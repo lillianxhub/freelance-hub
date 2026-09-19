@@ -19,8 +19,13 @@ classDiagram
     class UserProfile {
         +UUID userId
         +String displayName
+        +String firstName
+        +String lastName
         +String phone
         +String address
+        +String city
+        +String country
+        +String postalCode
         +String avatarUrl
         +ZoneId timezone
         +String dateFormat
@@ -88,7 +93,7 @@ classDiagram
     }
     class UserRole {
         <<enumeration>>
-        FREELANCER
+        USER
         ADMIN
     }
     class ClientStatus {
