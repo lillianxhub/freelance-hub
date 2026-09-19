@@ -3,9 +3,9 @@
 -- Description: Tasks contained within projects
 
 CREATE TABLE tasks (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
 
-    project_id UUID NOT NULL,
+    project_id BIGINT NOT NULL,
 
     name VARCHAR(180) NOT NULL,
     description TEXT,
