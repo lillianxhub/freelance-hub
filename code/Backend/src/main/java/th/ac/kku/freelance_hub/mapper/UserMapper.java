@@ -35,7 +35,7 @@ public class UserMapper {
                     .city(profile.getCity())
                     .country(profile.getCountry())
                     .postalCode(profile.getPostalCode())
-                    .avatarUrl(profile.getAvatarUrl())
+                    .avatarUrl(profile.getProfileImageUrl())
                     .timezone(profile.getTimezone())
                     .dateFormat(profile.getDateFormat());
         }
