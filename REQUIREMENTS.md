@@ -10,7 +10,7 @@
 | กลุ่มผู้ใช้หลัก | Freelancer / ผู้ประกอบอาชีพอิสระ                        |
 | Backend         | Java 17+, Spring Boot 3.x+, Spring MVC, Spring Data JPA |
 | ฐานข้อมูล       | PostgreSQL                                              |
-| Frontend        | Thymeleaf                                               |
+| Frontend        | React                                                   |
 | เอกสาร API      | Swagger UI / OpenAPI                                    |
 
 ---
