@@ -51,7 +51,6 @@ erDiagram
         date start_date
         date end_date
         varchar color
-        char currency
         integer target_minutes
         varchar status
         timestamptz created_at
@@ -111,11 +110,10 @@ erDiagram
 
 ## Enum/check values
 
-| Column | Allowed values |
-|---|---|
-| `users.role` | `FREELANCER` (เตรียม `ADMIN` ไว้สำหรับระยะถัดไป) |
-| `clients.status` | `ACTIVE`, `ARCHIVED` |
-| `projects.status` | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
-| `tasks.status` | `OPEN`, `IN_PROGRESS`, `COMPLETED` |
-| `time_entries.entry_type` | `TIMER`, `MANUAL` |
-
+| Column                    | Allowed values                                          |
+| ------------------------- | ------------------------------------------------------- |
+| `users.role`              | `FREELANCER` (เตรียม `ADMIN` ไว้สำหรับระยะถัดไป)        |
+| `clients.status`          | `ACTIVE`, `ARCHIVED`                                    |
+| `projects.status`         | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
+| `tasks.status`            | `OPEN`, `IN_PROGRESS`, `COMPLETED`                      |
+| `time_entries.entry_type` | `TIMER`, `MANUAL`                                       |
