@@ -3,7 +3,8 @@ spring:
     name: freelance-hub
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:freelance_hub}
+    # Supabase: Use SUPABASE_DB_URL for full connection string, or individual vars for local dev
+    url: ${SUPABASE_DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:freelance_hub}}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -23,6 +24,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         use_sql_comments: true
+        # Use custom schema for Supabase (avoid 'public' schema exposed as Data API)
+        default_schema: ${DB_SCHEMA:public}
         jdbc:
           time_zone: UTC
     open-in-view: false
