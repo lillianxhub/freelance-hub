@@ -7,7 +7,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import th.ac.kku.freelance_hub.domain.enums.UserRole;
 import th.ac.kku.freelance_hub.domain.enums.UserStatus;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * User entity for authentication and authorization.
@@ -25,8 +26,8 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
@@ -55,12 +56,12 @@ public class User {
     private Long version;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(nullable = false, updatable = false, columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    @Column(nullable = false, columnDefinition = "TIMESTAMPTZ")
+    private OffsetDateTime updatedAt;
 
     /**
      * Helper method to link UserProfile bidirectionally

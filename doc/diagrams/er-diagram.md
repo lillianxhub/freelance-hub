@@ -18,8 +18,13 @@ erDiagram
     USER_PROFILES {
         uuid user_id PK,FK
         varchar display_name
+        varchar first_name
+        varchar last_name
         varchar phone
         text address
+        varchar city
+        varchar country
+        varchar postal_code
         varchar avatar_url
         varchar timezone
         varchar date_format
