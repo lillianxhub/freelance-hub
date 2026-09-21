@@ -3,7 +3,7 @@
 -- Description: User profiles table with one-to-one relationship to users
 
 CREATE TABLE user_profiles (
-    user_id UUID PRIMARY KEY,
+    user_id BIGINT PRIMARY KEY,
     display_name VARCHAR(255),
     first_name VARCHAR(100),
     last_name VARCHAR(100),
