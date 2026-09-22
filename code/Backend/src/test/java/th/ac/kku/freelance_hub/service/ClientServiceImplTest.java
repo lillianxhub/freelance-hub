@@ -29,21 +29,22 @@ import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
+import th.ac.kku.freelance_hub.service.impl.ClientServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
-class ClientServiceTest {
+class ClientServiceImplTest {
 
     @Mock ClientRepository clientRepository;
     @Mock UserRepository userRepository;
 
-    private ClientService service;
+    private ClientServiceImpl service;
     private User owner;
     private Client client;
     private UUID clientId;
 
     @BeforeEach
     void setUp() {
-        service = new ClientService(clientRepository, userRepository, new ClientMapper());
+        service = new ClientServiceImpl(clientRepository, userRepository, new ClientMapper());
         owner = User.builder().id(7L).build();
         client = new Client(owner, "Existing Client");
         clientId = UUID.randomUUID();
