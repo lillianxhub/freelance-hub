@@ -3,7 +3,7 @@
 -- Description: Clients owned by freelancers with archive status and optimistic locking
 
 CREATE TABLE clients (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     owner_id BIGINT NOT NULL,
     name VARCHAR(150) NOT NULL,
     company_name VARCHAR(200),
