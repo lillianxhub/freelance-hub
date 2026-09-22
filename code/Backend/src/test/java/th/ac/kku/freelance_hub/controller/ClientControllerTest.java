@@ -3,10 +3,12 @@ package th.ac.kku.freelance_hub.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -196,5 +198,26 @@ class ClientControllerTest {
             .andExpect(status().isNotFound());
 
         verify(clientService).update(eq(7L), eq(clientId), any(UpdateClientRequest.class));
+    }
+
+    @Test
+    void archiveUsesCurrentUserAndReturnsNoContent() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+
+        mockMvc.perform(delete("/api/clients/{id}", clientId))
+            .andExpect(status().isNoContent());
+
+        verify(clientService).archive(7L, clientId);
+    }
+
+    @Test
+    void archiveReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        doThrow(new ClientNotFoundException(clientId)).when(clientService).archive(7L, clientId);
+
+        mockMvc.perform(delete("/api/clients/{id}", clientId))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).archive(7L, clientId);
     }
 }
