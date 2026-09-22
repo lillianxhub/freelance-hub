@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,9 +31,11 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
+import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
 
@@ -127,5 +130,71 @@ class ClientControllerTest {
             .andExpect(status().isBadRequest());
 
         verify(clientService, never()).list(any(), any());
+    }
+
+    @Test
+    void getByIdUsesCurrentUserAndReturnsClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(clientService.getById(7L, clientId))
+            .thenReturn(ClientResponse.builder().id(clientId).name("Acme").build());
+
+        mockMvc.perform(get("/api/clients/{id}", clientId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.name").value("Acme"));
+
+        verify(clientService).getById(7L, clientId);
+    }
+
+    @Test
+    void getByIdReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(clientService.getById(7L, clientId)).thenThrow(new ClientNotFoundException(clientId));
+
+        mockMvc.perform(get("/api/clients/{id}", clientId))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).getById(7L, clientId);
+    }
+
+    @Test
+    void updateUsesCurrentUserAndReturnsUpdatedClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(clientService.update(eq(7L), eq(clientId), any(UpdateClientRequest.class)))
+            .thenReturn(ClientResponse.builder().id(clientId).name("New Name").build());
+
+        mockMvc.perform(patch("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"New Name\",\"ownerId\":999}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("New Name"));
+
+        verify(clientService).update(eq(7L), eq(clientId),
+            org.mockito.ArgumentMatchers.argThat(request ->
+                request.getName().equals("New Name")));
+    }
+
+    @Test
+    void updateRejectsBlankNameBeforeCallingService() throws Exception {
+        mockMvc.perform(patch("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"  \"}"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).update(any(), any(), any());
+    }
+
+    @Test
+    void updateReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(clientService.update(eq(7L), eq(clientId), any(UpdateClientRequest.class)))
+            .thenThrow(new ClientNotFoundException(clientId));
+
+        mockMvc.perform(patch("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"New Name\"}"))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).update(eq(7L), eq(clientId), any(UpdateClientRequest.class));
     }
 }

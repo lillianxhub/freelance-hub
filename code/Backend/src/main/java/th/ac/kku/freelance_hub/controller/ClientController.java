@@ -1,12 +1,15 @@
 package th.ac.kku.freelance_hub.controller;
 
 import java.net.URI;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +19,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -41,5 +45,22 @@ public class ClientController {
     public ResponseEntity<Page<ClientResponse>> list(@Valid @ModelAttribute ClientFilterRequest filter) {
         Long ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(clientService.list(ownerId, filter));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ClientResponse> getById(@PathVariable UUID id) {
+        Long ownerId = userService.getCurrentUserEntity().getId();
+        return ResponseEntity.ok(clientService.getById(ownerId, id));
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ClientResponse> update(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateClientRequest request
+    ) {
+        Long ownerId = userService.getCurrentUserEntity().getId();
+        return ResponseEntity.ok(clientService.update(ownerId, id, request));
     }
 }
