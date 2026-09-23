@@ -18,11 +18,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ClientMapperTest {
 
+    private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000007");
+
     private final ClientMapper mapper = new ClientMapper();
 
     @Test
     void createsClientWithOwnerAndActiveStatus() {
-        User owner = User.builder().id(7L).build();
+        User owner = User.builder().id(OWNER_ID).build();
         CreateClientRequest request = CreateClientRequest.builder()
             .name("  Alice  ")
             .companyName("  Acme  ")
@@ -44,7 +46,7 @@ class ClientMapperTest {
 
     @Test
     void updatesOnlySuppliedFields() {
-        User owner = User.builder().id(7L).build();
+        User owner = User.builder().id(OWNER_ID).build();
         Client client = new Client(owner, "Alice");
         client.updateDetails("Alice", "Acme", "alice@example.com", "0812345678", null, null, null);
         UpdateClientRequest request = UpdateClientRequest.builder()
@@ -62,7 +64,7 @@ class ClientMapperTest {
 
     @Test
     void clearsOptionalFieldWhenEmptyStringIsSupplied() {
-        Client client = new Client(User.builder().id(7L).build(), "Alice");
+        Client client = new Client(User.builder().id(OWNER_ID).build(), "Alice");
         client.updateDetails("Alice", "Acme", "alice@example.com", null, null, null, null);
         UpdateClientRequest request = UpdateClientRequest.builder()
             .companyName("")
@@ -76,7 +78,7 @@ class ClientMapperTest {
 
     @Test
     void rejectsBlankNameOnUpdate() {
-        Client client = new Client(User.builder().id(7L).build(), "Alice");
+        Client client = new Client(User.builder().id(OWNER_ID).build(), "Alice");
 
         assertThatThrownBy(() -> mapper.updateEntity(
             UpdateClientRequest.builder().name("   ").build(), client
@@ -86,7 +88,7 @@ class ClientMapperTest {
 
     @Test
     void mapsEntityToResponseWithoutOwner() {
-        Client client = new Client(User.builder().id(7L).build(), "Alice");
+        Client client = new Client(User.builder().id(OWNER_ID).build(), "Alice");
         UUID id = UUID.randomUUID();
         Instant createdAt = Instant.parse("2026-09-22T05:00:00Z");
         Instant updatedAt = Instant.parse("2026-09-22T06:00:00Z");

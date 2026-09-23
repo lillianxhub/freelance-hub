@@ -48,7 +48,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
-    public ClientResponse create(Long ownerId, CreateClientRequest request) {
+    public ClientResponse create(UUID ownerId, CreateClientRequest request) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         User owner = userRepository.findById(ownerId)
             .orElseThrow(() -> new UserNotFoundException(ownerId));
@@ -58,13 +58,13 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(readOnly = true)
-    public ClientResponse getById(Long ownerId, UUID clientId) {
+    public ClientResponse getById(UUID ownerId, UUID clientId) {
         return clientMapper.toResponse(findOwnedClient(ownerId, clientId));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ClientResponse> list(Long ownerId, ClientFilterRequest filter) {
+    public Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(filter, "filter is required");
         if (filter.getPage() < 0 || filter.getSize() < 1 || filter.getSize() > 100) {
@@ -102,7 +102,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
-    public ClientResponse update(Long ownerId, UUID clientId, UpdateClientRequest request) {
+    public ClientResponse update(UUID ownerId, UUID clientId, UpdateClientRequest request) {
         Client client = findOwnedClient(ownerId, clientId);
         clientMapper.updateEntity(request, client);
         return clientMapper.toResponse(clientRepository.save(client));
@@ -110,13 +110,13 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
-    public void archive(Long ownerId, UUID clientId) {
+    public void archive(UUID ownerId, UUID clientId) {
         Client client = findOwnedClient(ownerId, clientId);
         client.archive();
         clientRepository.save(client);
     }
 
-    private Client findOwnedClient(Long ownerId, UUID clientId) {
+    private Client findOwnedClient(UUID ownerId, UUID clientId) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(clientId, "clientId is required");
         return clientRepository.findByIdAndOwnerId(clientId, ownerId)
