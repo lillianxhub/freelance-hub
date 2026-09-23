@@ -10,21 +10,26 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar role
+        varchar status
         boolean enabled
-        timestamptz created_at
-        timestamptz updated_at
+        timestamp created_at
+        timestamp updated_at
         bigint version
     }
     USER_PROFILES {
         uuid user_id PK,FK
         varchar display_name
+        varchar first_name
+        varchar last_name
         varchar phone
         text address
         varchar avatar_url
         varchar timezone
         varchar date_format
-        timestamptz created_at
-        timestamptz updated_at
+        text profile_image_url
+        text bio
+        timestamp created_at
+        timestamp updated_at
         bigint version
     }
     CLIENTS {
@@ -105,14 +110,15 @@ erDiagram
 - Unique partial index ที่ `time_entries(owner_id) WHERE ended_at IS NULL` บังคับให้ผู้ใช้มี running timer ได้สูงสุดหนึ่งรายการ
 - Composite FK `(client_id, owner_id)` และ `(project_id, owner_id)` ป้องกันการผูกข้อมูลข้ามเจ้าของ ส่วน `(task_id, project_id)` ป้องกันการเลือก task ข้าม project
 - Archive ใช้สถานะ `ARCHIVED` ไม่ลบ `clients` หรือ `projects` ที่มีประวัติ เพื่อรักษา time entries
-- Timestamp ทั้งหมดใช้ `timestamptz` และบันทึกเป็น UTC
+- ตาราง auth ปัจจุบันใช้ `timestamp` ตาม migration V1/V2; entity `User` และ `UserProfile` ใช้ `LocalDateTime`
 - เก็บเวลาเป้าหมายและเวลาทำงานเป็นนาทีจำนวนเต็ม ป้องกันความคลาดเคลื่อนจากเลขทศนิยม
 
 ## Enum/check values
 
 | Column                    | Allowed values                                          |
 | ------------------------- | ------------------------------------------------------- |
-| `users.role`              | `FREELANCER` (เตรียม `ADMIN` ไว้สำหรับระยะถัดไป)        |
+| `users.role`              | `USER`, `ADMIN` (สงวน `ADMIN` สำหรับการจัดการระบบ)       |
+| `users.status`            | `ACTIVE`, `INACTIVE`, `SUSPENDED`                       |
 | `clients.status`          | `ACTIVE`, `ARCHIVED`                                    |
 | `projects.status`         | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
 | `tasks.status`            | `OPEN`, `IN_PROGRESS`, `COMPLETED`                      |
