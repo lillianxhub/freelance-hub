@@ -12,6 +12,7 @@ classDiagram
         +String email
         -String passwordHash
         +UserRole role
+        +UserStatus status
         +boolean enabled
         +changePassword(passwordHash)
         +disable()
@@ -21,8 +22,11 @@ classDiagram
         +String displayName
         +String phone
         +String address
-        +String avatarUrl
-        +ZoneId timezone
+        +String firstName
+        +String lastName
+        +String profileImageUrl
+        +String bio
+        +String timezone
         +String dateFormat
         +updateContact(...)
         +changePreferences(...)
@@ -88,8 +92,14 @@ classDiagram
     }
     class UserRole {
         <<enumeration>>
-        FREELANCER
+        USER
         ADMIN
+    }
+    class UserStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        SUSPENDED
     }
     class ClientStatus {
         <<enumeration>>
@@ -125,6 +135,7 @@ classDiagram
     Project "1" --> "0..*" TimeEntry : entries
     Task "0..1" --> "0..*" TimeEntry : entries
     User --> UserRole
+    User --> UserStatus
     Client --> ClientStatus
     Project --> ProjectStatus
     Task --> TaskStatus
