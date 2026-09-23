@@ -3,10 +3,10 @@
 -- Description: Projects managed by users for clients
 
 CREATE TABLE projects (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    owner_id BIGINT NOT NULL,
-    client_id BIGINT NOT NULL,
+    owner_id UUID NOT NULL,
+    client_id UUID NOT NULL,
 
     name VARCHAR(180) NOT NULL,
     description TEXT,
