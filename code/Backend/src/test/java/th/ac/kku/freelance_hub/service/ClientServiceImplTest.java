@@ -34,6 +34,8 @@ import th.ac.kku.freelance_hub.service.impl.ClientServiceImpl;
 @ExtendWith(MockitoExtension.class)
 class ClientServiceImplTest {
 
+    private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000007");
+
     @Mock ClientRepository clientRepository;
     @Mock UserRepository userRepository;
 
@@ -45,17 +47,17 @@ class ClientServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new ClientServiceImpl(clientRepository, userRepository, new ClientMapper());
-        owner = User.builder().id(7L).build();
+        owner = User.builder().id(OWNER_ID).build();
         client = new Client(owner, "Existing Client");
         clientId = UUID.randomUUID();
     }
 
     @Test
     void createAssignsOwnerFromAuthenticatedId() {
-        when(userRepository.findById(7L)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(clientRepository.save(any(Client.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.create(7L, CreateClientRequest.builder().name("New Client").build());
+        service.create(OWNER_ID, CreateClientRequest.builder().name("New Client").build());
 
         verify(clientRepository).save(org.mockito.ArgumentMatchers.argThat(saved ->
             saved.getOwner() == owner && saved.getName().equals("New Client")));
@@ -63,17 +65,17 @@ class ClientServiceImplTest {
 
     @Test
     void getByIdLooksUpOnlyOwnedClient() {
-        when(clientRepository.findByIdAndOwnerId(clientId, 7L)).thenReturn(Optional.of(client));
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
 
-        assertThat(service.getById(7L, clientId).getName()).isEqualTo("Existing Client");
-        verify(clientRepository).findByIdAndOwnerId(clientId, 7L);
+        assertThat(service.getById(OWNER_ID, clientId).getName()).isEqualTo("Existing Client");
+        verify(clientRepository).findByIdAndOwnerId(clientId, OWNER_ID);
     }
 
     @Test
     void anotherOwnersClientIsReportedAsNotFound() {
-        when(clientRepository.findByIdAndOwnerId(clientId, 7L)).thenReturn(Optional.empty());
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.update(7L, clientId,
+        assertThatThrownBy(() -> service.update(OWNER_ID, clientId,
             UpdateClientRequest.builder().name("Changed").build()))
             .isInstanceOf(ClientNotFoundException.class);
         verify(clientRepository, never()).save(any(Client.class));
@@ -82,10 +84,10 @@ class ClientServiceImplTest {
     @Test
     void updateKeepsUnspecifiedFields() {
         client.updateDetails("Existing Client", "Acme", null, null, null, null, null);
-        when(clientRepository.findByIdAndOwnerId(clientId, 7L)).thenReturn(Optional.of(client));
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
         when(clientRepository.save(client)).thenReturn(client);
 
-        service.update(7L, clientId, UpdateClientRequest.builder().name("New Name").build());
+        service.update(OWNER_ID, clientId, UpdateClientRequest.builder().name("New Name").build());
 
         assertThat(client.getName()).isEqualTo("New Name");
         assertThat(client.getCompanyName()).isEqualTo("Acme");
@@ -93,9 +95,9 @@ class ClientServiceImplTest {
 
     @Test
     void archivePreservesClientAndChangesStatus() {
-        when(clientRepository.findByIdAndOwnerId(clientId, 7L)).thenReturn(Optional.of(client));
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
 
-        service.archive(7L, clientId);
+        service.archive(OWNER_ID, clientId);
 
         assertThat(client.getStatus()).isEqualTo(ClientStatus.ARCHIVED);
         verify(clientRepository).save(client);
@@ -106,7 +108,7 @@ class ClientServiceImplTest {
         when(clientRepository.findAll(any(Specification.class), any(Pageable.class)))
             .thenReturn(new PageImpl<>(java.util.List.of(client)));
 
-        var result = service.list(7L, ClientFilterRequest.builder().page(1).size(5).build());
+        var result = service.list(OWNER_ID, ClientFilterRequest.builder().page(1).size(5).build());
 
         assertThat(result.getContent()).hasSize(1);
         verify(clientRepository).findAll(any(Specification.class),
@@ -116,7 +118,7 @@ class ClientServiceImplTest {
 
     @Test
     void invalidSortFieldIsRejected() {
-        assertThatThrownBy(() -> service.list(7L,
+        assertThatThrownBy(() -> service.list(OWNER_ID,
             ClientFilterRequest.builder().sortBy("owner.id").build()))
             .isInstanceOf(IllegalArgumentException.class);
         verify(clientRepository, never()).findAll(any(Specification.class), any(Pageable.class));
