@@ -8,6 +8,7 @@ import th.ac.kku.freelance_hub.domain.enums.UserRole;
 import th.ac.kku.freelance_hub.domain.enums.UserStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * User entity for authentication and authorization.
@@ -25,8 +26,8 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;

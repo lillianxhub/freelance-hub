@@ -5,8 +5,6 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 ผู้ใช้สามารถวิเคราะห์เวลาทำงานและดู productivity insights ผ่าน Dashboard
 โปรเจกต์พัฒนาด้วย Spring Boot, Thymeleaf และ PostgreSQL ตาม Layered Architecture
 
-> **MVP Scope:** Authentication, Client Management, Project/Task Management, Time Tracking และ Dashboard/Analytics/Productivity Insights ส่วน Income, Expense และ Invoice เป็น Post-MVP
-
 > **Project Status:** กำลังพัฒนา
 
 ## สมาชิกกลุ่ม
@@ -83,74 +81,77 @@ Domain Layer (Entity / Value Object / Enum)
 ### Clone Repository
 
 ```bash
-git clone <TODO: repository-url>
+git clone https://github.com/lillianxhub/freelance-hub.git
 cd freelance-hub/code
 ```
 
 ### Environment Variables
 
-คัดลอกไฟล์ตัวอย่างเป็น `.env` แล้วเปลี่ยนรหัสผ่านสำหรับเครื่องของตนเอง
+Backend ใช้ `application.properties` เป็น config กลาง ส่วน Docker Compose โหลดค่าฐานข้อมูล dev จาก
+`code/Backend/.env` อัตโนมัติ คัดลอกไฟล์ตัวอย่างแล้วเปลี่ยนค่าให้ตรงกับเครื่องของตนเอง
 
 PowerShell:
 
 ```powershell
-cd code
+cd code/Backend
 Copy-Item .env.example .env
 ```
 
 macOS/Linux:
 
 ```bash
-cd code
+cd code/Backend
 cp .env.example .env
 ```
 
-| Variable                     | Description                     | Development Default     |
-| ---------------------------- | ------------------------------- | ----------------------- |
-| `POSTGRES_DB`                | ชื่อฐานข้อมูล                   | `freelance_hub`         |
-| `POSTGRES_USER`              | ผู้ใช้ PostgreSQL               | `freelance_hub`         |
-| `POSTGRES_PASSWORD`          | รหัสผ่าน PostgreSQL             | `freelance_hub_dev`     |
-| `POSTGRES_PORT`              | PostgreSQL port บนเครื่อง       | `5432`                  |
-| `APP_PORT`                   | Application port บนเครื่อง      | `8080`                  |
-| `SPRING_DATASOURCE_URL`      | JDBC URL สำหรับ deploy          | กำหนดโดย Docker Compose |
-| `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ deploy | กำหนดโดย Docker Compose |
-| `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ deploy | กำหนดโดย Docker Compose |
+| Variable                     | Description                         | Development Default   |
+| ---------------------------- | ----------------------------------- | --------------------- |
+| `POSTGRES_DB`                | ชื่อฐานข้อมูลสำหรับ Docker          | `freelance_hub`       |
+| `POSTGRES_USER`              | ผู้ใช้ PostgreSQL สำหรับ Docker     | `freelance_hub`       |
+| `POSTGRES_PASSWORD`          | รหัสผ่าน PostgreSQL สำหรับ Docker   | ต้องเปลี่ยนค่า        |
+| `SPRING_JPA_DEFAULT_SCHEMA`  | Schema ของ JPA และ Flyway           | `public`              |
+| `SPRING_DATASOURCE_URL`      | JDBC URL สำหรับ production          | Secret ของ deployment |
+| `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ production | Secret ของ deployment |
+| `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ production | Secret ของ deployment |
+| `JWT_SECRET`                 | Secret สำหรับลงนาม JWT              | Secret ของ deployment |
 
 ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
 
+Flyway จะรัน migration อัตโนมัติเมื่อ application container เริ่มทำงาน โดยอ่านไฟล์จาก
+`src/main/resources/db/migration` ที่บรรจุอยู่ใน JAR ไม่ต้องติดตั้ง Flyway CLI
+
 ## How to Run
 
-### Docker Compose — วิธีที่แนะนำ
+### Local Development ด้วย Docker Compose
 
-คำสั่งทั้งหมดรันจากโฟลเดอร์ `code/`:
+ต้องติดตั้ง Docker Desktop และสร้างไฟล์ `code/Backend/.env` จาก `.env.example` ก่อน จากนั้นรันคำสั่งทั้งหมดจากโฟลเดอร์ `code/Backend/`:
 
 ```bash
 docker compose up --build
 ```
 
+เมื่อเริ่มระบบแล้ว:
+
 - Web application: <http://localhost:8080>
 - PostgreSQL: `localhost:5432`
+- Flyway จะรัน migration ที่ยังไม่เคยรันโดยอัตโนมัติก่อนแอปเริ่มทำงาน
 
-หยุดระบบโดยเก็บข้อมูลฐานข้อมูลไว้:
+รันแบบ background:
+
+```bash
+docker compose up --build -d
+```
+
+ดู log ของ application:
+
+```bash
+docker compose logs -f app
+```
+
+หยุด container โดยเก็บข้อมูล PostgreSQL ไว้:
 
 ```bash
 docker compose down
-```
-
-### Maven Wrapper
-
-ต้องมี PostgreSQL ทำงานอยู่และกำหนด datasource environment variables ก่อนรัน
-
-Windows:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-macOS/Linux:
-
-```bash
-./mvnw spring-boot:run
 ```
 
 ## API Documentation
@@ -221,9 +222,8 @@ freelance-hub/
 │   │   ├── main/
 │   │   │   ├── java/th/ac/kku/freelance_hub/
 │   │   │   │   ├── config/
-│   │   │   │   ├── controller/api/
-│   │   │   │   ├── controller/web/
-│   │   │   │   ├── service/impl/
+│   │   │   │   ├── controller/
+│   │   │   │   ├── service/
 │   │   │   │   ├── repository/
 │   │   │   │   ├── domain/entity/
 │   │   │   │   ├── domain/enums/

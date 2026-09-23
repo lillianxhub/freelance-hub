@@ -7,6 +7,10 @@ COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 
+# The repository is commonly checked out on Windows, so normalize the
+# wrapper before running it in the Linux-based builder image.
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+
 # Download dependencies (cached layer)
 RUN ./mvnw dependency:go-offline -B
 

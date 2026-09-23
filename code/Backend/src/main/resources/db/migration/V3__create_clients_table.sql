@@ -3,8 +3,8 @@
 -- Description: Clients owned by freelancers with archive status and optimistic locking
 
 CREATE TABLE clients (
-    id UUID PRIMARY KEY,
-    owner_id BIGINT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL,
     name VARCHAR(150) NOT NULL,
     company_name VARCHAR(200),
     email VARCHAR(254),

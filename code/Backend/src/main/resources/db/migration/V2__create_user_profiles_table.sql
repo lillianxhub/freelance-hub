@@ -3,7 +3,7 @@
 -- Description: User profiles table with one-to-one relationship to users
 
 CREATE TABLE user_profiles (
-    user_id BIGINT PRIMARY KEY,
+    user_id UUID PRIMARY KEY,
     display_name VARCHAR(255),
     first_name VARCHAR(100),
     last_name VARCHAR(100),
@@ -17,6 +17,7 @@ CREATE TABLE user_profiles (
     date_format VARCHAR(20) DEFAULT 'YYYY-MM-DD',
     profile_image_url TEXT,
     bio TEXT,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -41,3 +42,4 @@ COMMENT ON COLUMN user_profiles.postal_code IS 'Postal/ZIP code';
 COMMENT ON COLUMN user_profiles.avatar_url IS 'Profile avatar image URL';
 COMMENT ON COLUMN user_profiles.timezone IS 'User preferred timezone (default UTC)';
 COMMENT ON COLUMN user_profiles.date_format IS 'User preferred date format';
+COMMENT ON COLUMN user_profiles.version IS 'Optimistic locking version';
