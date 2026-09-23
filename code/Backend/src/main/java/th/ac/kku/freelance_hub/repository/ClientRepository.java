@@ -19,14 +19,14 @@ import java.util.UUID;
 public interface ClientRepository
     extends JpaRepository<Client, UUID>, JpaSpecificationExecutor<Client> {
 
-    Optional<Client> findByIdAndOwnerId(UUID id, Long ownerId);
+    Optional<Client> findByIdAndOwnerId(UUID id, UUID ownerId);
 
-    boolean existsByIdAndOwnerId(UUID id, Long ownerId);
+    boolean existsByIdAndOwnerId(UUID id, UUID ownerId);
 
-    Page<Client> findAllByOwnerId(Long ownerId, Pageable pageable);
+    Page<Client> findAllByOwnerId(UUID ownerId, Pageable pageable);
 
     Page<Client> findAllByOwnerIdAndStatus(
-        Long ownerId,
+        UUID ownerId,
         ClientStatus status,
         Pageable pageable
     );

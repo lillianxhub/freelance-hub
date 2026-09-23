@@ -6,6 +6,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.service.UserService;
+import java.util.UUID;
 
 /**
  * REST Controller for user endpoints
@@ -34,7 +35,7 @@ public class UserController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         UserResponse response = userService.getUserById(id);
         return ResponseEntity.ok(response);
     }
