@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     container_name: freelance_hub_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-freelance_hub}
+      POSTGRES_USER: ${POSTGRES_USER:-freelance_hub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-only-change-me}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-freelance_hub} -d ${POSTGRES_DB:-freelance_hub}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,11 +27,16 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-freelance_hub}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-freelance_hub}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-local-only-change-me}
+      SPRING_JPA_DEFAULT_SCHEMA: ${SPRING_JPA_DEFAULT_SCHEMA:-public}
+      SPRING_FLYWAY_SCHEMAS: ${SPRING_FLYWAY_SCHEMAS:-public}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: false
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
     ports:
       - "${APP_PORT:-8080}:8080"
     networks:
