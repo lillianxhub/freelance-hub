@@ -8,6 +8,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ClientsPage from './pages/ClientsPage'
 import ClientDetailPage from './pages/ClientDetailPage'
+import ProjectsPage from './pages/ProjectsPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
 import './App.css'
 
 function ProtectedWorkspace() {
@@ -31,8 +33,8 @@ function App() {
           <Route path="/dashboard" element={<PlaceholderPage title="Overview" description="ภาพรวมธุรกิจฟรีแลนซ์ของคุณ" />} />
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/clients/:clientId" element={<ClientDetailPage />} />
-          <Route path="/projects" element={<PlaceholderPage title="Projects" description="จัดการโปรเจกต์ งานย่อย และงบประมาณ" />} />
-          <Route path="/projects/:projectId" element={<PlaceholderPage title="Project detail" description="ติดตามงาน เวลา และความคืบหน้า" />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/time-tracker" element={<PlaceholderPage title="Time tracker" description="จับเวลาและจัดการรายการเวลาทำงาน" />} />
           <Route path="/finances" element={<PlaceholderPage title="Finances" description="ติดตามรายได้ ค่าใช้จ่าย และยอดค้างชำระ" />} />
           <Route path="/invoices" element={<PlaceholderPage title="Invoices" description="สร้างและติดตามใบแจ้งหนี้" />} />
