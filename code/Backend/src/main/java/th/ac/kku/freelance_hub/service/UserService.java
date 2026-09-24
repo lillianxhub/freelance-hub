@@ -10,6 +10,7 @@ import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.exception.UserNotFoundException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
+import java.util.UUID;
 
 /**
  * Service for user operations
@@ -36,7 +37,7 @@ public class UserService {
      * Get user by ID
      */
     @Transactional(readOnly = true)
-    public UserResponse getUserById(Long id) {
+    public UserResponse getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         return userMapper.toResponse(user);

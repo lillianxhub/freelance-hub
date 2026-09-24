@@ -8,6 +8,7 @@ import th.ac.kku.freelance_hub.domain.enums.UserRole;
 import th.ac.kku.freelance_hub.domain.enums.UserStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * DTO for user response with profile information
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 public class UserResponse {
 
-    private Long id;
+    private UUID id;
     private String email;
     private UserRole role;
     private UserStatus status;

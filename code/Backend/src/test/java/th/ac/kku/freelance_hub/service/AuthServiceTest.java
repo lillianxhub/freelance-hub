@@ -24,6 +24,7 @@ import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,14 +86,14 @@ class AuthServiceTest {
                 .build();
 
         user = User.builder()
-                .id(1L)
+                .id(UUID.randomUUID())
                 .email("test@example.com")
                 .passwordHash("$2a$10$hashedPassword")
                 .profile(userProfile)
                 .build();
 
         userResponse = UserResponse.builder()
-                .id(1L)
+                .id(user.getId())
                 .email("test@example.com")
                 .displayName("Test User")
                 .build();
