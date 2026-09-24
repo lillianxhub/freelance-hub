@@ -1,4 +1,35 @@
+import { NavLink, useNavigate } from 'react-router-dom'
+
+const workspaceLinks = [
+  { to: '/dashboard', label: 'Overview', icon: '⌂' },
+  { to: '/projects', label: 'Projects', icon: '▦' },
+  { to: '/time-tracker', label: 'Time tracker', icon: '◷' },
+  { to: '/clients', label: 'Clients', icon: '♙' },
+]
+
+const manageLinks = [
+  { to: '/reports', label: 'Reports', icon: '↗' },
+  { to: '/settings', label: 'Settings', icon: '⚙' },
+]
+
+function SidebarLink({ to, label, icon }) {
+  return (
+    <NavLink to={to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+      <span className="nav-icon" aria-hidden="true">{icon}</span>
+      <span>{label}</span>
+    </NavLink>
+  )
+}
+
 function Sidebar() {
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('currentUser')
+    navigate('/login', { replace: true })
+  }
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -11,17 +42,15 @@ function Sidebar() {
 
       <div className="sidebar-section-label">Workspace</div>
       <nav className="sidebar-nav">
-        <a className="nav-item active">Overview</a>
-        <a className="nav-item">Projects</a>
-        <a className="nav-item">Time tracker</a>
-        <a className="nav-item">Clients</a>
+        {workspaceLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
       </nav>
 
       <div className="sidebar-section-label">Manage</div>
       <nav className="sidebar-nav">
-        <a className="nav-item">Reports</a>
-        <a className="nav-item">Settings</a>
+        {manageLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
       </nav>
+
+      <button className="logout-button" type="button" onClick={handleLogout}>ออกจากระบบ</button>
     </aside>
   )
 }

@@ -38,7 +38,7 @@ function RegisterPage() {
 
         <AuthInput label="ชื่อ-นามสกุล" type="text" name="fullName" value={form.fullName} onChange={handleChange} />
         <AuthInput label="อีเมล" type="email" name="email" value={form.email} onChange={handleChange} />
-        <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} />
+        <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} autoComplete="new-password" />
 
         <button type="submit" disabled={loading}>
           {loading ? 'กำลังสมัคร...' : 'สมัครสมาชิก'}

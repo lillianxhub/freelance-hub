@@ -1,16 +1,36 @@
-# React + Vite
+# Freelance Hub Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend ของ Freelance Hub พัฒนาด้วย React และ Vite ปัจจุบันใช้ mock data เป็นค่าเริ่มต้นเพื่อให้พัฒนาและสาธิตหน้าจอได้ระหว่างรอ Backend
 
-Currently, two official plugins are available:
+## เริ่มต้นใช้งาน
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+เปิด `http://localhost:5173`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+บัญชีสำหรับทดลอง:
 
-## Expanding the Oxlint configuration
+- Email: `demo@freelancehub.test`
+- Password: `demo1234`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+สามารถสมัครบัญชีจำลองเพิ่มจากหน้า Register ได้ ข้อมูลจำลองถูกเก็บใน Local Storage ของเบราว์เซอร์และไม่ควรใช้เป็นระบบยืนยันตัวตนจริง
+
+## เชื่อม Backend
+
+Mock authentication เปิดเป็นค่าเริ่มต้น เมื่อต้องการเรียก Backend ที่ `http://localhost:8080` ให้สร้างไฟล์ `.env.local`:
+
+```env
+VITE_USE_MOCK_API=false
+```
+
+Dashboard ยังอ่านข้อมูลจาก `src/data/mockDashboardData.js` เมื่อ Backend analytics พร้อม ให้เปลี่ยนเฉพาะฟังก์ชัน `getDashboardData()` เป็นการเรียก API โดย component อื่นไม่จำเป็นต้องเปลี่ยน
+
+## ตรวจสอบก่อนส่งงาน
+
+```bash
+npm run lint
+npm run build
+```

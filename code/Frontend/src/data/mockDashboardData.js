@@ -19,14 +19,14 @@ export const mockDashboardData = {
     { day: 'Sun', focus: 0, other: 0 },
   ],
   activeProjectsList: [
-    { name: "Website redesign", client: "Northstar Studio", percent: 72, tasks: "12 of 16 tasks", status: "In progress" },
-    { name: "Brand identity kit", client: "Good Goods Co.", percent: 48, tasks: "8 of 17 tasks", status: "In review" },
-    { name: "Mobile app concept", client: "Orbit Labs", percent: 29, tasks: "4 of 14 tasks", status: "Planned" },
+    { id: 1, name: "Website redesign", client: "Northstar Studio", percent: 72, tasks: "12 of 16 tasks", status: "In progress" },
+    { id: 2, name: "Brand identity kit", client: "Good Goods Co.", percent: 48, tasks: "8 of 17 tasks", status: "In review" },
+    { id: 3, name: "Mobile app concept", client: "Orbit Labs", percent: 29, tasks: "4 of 14 tasks", status: "Planned" },
   ],
   upcomingTasks: [
-    { title: "Finalize homepage concepts", project: "Website redesign · Today", status: "In progress" },
-    { title: "Prepare logo review", project: "Brand identity kit · Tomorrow", status: "Review" },
-    { title: "Map onboarding flow", project: "Mobile app concept · Sep 15", status: "Planned" },
+    { id: 1, title: "Finalize homepage concepts", project: "Website redesign · Today", status: "In progress" },
+    { id: 2, title: "Prepare logo review", project: "Brand identity kit · Tomorrow", status: "Review" },
+    { id: 3, title: "Map onboarding flow", project: "Mobile app concept · Sep 15", status: "Planned" },
   ]
 }
 
