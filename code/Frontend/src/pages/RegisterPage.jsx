@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import AuthInput from '../components/AuthInput'
-import { registerUser } from '../data/mockAuth'
-import '../App.css'
+import { useAuth } from '../contexts/authContextValue'
 
 function RegisterPage() {
   const [form, setForm] = useState({ fullName: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { register } = useAuth()
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -20,9 +20,8 @@ function RegisterPage() {
     setLoading(true)
 
     try {
-      await registerUser(form.fullName, form.email, form.password)
-      alert('สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ')
-      navigate('/login')
+      await register(form.fullName, form.email, form.password)
+      navigate('/login', { replace: true, state: { message: 'สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ' } })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -33,7 +32,9 @@ function RegisterPage() {
   return (
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="auth-brand"><span>FH</span><strong>freelance hub</strong></div>
         <h1>สมัครสมาชิก</h1>
+        <p className="auth-description">สร้าง workspace สำหรับบริหารงานฟรีแลนซ์ของคุณ</p>
         {error && <p className="auth-error">{error}</p>}
 
         <AuthInput label="ชื่อ-นามสกุล" type="text" name="fullName" value={form.fullName} onChange={handleChange} />

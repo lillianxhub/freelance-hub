@@ -1,15 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import DashboardPage from './pages/DashboardPage'
-import RegisterPage from './pages/RegisterPage'
-import LoginPage from './pages/LoginPage'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import { WorkspaceProvider } from './contexts/WorkspaceContext'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import './App.css'
 
-const protectedPage = (page) => (
-  <ProtectedRoute>
-    {page}
-  </ProtectedRoute>
-)
+function ProtectedWorkspace() {
+  return (
+    <ProtectedRoute>
+      <WorkspaceProvider>
+        <AppLayout />
+      </WorkspaceProvider>
+    </ProtectedRoute>
+  )
+}
 
 function App() {
   return (
@@ -17,12 +24,21 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={protectedPage(<DashboardPage />)} />
-        <Route path="/projects" element={protectedPage(<PlaceholderPage title="Projects" description="จัดการโปรเจกต์ งานย่อย และเป้าหมายชั่วโมง" />)} />
-        <Route path="/time-tracker" element={protectedPage(<PlaceholderPage title="Time tracker" description="เริ่มจับเวลาและดูรายการเวลาทำงาน" />)} />
-        <Route path="/clients" element={protectedPage(<PlaceholderPage title="Clients" description="จัดการข้อมูลลูกค้าและโปรเจกต์ของแต่ละราย" />)} />
-        <Route path="/reports" element={protectedPage(<PlaceholderPage title="Reports" description="ดูรายงานเวลาและ productivity" />)} />
-        <Route path="/settings" element={protectedPage(<PlaceholderPage title="Settings" description="ตั้งค่าโปรไฟล์ ภาษา และเขตเวลา" />)} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route element={<ProtectedWorkspace />}>
+          <Route path="/dashboard" element={<PlaceholderPage title="Overview" description="ภาพรวมธุรกิจฟรีแลนซ์ของคุณ" />} />
+          <Route path="/clients" element={<PlaceholderPage title="Clients" description="จัดการข้อมูลลูกค้าและโปรเจกต์ของแต่ละราย" />} />
+          <Route path="/clients/:clientId" element={<PlaceholderPage title="Client detail" description="รายละเอียดลูกค้า โปรเจกต์ เวลา และ Invoice" />} />
+          <Route path="/projects" element={<PlaceholderPage title="Projects" description="จัดการโปรเจกต์ งานย่อย และงบประมาณ" />} />
+          <Route path="/projects/:projectId" element={<PlaceholderPage title="Project detail" description="ติดตามงาน เวลา และความคืบหน้า" />} />
+          <Route path="/time-tracker" element={<PlaceholderPage title="Time tracker" description="จับเวลาและจัดการรายการเวลาทำงาน" />} />
+          <Route path="/finances" element={<PlaceholderPage title="Finances" description="ติดตามรายได้ ค่าใช้จ่าย และยอดค้างชำระ" />} />
+          <Route path="/invoices" element={<PlaceholderPage title="Invoices" description="สร้างและติดตามใบแจ้งหนี้" />} />
+          <Route path="/invoices/new" element={<PlaceholderPage title="New invoice" description="สร้าง Invoice จากรายการเวลาหรือรายการกำหนดเอง" />} />
+          <Route path="/invoices/:invoiceId" element={<PlaceholderPage title="Invoice detail" description="ตรวจสอบ ออกเอกสาร และบันทึกการชำระเงิน" />} />
+          <Route path="/reports" element={<PlaceholderPage title="Reports" description="วิเคราะห์เวลา รายได้ และ productivity" />} />
+          <Route path="/settings" element={<PlaceholderPage title="Settings" description="ตั้งค่าโปรไฟล์ Invoice และรูปแบบการแสดงผล" />} />
+        </Route>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

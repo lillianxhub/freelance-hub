@@ -1,25 +1,13 @@
-import Sidebar from '../components/Sidebar'
-import '../App.css'
+import PageHeader from '../components/PageHeader'
+import { EmptyState } from '../components/ViewState'
 
 function PlaceholderPage({ title, description }) {
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="main-content">
-        <header className="page-header">
-          <div>
-            <p className="eyebrow">Freelance Hub</p>
-            <h1>{title}</h1>
-            <p className="subtitle">{description}</p>
-          </div>
-        </header>
-
-        <section className="panel empty-state">
-          <div className="empty-state-icon" aria-hidden="true">⌁</div>
-          <h2>หน้านี้กำลังพัฒนา</h2>
-          <p>โครงหน้าและเส้นทางพร้อมแล้ว รอเชื่อมข้อมูลจาก Backend ในขั้นตอนถัดไป</p>
-        </section>
-      </main>
+    <div className="page-view">
+      <PageHeader eyebrow="Workspace" title={title} description={description} />
+      <section className="panel">
+        <EmptyState icon="⌁" title="กำลังเตรียมหน้านี้" description="โครงสร้างข้อมูลพร้อมสำหรับ Demo mode และ Supabase แล้ว" />
+      </section>
     </div>
   )
 }
