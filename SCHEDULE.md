@@ -24,7 +24,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 | `thirawat_673380039-7_02` | Client Management | Client entity/repository/service/DTO/mapper/controller, CRUD ครบ, validation email/contact, archive, pagination/sorting, ownership test, API test | Client use case/sequence, Client data dictionary, CRUD API examples |
 | `kantavit_673380027-4_01` | Project และ Task Management | Project/Task relation, target hours, status `PLANNED/ACTIVE/ON_HOLD/COMPLETED/ARCHIVED`, state transition, CRUD, validation, not-found/conflict tests | Domain model, class diagram, Project state diagram, State pattern analysis |
 | `kompat_673380262-4_02` | Time Tracking | timer start/stop/current, manual time entry, duration calculation, one-running-timer constraint, UTC/timezone, duplicate request protection, tests | Time Tracking sequence/activity, SRP/OCP/LSP analysis, API test evidence |
-| `nattadol_673380511-9_02` | Dashboard/Analytics และ Frontend | summary queries, tracked hours, utilization, project progress, productivity metrics, empty/loading/error state, Thymeleaf screens, integration tests | Component/deployment diagram, ISP analysis, dashboard screenshots, demo script |
+| `nattadol_673380511-9_02` | Dashboard/Analytics และ Frontend | summary queries, tracked hours, utilization, project progress, productivity metrics, empty/loading/error state, React + Vite screens, integration tests | Component/deployment diagram, ISP analysis, dashboard screenshots, demo script |
 
 ### งานที่ทุกคนต้องทำร่วมกัน
 
@@ -76,7 +76,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 - E2: utilization, average hours/day และ busiest period
 - E3: project progress และ target 80%/100% alert
 - E4: productivity comparison ระหว่างช่วงวันที่
-- E5: Thymeleaf dashboard responsive พร้อม loading/empty/error state
+- E5: React + Vite dashboard responsive พร้อม loading/empty/error state
 - E6: analytics integration tests และ dashboard screenshot
 
 ### Epic F: Course Deliverables และ Release
@@ -123,7 +123,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 - [ ] Time tracking มี start/stop/manual/timezone/duplicate guard
 - [ ] Dashboard มี tracked hours, utilization, project progress และ productivity insights
 - [ ] PostgreSQL migration มี 6 ตาราง, FK, index, One-to-One และ One-to-Many
-- [ ] Swagger UI, Global Exception Handler และ Thymeleaf ใช้งานได้
+- [ ] Swagger UI, Global Exception Handler และ React frontend ใช้งานได้
 - [ ] JUnit/Mockito/Spring Boot tests ผ่านและมี report
 - [ ] Docker Compose ทำงานได้ และ public deployment URL เปิดได้
 - [ ] diagrams, SOLID, patterns, data dictionary, README และ slide ครบ

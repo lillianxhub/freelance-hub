@@ -9,39 +9,30 @@ Petpinyo (673380073-7)
 ### Standard Format
 
 ```
-M{student_id_last_4}_V{version}_{description}.sql
+V{version}__{description}.sql
 ```
 
 **Example:**
 ```
-M0737_V001_create_users_table.sql
+V1__create_users_table.sql
 ```
 
 ### Components
 
-1. **Prefix: `M`**
-    - Always uppercase `M`
-    - Stands for "Migration"
+1. **Prefix: `V`**
+    - Always uppercase `V`
+    - Required by Flyway for a versioned migration
 
-2. **Student ID (Last 4 digits)**
-    - Format: `0737` (from student ID 6733800**73-7**)
-    - Identifies the author of the migration
-    - Always 4 digits, zero-padded if needed
+2. **Version Number**
+    - Use a unique numeric version, for example `1`, `2`, `3`, or `1.1`
+    - Do not reuse a version already applied to a database
+    - Coordinate the next version with the team before creating a file
+    - Version gaps are allowed by Flyway; uniqueness and ordering are what matter
 
-3. **Version Separator: `_V`**
-    - Single underscore followed by uppercase `V`
-    - Separates student ID from version number
+3. **Description Separator: `__`**
+    - Use exactly two underscores between version and description
 
-4. **Version Number**
-    - Format: `001`, `002`, `003`, ... (3 digits, zero-padded)
-    - Must be sequential and unique
-    - Never reuse or skip version numbers
-    - Examples: `V001`, `V002`, `V006`
-
-5. **Description Separator: `_`**
-    - Single underscore separates version from description
-
-6. **Description**
+4. **Description**
     - Lowercase with underscores (snake_case)
     - Clear, concise description of what the migration does
     - Use action verbs: `create`, `add`, `alter`, `drop`, `rename`
@@ -53,14 +44,14 @@ M0737_V001_create_users_table.sql
 ### Complete Examples
 
 ```
-M0737_V001_create_users_table.sql
-M0737_V002_create_user_profiles_table.sql
-M0737_V003_create_clients_table.sql
-M0737_V004_create_projects_table.sql
-M0737_V005_create_tasks_table.sql
-M0737_V006_create_time_entries_table.sql
-M0737_V007_add_indexes_for_performance.sql
-M0737_V008_alter_users_add_last_login.sql
+V1__create_users_table.sql
+V2__create_user_profiles_table.sql
+V3__create_clients_table.sql
+V4__create_projects_table.sql
+V5__create_tasks_table.sql
+V6__create_time_entries_table.sql
+V7__add_indexes_for_performance.sql
+V8__alter_users_add_last_login.sql
 ```
 
 ## Migration File Structure
@@ -68,7 +59,7 @@ M0737_V008_alter_users_add_last_login.sql
 Each migration file should follow this structure:
 
 ```sql
--- M{student_id}_V{number}: Brief title
+-- V{version}: Brief title
 -- Author: {Your Name} ({Student ID})
 -- Description: Detailed description of changes
 
@@ -85,7 +76,7 @@ COMMENT ON COLUMN ... IS '...';
 
 **Example:**
 ```sql
--- M0737_V001: Create users table
+-- V1: Create users table
 -- Author: Petpinyo (673380073-7)
 -- Description: Users table for authentication and authorization
 
@@ -125,7 +116,7 @@ CREATE TABLE users (
 
 - Once a migration is committed, NEVER change it
 - Create a new migration to fix issues
-- Example: If M0737_V003 has a bug, create M0737_V007 to fix it
+- Example: If `V3__create_clients_table.sql` has a bug, create `V6__fix_clients_constraint.sql` to fix it
 
 ### 6. Test Before Committing
 
@@ -157,53 +148,55 @@ CREATE INDEX idx_example_owner_id ON example_table(owner_id);
 ### Creating a New Table
 
 ```
-M{student_id}_V{number}_create_{table_name}_table.sql
+V{number}__create_{table_name}_table.sql
 ```
 
-**Example:** `M0737_V001_create_users_table.sql`
+**Example:** `V1__create_users_table.sql`
 
 ### Adding Columns
 
 ```
-M{student_id}_V{number}_alter_{table_name}_add_{column_name}.sql
+V{number}__alter_{table_name}_add_{column_name}.sql
 ```
 
-**Example:** `M0737_V007_alter_users_add_last_login.sql`
+**Example:** `V7__alter_users_add_last_login.sql`
 
 ### Adding Indexes
 
 ```
-M{student_id}_V{number}_add_index_{table_name}_{column_name}.sql
+V{number}__add_index_{table_name}_{column_name}.sql
 ```
 
-**Example:** `M0737_V008_add_index_users_email.sql`
+**Example:** `V8__add_index_users_email.sql`
 
 ### Creating Relationships
 
 ```
-M{student_id}_V{number}_add_foreign_key_{table_name}_to_{referenced_table}.sql
+V{number}__add_foreign_key_{table_name}_to_{referenced_table}.sql
 ```
 
-**Example:** `M0737_V009_add_foreign_key_projects_to_clients.sql`
+**Example:** `V9__add_foreign_key_projects_to_clients.sql`
 
 ## Rollback Strategy
 
-Flyway supports rollback with `U` prefix (undo migrations):
+Flyway Community does not automatically run `U` undo migrations. For this project, use a new forward migration to correct a deployed schema, or restore a tested database backup. Do not edit a migration that has already been applied.
+
+If the team has Flyway Teams/Enterprise and explicitly enables undo migrations, the optional naming format is:
 
 ```
-M{student_id}_U{version}_{description}.sql
+U{version}__{description}.sql
 ```
 
 **Example:**
 
 ```
-M0737_U001_create_users_table.sql  -- Undoes M0737_V001
+U1__create_users_table.sql  -- Undoes V1__create_users_table.sql
 ```
 
 Undo migration reverses the changes:
 
 ```sql
--- M0737_U001: Undo create users table
+-- U1: Undo create users table
 -- Author: Petpinyo (673380073-7)
 -- Description: Rollback users table creation
 
@@ -221,9 +214,9 @@ DROP TABLE IF EXISTS users CASCADE;
 
 Before committing a migration, verify:
 
-- [ ] File name follows `M{student_id}_V{number}_{description}.sql` format
-- [ ] Student ID is correct (0737 for Petpinyo)
-- [ ] Version number is sequential (next available number)
+- [ ] File name follows `V{version}__{description}.sql` format
+- [ ] Author name and student ID are included in the SQL header comment
+- [ ] Version number is unique and coordinated with the team
 - [ ] Single underscore separators are used correctly
 - [ ] Description is clear and uses snake_case
 - [ ] Migration includes author comment with student ID

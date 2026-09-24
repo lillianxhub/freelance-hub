@@ -3,9 +3,11 @@ name: CI
 on:
   pull_request:
     branches:
+      - dev
       - main
   push:
     branches:
+      - dev
       - main
 
 permissions:
@@ -19,6 +21,22 @@ env:
   BACKEND_DIR: code/Backend
 
 jobs:
+  main-pr-source:
+    name: Main PR must come from dev
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check pull request source branch
+        env:
+          PR_HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          if [ "$PR_HEAD_BRANCH" != "dev" ]; then
+            echo "Pull requests into main must come from dev."
+            echo "Received source branch: $PR_HEAD_BRANCH"
+            exit 1
+          fi
+
   test:
     name: Test backend
     runs-on: ubuntu-latest
