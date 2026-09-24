@@ -391,10 +391,12 @@
 .summary-list > div:last-child { border-bottom: 0; }
 .summary-list span { color: var(--muted); }
 .summary-list strong { font-size: 12px; }
-.entry-filters { display: grid; gap: 8px; margin-bottom: 16px; grid-template-columns: 1.2fr repeat(4, minmax(110px, 0.7fr)); }
+.entry-filters { display: grid; gap: 8px; margin-bottom: 16px; grid-template-columns: repeat(3, minmax(120px, 1fr)) repeat(4, minmax(105px, 0.75fr)); }
 .entry-filters select, .entry-filters input { min-height: 36px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: #fff; font-size: 9px; }
 .type-badge { display: inline-flex; padding: 5px 7px; border-radius: 99px; color: #6d7585; background: #f0f2f6; font-size: 8px; font-weight: 700; }
 .type-badge.billable { color: #2553ce; background: #edf2ff; }
+.range-buttons { display: flex; gap: 5px; }
+.range-buttons button { padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; color: var(--muted); background: #fff; font-size: 8px; cursor: pointer; }
 .type-badge.income { color: #14734c; background: var(--green-soft); }
 .type-badge.expense { color: #b4384e; background: var(--red-soft); }
 .finance-overview { display: grid; align-items: center; gap: 28px; margin-bottom: 16px; grid-template-columns: minmax(220px, 0.7fr) minmax(300px, 1.3fr); }

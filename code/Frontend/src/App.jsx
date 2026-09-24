@@ -46,6 +46,7 @@ function App() {
           <Route path="/finances" element={<FinancesPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/invoices/new" element={<NewInvoicePage />} />
+          <Route path="/invoices/:invoiceId/edit" element={<NewInvoicePage />} />
           <Route path="/invoices/:invoiceId" element={<InvoiceDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
