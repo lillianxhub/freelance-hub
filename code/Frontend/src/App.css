@@ -523,6 +523,7 @@
 .loading-spinner { width: 30px; height: 30px; border: 3px solid #e6eaf2; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .auth-loading { display: grid; min-height: 100vh; place-items: center; }
+.route-loading { min-height: 100vh; }
 
 .auth-page { display: grid; min-height: 100vh; padding: 30px 18px; background: radial-gradient(circle at 50% 0%, #e8efff, transparent 36%), var(--bg); place-items: center; }
 .auth-form { display: flex; width: min(100%, 420px); padding: 34px; border: 1px solid var(--border); border-radius: 18px; background: #fff; box-shadow: 0 25px 70px rgba(33, 54, 95, 0.1); flex-direction: column; }
