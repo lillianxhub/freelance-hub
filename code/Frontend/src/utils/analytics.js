@@ -1,4 +1,4 @@
-import { calculateTimeValue } from './formatters'
+import { calculateTimeValue } from './formatters.js'
 
 export function inDateRange(value, from, to) {
   const date = String(value || '').slice(0, 10)
