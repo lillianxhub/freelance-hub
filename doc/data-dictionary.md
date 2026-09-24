@@ -1,36 +1,43 @@
 # Data Dictionary — Freelance Hub MVP
 
-ชนิดข้อมูลด้านล่างออกแบบสำหรับ PostgreSQL 16 และ JPA/Hibernate โดยใช้ UUID เป็น primary key
-และใช้ `timestamptz` เก็บเวลาแบบ UTC
+ชนิดข้อมูลด้านล่างสอดคล้องกับ Flyway migrations ปัจจุบันและ JPA/Hibernate โดยใช้ UUID เป็น primary key
 
 ## `users`
 
 | Column | Type | Null | Constraint / Index | Description |
 |---|---|---:|---|---|
 | `id` | `uuid` | No | PK | รหัสผู้ใช้ |
-| `email` | `varchar(254)` | No | unique จากค่า lowercase | อีเมลสำหรับเข้าสู่ระบบ; application ต้อง trim/lowercase ก่อนบันทึก |
+| `email` | `varchar(255)` | No | unique | อีเมลสำหรับเข้าสู่ระบบ |
 | `password_hash` | `varchar(255)` | No | | รหัสผ่านที่ hash แล้วเท่านั้น |
-| `role` | `varchar(20)` | No | CHECK role | บทบาทผู้ใช้ |
+| `role` | `varchar(50)` | No | default `USER` | บทบาทผู้ใช้ |
+| `status` | `varchar(50)` | No | default `ACTIVE` | สถานะบัญชี |
 | `enabled` | `boolean` | No | default `true` | สถานะบัญชี |
-| `created_at` | `timestamptz` | No | | เวลาสร้าง |
-| `updated_at` | `timestamptz` | No | | เวลาแก้ไขล่าสุด |
+| `created_at` | `timestamp` | No | default `CURRENT_TIMESTAMP` | เวลาสร้าง |
+| `updated_at` | `timestamp` | No | default `CURRENT_TIMESTAMP` | เวลาแก้ไขล่าสุด |
 | `version` | `bigint` | No | default `0` | Optimistic lock |
 
-Indexes: unique index `ux_users_email_lower` บน `lower(email)`
+Indexes: `idx_users_email`, `idx_users_status`; ความ unique ของอีเมลกำหนดที่คอลัมน์ `email`
 
 ## `user_profiles`
 
 | Column | Type | Null | Constraint / Index | Description |
 |---|---|---:|---|---|
 | `user_id` | `uuid` | No | PK, FK → `users.id` | Shared primary key ทำให้เป็น One-to-One |
-| `display_name` | `varchar(120)` | No | | ชื่อที่แสดง |
-| `phone` | `varchar(30)` | Yes | | เบอร์โทรศัพท์ |
+| `display_name` | `varchar(255)` | Yes | | ชื่อที่แสดง |
+| `first_name` | `varchar(100)` | Yes | | ชื่อ |
+| `last_name` | `varchar(100)` | Yes | | นามสกุล |
+| `phone` | `varchar(20)` | Yes | | เบอร์โทรศัพท์ |
 | `address` | `text` | Yes | | ที่อยู่ |
+| `city` | `varchar(100)` | Yes | | เมือง |
+| `country` | `varchar(100)` | Yes | | ประเทศ |
+| `postal_code` | `varchar(20)` | Yes | | รหัสไปรษณีย์ |
 | `avatar_url` | `varchar(500)` | Yes | | URL รูปโปรไฟล์ |
-| `timezone` | `varchar(50)` | No | default `Asia/Bangkok` | IANA timezone เช่น `Asia/Bangkok` |
-| `date_format` | `varchar(20)` | No | default `dd/MM/yyyy` | รูปแบบวันที่ที่แสดง |
-| `created_at` | `timestamptz` | No | | เวลาสร้าง |
-| `updated_at` | `timestamptz` | No | | เวลาแก้ไขล่าสุด |
+| `timezone` | `varchar(50)` | Yes | default `UTC` | เขตเวลา |
+| `date_format` | `varchar(20)` | Yes | default `YYYY-MM-DD` | รูปแบบวันที่ที่แสดง |
+| `profile_image_url` | `text` | Yes | | URL รูปโปรไฟล์เดิม |
+| `bio` | `text` | Yes | | ประวัติโดยย่อ |
+| `created_at` | `timestamp` | No | default `CURRENT_TIMESTAMP` | เวลาสร้าง |
+| `updated_at` | `timestamp` | No | default `CURRENT_TIMESTAMP` | เวลาแก้ไขล่าสุด |
 | `version` | `bigint` | No | default `0` | Optimistic lock |
 
 FK delete policy: `ON DELETE CASCADE` ใช้ได้เฉพาะการลบบัญชีผู้ใช้ทั้งระบบ

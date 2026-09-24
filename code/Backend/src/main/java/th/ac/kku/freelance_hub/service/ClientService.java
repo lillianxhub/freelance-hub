@@ -13,14 +13,14 @@ import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 public interface ClientService {
 
     /** The owner ID must come from authentication, never from request data. */
-    ClientResponse create(Long ownerId, CreateClientRequest request);
+    ClientResponse create(UUID ownerId, CreateClientRequest request);
 
-    ClientResponse getById(Long ownerId, UUID clientId);
+    ClientResponse getById(UUID ownerId, UUID clientId);
 
-    Page<ClientResponse> list(Long ownerId, ClientFilterRequest filter);
+    Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter);
 
-    ClientResponse update(Long ownerId, UUID clientId, UpdateClientRequest request);
+    ClientResponse update(UUID ownerId, UUID clientId, UpdateClientRequest request);
 
     /** Archive a client while preserving its project and time history. */
-    void archive(Long ownerId, UUID clientId);
+    void archive(UUID ownerId, UUID clientId);
 }

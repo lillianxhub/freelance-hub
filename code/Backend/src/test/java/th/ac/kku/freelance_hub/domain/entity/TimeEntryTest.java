@@ -25,7 +25,7 @@ class TimeEntryTest {
     @BeforeEach
     void setUp() {
         owner = User.builder()
-                .id(UUID.randomUUID())
+                .id(UUID.fromString("00000000-0000-0000-0000-000000000001"))
                 .email("owner@example.com")
                 .passwordHash("hashed-password")
                 .build();
@@ -79,7 +79,7 @@ class TimeEntryTest {
     @DisplayName("rejects a project owned by another user")
     void rejectsProjectOwnedByAnotherUser() {
         User anotherOwner = User.builder()
-                .id(UUID.randomUUID())
+                .id(UUID.fromString("00000000-0000-0000-0000-000000000002"))
                 .email("another@example.com")
                 .passwordHash("hashed-password")
                 .build();
