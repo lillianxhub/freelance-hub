@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../components/ViewState'
 import { useWorkspace } from '../contexts/workspaceContextValue'
 import { calculateTimeValue, formatDate, formatMoney } from '../utils/formatters'
+import { effectiveInvoiceStatus, invoiceBalance } from '../utils/invoices'
 
 const localDate = () => {
   const date = new Date()
@@ -32,7 +33,7 @@ function FinancesPage() {
   const income = data.finance_entries.filter((entry) => entry.type === 'INCOME').reduce((sum, entry) => sum + Number(entry.amount), 0)
   const expenses = data.finance_entries.filter((entry) => entry.type === 'EXPENSE').reduce((sum, entry) => sum + Number(entry.amount), 0)
   const paidInvoices = data.invoices.filter((invoice) => invoice.status === 'PAID').reduce((sum, invoice) => sum + Number(invoice.amount_paid || invoice.total), 0)
-  const outstanding = data.invoices.filter((invoice) => invoice.status === 'ISSUED' || invoice.status === 'OVERDUE').reduce((sum, invoice) => sum + Math.max(0, Number(invoice.total) - Number(invoice.amount_paid || 0)), 0)
+  const outstanding = data.invoices.filter((invoice) => ['ISSUED', 'OVERDUE'].includes(effectiveInvoiceStatus(invoice))).reduce((sum, invoice) => sum + invoiceBalance(invoice), 0)
   const unbilled = data.time_entries.filter((entry) => entry.billable && !entry.invoice_id && entry.ended_at).reduce((sum, entry) => sum + calculateTimeValue(entry), 0)
   const net = income + paidInvoices - expenses
 

@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge'
 import { EmptyState, ErrorState, LoadingState } from '../components/ViewState'
 import { useWorkspace } from '../contexts/workspaceContextValue'
 import { formatDate, formatMoney } from '../utils/formatters'
+import { effectiveInvoiceStatus, invoiceBalance } from '../utils/invoices'
 
 function InvoicesPage() {
   const { data, loading, error, refresh } = useWorkspace()
@@ -12,7 +13,7 @@ function InvoicesPage() {
   const [status, setStatus] = useState('ALL')
 
   const invoices = useMemo(() => (data?.invoices || [])
-    .filter((invoice) => status === 'ALL' || invoice.status === status)
+    .filter((invoice) => status === 'ALL' || effectiveInvoiceStatus(invoice) === status)
     .filter((invoice) => {
       const client = data.clients.find((item) => item.id === invoice.client_id)
       const searchable = `${invoice.invoice_number} ${client?.name || ''} ${client?.company_name || ''}`.toLowerCase()
@@ -23,8 +24,8 @@ function InvoicesPage() {
   if (loading) return <LoadingState label="กำลังโหลดใบแจ้งหนี้..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
 
-  const issued = data.invoices.filter((invoice) => ['ISSUED', 'OVERDUE'].includes(invoice.status))
-  const outstanding = issued.reduce((sum, invoice) => sum + Math.max(0, Number(invoice.total) - Number(invoice.amount_paid || 0)), 0)
+  const issued = data.invoices.filter((invoice) => ['ISSUED', 'OVERDUE'].includes(effectiveInvoiceStatus(invoice)))
+  const outstanding = issued.reduce((sum, invoice) => sum + invoiceBalance(invoice), 0)
   const paid = data.invoices.filter((invoice) => invoice.status === 'PAID').reduce((sum, invoice) => sum + Number(invoice.amount_paid || invoice.total), 0)
   const drafts = data.invoices.filter((invoice) => invoice.status === 'DRAFT').reduce((sum, invoice) => sum + Number(invoice.total), 0)
 
@@ -44,8 +45,8 @@ function InvoicesPage() {
         {invoices.length === 0 ? <EmptyState icon="▤" title="ไม่พบ Invoice" description="ลองเปลี่ยนคำค้นหาหรือสร้าง Invoice ฉบับแรก" action={<Link className="button button-primary" to="/invoices/new">สร้าง Invoice</Link>} /> : (
           <div className="table-wrap"><table className="data-table"><thead><tr><th>เลขที่ Invoice</th><th>ลูกค้า</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>ยอดรวม</th><th>คงเหลือ</th><th>สถานะ</th><th /></tr></thead><tbody>{invoices.map((invoice) => {
             const client = data.clients.find((item) => item.id === invoice.client_id)
-            const balance = Math.max(0, Number(invoice.total) - Number(invoice.amount_paid || 0))
-            return <tr key={invoice.id}><td><strong>{invoice.invoice_number}</strong></td><td><div className="table-primary"><span className="client-avatar table-avatar" style={{ background: client?.color }}>{(client?.company_name || client?.name || 'CL').slice(0, 2).toUpperCase()}</span><span><strong>{client?.company_name || client?.name}</strong><small>{client?.email}</small></span></div></td><td>{formatDate(invoice.issue_date)}</td><td>{formatDate(invoice.due_date)}</td><td><strong>{formatMoney(invoice.total, invoice.currency)}</strong></td><td>{formatMoney(balance, invoice.currency)}</td><td><StatusBadge status={invoice.status} /></td><td><Link className="mini-button text-link" to={`/invoices/${invoice.id}`}>ดูรายละเอียด</Link></td></tr>
+            const balance = invoiceBalance(invoice)
+            return <tr key={invoice.id}><td><strong>{invoice.invoice_number}</strong></td><td><div className="table-primary"><span className="client-avatar table-avatar" style={{ background: client?.color }}>{(client?.company_name || client?.name || 'CL').slice(0, 2).toUpperCase()}</span><span><strong>{client?.company_name || client?.name}</strong><small>{client?.email}</small></span></div></td><td>{formatDate(invoice.issue_date)}</td><td>{formatDate(invoice.due_date)}</td><td><strong>{formatMoney(invoice.total, invoice.currency)}</strong></td><td>{formatMoney(balance, invoice.currency)}</td><td><StatusBadge status={effectiveInvoiceStatus(invoice)} /></td><td><Link className="mini-button text-link" to={`/invoices/${invoice.id}`}>ดูรายละเอียด</Link></td></tr>
           })}</tbody></table></div>
         )}
       </section>

@@ -469,6 +469,19 @@
 .invoice-total-list .total dt, .invoice-total-list .total dd { color: var(--text); font-size: 14px; font-weight: 700; }
 .invoice-total-list .balance { padding: 11px; border-radius: 8px; color: var(--primary); background: var(--primary-soft); }
 .invoice-total-list .balance dt, .invoice-total-list .balance dd { color: inherit; font-weight: 700; }
+.report-controls { display: grid; align-items: end; gap: 10px; margin-bottom: 16px; grid-template-columns: repeat(3, minmax(150px, 0.5fr)) minmax(240px, 1fr); }
+.report-controls p { margin: 0 0 9px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.chart-panel { min-width: 0; }
+.chart-panel .recharts-default-tooltip { border: 1px solid var(--border) !important; border-radius: 8px; box-shadow: var(--shadow); font-size: 9px; }
+.chart-legend { display: grid; gap: 7px; }
+.chart-legend span { display: grid; align-items: center; gap: 7px; color: var(--muted); font-size: 9px; grid-template-columns: auto minmax(0, 1fr) auto; }
+.chart-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.chart-legend b { color: var(--text); }
+.insight-list { display: grid; gap: 13px; }
+.insight-list > div { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: #f7f8fb; grid-template-columns: 28px 1fr; }
+.insight-list > div > span { display: grid; width: 28px; height: 28px; border-radius: 8px; color: var(--primary); background: var(--primary-soft); place-items: center; }
+.insight-list p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.insight-list strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 10px; }
 
 .view-state { display: flex; min-height: 300px; align-items: center; justify-content: center; gap: 10px; color: var(--muted); text-align: center; flex-direction: column; }
 .view-state h2 { margin: 0; color: var(--text); font-size: 17px; }
@@ -499,6 +512,8 @@
   .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-grid, .lower-grid, .detail-grid, .tracker-layout, .finance-overview, .invoice-editor-grid { grid-template-columns: 1fr; }
   .invoice-summary-card { position: static; }
+  .report-controls { grid-template-columns: repeat(3, 1fr); }
+  .report-controls p { grid-column: 1 / -1; }
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .project-card-grid { grid-template-columns: 1fr; }
 }
@@ -539,6 +554,8 @@
   .invoice-paper-header, .invoice-paper-header > div { align-items: flex-start; flex-direction: column; }
   .invoice-paper-header dl { width: 100%; }
   .invoice-addresses, .invoice-bottom { gap: 24px; grid-template-columns: 1fr; }
+  .report-controls { grid-template-columns: 1fr; }
+  .report-controls p { grid-column: auto; }
 }
 
 @media print {

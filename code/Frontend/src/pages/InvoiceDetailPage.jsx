@@ -6,6 +6,7 @@ import StatusBadge from '../components/StatusBadge'
 import { EmptyState, ErrorState, LoadingState } from '../components/ViewState'
 import { useWorkspace } from '../contexts/workspaceContextValue'
 import { formatDate, formatMoney } from '../utils/formatters'
+import { effectiveInvoiceStatus, invoiceBalance } from '../utils/invoices'
 
 const todayValue = new Date().toISOString().slice(0, 10)
 
@@ -25,7 +26,8 @@ function InvoiceDetailPage() {
 
   const items = data.invoice_items.filter((item) => item.invoice_id === invoice.id).sort((a, b) => a.sort_order - b.sort_order)
   const payments = data.payments.filter((item) => item.invoice_id === invoice.id).sort((a, b) => b.paid_at.localeCompare(a.paid_at))
-  const balance = Math.max(0, Number(invoice.total) - Number(invoice.amount_paid || 0))
+  const balance = invoiceBalance(invoice)
+  const displayStatus = effectiveInvoiceStatus(invoice)
   const seller = invoice.seller_snapshot || {}
   const client = invoice.client_snapshot || {}
 
@@ -61,9 +63,9 @@ function InvoiceDetailPage() {
   return (
     <div className="page-view invoice-detail-page">
       <Link className="back-link no-print" to="/invoices">← กลับไป Invoices</Link>
-      <PageHeader eyebrow="Invoices / Detail" title={invoice.invoice_number} description={`สร้างเมื่อ ${formatDate(invoice.created_at || invoice.issue_date)}`} actions={<><button className="button button-secondary" type="button" onClick={() => window.print()}>⤓ พิมพ์ / PDF</button>{invoice.status === 'DRAFT' && <><button className="button button-danger" type="button" onClick={deleteDraft}>ลบ Draft</button><button className="button button-primary" type="button" onClick={issueInvoice}>ออก Invoice</button></>}{['ISSUED', 'OVERDUE'].includes(invoice.status) && <><button className="button button-secondary" type="button" onClick={voidInvoice}>Void</button><button className="button button-primary" type="button" onClick={openPayment}>＋ รับชำระ</button></>}</>} />
+      <PageHeader eyebrow="Invoices / Detail" title={invoice.invoice_number} description={`สร้างเมื่อ ${formatDate(invoice.created_at || invoice.issue_date)}`} actions={<><button className="button button-secondary" type="button" onClick={() => window.print()}>⤓ พิมพ์ / PDF</button>{invoice.status === 'DRAFT' && <><button className="button button-danger" type="button" onClick={deleteDraft}>ลบ Draft</button><button className="button button-primary" type="button" onClick={issueInvoice}>ออก Invoice</button></>}{['ISSUED', 'OVERDUE'].includes(displayStatus) && <><button className="button button-secondary" type="button" onClick={voidInvoice}>Void</button><button className="button button-primary" type="button" onClick={openPayment}>＋ รับชำระ</button></>}</>} />
       <article className="invoice-paper">
-        <header className="invoice-paper-header"><div><span className="brand-mark">FH</span><h2>INVOICE</h2><StatusBadge status={invoice.status} /></div><dl><div><dt>Invoice no.</dt><dd>{invoice.invoice_number}</dd></div><div><dt>Issue date</dt><dd>{formatDate(invoice.issue_date)}</dd></div><div><dt>Due date</dt><dd>{formatDate(invoice.due_date)}</dd></div></dl></header>
+        <header className="invoice-paper-header"><div><span className="brand-mark">FH</span><h2>INVOICE</h2><StatusBadge status={displayStatus} /></div><dl><div><dt>Invoice no.</dt><dd>{invoice.invoice_number}</dd></div><div><dt>Issue date</dt><dd>{formatDate(invoice.issue_date)}</dd></div><div><dt>Due date</dt><dd>{formatDate(invoice.due_date)}</dd></div></dl></header>
         <div className="invoice-addresses"><section><span>จาก</span><strong>{seller.name}</strong><p>{seller.address}</p><p>{seller.email} · {seller.phone}</p><p>เลขประจำตัวผู้เสียภาษี {seller.tax_id || '—'}</p></section><section><span>เรียกเก็บจาก</span><strong>{client.name}</strong><p>{client.contact_name}</p><p>{client.address}</p><p>{client.email} · {client.phone}</p><p>เลขประจำตัวผู้เสียภาษี {client.tax_id || '—'}</p></section></div>
         <div className="table-wrap"><table className="invoice-items-table"><thead><tr><th>รายละเอียด</th><th>จำนวน</th><th>ราคาต่อหน่วย</th><th>จำนวนเงิน</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td>{item.description}</td><td>{Number(item.quantity).toFixed(2)}</td><td>{formatMoney(item.unit_price, invoice.currency)}</td><td>{formatMoney(item.amount, invoice.currency)}</td></tr>)}</tbody></table></div>
         <div className="invoice-bottom"><section><span>หมายเหตุ</span><p>{invoice.notes || '—'}</p>{seller.bank_name && <div className="bank-card"><strong>ข้อมูลรับชำระ</strong><p>{seller.bank_name}</p><p>{seller.bank_account_name} · {seller.bank_account_number}</p></div>}</section><dl className="invoice-total-list"><div><dt>ยอดก่อนภาษี</dt><dd>{formatMoney(invoice.subtotal, invoice.currency)}</dd></div><div><dt>ส่วนลด</dt><dd>−{formatMoney(invoice.discount_amount, invoice.currency)}</dd></div><div><dt>ภาษี {invoice.tax_rate}%</dt><dd>{formatMoney(invoice.tax_amount, invoice.currency)}</dd></div><div className="total"><dt>ยอดรวม</dt><dd>{formatMoney(invoice.total, invoice.currency)}</dd></div><div><dt>ชำระแล้ว</dt><dd>{formatMoney(invoice.amount_paid, invoice.currency)}</dd></div><div className="balance"><dt>คงเหลือ</dt><dd>{formatMoney(balance, invoice.currency)}</dd></div></dl></div>
