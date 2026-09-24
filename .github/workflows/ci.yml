@@ -3,9 +3,11 @@ name: CI
 on:
   pull_request:
     branches:
+      - dev
       - main
   push:
     branches:
+      - dev
       - main
 
 permissions:
@@ -19,24 +21,25 @@ env:
   BACKEND_DIR: code/Backend
 
 jobs:
+  main-pr-source:
+    name: Main PR must come from dev
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check pull request source branch
+        env:
+          PR_HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          if [ "$PR_HEAD_BRANCH" != "dev" ]; then
+            echo "Pull requests into main must come from dev."
+            echo "Received source branch: $PR_HEAD_BRANCH"
+            exit 1
+          fi
+
   test:
     name: Test backend
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: freelance_hub
-          POSTGRES_USER: ci_user
-          POSTGRES_PASSWORD: ci_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ci_user -d freelance_hub"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
 
     steps:
       - name: Checkout
@@ -56,12 +59,6 @@ jobs:
 
       - name: Run tests
         working-directory: ${{ env.BACKEND_DIR }}
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/freelance_hub
-          SPRING_DATASOURCE_USERNAME: ci_user
-          SPRING_DATASOURCE_PASSWORD: ci_password
-          SPRING_JPA_DEFAULT_SCHEMA: public
-          JWT_SECRET: ci-only-secret-for-tests
         run: ./mvnw --batch-mode --no-transfer-progress verify
 
   migration:
