@@ -16,6 +16,7 @@ import InvoicesPage from './pages/InvoicesPage'
 import NewInvoicePage from './pages/NewInvoicePage'
 import InvoiceDetailPage from './pages/InvoiceDetailPage'
 import ReportsPage from './pages/ReportsPage'
+import SettingsPage from './pages/SettingsPage'
 import './App.css'
 
 function ProtectedWorkspace() {
@@ -47,7 +48,7 @@ function App() {
           <Route path="/invoices/new" element={<NewInvoicePage />} />
           <Route path="/invoices/:invoiceId" element={<InvoiceDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={<PlaceholderPage title="Settings" description="ตั้งค่าโปรไฟล์ Invoice และรูปแบบการแสดงผล" />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
