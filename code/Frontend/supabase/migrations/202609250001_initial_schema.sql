@@ -162,6 +162,81 @@ create trigger guard_time_entry_invoice_reuse
 before insert or update on public.invoice_items
 for each row execute function public.guard_time_entry_invoice_reuse();
 
+create or replace function public.protect_invoice_history()
+returns trigger language plpgsql as $$
+begin
+  if tg_op = 'DELETE' then
+    if old.status <> 'DRAFT' then
+      raise exception 'only draft invoices can be deleted';
+    end if;
+    return old;
+  end if;
+
+  if old.status <> 'DRAFT' and (
+    new.client_id is distinct from old.client_id
+    or new.project_id is distinct from old.project_id
+    or new.invoice_number is distinct from old.invoice_number
+    or new.issue_date is distinct from old.issue_date
+    or new.due_date is distinct from old.due_date
+    or new.currency is distinct from old.currency
+    or new.subtotal is distinct from old.subtotal
+    or new.discount_amount is distinct from old.discount_amount
+    or new.tax_rate is distinct from old.tax_rate
+    or new.tax_amount is distinct from old.tax_amount
+    or new.total is distinct from old.total
+    or new.notes is distinct from old.notes
+    or new.seller_snapshot is distinct from old.seller_snapshot
+    or new.client_snapshot is distinct from old.client_snapshot
+  ) then
+    raise exception 'issued invoice financial data is immutable; void it and create a new invoice';
+  end if;
+
+  if new.status is distinct from old.status and not (
+    (old.status = 'DRAFT' and new.status in ('ISSUED', 'VOID'))
+    or (old.status = 'ISSUED' and new.status in ('PAID', 'OVERDUE', 'VOID'))
+    or (old.status = 'OVERDUE' and new.status in ('PAID', 'VOID'))
+  ) then
+    raise exception 'invalid invoice status transition from % to %', old.status, new.status;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_invoice_history on public.invoices;
+create trigger protect_invoice_history
+before update or delete on public.invoices
+for each row execute function public.protect_invoice_history();
+
+create or replace function public.require_draft_invoice_for_items()
+returns trigger language plpgsql as $$
+declare
+  target_invoice_id uuid;
+  target_status text;
+  source_status text;
+begin
+  target_invoice_id := case when tg_op = 'DELETE' then old.invoice_id else new.invoice_id end;
+  select status into target_status from public.invoices where id = target_invoice_id;
+  if target_status is not null and target_status <> 'DRAFT' then
+    raise exception 'invoice items can only change while the invoice is a draft';
+  end if;
+  if tg_op = 'UPDATE' then
+    select status into source_status from public.invoices where id = old.invoice_id;
+    if source_status is not null and source_status <> 'DRAFT' then
+      raise exception 'invoice items can only move from a draft invoice';
+    end if;
+  end if;
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists require_draft_invoice_for_items on public.invoice_items;
+create trigger require_draft_invoice_for_items
+before insert or update or delete on public.invoice_items
+for each row execute function public.require_draft_invoice_for_items();
+
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,

@@ -45,6 +45,9 @@ Frontend ส่ง access token ผ่าน Supabase client อัตโนม�
 - due date ต้องไม่ก่อน issue date
 - duration และจำนวนเงินต้องเป็นค่าที่ถูกต้องตาม constraints
 - time entry ใช้ซ้ำไม่ได้ใน Invoice ที่ไม่ใช่ `VOID`
+- Invoice ที่ออกแล้วแก้เลขที่ คู่สัญญา วันที่ ยอด ภาษี รายการ หรือ snapshot ไม่ได้
+- ลบได้เฉพาะ Draft และสถานะเปลี่ยนได้ตาม Draft → Issued → Paid/Overdue/Void
+- เพิ่ม แก้ หรือลบ line items ได้เฉพาะตอน Invoice เป็น Draft
 - Auth signup trigger สร้าง `profiles` ให้อัตโนมัติ
 - foreign keys ป้องกัน orphan records และรักษาประวัติธุรกรรม
 
