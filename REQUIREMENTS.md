@@ -2,16 +2,16 @@
 
 ## Freelance Hub — ระบบจัดการเวลาทำงานและงานฟรีแลนซ์
 
-| รายการ | รายละเอียด |
-|---|---|
-| ชื่อระบบ | Freelance Hub |
-| เวอร์ชันเอกสาร | 2.0 |
-| สถานะ | Draft ที่ปรับตามใบงานรายวิชา CP353002 |
-| กลุ่มผู้ใช้หลัก | Freelancer / ผู้ประกอบอาชีพอิสระ |
-| Backend | Java 17+, Spring Boot 3.x+, Spring MVC, Spring Data JPA |
-| ฐานข้อมูล | PostgreSQL |
-| Frontend | Thymeleaf |
-| เอกสาร API | Swagger UI / OpenAPI |
+| รายการ          | รายละเอียด                                              |
+| --------------- | ------------------------------------------------------- |
+| ชื่อระบบ        | Freelance Hub                                           |
+| เวอร์ชันเอกสาร  | 2.0                                                     |
+| สถานะ           | Draft ที่ปรับตามใบงานรายวิชา CP353002                   |
+| กลุ่มผู้ใช้หลัก | Freelancer / ผู้ประกอบอาชีพอิสระ                        |
+| Backend         | Java 17+, Spring Boot 3.x+, Spring MVC, Spring Data JPA |
+| ฐานข้อมูล       | PostgreSQL                                              |
+| Frontend        | React                                                   |
+| เอกสาร API      | Swagger UI / OpenAPI                                    |
 
 ---
 
@@ -63,10 +63,10 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 
 ### 3.1 บทบาท
 
-| บทบาท | ความสามารถ |
-|---|---|
-| Freelancer | จัดการข้อมูลทั้งหมดที่ตนเองเป็นเจ้าของ เช่น โปรไฟล์ ลูกค้า โปรเจกต์ task เวลา และ analytics |
-| Admin (ระยะถัดไป) | ดูแลบัญชีผู้ใช้และสถานะระบบ โดยไม่มีสิทธิ์อ่านข้อมูลธุรกิจส่วนตัวโดยค่าเริ่มต้น |
+| บทบาท             | ความสามารถ                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| Freelancer        | จัดการข้อมูลทั้งหมดที่ตนเองเป็นเจ้าของ เช่น โปรไฟล์ ลูกค้า โปรเจกต์ task เวลา และ analytics |
+| Admin (ระยะถัดไป) | ดูแลบัญชีผู้ใช้และสถานะระบบ โดยไม่มีสิทธิ์อ่านข้อมูลธุรกิจส่วนตัวโดยค่าเริ่มต้น             |
 
 ### 3.2 หลักการเข้าถึงข้อมูล
 
@@ -83,63 +83,63 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 
 ### 4.1 Authentication และ Profile
 
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้ | Must |
-| FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must |
-| FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้ | Must |
-| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ ที่อยู่ และรูปโปรไฟล์ได้ | Must |
-| FR-AUTH-05 | ผู้ใช้กำหนด timezone และรูปแบบวันที่ได้ | Must |
-| FR-AUTH-06 | ผู้ใช้ขอ reset password ผ่านอีเมลได้ | Should |
+| ID         | Requirement                                              | Priority |
+| ---------- | -------------------------------------------------------- | -------- |
+| FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้                 | Must     |
+| FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must     |
+| FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้    | Must     |
+| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ ที่อยู่ และรูปโปรไฟล์ได้    | Must     |
+| FR-AUTH-05 | ผู้ใช้กำหนด timezone และรูปแบบวันที่ได้                  | Must     |
+| FR-AUTH-06 | ผู้ใช้ขอ reset password ผ่านอีเมลได้                     | Should   |
 
 ### 4.2 Client Management
 
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้ | Must |
-| FR-CLI-02 | ลูกค้าประกอบด้วยชื่อบุคคล/บริษัท อีเมล โทรศัพท์ ที่อยู่ เลขผู้เสียภาษี และหมายเหตุ | Must |
-| FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้ | Must |
-| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์ | Must |
-| FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ | Must |
+| ID        | Requirement                                                                        | Priority |
+| --------- | ---------------------------------------------------------------------------------- | -------- |
+| FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้                                         | Must     |
+| FR-CLI-02 | ลูกค้าประกอบด้วยชื่อบุคคล/บริษัท อีเมล โทรศัพท์ ที่อยู่ เลขผู้เสียภาษี และหมายเหตุ | Must     |
+| FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้                           | Must     |
+| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์                         | Must     |
+| FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ              | Must     |
 
 ### 4.3 Project และ Task Management
 
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-PRJ-01 | ผู้ใช้สร้างโปรเจกต์และผูกกับลูกค้าหนึ่งรายได้ | Must |
-| FR-PRJ-02 | โปรเจกต์ประกอบด้วยชื่อ รายละเอียด วันที่เริ่ม/สิ้นสุด สี สถานะ และสกุลเงิน | Must |
-| FR-PRJ-03 | โปรเจกต์กำหนดเป้าหมายชั่วโมงและสถานะงานได้ โดยยังไม่คำนวณรายได้ใน MVP | Must |
-| FR-PRJ-04 | สถานะโปรเจกต์ประกอบด้วย `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` | Must |
-| FR-PRJ-05 | ผู้ใช้สร้าง แก้ไข ปิดงาน และเรียงลำดับ task ภายในโปรเจกต์ได้ | Must |
-| FR-PRJ-06 | ระบบแสดงเวลาที่ใช้เทียบกับเป้าหมายชั่วโมงของแต่ละโปรเจกต์ | Must |
-| FR-PRJ-07 | ระบบแจ้งเตือนเมื่อใช้เวลาถึงเกณฑ์ 80% และ 100% ของเป้าหมาย | Should |
+| ID        | Requirement                                                                     | Priority |
+| --------- | ------------------------------------------------------------------------------- | -------- |
+| FR-PRJ-01 | ผู้ใช้สร้างโปรเจกต์และผูกกับลูกค้าหนึ่งรายได้                                   | Must     |
+| FR-PRJ-02 | โปรเจกต์ประกอบด้วยชื่อ รายละเอียด วันที่เริ่ม/สิ้นสุด สี สถานะ                  | Must     |
+| FR-PRJ-03 | โปรเจกต์กำหนดเป้าหมายชั่วโมงและสถานะงานได้ โดยยังไม่คำนวณรายได้ใน MVP           | Must     |
+| FR-PRJ-04 | สถานะโปรเจกต์ประกอบด้วย `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` | Must     |
+| FR-PRJ-05 | ผู้ใช้สร้าง แก้ไข ปิดงาน และเรียงลำดับ task ภายในโปรเจกต์ได้                    | Must     |
+| FR-PRJ-06 | ระบบแสดงเวลาที่ใช้เทียบกับเป้าหมายชั่วโมงของแต่ละโปรเจกต์                       | Must     |
+| FR-PRJ-07 | ระบบแจ้งเตือนเมื่อใช้เวลาถึงเกณฑ์ 80% และ 100% ของเป้าหมาย                      | Should   |
 
 ### 4.4 Time Tracking
 
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-TIME-01 | ผู้ใช้เริ่ม หยุด และยกเลิก timer โดยเลือกโปรเจกต์ และเลือก task ได้ | Must |
-| FR-TIME-02 | ผู้ใช้มี timer ที่กำลังทำงานได้สูงสุดหนึ่งรายการในเวลาเดียวกัน | Must |
-| FR-TIME-03 | ระบบเก็บเวลาเริ่ม เวลาสิ้นสุด ระยะเวลา และคำอธิบาย | Must |
-| FR-TIME-04 | ผู้ใช้เพิ่มเวลาแบบ manual ด้วยวัน เวลาเริ่ม/สิ้นสุด หรือระยะเวลาได้ | Must |
-| FR-TIME-05 | ผู้ใช้แก้ไขและลบ time entry ที่ยังไม่ถูกล็อกหรือสรุปผลแล้วได้ | Must |
-| FR-TIME-06 | ผู้ใช้ดูรายการเวลาแบบรายวัน รายสัปดาห์ และตามช่วงวันที่ได้ | Must |
-| FR-TIME-07 | ผู้ใช้กรองรายการตามลูกค้า โปรเจกต์ task และช่วงวันที่ได้ | Must |
-| FR-TIME-08 | ระบบคำนวณ duration ของรายการและรวมชั่วโมงตามช่วงวันที่ได้ โดยยังไม่คำนวณมูลค่าเงิน | Must |
-| FR-TIME-09 | ผู้ใช้คัดลอกรายการเวลาเดิมเพื่อบันทึกซ้ำได้ | Could |
+| ID         | Requirement                                                                        | Priority |
+| ---------- | ---------------------------------------------------------------------------------- | -------- |
+| FR-TIME-01 | ผู้ใช้เริ่ม หยุด และยกเลิก timer โดยเลือกโปรเจกต์ และเลือก task ได้                | Must     |
+| FR-TIME-02 | ผู้ใช้มี timer ที่กำลังทำงานได้สูงสุดหนึ่งรายการในเวลาเดียวกัน                     | Must     |
+| FR-TIME-03 | ระบบเก็บเวลาเริ่ม เวลาสิ้นสุด ระยะเวลา และคำอธิบาย                                 | Must     |
+| FR-TIME-04 | ผู้ใช้เพิ่มเวลาแบบ manual ด้วยวัน เวลาเริ่ม/สิ้นสุด หรือระยะเวลาได้                | Must     |
+| FR-TIME-05 | ผู้ใช้แก้ไขและลบ time entry ที่ยังไม่ถูกล็อกหรือสรุปผลแล้วได้                      | Must     |
+| FR-TIME-06 | ผู้ใช้ดูรายการเวลาแบบรายวัน รายสัปดาห์ และตามช่วงวันที่ได้                         | Must     |
+| FR-TIME-07 | ผู้ใช้กรองรายการตามลูกค้า โปรเจกต์ task และช่วงวันที่ได้                           | Must     |
+| FR-TIME-08 | ระบบคำนวณ duration ของรายการและรวมชั่วโมงตามช่วงวันที่ได้ โดยยังไม่คำนวณมูลค่าเงิน | Must     |
+| FR-TIME-09 | ผู้ใช้คัดลอกรายการเวลาเดิมเพื่อบันทึกซ้ำได้                                        | Could    |
 
 ### 4.5 Dashboard, Analytics และ Productivity Insights (MVP)
 
-| ID | Requirement | Priority |
-|---|---|---|
-| FR-ANA-01 | dashboard แสดงชั่วโมงวันนี้ สัปดาห์นี้ เดือนนี้ และแนวโน้มเทียบช่วงก่อนหน้า | Must |
-| FR-ANA-02 | dashboard แสดง tracked hours และ utilization ของเวลาที่กำหนดให้วิเคราะห์ได้ | Must |
-| FR-ANA-03 | ผู้ใช้ดูสัดส่วนเวลาแยกตามลูกค้า โปรเจกต์ และช่วงวันที่ได้ | Must |
-| FR-ANA-04 | dashboard แสดงจำนวนโปรเจกต์ active, completed และงานที่ใกล้เกินเป้าหมายชั่วโมง | Must |
-| FR-ANA-05 | ระบบแสดงค่าเฉลี่ยชั่วโมงต่อวัน วัน/ช่วงเวลาที่ทำงานมากที่สุด และโปรเจกต์ที่ใช้เวลาสูงสุด | Should |
-| FR-ANA-06 | ระบบแสดง project progress เทียบกับเป้าหมายชั่วโมงและแจ้งเตือนเมื่อถึง 80%/100% | Should |
-| FR-ANA-07 | ระบบแสดง productivity trend เทียบระหว่างช่วงวันที่เลือกกับช่วงก่อนหน้า | Should |
-| FR-ANA-08 | ผู้ใช้ส่งออกรายงาน time entries เป็น CSV ได้ | Should |
+| ID        | Requirement                                                                              | Priority |
+| --------- | ---------------------------------------------------------------------------------------- | -------- |
+| FR-ANA-01 | dashboard แสดงชั่วโมงวันนี้ สัปดาห์นี้ เดือนนี้ และแนวโน้มเทียบช่วงก่อนหน้า              | Must     |
+| FR-ANA-02 | dashboard แสดง tracked hours และ utilization ของเวลาที่กำหนดให้วิเคราะห์ได้              | Must     |
+| FR-ANA-03 | ผู้ใช้ดูสัดส่วนเวลาแยกตามลูกค้า โปรเจกต์ และช่วงวันที่ได้                                | Must     |
+| FR-ANA-04 | dashboard แสดงจำนวนโปรเจกต์ active, completed และงานที่ใกล้เกินเป้าหมายชั่วโมง           | Must     |
+| FR-ANA-05 | ระบบแสดงค่าเฉลี่ยชั่วโมงต่อวัน วัน/ช่วงเวลาที่ทำงานมากที่สุด และโปรเจกต์ที่ใช้เวลาสูงสุด | Should   |
+| FR-ANA-06 | ระบบแสดง project progress เทียบกับเป้าหมายชั่วโมงและแจ้งเตือนเมื่อถึง 80%/100%           | Should   |
+| FR-ANA-07 | ระบบแสดง productivity trend เทียบระหว่างช่วงวันที่เลือกกับช่วงก่อนหน้า                   | Should   |
+| FR-ANA-08 | ผู้ใช้ส่งออกรายงาน time entries เป็น CSV ได้                                             | Should   |
 
 ---
 
@@ -147,16 +147,16 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 
 กฎใน MVP เน้นข้อมูลเวลา สถานะงาน และการวิเคราะห์ productivity
 
-| ID | กฎ |
-|---|---|
-| BR-01 | เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด และ duration ต้องมากกว่า 0 |
-| BR-02 | timer ที่ยังทำงานจะมี `started_at` แต่ไม่มี `ended_at`; ระบบคำนวณ duration เมื่อหยุด |
-| BR-03 | time entry ต้องอยู่ภายใต้โปรเจกต์ ส่วน task เป็นข้อมูลที่ไม่บังคับ |
-| BR-04 | time entry ใน MVP ไม่คำนวณรายได้และไม่ต้องมี rate |
-| BR-05 | time entry ใน MVP เก็บ duration และข้อมูลบริบทของงาน โดยไม่คำนวณรายได้ |
+| ID    | กฎ                                                                                     |
+| ----- | -------------------------------------------------------------------------------------- |
+| BR-01 | เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด และ duration ต้องมากกว่า 0                            |
+| BR-02 | timer ที่ยังทำงานจะมี `started_at` แต่ไม่มี `ended_at`; ระบบคำนวณ duration เมื่อหยุด   |
+| BR-03 | time entry ต้องอยู่ภายใต้โปรเจกต์ ส่วน task เป็นข้อมูลที่ไม่บังคับ                     |
+| BR-04 | time entry ใน MVP ไม่คำนวณรายได้และไม่ต้องมี rate                                      |
+| BR-05 | time entry ใน MVP เก็บ duration และข้อมูลบริบทของงาน โดยไม่คำนวณรายได้                 |
 | BR-06 | การ archive ลูกค้าหรือโปรเจกต์ไม่ลบประวัติ และไม่อนุญาตให้เริ่ม timer ใหม่ในรายการนั้น |
-| BR-07 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC และแสดงผลตาม timezone ของผู้ใช้ |
-| BR-08 | analytics ต้องไม่นับ timer ที่ยังไม่หยุดจนกว่าจะระบุเป็นข้อมูลประมาณการอย่างชัดเจน |
+| BR-07 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC และแสดงผลตาม timezone ของผู้ใช้                 |
+| BR-08 | analytics ต้องไม่นับ timer ที่ยังไม่หยุดจนกว่าจะระบุเป็นข้อมูลประมาณการอย่างชัดเจน     |
 
 ---
 
@@ -201,14 +201,14 @@ erDiagram
 
 ### 7.1 Entity ที่แนะนำ
 
-| Entity | Field สำคัญ |
-|---|---|
-| `User` | id, email, passwordHash, role, enabled |
-| `UserProfile` | id, userId, displayName, phone, address, timezone |
-| `Client` | id, ownerId, name, companyName, email, phone, address, taxId, status |
-| `Project` | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate |
-| `Task` | id, projectId, name, description, status, sortOrder |
-| `TimeEntry` | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes |
+| Entity        | Field สำคัญ                                                                       |
+| ------------- | --------------------------------------------------------------------------------- |
+| `User`        | id, email, passwordHash, role, enabled                                            |
+| `UserProfile` | id, userId, displayName, phone, address, timezone                                 |
+| `Client`      | id, ownerId, name, companyName, email, phone, address, taxId, status              |
+| `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate |
+| `Task`        | id, projectId, name, description, status, sortOrder                               |
+| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes  |
 
 ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ project
 
@@ -220,24 +220,24 @@ erDiagram
 
 REST API ใช้ prefix `/api/v1` และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
 
-| Method | Endpoint | หน้าที่ |
-|---|---|---|
-| POST | `/auth/register` | สมัครสมาชิก |
-| POST | `/auth/login` | เข้าสู่ระบบ |
-| GET/PATCH | `/me` | ดู/แก้โปรไฟล์และค่าตั้งต้น |
-| GET/POST | `/clients` | รายการ/สร้างลูกค้า |
-| GET/PATCH/DELETE | `/clients/{id}` | ดู/แก้/archive ลูกค้า |
-| GET/POST | `/projects` | รายการ/สร้างโปรเจกต์ |
-| GET/PATCH/DELETE | `/projects/{id}` | ดู/แก้/archive โปรเจกต์ |
-| GET/POST | `/projects/{id}/tasks` | รายการ/สร้าง task |
-| GET/POST | `/time-entries` | ค้นหา/เพิ่ม time entry |
-| PATCH/DELETE | `/time-entries/{id}` | แก้/ลบ time entry |
-| POST | `/timer/start` | เริ่ม timer |
-| POST | `/timer/stop` | หยุด timer ปัจจุบัน |
-| GET | `/timer/current` | ดู timer ปัจจุบัน |
-| GET | `/analytics/summary` | KPI ตามช่วงวันที่ |
-| GET | `/analytics/time-breakdown` | วิเคราะห์เวลา |
-| GET | `/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV |
+| Method           | Endpoint                    | หน้าที่                    |
+| ---------------- | --------------------------- | -------------------------- |
+| POST             | `/auth/register`            | สมัครสมาชิก                |
+| POST             | `/auth/login`               | เข้าสู่ระบบ                |
+| GET/PATCH        | `/me`                       | ดู/แก้โปรไฟล์และค่าตั้งต้น |
+| GET/POST         | `/clients`                  | รายการ/สร้างลูกค้า         |
+| GET/PATCH/DELETE | `/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
+| GET/POST         | `/projects`                 | รายการ/สร้างโปรเจกต์       |
+| GET/PATCH/DELETE | `/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
+| GET/POST         | `/projects/{id}/tasks`      | รายการ/สร้าง task          |
+| GET/POST         | `/time-entries`             | ค้นหา/เพิ่ม time entry     |
+| PATCH/DELETE     | `/time-entries/{id}`        | แก้/ลบ time entry          |
+| POST             | `/timer/start`              | เริ่ม timer                |
+| POST             | `/timer/stop`               | หยุด timer ปัจจุบัน        |
+| GET              | `/timer/current`            | ดู timer ปัจจุบัน          |
+| GET              | `/analytics/summary`        | KPI ตามช่วงวันที่          |
+| GET              | `/analytics/time-breakdown` | วิเคราะห์เวลา              |
+| GET              | `/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
 
 ข้อกำหนดร่วมของ API:
 
@@ -434,30 +434,30 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ข้อกำหนดในตารางนี้เป็นเงื่อนไขการส่งงานและถือเป็น **Must** ทั้งหมด
 
-| หัวข้อ | Requirement |
-|---|---|
-| Backend | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป |
-| Build | Maven Wrapper |
-| Database | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL |
-| ORM | Spring Data JPA / Hibernate |
-| API | RESTful API พร้อม OpenAPI และ Swagger UI |
-| Frontend | Thymeleaf เชื่อมต่อกับ backend และใช้งาน flow หลักได้จริง |
-| Testing | JUnit 5, Mockito และ Spring Boot Test |
-| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20 |
-| Deployment | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL |
-| Container | มี `Dockerfile` และ `docker-compose.yml` |
+| หัวข้อ          | Requirement                                               |
+| --------------- | --------------------------------------------------------- |
+| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                 |
+| Build           | Maven Wrapper                                             |
+| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                          |
+| ORM             | Spring Data JPA / Hibernate                               |
+| API             | RESTful API พร้อม OpenAPI และ Swagger UI                  |
+| Frontend        | Thymeleaf เชื่อมต่อกับ backend และใช้งาน flow หลักได้จริง |
+| Testing         | JUnit 5, Mockito และ Spring Boot Test                     |
+| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                   |
+| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL      |
+| Container       | มี `Dockerfile` และ `docker-compose.yml`                  |
 
 หมายเหตุ: `pom.xml` ปัจจุบันใช้ Spring Boot `4.2.0-SNAPSHOT` ซึ่งผ่านเงื่อนไข 3.x+ แต่ก่อนพัฒนาจริงควรเปลี่ยนเป็นรุ่น stable ที่รองรับ Java 17 เพื่อลดความเสี่ยงจาก snapshot dependency
 
 ## 16. SOLID Principles และหลักฐานประกอบ
 
-| Principle | Requirement ที่ต้องแสดงในโค้ด |
-|---|---|
-| Single Responsibility | แต่ละ class มีหน้าที่เดียว แยก validation, business logic และ persistence |
-| Open/Closed | รองรับการเพิ่มวิธีคิดค่าจ้างหรือสร้างรายงานด้วย implementation ใหม่โดยไม่เพิ่ม if-else ใน service เดิม |
-| Liskov Substitution | implementation ทุกตัวใช้แทน interface/base type ได้โดยไม่เปลี่ยนผลลัพธ์ที่ผู้เรียกคาดหวัง |
+| Principle             | Requirement ที่ต้องแสดงในโค้ด                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| Single Responsibility | แต่ละ class มีหน้าที่เดียว แยก validation, business logic และ persistence                               |
+| Open/Closed           | รองรับการเพิ่มวิธีคิดค่าจ้างหรือสร้างรายงานด้วย implementation ใหม่โดยไม่เพิ่ม if-else ใน service เดิม  |
+| Liskov Substitution   | implementation ทุกตัวใช้แทน interface/base type ได้โดยไม่เปลี่ยนผลลัพธ์ที่ผู้เรียกคาดหวัง               |
 | Interface Segregation | แยก interface ตาม use case ไม่สร้าง service interface ขนาดใหญ่ที่ผู้ใช้ต้องพึ่ง method ที่ไม่เกี่ยวข้อง |
-| Dependency Inversion | Service ขึ้นกับ interface และรับ dependency ผ่าน constructor เท่านั้น |
+| Dependency Inversion  | Service ขึ้นกับ interface และรับ dependency ผ่าน constructor เท่านั้น                                   |
 
 ต้องจัดทำ `doc/solid-analysis.md` ระบุ Principle, ไฟล์/คลาส, เลขบรรทัด และเหตุผลสั้น ๆ โดยเลขบรรทัดต้องตรวจและอัปเดตก่อนส่งงาน
 
@@ -471,11 +471,11 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 เลือกกลุ่ม Behavioral และใช้ไม่น้อยกว่า 3 patterns ที่สัมพันธ์กับ domain ดังนี้:
 
-| Pattern | การใช้งานที่วางแผนไว้ | ปัญหาที่แก้ |
-|---|---|---|
-| Strategy | `ProductivityMetricStrategy` แยกวิธีคำนวณ utilization, average hours และ project progress | เพิ่ม metric ใหม่ได้โดยไม่แก้ analytics service เดิม |
-| State | `ProjectState` ควบคุม transition ของ PLANNED, ACTIVE, ON_HOLD, COMPLETED และ ARCHIVED | ป้องกันการเริ่มจับเวลาหรือแก้ task ในสถานะที่ไม่อนุญาต |
-| Observer | Spring Application Event เมื่อ timer หยุดหรือโปรเจกต์ถึง 80%/100% ของเป้าหมาย | แยก analytics update และ notification ออกจาก time tracking service |
+| Pattern  | การใช้งานที่วางแผนไว้                                                                     | ปัญหาที่แก้                                                        |
+| -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Strategy | `ProductivityMetricStrategy` แยกวิธีคำนวณ utilization, average hours และ project progress | เพิ่ม metric ใหม่ได้โดยไม่แก้ analytics service เดิม               |
+| State    | `ProjectState` ควบคุม transition ของ PLANNED, ACTIVE, ON_HOLD, COMPLETED และ ARCHIVED     | ป้องกันการเริ่มจับเวลาหรือแก้ task ในสถานะที่ไม่อนุญาต             |
+| Observer | Spring Application Event เมื่อ timer หยุดหรือโปรเจกต์ถึง 80%/100% ของเป้าหมาย             | แยก analytics update และ notification ออกจาก time tracking service |
 
 ห้ามเพิ่ม pattern เพียงเพื่อให้ครบจำนวน ทุก pattern ต้องมี use case, test และอธิบายเหตุผลได้ ต้องจัดทำ `doc/design-patterns.md` เป็นตาราง Pattern, ปัญหาที่แก้, ไฟล์/คลาสที่ใช้ พร้อม Class Diagram
 

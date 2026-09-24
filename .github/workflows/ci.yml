@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BACKEND_DIR: code/Backend
+
+jobs:
+  test:
+    name: Test backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/pom.xml
+
+      - name: Make Maven wrapper executable
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: chmod +x mvnw
+
+      - name: Run tests
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: ./mvnw --batch-mode --no-transfer-progress verify
+
+  migration:
+    name: Validate Flyway migrations
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: freelance_hub
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_user -d freelance_hub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run migrations against an empty PostgreSQL database
+        run: >-
+          docker run --rm --network host
+          -v "$GITHUB_WORKSPACE/${{ env.BACKEND_DIR }}/src/main/resources/db/migration:/flyway/sql:ro"
+          flyway/flyway:11.14.1
+          -url=jdbc:postgresql://localhost:5432/freelance_hub
+          -user=ci_user
+          -password=ci_password
+          -schemas=public
+          -locations=filesystem:/flyway/sql
+          -connectRetries=30
+          migrate
+
+      - name: Validate migration history
+        run: >-
+          docker run --rm --network host
+          -v "$GITHUB_WORKSPACE/${{ env.BACKEND_DIR }}/src/main/resources/db/migration:/flyway/sql:ro"
+          flyway/flyway:11.14.1
+          -url=jdbc:postgresql://localhost:5432/freelance_hub
+          -user=ci_user
+          -password=ci_password
+          -schemas=public
+          -locations=filesystem:/flyway/sql
+          validate
+
+  docker:
+    name: Build Docker image
+    needs:
+      - test
+      - migration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build --tag freelance-hub-backend:${{ github.sha }} ${{ env.BACKEND_DIR }}

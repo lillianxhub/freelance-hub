@@ -39,3 +39,8 @@ resource/
 
 ### Local environment ###
 .env
+.gitignore
+skills-lock.json
+.agents
+
+code/.m2-local
