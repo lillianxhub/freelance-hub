@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,7 @@ class TimeEntryTest {
     @BeforeEach
     void setUp() {
         owner = User.builder()
-                .id(1L)
+                .id(UUID.randomUUID())
                 .email("owner@example.com")
                 .passwordHash("hashed-password")
                 .build();
@@ -78,7 +79,7 @@ class TimeEntryTest {
     @DisplayName("rejects a project owned by another user")
     void rejectsProjectOwnedByAnotherUser() {
         User anotherOwner = User.builder()
-                .id(2L)
+                .id(UUID.randomUUID())
                 .email("another@example.com")
                 .passwordHash("hashed-password")
                 .build();
