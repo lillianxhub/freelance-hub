@@ -76,6 +76,7 @@ Schema สร้าง 9 ตาราง, foreign keys, indexes, validation cons
 ```bash
 npm test
 npm run lint
+npm run typecheck
 npm run build
 ```
 
@@ -90,6 +91,7 @@ src/
 ├── data/             demo seed data
 ├── lib/              Supabase client
 ├── pages/            route-level screens
+├── routes/           typed public/protected route definitions
 ├── services/         auth และ data repository abstraction
 └── utils/            calculations, formatting และ tests
 supabase/
