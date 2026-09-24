@@ -5,7 +5,6 @@ import { WorkspaceProvider } from './contexts/WorkspaceContext'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
-import PlaceholderPage from './pages/PlaceholderPage'
 import ClientsPage from './pages/ClientsPage'
 import ClientDetailPage from './pages/ClientDetailPage'
 import ProjectsPage from './pages/ProjectsPage'
@@ -17,6 +16,7 @@ import NewInvoicePage from './pages/NewInvoicePage'
 import InvoiceDetailPage from './pages/InvoiceDetailPage'
 import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
+import DashboardPage from './pages/DashboardPage'
 import './App.css'
 
 function ProtectedWorkspace() {
@@ -37,7 +37,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route element={<ProtectedWorkspace />}>
-          <Route path="/dashboard" element={<PlaceholderPage title="Overview" description="ภาพรวมธุรกิจฟรีแลนซ์ของคุณ" />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/clients/:clientId" element={<ClientDetailPage />} />
           <Route path="/projects" element={<ProjectsPage />} />

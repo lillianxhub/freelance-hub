@@ -492,6 +492,27 @@
 .settings-note strong { font-size: 10px; }
 .settings-note p { margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
 .settings-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cashflow-total { display: flex; padding: 17px; margin-bottom: 8px; border-radius: 11px; color: #fff; background: linear-gradient(135deg, #3867f4, #6e58c7); flex-direction: column; }
+.cashflow-total span { font-size: 9px; opacity: 0.82; }
+.cashflow-total strong { margin-top: 6px; font-size: 24px; letter-spacing: -0.04em; }
+.legend-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; }
+.legend-dot.blue { background: #3867f4; }
+.legend-dot.violet { background: #8a67dc; }
+.legend-dot.green { background: #1b9c68; }
+.legend-dot.red { background: #dc4c64; }
+.dashboard-projects, .dashboard-tasks { display: flex; flex-direction: column; }
+.dashboard-projects > a { position: relative; display: grid; align-items: center; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--border); color: var(--text); text-decoration: none; grid-template-columns: auto minmax(0, 1fr) auto; }
+.dashboard-projects > a:last-child, .dashboard-tasks > a:last-child { border-bottom: 0; }
+.dashboard-projects > a > span:nth-child(2) strong, .dashboard-projects > a > span:nth-child(2) small, .dashboard-projects > a > span:nth-child(3) strong, .dashboard-projects > a > span:nth-child(3) small { display: block; }
+.dashboard-projects small, .dashboard-tasks small { margin-top: 3px; color: var(--muted); font-size: 8px; }
+.dashboard-projects .progress-track { display: block; width: 100%; height: 5px; margin-top: 8px; }
+.dashboard-projects .progress-track b { display: block; height: 100%; border-radius: inherit; }
+.dashboard-projects em { position: absolute; right: 0; bottom: 5px; color: #b35d22; font-size: 7px; font-style: normal; font-weight: 700; }
+.dashboard-tasks > a { display: grid; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); color: var(--text); text-decoration: none; grid-template-columns: auto minmax(0, 1fr) auto; }
+.dashboard-tasks > a > span:nth-child(2) strong, .dashboard-tasks > a > span:nth-child(2) small, .dashboard-tasks > a > span:last-child small { display: block; }
+.dashboard-tasks > a > span:last-child { text-align: right; }
+.task-state-dot { width: 9px; height: 9px; border: 2px solid #b7c1d2; border-radius: 50%; }
+.recent-time-panel { margin-top: 16px; }
 
 .view-state { display: flex; min-height: 300px; align-items: center; justify-content: center; gap: 10px; color: var(--muted); text-align: center; flex-direction: column; }
 .view-state h2 { margin: 0; color: var(--text); font-size: 17px; }

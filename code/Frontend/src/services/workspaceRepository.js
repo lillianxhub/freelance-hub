@@ -1,7 +1,7 @@
 import { createDemoWorkspace, demoUser } from '../data/demoData'
 import { isDemoMode, supabase } from '../lib/supabase'
 
-const workspaceKey = 'freelance-hub-demo-workspace-v3'
+const workspaceKey = 'freelance-hub-demo-workspace-v4'
 const resources = ['profiles', 'clients', 'projects', 'tasks', 'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments']
 const resourcesWithUpdatedAt = new Set(['profiles', 'clients', 'projects', 'tasks', 'time_entries', 'finance_entries', 'invoices'])
 

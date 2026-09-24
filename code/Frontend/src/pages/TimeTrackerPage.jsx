@@ -71,7 +71,7 @@ function TimeTrackerPage() {
       ended_at: null,
       duration_minutes: null,
       billable,
-      rate_snapshot: selectedProjectData.hourly_rate || profile?.default_hourly_rate || 0,
+      rate_snapshot: selectedProjectData.billing_type === 'HOURLY' ? (selectedProjectData.hourly_rate || profile?.default_hourly_rate || 0) : 0,
       currency: selectedProjectData.currency || profile?.currency || 'THB',
       invoice_id: null,
     })
@@ -140,7 +140,7 @@ function TimeTrackerPage() {
       started_at: startedAt.toISOString(),
       ended_at: endedAt.toISOString(),
       duration_minutes: duration,
-      rate_snapshot: Number(manualForm.rate_snapshot) || project.hourly_rate || profile?.default_hourly_rate || 0,
+      rate_snapshot: project.billing_type === 'HOURLY' ? (Number(manualForm.rate_snapshot) || project.hourly_rate || profile?.default_hourly_rate || 0) : 0,
       currency: project.currency || profile?.currency || 'THB',
       invoice_id: manualForm.invoice_id || null,
     })
