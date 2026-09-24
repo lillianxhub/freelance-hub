@@ -3,7 +3,7 @@
 Freelance Hub คือระบบบริหารงานสำหรับ Freelancer ที่รวมการจัดการลูกค้า โปรเจกต์ และงานย่อยไว้ในที่เดียว
 ระบบรองรับการจับเวลาทำงานแบบ real-time และ manual entry พร้อมสรุปชั่วโมงการทำงาน
 ผู้ใช้สามารถวิเคราะห์เวลาทำงานและดู productivity insights ผ่าน Dashboard
-โปรเจกต์พัฒนาด้วย Spring Boot, Thymeleaf และ PostgreSQL ตาม Layered Architecture
+โปรเจกต์พัฒนาด้วย React + Vite สำหรับ Frontend และ Spring Boot REST API สำหรับ Backend โดยใช้ PostgreSQL บน Supabase ตาม Layered Architecture
 
 > **Project Status:** กำลังพัฒนา
 
@@ -26,18 +26,18 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | Database          | PostgreSQL 16                                                   |
 | ORM               | Spring Data JPA / Hibernate                                     |
 | Web / API         | Spring MVC, RESTful API                                         |
-| Frontend          | React                                                           |
+| Frontend          | React 19, Vite 8, React Router, Recharts                        |
 | API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
 | Version Control   | Git + Github                                                    |
-| Deployment        | Supabase + vercel                                               |
+| Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database) |
 
 ## System Architecture
 
 ระบบใช้ **Layered Architecture** โดยแต่ละ request ต้องไหลตามลำดับและห้าม Controller เรียก Repository โดยตรง
 
 ```text
-Presentation Layer (REST Controller / Web Controller / Thymeleaf)
+Presentation Layer (React UI / REST Controller)
                               |
                               v
 Service Layer (Business Logic / Validation / Transaction)
@@ -87,8 +87,7 @@ cd freelance-hub/code
 
 ### Environment Variables
 
-Backend ใช้ `application.properties` เป็น config กลาง ส่วน Docker Compose โหลดค่าฐานข้อมูล dev จาก
-`code/Backend/.env` อัตโนมัติ คัดลอกไฟล์ตัวอย่างแล้วเปลี่ยนค่าให้ตรงกับเครื่องของตนเอง
+Backend ใช้ `application.properties` เป็น config กลาง ส่วน Frontend ใช้ Vite environment variables และ Docker Compose ของ Backend โหลดค่าฐานข้อมูล dev จาก `code/Backend/.env`
 
 PowerShell:
 
@@ -124,7 +123,7 @@ Flyway จะรัน migration อัตโนมัติเมื่อ appl
 
 ### Local Development ด้วย Docker Compose
 
-ต้องติดตั้ง Docker Desktop และสร้างไฟล์ `code/Backend/.env` จาก `.env.example` ก่อน จากนั้นรันคำสั่งทั้งหมดจากโฟลเดอร์ `code/Backend/`:
+ต้องติดตั้ง Docker Desktop และสร้างไฟล์ `code/Backend/.env` จาก `.env.example` ก่อน จากนั้นรัน Backend จากโฟลเดอร์ `code/Backend/`:
 
 ```bash
 docker compose up --build
@@ -132,9 +131,18 @@ docker compose up --build
 
 เมื่อเริ่มระบบแล้ว:
 
-- Web application: <http://localhost:8080>
+- Backend API: <http://localhost:8080>
 - PostgreSQL: `localhost:5432`
-- Flyway จะรัน migration ที่ยังไม่เคยรันโดยอัตโนมัติก่อนแอปเริ่มทำงาน
+- Flyway จะรัน migration ที่ยังไม่เคยรันโดยอัตโนมัติก่อน Backend เริ่มทำงาน
+
+รัน Frontend แยกจากโฟลเดอร์ `code/Frontend/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Vite จะเปิดที่ <http://localhost:5173>
 
 รันแบบ background:
 
@@ -177,7 +185,7 @@ Income, Expense, Invoice และ Payment เป็น **Post-MVP** และ�
 
 ## How to Run Tests
 
-รัน automated tests จาก `code/`:
+รัน Backend automated tests จาก `code/Backend/`:
 
 Windows:
 
@@ -194,32 +202,37 @@ macOS/Linux:
 สร้าง package พร้อมรัน tests:
 
 ```bash
+npm --prefix ../Frontend run build
 ./mvnw clean verify
 ```
 
-Maven test result อยู่ใน `code/target/surefire-reports/` ส่วน test plan, exported report และหลักฐานการทดสอบสำหรับส่งงานเก็บใน `test/reports/`
+Maven test result อยู่ใน `code/Backend/target/surefire-reports/` และ Frontend build ต้องผ่าน `npm run build` ส่วน test plan, exported report และหลักฐานการทดสอบสำหรับส่งงานเก็บใน `test/reports/`
 
 ## Deployment URL
 
 | Environment | URL                                                  | Status       |
 | ----------- | ---------------------------------------------------- | ------------ |
-| Production  | TODO: `https://your-app.example.com`                 | Not deployed |
-| Swagger UI  | TODO: `https://your-app.example.com/swagger-ui.html` | Not deployed |
+| Frontend (Vercel) | TODO: `https://your-frontend.vercel.app` | Not deployed |
+| Backend API (Render) | TODO: `https://your-backend.onrender.com` | Not deployed |
+| Swagger UI | TODO: `https://your-backend.example.com/swagger-ui.html` | Not deployed |
 
-การ deploy ให้กำหนด **Root Directory เป็น `code`** ระบบ Cloud จะพบ `Dockerfile`, `pom.xml`, Maven Wrapper และ source code ครบโดยไม่ต้อง deploy `doc/`, `test/` หรือ `img/`
+Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อม `VITE_API_URL` ชี้ไปยัง Backend
 
-Production ควรใช้ Managed PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` และ `SPRING_DATASOURCE_PASSWORD` ผ่าน secret/environment settings ของผู้ให้บริการ
+Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
-> **TODO:** ระบุ Cloud provider, public URL, database provider และขั้นตอน deploy จริงก่อนส่งงาน
+Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
+
+> **TODO:** ระบุ Vercel URL, Render URL, Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
 
 ## Project Structure
 
 ```text
 freelance-hub/
-├── code/                         # Deployable Spring Boot application
-│   ├── .mvn/
-│   ├── src/
-│   │   ├── main/
+├── code/
+│   ├── Backend/                  # Spring Boot REST API
+│   │   ├── .mvn/
+│   │   ├── src/
+│   │   │   ├── main/
 │   │   │   ├── java/th/ac/kku/freelance_hub/
 │   │   │   │   ├── config/
 │   │   │   │   ├── controller/
@@ -237,13 +250,19 @@ freelance-hub/
 │   │   │       ├── db/migration/
 │   │   │       ├── static/
 │   │   │       └── templates/
-│   │   └── test/
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   ├── .dockerignore
-│   ├── .env.example
-│   ├── pom.xml
-│   └── mvnw
+│   │   │   └── test/
+│   │   ├── Dockerfile
+│   │   ├── docker-compose.yml
+│   │   ├── .dockerignore
+│   │   ├── .env.example
+│   │   ├── pom.xml
+│   │   └── mvnw
+│   └── Frontend/                 # React + Vite SPA
+│       ├── src/
+│       ├── public/
+│       ├── package.json
+│       ├── package-lock.json
+│       └── vite.config.js
 ├── test/                         # Test plan, reports, and evidence
 ├── doc/                          # Documents, diagrams, and slides
 │   ├── diagrams/
