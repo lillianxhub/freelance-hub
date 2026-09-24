@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ClientsPage from './pages/ClientsPage'
+import ClientDetailPage from './pages/ClientDetailPage'
 import './App.css'
 
 function ProtectedWorkspace() {
@@ -27,8 +29,8 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route element={<ProtectedWorkspace />}>
           <Route path="/dashboard" element={<PlaceholderPage title="Overview" description="ภาพรวมธุรกิจฟรีแลนซ์ของคุณ" />} />
-          <Route path="/clients" element={<PlaceholderPage title="Clients" description="จัดการข้อมูลลูกค้าและโปรเจกต์ของแต่ละราย" />} />
-          <Route path="/clients/:clientId" element={<PlaceholderPage title="Client detail" description="รายละเอียดลูกค้า โปรเจกต์ เวลา และ Invoice" />} />
+          <Route path="/clients" element={<ClientsPage />} />
+          <Route path="/clients/:clientId" element={<ClientDetailPage />} />
           <Route path="/projects" element={<PlaceholderPage title="Projects" description="จัดการโปรเจกต์ งานย่อย และงบประมาณ" />} />
           <Route path="/projects/:projectId" element={<PlaceholderPage title="Project detail" description="ติดตามงาน เวลา และความคืบหน้า" />} />
           <Route path="/time-tracker" element={<PlaceholderPage title="Time tracker" description="จับเวลาและจัดการรายการเวลาทำงาน" />} />

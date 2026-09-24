@@ -310,6 +310,26 @@
 .progress-track > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
 .progress-label { display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--muted); font-size: 9px; }
 
+.pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 22px; color: var(--muted); font-size: 10px; }
+.back-link { display: inline-flex; margin-bottom: 17px; color: var(--primary); font-size: 10px; font-weight: 600; text-decoration: none; }
+.metric-compact { font-size: clamp(18px, 2vw, 24px); }
+.list-stack { display: flex; flex-direction: column; }
+.list-item {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 10px;
+  text-decoration: none;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+.list-item:last-child { border-bottom: 0; }
+.list-item strong, .list-item small { display: block; }
+.list-item small { margin-top: 3px; color: var(--muted); }
+.inline-empty { margin: 0; padding: 28px 0; color: var(--muted); font-size: 10px; text-align: center; }
+
 .table-wrap { overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 10px; }
 .data-table th { padding: 9px 11px; color: var(--muted); background: #f7f8fb; font-size: 8px; letter-spacing: 0.07em; text-align: left; text-transform: uppercase; }
