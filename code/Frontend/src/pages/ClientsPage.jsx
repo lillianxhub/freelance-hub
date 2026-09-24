@@ -15,6 +15,7 @@ function ClientsPage() {
   const { data, loading, error, refresh, save } = useWorkspace()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('ACTIVE')
+  const [sortBy, setSortBy] = useState('UPDATED_DESC')
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -28,11 +29,16 @@ function ClientsPage() {
       .filter((client) => status === 'ALL' || client.status === status)
       .filter((client) => !normalizedQuery || [client.name, client.company_name, client.email, client.phone]
         .some((value) => value?.toLowerCase().includes(normalizedQuery)))
-      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-  }, [data?.clients, query, status])
+      .sort((a, b) => {
+        if (sortBy === 'NAME_ASC') return (a.company_name || a.name).localeCompare(b.company_name || b.name)
+        if (sortBy === 'CREATED_ASC') return new Date(a.created_at) - new Date(b.created_at)
+        return new Date(b.updated_at) - new Date(a.updated_at)
+      })
+  }, [data?.clients, query, sortBy, status])
 
   const totalPages = Math.max(1, Math.ceil(clients.length / pageSize))
-  const visibleClients = clients.slice((page - 1) * pageSize, page * pageSize)
+  const safePage = Math.min(page, totalPages)
+  const visibleClients = clients.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const openCreate = () => {
     setForm(emptyForm)
@@ -97,6 +103,7 @@ function ClientsPage() {
           <option value="ACTIVE">ใช้งานอยู่</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </select>
+        <select className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value); setPage(1) }} aria-label="เรียงลำดับลูกค้า"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></select>
       </div>
 
       {visibleClients.length === 0 ? (
@@ -134,9 +141,9 @@ function ClientsPage() {
 
       {totalPages > 1 && (
         <div className="pagination">
-          <button className="button button-secondary" type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>← ก่อนหน้า</button>
-          <span>หน้า {page} จาก {totalPages}</span>
-          <button className="button button-secondary" type="button" disabled={page === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป →</button>
+          <button className="button button-secondary" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}>← ก่อนหน้า</button>
+          <span>หน้า {safePage} จาก {totalPages}</span>
+          <button className="button button-secondary" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป →</button>
         </div>
       )}
 

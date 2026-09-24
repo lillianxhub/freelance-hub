@@ -17,6 +17,8 @@ function ProjectsPage() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('ALL')
   const [billingType, setBillingType] = useState('ALL')
+  const [sortBy, setSortBy] = useState('UPDATED_DESC')
+  const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [formError, setFormError] = useState('')
@@ -32,8 +34,16 @@ function ProjectsPage() {
         return !normalized || [project.name, project.description, client?.company_name, client?.name]
           .some((value) => value?.toLowerCase().includes(normalized))
       })
-      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-  }, [billingType, data, query, status])
+      .sort((a, b) => {
+        if (sortBy === 'NAME_ASC') return a.name.localeCompare(b.name)
+        if (sortBy === 'END_ASC') return (a.end_date || '9999').localeCompare(b.end_date || '9999')
+        return new Date(b.updated_at) - new Date(a.updated_at)
+      })
+  }, [billingType, data, query, sortBy, status])
+  const pageSize = 6
+  const totalPages = Math.max(1, Math.ceil(projects.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const visibleProjects = projects.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const openCreate = () => {
     setForm({ ...emptyForm, client_id: data.clients.find((client) => client.status === 'ACTIVE')?.id || '' })
@@ -102,16 +112,17 @@ function ProjectsPage() {
       <PageHeader eyebrow="Workspace / Projects" title="Your projects" description="ติดตามขอบเขตงาน งบประมาณ Task และการส่งมอบในมุมมองเดียว" actions={<button className="button button-primary" type="button" onClick={openCreate}>＋ เพิ่มโปรเจกต์</button>} />
 
       <div className="filter-row">
-        <div className="search-box"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ค้นหาโปรเจกต์หรือลูกค้า" /></div>
-        <select className="select-button" value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">ทุกสถานะ</option><option value="PLANNED">วางแผน</option><option value="ACTIVE">กำลังทำ</option><option value="ON_HOLD">พักงาน</option><option value="COMPLETED">เสร็จสิ้น</option><option value="ARCHIVED">เก็บถาวร</option></select>
-        <select className="select-button" value={billingType} onChange={(event) => setBillingType(event.target.value)}><option value="ALL">ทุกรูปแบบราคา</option><option value="HOURLY">รายชั่วโมง</option><option value="FIXED_PRICE">เหมาจ่าย</option></select>
+        <div className="search-box"><span>⌕</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาโปรเจกต์หรือลูกค้า" /></div>
+        <select className="select-button" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }}><option value="ALL">ทุกสถานะ</option><option value="PLANNED">วางแผน</option><option value="ACTIVE">กำลังทำ</option><option value="ON_HOLD">พักงาน</option><option value="COMPLETED">เสร็จสิ้น</option><option value="ARCHIVED">เก็บถาวร</option></select>
+        <select className="select-button" value={billingType} onChange={(event) => { setBillingType(event.target.value); setPage(1) }}><option value="ALL">ทุกรูปแบบราคา</option><option value="HOURLY">รายชั่วโมง</option><option value="FIXED_PRICE">เหมาจ่าย</option></select>
+        <select className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value); setPage(1) }}><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="END_ASC">กำหนดส่งใกล้สุด</option></select>
       </div>
 
       {projects.length === 0 ? (
         <section className="panel"><EmptyState icon="▦" title="ยังไม่พบโปรเจกต์" description="สร้างโปรเจกต์แรกหรือปรับตัวกรอง" action={<button className="button button-primary" type="button" onClick={openCreate}>เพิ่มโปรเจกต์</button>} /></section>
       ) : (
         <div className="card-grid project-card-grid">
-          {projects.map((project) => {
+          {visibleProjects.map((project) => {
             const client = data.clients.find((item) => item.id === project.client_id)
             const tasks = data.tasks.filter((task) => task.project_id === project.id)
             const completedTasks = tasks.filter((task) => task.status === 'DONE').length
@@ -132,6 +143,8 @@ function ProjectsPage() {
           })}
         </div>
       )}
+
+      {totalPages > 1 && <div className="pagination"><button className="button button-secondary" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}>← ก่อนหน้า</button><span>หน้า {safePage} จาก {totalPages}</span><button className="button button-secondary" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป →</button></div>}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขโปรเจกต์' : 'เพิ่มโปรเจกต์'} size="large">
         <form onSubmit={handleSubmit}>
