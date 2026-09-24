@@ -44,6 +44,8 @@ import th.ac.kku.freelance_hub.service.UserService;
 @ExtendWith(MockitoExtension.class)
 class ClientControllerTest {
 
+    private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000007");
+
     @Mock ClientService clientService;
     @Mock UserService userService;
 
@@ -63,8 +65,8 @@ class ClientControllerTest {
 
     @Test
     void createUsesCurrentUserAndReturnsCreated() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
-        when(clientService.create(eq(7L), any(CreateClientRequest.class)))
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.create(eq(OWNER_ID), any(CreateClientRequest.class)))
             .thenReturn(ClientResponse.builder().id(clientId).name("Acme").build());
 
         mockMvc.perform(post("/api/clients")
@@ -74,7 +76,7 @@ class ClientControllerTest {
             .andExpect(header().string("Location", "/api/clients/" + clientId))
             .andExpect(jsonPath("$.name").value("Acme"));
 
-        verify(clientService).create(eq(7L), any(CreateClientRequest.class));
+        verify(clientService).create(eq(OWNER_ID), any(CreateClientRequest.class));
     }
 
     @Test
@@ -89,25 +91,25 @@ class ClientControllerTest {
 
     @Test
     void listUsesCurrentUserAndDefaultFilters() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
         doReturn(new PageImpl<>(List.of(ClientResponse.builder().name("Acme").build()),
             PageRequest.of(0, 20), 1))
-            .when(clientService).list(eq(7L), any(ClientFilterRequest.class));
+            .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
 
         mockMvc.perform(get("/api/clients"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.content[0].name").value("Acme"));
 
-        verify(clientService).list(eq(7L), org.mockito.ArgumentMatchers.argThat(filter ->
+        verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getPage() == 0 && filter.getSize() == 20
                 && filter.getStatus() == null && filter.getSortBy().equals("name")));
     }
 
     @Test
     void listBindsFiltersAndPagination() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
         doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(2, 5), 0))
-            .when(clientService).list(eq(7L), any(ClientFilterRequest.class));
+            .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
 
         mockMvc.perform(get("/api/clients")
                 .param("status", "ARCHIVED")
@@ -118,7 +120,7 @@ class ClientControllerTest {
                 .param("direction", "DESC"))
             .andExpect(status().isOk());
 
-        verify(clientService).list(eq(7L), org.mockito.ArgumentMatchers.argThat(filter ->
+        verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getStatus() == ClientStatus.ARCHIVED
                 && filter.getSearch().equals("Acme")
                 && filter.getPage() == 2 && filter.getSize() == 5
@@ -136,8 +138,8 @@ class ClientControllerTest {
 
     @Test
     void getByIdUsesCurrentUserAndReturnsClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
-        when(clientService.getById(7L, clientId))
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.getById(OWNER_ID, clientId))
             .thenReturn(ClientResponse.builder().id(clientId).name("Acme").build());
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
@@ -145,24 +147,24 @@ class ClientControllerTest {
             .andExpect(jsonPath("$.id").value(clientId.toString()))
             .andExpect(jsonPath("$.name").value("Acme"));
 
-        verify(clientService).getById(7L, clientId);
+        verify(clientService).getById(OWNER_ID, clientId);
     }
 
     @Test
     void getByIdReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
-        when(clientService.getById(7L, clientId)).thenThrow(new ClientNotFoundException(clientId));
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.getById(OWNER_ID, clientId)).thenThrow(new ClientNotFoundException(clientId));
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
             .andExpect(status().isNotFound());
 
-        verify(clientService).getById(7L, clientId);
+        verify(clientService).getById(OWNER_ID, clientId);
     }
 
     @Test
     void updateUsesCurrentUserAndReturnsUpdatedClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
-        when(clientService.update(eq(7L), eq(clientId), any(UpdateClientRequest.class)))
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.update(eq(OWNER_ID), eq(clientId), any(UpdateClientRequest.class)))
             .thenReturn(ClientResponse.builder().id(clientId).name("New Name").build());
 
         mockMvc.perform(patch("/api/clients/{id}", clientId)
@@ -171,7 +173,7 @@ class ClientControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("New Name"));
 
-        verify(clientService).update(eq(7L), eq(clientId),
+        verify(clientService).update(eq(OWNER_ID), eq(clientId),
             org.mockito.ArgumentMatchers.argThat(request ->
                 request.getName().equals("New Name")));
     }
@@ -188,8 +190,8 @@ class ClientControllerTest {
 
     @Test
     void updateReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
-        when(clientService.update(eq(7L), eq(clientId), any(UpdateClientRequest.class)))
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.update(eq(OWNER_ID), eq(clientId), any(UpdateClientRequest.class)))
             .thenThrow(new ClientNotFoundException(clientId));
 
         mockMvc.perform(patch("/api/clients/{id}", clientId)
@@ -197,27 +199,27 @@ class ClientControllerTest {
                 .content("{\"name\":\"New Name\"}"))
             .andExpect(status().isNotFound());
 
-        verify(clientService).update(eq(7L), eq(clientId), any(UpdateClientRequest.class));
+        verify(clientService).update(eq(OWNER_ID), eq(clientId), any(UpdateClientRequest.class));
     }
 
     @Test
     void archiveUsesCurrentUserAndReturnsNoContent() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNoContent());
 
-        verify(clientService).archive(7L, clientId);
+        verify(clientService).archive(OWNER_ID, clientId);
     }
 
     @Test
     void archiveReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(7L).build());
-        doThrow(new ClientNotFoundException(clientId)).when(clientService).archive(7L, clientId);
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        doThrow(new ClientNotFoundException(clientId)).when(clientService).archive(OWNER_ID, clientId);
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNotFound());
 
-        verify(clientService).archive(7L, clientId);
+        verify(clientService).archive(OWNER_ID, clientId);
     }
 }

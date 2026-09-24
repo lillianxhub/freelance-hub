@@ -36,7 +36,7 @@ public class ClientController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ClientResponse> create(@Valid @RequestBody CreateClientRequest request) {
-        Long ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.getCurrentUserEntity().getId();
         ClientResponse response = clientService.create(ownerId, request);
         return ResponseEntity.created(URI.create("/api/clients/" + response.getId())).body(response);
     }
@@ -44,14 +44,14 @@ public class ClientController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<ClientResponse>> list(@Valid @ModelAttribute ClientFilterRequest filter) {
-        Long ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(clientService.list(ownerId, filter));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ClientResponse> getById(@PathVariable UUID id) {
-        Long ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(clientService.getById(ownerId, id));
     }
 
@@ -61,7 +61,7 @@ public class ClientController {
         @PathVariable UUID id,
         @Valid @RequestBody UpdateClientRequest request
     ) {
-        Long ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(clientService.update(ownerId, id, request));
     }
 
@@ -69,7 +69,7 @@ public class ClientController {
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> archive(@PathVariable UUID id) {
-        Long ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.getCurrentUserEntity().getId();
         clientService.archive(ownerId, id);
         return ResponseEntity.noContent().build();
     }
