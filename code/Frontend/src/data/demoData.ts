@@ -12,7 +12,7 @@ export interface DemoUser {
 export const demoUser: DemoUser = {
   id: ownerId,
   email: 'demo@freelancehub.test',
-  full_name: 'Petpinyo Nattadol',
+  full_name: 'nattadol',
   password: 'demo1234',
 }
 
@@ -21,7 +21,7 @@ export const createDemoWorkspace = (): WorkspaceData => ({
     {
       id: ownerId,
       owner_id: ownerId,
-      full_name: 'Petpinyo Nattadol',
+      full_name: 'nattadol sarika ',
       email: 'demo@freelancehub.test',
       phone: '089-123-4567',
       address: '123 Mittraphap Road, Khon Kaen 40000',
