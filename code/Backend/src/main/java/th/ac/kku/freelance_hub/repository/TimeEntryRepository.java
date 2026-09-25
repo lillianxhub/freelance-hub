@@ -9,8 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
@@ -48,15 +46,9 @@ public interface TimeEntryRepository
      * cancelling a timer.</p>
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            SELECT entry
-            FROM TimeEntry entry
-            WHERE entry.owner.id = :ownerId
-              AND entry.entryType = th.ac.kku.freelance_hub.domain.enums.EntryType.TIMER
-              AND entry.endedAt IS NULL
-            """)
-    Optional<TimeEntry> findRunningForUpdate(
-            @Param("ownerId") UUID ownerId
+    Optional<TimeEntry> findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+            UUID ownerId,
+            EntryType entryType
     );
 
     Page<TimeEntry> findAllByOwnerId(UUID ownerId, Pageable pageable);
