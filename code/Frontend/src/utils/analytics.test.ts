@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { groupTimeBy, inDateRange, summarizeTime, toCsv } from './analytics.ts'
+import { groupTimeBy, inDateRange, summarizeTime, toCsv } from './analytics'
 
 const entries = [
   { project_id: 'p1', duration_minutes: 120, billable: true, rate_snapshot: 1000, invoice_id: null },

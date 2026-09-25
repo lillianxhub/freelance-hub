@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --test src/utils/*.test.ts",
+    "test": "node --import tsx --test src/utils/*.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
@@ -24,6 +24,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.0"
   }

@@ -1,4 +1,4 @@
-import { calculateTimeValue } from './formatters.ts'
+import { calculateTimeValue } from './formatters'
 import type { TimeEntry } from '../types/domain'
 
 type TimeSummaryEntry = Pick<TimeEntry, 'duration_minutes' | 'billable' | 'rate_snapshot' | 'invoice_id'>

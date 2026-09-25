@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { calculateTimeValue, formatDuration, formatTimer } from './formatters.ts'
+import { calculateTimeValue, formatDuration, formatTimer } from './formatters'
 
 test('calculateTimeValue uses duration and captured hourly rate', () => {
   assert.equal(calculateTimeValue({ duration_minutes: 90, rate_snapshot: 800, billable: true }), 1200)

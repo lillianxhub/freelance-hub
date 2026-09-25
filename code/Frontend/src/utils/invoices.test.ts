@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { effectiveInvoiceStatus, invoiceBalance } from './invoices.ts'
-import type { InvoiceStatus } from '../types/domain.ts'
+import { effectiveInvoiceStatus, invoiceBalance } from './invoices'
+import type { InvoiceStatus } from '../types/domain'
 
 test('issued invoice becomes overdue after due date with balance remaining', () => {
   const invoice = { status: 'ISSUED' as InvoiceStatus, due_date: '2026-09-20', total: 10000, amount_paid: 2000 }
