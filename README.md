@@ -1,21 +1,21 @@
 # Freelance Hub
 
 Freelance Hub คือระบบบริหารงานสำหรับ Freelancer ที่รวมการจัดการลูกค้า โปรเจกต์ และงานย่อยไว้ในที่เดียว
-ระบบรองรับการจับเวลาทำงาน คำนวณรายได้ และสร้างใบแจ้งหนี้จากเวลาที่บันทึก
-ผู้ใช้สามารถติดตามสถานะการชำระเงิน วิเคราะห์เวลาทำงาน และดู productivity insights ผ่าน Dashboard
-โปรเจกต์พัฒนาด้วย Spring Boot, Thymeleaf และ PostgreSQL ตาม Layered Architecture
+ระบบรองรับการจับเวลาทำงานแบบ real-time และ manual entry พร้อมสรุปชั่วโมงการทำงาน
+ผู้ใช้สามารถวิเคราะห์เวลาทำงานและดู productivity insights ผ่าน Dashboard
+โปรเจกต์พัฒนาด้วย React + Vite สำหรับ Frontend และ Spring Boot REST API สำหรับ Backend โดยใช้ PostgreSQL บน Supabase ตาม Layered Architecture
 
 > **Project Status:** กำลังพัฒนา
 
 ## สมาชิกกลุ่ม
 
-| ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section       | Branch                         | หน้าที่รับผิดชอบ |
-| ----: | --------------------- | ------------ | ------------- | ------------------------------ | ---------------- |
-|     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2     | `petpinyo_673380073-7_02`      | PM/DevOps        |
-|     2 | ณัฏฐดนย์ สาริกา      | 673380511-9  | Section 2 | `nattadol_673380511-9_02` | Frontend และ Dashboard/Analytics |
-|     3 | กรมภัฏ พิริยะ      | 673380262-4   | Section2 | `kompat_673380262-4_02` | TODO: หน้าที่    |
-|     4 | ถิรวัฒน์ อุจินา      | 673380039-7   | Section 2 | `thirawat_673380039-7_02` | TODO: หน้าที่    |
-|     5 | กันตวิชญ์ นาคนวล      | 673380027-4   | Section 1 | `kantavit_673380027-4_01` | TODO: หน้าที่    |
+| ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section   | Branch                    | หน้าที่รับผิดชอบ                    |
+| ----: | --------------------- | ------------ | --------- | ------------------------- | ----------------------------------- |
+|     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2 | `petpinyo_673380073-7_02` | Authentication, Security, PM/DevOps |
+|     2 | ถิรวัฒน์ อุจินา       | 673380039-7  | Section 2 | `thirawat_673380039-7_02` | Client Management                   |
+|     3 | กันตวิชญ์ นาคนวล      | 673380027-4  | Section 1 | `kantavit_673380027-4_01` | Project และ Task Management         |
+|     4 | กรมภัฏ พิริยะ         | 673380262-4  | Section 2 | `kompat_673380262-4_02`   | Time Tracking                       |
+|     5 | ณัฏฐดนย์ สาริกา       | 673380511-9  | Section 2 | `nattadol_673380511-9_02` | Dashboard, Analytics และ Frontend   |
 
 ## Tech Stack
 
@@ -26,18 +26,18 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | Database          | PostgreSQL 16                                                   |
 | ORM               | Spring Data JPA / Hibernate                                     |
 | Web / API         | Spring MVC, RESTful API                                         |
-| Frontend          | Thymeleaf, HTML, CSS, JavaScript                                |
+| Frontend          | React 19, Vite 8, React Router, Recharts                        |
 | API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
 | Version Control   | Git + Github                                                    |
-| Deployment        | Docker, Docker Compose, TODO: Cloud provider                    |
+| Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database) |
 
 ## System Architecture
 
 ระบบใช้ **Layered Architecture** โดยแต่ละ request ต้องไหลตามลำดับและห้าม Controller เรียก Repository โดยตรง
 
 ```text
-Presentation Layer (REST Controller / Web Controller / Thymeleaf)
+Presentation Layer (React UI / REST Controller)
                               |
                               v
 Service Layer (Business Logic / Validation / Transaction)
@@ -56,16 +56,17 @@ Domain Layer (Entity / Value Object / Enum)
 
 ## Database Design (ER Diagram)
 
-ฐานข้อมูลที่วางแผนไว้ประกอบด้วยอย่างน้อย 10 ตาราง ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks`, `time_entries`, `invoices`, `invoice_items`, `payments` และ `transactions`
+ฐานข้อมูล MVP ประกอบด้วย 6 ตารางหลัก ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา
 
 ความสัมพันธ์หลัก:
 
 - One-to-One: `users` → `user_profiles`
 - One-to-Many: `clients` → `projects`
 - One-to-Many: `projects` → `tasks` และ `time_entries`
-- One-to-Many: `invoices` → `invoice_items` และ `payments`
+- ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
 
-> **TODO:** เพิ่ม ER Diagram ที่ `doc/diagrams/er-diagram.png` และแสดงด้วย `![ER Diagram](doc/diagrams/er-diagram.png)`
+ดู schema และความสัมพันธ์ฉบับออกแบบได้ที่ [ER Diagram](doc/diagrams/er-diagram.md)
+และโครงสร้าง JPA Entity ที่ [Domain Class Diagram](doc/diagrams/class-diagram.md)
 
 ดูรายละเอียด field และ constraint ที่ [Data Dictionary](doc/data-dictionary.md)
 
@@ -80,72 +81,85 @@ Domain Layer (Entity / Value Object / Enum)
 ### Clone Repository
 
 ```bash
-git clone <TODO: repository-url>
+git clone https://github.com/lillianxhub/freelance-hub.git
 cd freelance-hub/code
 ```
 
 ### Environment Variables
 
-คัดลอกไฟล์ตัวอย่างเป็น `.env` แล้วเปลี่ยนรหัสผ่านสำหรับเครื่องของตนเอง
+Backend ใช้ `application.properties` เป็น config กลาง ส่วน Frontend ใช้ Vite environment variables และ Docker Compose ของ Backend โหลดค่าฐานข้อมูล dev จาก `code/Backend/.env`
 
 PowerShell:
 
 ```powershell
+cd code/Backend
 Copy-Item .env.example .env
 ```
 
 macOS/Linux:
 
 ```bash
+cd code/Backend
 cp .env.example .env
 ```
 
-| Variable                     | Description                     | Development Default     |
-| ---------------------------- | ------------------------------- | ----------------------- |
-| `POSTGRES_DB`                | ชื่อฐานข้อมูล                   | `freelance_hub`         |
-| `POSTGRES_USER`              | ผู้ใช้ PostgreSQL               | `freelance_hub`         |
-| `POSTGRES_PASSWORD`          | รหัสผ่าน PostgreSQL             | `freelance_hub_dev`     |
-| `POSTGRES_PORT`              | PostgreSQL port บนเครื่อง       | `5432`                  |
-| `APP_PORT`                   | Application port บนเครื่อง      | `8080`                  |
-| `SPRING_DATASOURCE_URL`      | JDBC URL สำหรับ deploy          | กำหนดโดย Docker Compose |
-| `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ deploy | กำหนดโดย Docker Compose |
-| `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ deploy | กำหนดโดย Docker Compose |
+| Variable                     | Description                         | Development Default   |
+| ---------------------------- | ----------------------------------- | --------------------- |
+| `POSTGRES_DB`                | ชื่อฐานข้อมูลสำหรับ Docker          | `freelance_hub`       |
+| `POSTGRES_USER`              | ผู้ใช้ PostgreSQL สำหรับ Docker     | `freelance_hub`       |
+| `POSTGRES_PASSWORD`          | รหัสผ่าน PostgreSQL สำหรับ Docker   | ต้องเปลี่ยนค่า        |
+| `SPRING_JPA_DEFAULT_SCHEMA`  | Schema ของ JPA และ Flyway           | `public`              |
+| `SPRING_DATASOURCE_URL`      | JDBC URL สำหรับ production          | Secret ของ deployment |
+| `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ production | Secret ของ deployment |
+| `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ production | Secret ของ deployment |
+| `JWT_SECRET`                 | Secret สำหรับลงนาม JWT              | Secret ของ deployment |
 
 ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
 
+Flyway จะรัน migration อัตโนมัติเมื่อ application container เริ่มทำงาน โดยอ่านไฟล์จาก
+`src/main/resources/db/migration` ที่บรรจุอยู่ใน JAR ไม่ต้องติดตั้ง Flyway CLI
+
 ## How to Run
 
-### Docker Compose — วิธีที่แนะนำ
+### Local Development ด้วย Docker Compose
 
-คำสั่งทั้งหมดรันจากโฟลเดอร์ `code/`:
+ต้องติดตั้ง Docker Desktop และสร้างไฟล์ `code/Backend/.env` จาก `.env.example` ก่อน จากนั้นรัน Backend จากโฟลเดอร์ `code/Backend/`:
 
 ```bash
 docker compose up --build
 ```
 
-- Web application: <http://localhost:8080>
-- PostgreSQL: `localhost:5432`
+เมื่อเริ่มระบบแล้ว:
 
-หยุดระบบโดยเก็บข้อมูลฐานข้อมูลไว้:
+- Backend API: <http://localhost:8080>
+- PostgreSQL: `localhost:5432`
+- Flyway จะรัน migration ที่ยังไม่เคยรันโดยอัตโนมัติก่อน Backend เริ่มทำงาน
+
+รัน Frontend แยกจากโฟลเดอร์ `code/Frontend/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Vite จะเปิดที่ <http://localhost:5173>
+
+รันแบบ background:
+
+```bash
+docker compose up --build -d
+```
+
+ดู log ของ application:
+
+```bash
+docker compose logs -f app
+```
+
+หยุด container โดยเก็บข้อมูล PostgreSQL ไว้:
 
 ```bash
 docker compose down
-```
-
-### Maven Wrapper
-
-ต้องมี PostgreSQL ทำงานอยู่และกำหนด datasource environment variables ก่อนรัน
-
-Windows:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-macOS/Linux:
-
-```bash
-./mvnw spring-boot:run
 ```
 
 ## API Documentation
@@ -163,14 +177,15 @@ macOS/Linux:
 | Projects       | `/api/v1/projects`     |
 | Time entries   | `/api/v1/time-entries` |
 | Timer          | `/api/v1/timer`        |
-| Invoices       | `/api/v1/invoices`     |
 | Analytics      | `/api/v1/analytics`    |
+
+Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
 
 ## How to Run Tests
 
-รัน automated tests จาก `code/`:
+รัน Backend automated tests จาก `code/Backend/`:
 
 Windows:
 
@@ -187,37 +202,41 @@ macOS/Linux:
 สร้าง package พร้อมรัน tests:
 
 ```bash
+npm --prefix ../Frontend run build
 ./mvnw clean verify
 ```
 
-Maven test result อยู่ใน `code/target/surefire-reports/` ส่วน test plan, exported report และหลักฐานการทดสอบสำหรับส่งงานเก็บใน `test/reports/`
+Maven test result อยู่ใน `code/Backend/target/surefire-reports/` และ Frontend build ต้องผ่าน `npm run build` ส่วน test plan, exported report และหลักฐานการทดสอบสำหรับส่งงานเก็บใน `test/reports/`
 
 ## Deployment URL
 
 | Environment | URL                                                  | Status       |
 | ----------- | ---------------------------------------------------- | ------------ |
-| Production  | TODO: `https://your-app.example.com`                 | Not deployed |
-| Swagger UI  | TODO: `https://your-app.example.com/swagger-ui.html` | Not deployed |
+| Frontend (Vercel) | TODO: `https://your-frontend.vercel.app` | Not deployed |
+| Backend API (Render) | TODO: `https://your-backend.onrender.com` | Not deployed |
+| Swagger UI | TODO: `https://your-backend.example.com/swagger-ui.html` | Not deployed |
 
-การ deploy ให้กำหนด **Root Directory เป็น `code`** ระบบ Cloud จะพบ `Dockerfile`, `pom.xml`, Maven Wrapper และ source code ครบโดยไม่ต้อง deploy `doc/`, `test/` หรือ `img/`
+Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อม `VITE_API_URL` ชี้ไปยัง Backend
 
-Production ควรใช้ Managed PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` และ `SPRING_DATASOURCE_PASSWORD` ผ่าน secret/environment settings ของผู้ให้บริการ
+Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
-> **TODO:** ระบุ Cloud provider, public URL, database provider และขั้นตอน deploy จริงก่อนส่งงาน
+Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
+
+> **TODO:** ระบุ Vercel URL, Render URL, Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
 
 ## Project Structure
 
 ```text
 freelance-hub/
-├── code/                         # Deployable Spring Boot application
-│   ├── .mvn/
-│   ├── src/
-│   │   ├── main/
+├── code/
+│   ├── Backend/                  # Spring Boot REST API
+│   │   ├── .mvn/
+│   │   ├── src/
+│   │   │   ├── main/
 │   │   │   ├── java/th/ac/kku/freelance_hub/
 │   │   │   │   ├── config/
-│   │   │   │   ├── controller/api/
-│   │   │   │   ├── controller/web/
-│   │   │   │   ├── service/impl/
+│   │   │   │   ├── controller/
+│   │   │   │   ├── service/
 │   │   │   │   ├── repository/
 │   │   │   │   ├── domain/entity/
 │   │   │   │   ├── domain/enums/
@@ -231,13 +250,19 @@ freelance-hub/
 │   │   │       ├── db/migration/
 │   │   │       ├── static/
 │   │   │       └── templates/
-│   │   └── test/
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   ├── .dockerignore
-│   ├── .env.example
-│   ├── pom.xml
-│   └── mvnw
+│   │   │   └── test/
+│   │   ├── Dockerfile
+│   │   ├── docker-compose.yml
+│   │   ├── .dockerignore
+│   │   ├── .env.example
+│   │   ├── pom.xml
+│   │   └── mvnw
+│   └── Frontend/                 # React + Vite SPA
+│       ├── src/
+│       ├── public/
+│       ├── package.json
+│       ├── package-lock.json
+│       └── vite.config.js
 ├── test/                         # Test plan, reports, and evidence
 ├── doc/                          # Documents, diagrams, and slides
 │   ├── diagrams/
@@ -250,6 +275,7 @@ freelance-hub/
 ## เอกสารโครงการ
 
 - [Software Requirements Specification](REQUIREMENTS.md)
+- [MVP Team Schedule](SCHEDULE.md)
 - [SOLID Analysis](doc/solid-analysis.md)
 - [Design Patterns](doc/design-patterns.md)
 - [Data Dictionary](doc/data-dictionary.md)
@@ -266,7 +292,7 @@ freelance-hub/
 
 Commit message format: `<type>: <สิ่งที่ทำ>`
 
-ตัวอย่าง `feat: add time tracking API`, `fix: prevent duplicate timer`, `test: add invoice service tests` และ `docs: update ER diagram`
+ตัวอย่าง `feat: add time tracking API`, `fix: prevent duplicate timer`, `test: add project service tests` และ `docs: update ER diagram`
 
 ## License
 
