@@ -164,20 +164,20 @@ docker compose down
 
 ## API Documentation
 
-- Base URL: `http://localhost:8080/api/v1`
+- Base URL: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-> **TODO:** Swagger/OpenAPI ยังต้องเพิ่มใน `pom.xml` และ configuration ก่อน URL ข้างต้นจะใช้งานได้
-
-| Resource       | Endpoint               |
-| -------------- | ---------------------- |
-| Authentication | `/api/v1/auth`         |
-| Clients        | `/api/v1/clients`      |
-| Projects       | `/api/v1/projects`     |
-| Time entries   | `/api/v1/time-entries` |
-| Timer          | `/api/v1/timer`        |
-| Analytics      | `/api/v1/analytics`    |
+| Resource       | Endpoint             |
+| -------------- | -------------------- |
+| Register       | `/api/auth/register` |
+| Login          | `/api/auth/login`    |
+| Logout         | `/api/auth/logout`   |
+| Clients        | `/api/clients`       |
+| Projects       | `/api/projects`      |
+| Time entries   | `/api/time-entries`  |
+| Timer          | `/api/timer`         |
+| Analytics      | `/api/analytics`     |
 
 Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
 

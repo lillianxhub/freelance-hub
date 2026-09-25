@@ -49,6 +49,21 @@ class ClientIntegrationTest {
     }
 
     @Test
+    void malformedAndRevokedTokensAreRejected() throws Exception {
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", "Bearer malformed-token"))
+            .andExpect(status().isUnauthorized());
+
+        String token = registerAndGetToken("revoked-client-token@example.com");
+        mockMvc.perform(post("/api/auth/logout")
+                .header("Authorization", bearer(token)))
+            .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(token)))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void ownerCanManageClientWhileAnotherUserCannotReadOrChangeIt() throws Exception {
         String ownerToken = registerAndGetToken("client-integration-owner@example.com");
         String otherToken = registerAndGetToken("client-integration-other@example.com");

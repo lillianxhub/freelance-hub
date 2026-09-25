@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import th.ac.kku.freelance_hub.service.RevokedTokenService;
 
 import java.io.IOException;
 
@@ -24,6 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService userDetailsService;
+    private final RevokedTokenService revokedTokenService;
 
     @Override
     protected void doFilterInternal(
@@ -35,6 +37,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+                String jti = tokenProvider.getJtiFromToken(jwt);
+                if (!StringUtils.hasText(jti) || revokedTokenService.isRevoked(jti)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 String email = tokenProvider.getEmailFromToken(jwt);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
