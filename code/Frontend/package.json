@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --test src/utils/*.test.js",
+    "test": "node --test src/utils/*.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
@@ -19,6 +19,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@types/node": "^26.6.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

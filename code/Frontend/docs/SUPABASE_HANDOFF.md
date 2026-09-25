@@ -4,10 +4,11 @@
 
 ## จุดเชื่อมหลัก
 
-- `src/lib/supabase.js` สร้าง Supabase client และเลือก Demo/Supabase mode
-- `src/services/authService.js` รวม Auth operations
-- `src/services/workspaceRepository.js` รวม CRUD ของ business resources
-- `src/contexts/WorkspaceContext.jsx` โหลดข้อมูลและ expose `save`, `remove`, `refresh`
+- `src/types/domain.ts` เป็น contract กลางของข้อมูลที่ UI และ repository ใช้ร่วมกัน
+- `src/lib/supabase.ts` สร้าง Supabase client และเลือก Demo/Supabase mode
+- `src/services/authService.ts` รวม Auth operations
+- `src/services/workspaceRepository.ts` รวม CRUD ของ business resources
+- `src/contexts/WorkspaceContext.tsx` โหลดข้อมูลและ expose `save`, `remove`, `refresh`
 - `supabase/migrations/202609250001_initial_schema.sql` คือ schema ที่ frontend คาดหวัง
 
 Component และ page ไม่ควร import Supabase client โดยตรง หากเปลี่ยนวิธีเชื่อม backend ให้แก้ใน service layer นี้

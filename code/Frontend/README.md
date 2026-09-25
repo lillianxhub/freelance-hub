@@ -1,6 +1,6 @@
 # Freelance Hub Frontend
 
-React frontend สำหรับจัดการลูกค้า โปรเจกต์ Task เวลา รายรับ–รายจ่าย Invoice และรายงานของ Freelancer ออกแบบเป็น light workspace ตาม mockup ของทีม และรองรับมือถือ แท็บเล็ต และเดสก์ท็อป
+React + TypeScript frontend สำหรับจัดการลูกค้า โปรเจกต์ Task เวลา รายรับ–รายจ่าย Invoice และรายงานของ Freelancer ออกแบบเป็น light workspace ตาม mockup ของทีม และรองรับมือถือ แท็บเล็ต และเดสก์ท็อป
 
 ระบบทำงานได้ 2 โหมด:
 
@@ -93,9 +93,12 @@ src/
 ├── pages/            route-level screens
 ├── routes/           typed public/protected route definitions
 ├── services/         auth และ data repository abstraction
+├── types/            shared domain models และ UI style types
 └── utils/            calculations, formatting และ tests
 supabase/
 └── migrations/       PostgreSQL schema + RLS
 ```
+
+Source code ทั้งหมดใน `src/` ใช้ TypeScript (`.ts`/`.tsx`) และเปิด `strict` type checking ไว้ ข้อมูลจากทุกหน้าอ้างอิง domain model ชุดเดียวใน `src/types/domain.ts`
 
 UI ไม่เรียก Supabase โดยตรง ทุกหน้าใช้ `workspaceRepository` ผ่าน `WorkspaceContext` ทำให้เพื่อน backend เปลี่ยน data implementation หรือเพิ่ม RPC ได้โดยไม่ต้องแก้ทุกหน้า
