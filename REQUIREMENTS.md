@@ -218,26 +218,27 @@ erDiagram
 
 ## 8. API ระดับสูง
 
-REST API ใช้ prefix `/api/v1` และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
+REST API ใช้ prefix `/api` โดยไม่มี version segment และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
 
 | Method           | Endpoint                    | หน้าที่                    |
 | ---------------- | --------------------------- | -------------------------- |
-| POST             | `/auth/register`            | สมัครสมาชิก                |
-| POST             | `/auth/login`               | เข้าสู่ระบบ                |
-| GET/PATCH        | `/me`                       | ดู/แก้โปรไฟล์และค่าตั้งต้น |
-| GET/POST         | `/clients`                  | รายการ/สร้างลูกค้า         |
-| GET/PATCH/DELETE | `/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
-| GET/POST         | `/projects`                 | รายการ/สร้างโปรเจกต์       |
-| GET/PATCH/DELETE | `/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
-| GET/POST         | `/projects/{id}/tasks`      | รายการ/สร้าง task          |
-| GET/POST         | `/time-entries`             | ค้นหา/เพิ่ม time entry     |
-| PATCH/DELETE     | `/time-entries/{id}`        | แก้/ลบ time entry          |
-| POST             | `/timer/start`              | เริ่ม timer                |
-| POST             | `/timer/stop`               | หยุด timer ปัจจุบัน        |
-| GET              | `/timer/current`            | ดู timer ปัจจุบัน          |
-| GET              | `/analytics/summary`        | KPI ตามช่วงวันที่          |
-| GET              | `/analytics/time-breakdown` | วิเคราะห์เวลา              |
-| GET              | `/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
+| POST             | `/api/auth/register`            | สมัครสมาชิก                |
+| POST             | `/api/auth/login`               | เข้าสู่ระบบ                |
+| POST             | `/api/auth/logout`              | ออกจากระบบและ revoke token |
+| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น |
+| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า         |
+| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
+| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์       |
+| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
+| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task          |
+| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry     |
+| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry          |
+| POST             | `/api/timer/start`              | เริ่ม timer                |
+| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน        |
+| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน          |
+| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่          |
+| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา              |
+| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
 
 ข้อกำหนดร่วมของ API:
 

@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import th.ac.kku.freelance_hub.dto.request.LoginRequest;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
@@ -80,5 +81,26 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Logout user",
+            description = "Revoke the current bearer token on the server"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Logout successful"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Missing, malformed, expired, or revoked token",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @RequestHeader("Authorization") String authorization,
+            Authentication authentication
+    ) {
+        authService.logout(authorization.substring(7), authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }

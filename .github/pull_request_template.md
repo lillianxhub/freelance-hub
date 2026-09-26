@@ -1,32 +1,48 @@
 # Pull Request Template
 
 ## Title
-[Provide a succinct and descriptive title for the pull request, e.g., "Improve caching mechanism for API calls"]
+
+<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้น กระชับ และสื่อความหมาย -->
 
 ## Type of Change
-- [ ] New feature
-- [ ] Bug fix
-- [ ] Documentation update
-- [ ] Refactoring
+
+- [ ] ฟีเจอร์ใหม่
+- [ ] แก้ไขบั๊ก
+- [ ] ปรับปรุงเอกสาร
+- [ ] รีแฟกเตอร์โค้ด
 - [ ] Hotfix
 - [ ] Security patch
-- [ ] UI/UX improvement
+- [ ] ปรับปรุง UI/UX
 
 ## Description
-[Provide a detailed explanation of the changes you have made. Include the reasons behind these changes and any relevant context. Link any related issues.]
+
+<!-- อธิบายการเปลี่ยนแปลง เหตุผล และบริบทที่เกี่ยวข้อง -->
+
+การเปลี่ยนแปลงหลัก:
+
+-
 
 ## Testing
-[Detail the testing you have performed to ensure that these changes function as intended. Include information about any added tests.]
+
+- [ ] Compile หรือ Build ผ่านแล้ว
+- [ ] ทดสอบชุดทดสอบทั้งหมดแล้ว
+- [ ] ทดสอบการทำงานด้วยตนเองแล้ว
+- [ ] ทดสอบ Docker หรือ Database Migration แล้ว (ถ้าเกี่ยวข้อง)
 
 ## Impact
-[Discuss the impact of your changes on the project. This might include effects on performance, new dependencies, or changes in behaviour.]
+
+<!-- อธิบายผลกระทบต่อระบบ ฐานข้อมูล ประสิทธิภาพ หรือพฤติกรรมการทำงาน -->
 
 ## Additional Information
-[Any additional information that reviewers should be aware of.]
+
+<!-- ระบุข้อมูลเพิ่มเติมหรือจุดที่อยากให้ Reviewer เน้นตรวจสอบ -->
 
 ## Checklist
-- [ ] My code adheres to the coding and style guidelines of the project.
-- [ ] I have performed a self-review of my own code.
-- [ ] I have commented my code, particularly in hard-to-understand areas.
-- [ ] I have made corresponding changes to the documentation.
-- [ ] My changes generate no new warnings 
+
+- [ ] โค้ดเป็นไปตามมาตรฐานของโปรเจกต์
+- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
+- [ ] เพิ่ม Comment ในจุดที่จำเป็นแล้ว
+- [ ] ปรับปรุงเอกสารที่เกี่ยวข้องแล้ว
+- [ ] ไม่มีข้อมูลลับหรือ Credential ถูก Commit
+- [ ] ไม่มี Warning หรือ Error ใหม่จากการเปลี่ยนแปลงนี้
+

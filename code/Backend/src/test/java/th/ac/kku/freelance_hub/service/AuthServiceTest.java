@@ -22,7 +22,10 @@ import th.ac.kku.freelance_hub.exception.EmailAlreadyExistsException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
+import th.ac.kku.freelance_hub.service.impl.AuthServiceImpl;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,8 +54,11 @@ class AuthServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private RevokedTokenService revokedTokenService;
+
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authService;
 
     private RegisterRequest registerRequest;
     private LoginRequest loginRequest;
@@ -193,7 +199,6 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
         when(userRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.empty());
-        when(tokenProvider.generateToken(anyString())).thenReturn("jwt-token");
 
         // When & Then
         assertThatThrownBy(() -> authService.login(loginRequest))
@@ -202,6 +207,24 @@ class AuthServiceTest {
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(userRepository).findByEmail(loginRequest.getEmail());
-        verify(tokenProvider).generateToken(anyString());
+        verify(tokenProvider, never()).generateToken(anyString());
+    }
+
+    @Test
+    @DisplayName("Should revoke only the JWT ID during logout")
+    void shouldRevokeTokenDuringLogout() {
+        String token = "raw-jwt-value";
+        String jti = UUID.randomUUID().toString();
+        Instant expiresAt = Instant.now().plusSeconds(3600);
+        Date expiration = Date.from(expiresAt);
+        when(tokenProvider.getEmailFromToken(token)).thenReturn(user.getEmail());
+        when(tokenProvider.getJtiFromToken(token)).thenReturn(jti);
+        when(tokenProvider.getExpirationFromToken(token)).thenReturn(expiration);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        authService.logout(token, user.getEmail());
+
+        verify(revokedTokenService).revoke(jti, user, expiration.toInstant());
+        verify(revokedTokenService, never()).revoke(eq(token), any(), any());
     }
 }
