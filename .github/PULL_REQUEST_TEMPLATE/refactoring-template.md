@@ -1,5 +1,3 @@
-# Refactoring Pull Request Template
-
 ## Refactoring Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงส่วนที่รีแฟกเตอร์ -->
