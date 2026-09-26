@@ -8,6 +8,7 @@ export interface AuthInputProps {
   onChange: ChangeEventHandler<HTMLInputElement>
   autoComplete?: string
   minLength?: number
+  required?: boolean
 }
 
 export interface BackendUser {
@@ -19,6 +20,19 @@ export interface BackendUser {
 export interface AuthResponse {
   token: string
   user: BackendUser
+}
+
+export interface RegisterInput {
+  displayName: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  password: string
+}
+
+export interface RegisterFormValues extends RegisterInput {
+  confirmPassword: string
 }
 
 export interface AuthUser {
@@ -36,6 +50,6 @@ export interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (fullName: string, email: string, password: string) => Promise<void>
+  register: (input: RegisterInput) => Promise<void>
   logout: () => Promise<void>
 }

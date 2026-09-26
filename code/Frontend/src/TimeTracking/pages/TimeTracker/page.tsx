@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import Modal from '../../../components/Modal'
 import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
@@ -11,15 +11,51 @@ import TimeEntryTable from '../../components/TimeEntryTable'
 import TimeEntryForm from '../../components/TimeEntryForm'
 import { createEmptyManualForm, localDateValue } from '../../../utils/timeTracking'
 import { calculateTimeValue } from '../../../utils/formatters'
+import { listTimerTasks } from '../../../services/timerOptions'
+import { createManualTimeEntry, updateTimeEntry } from '../../../services/timeTracking'
+import { getErrorMessage } from '../../../api/apiError'
+import type { Task } from '../../../types/task'
 
 function TimeTrackerPage() {
   const { data, loading, error, refresh, save, remove } = useWorkspace()
   const [manualOpen, setManualOpen] = useState(false)
   const [manualForm, setManualForm] = useState(createEmptyManualForm())
+  const [manualTasks, setManualTasks] = useState<Task[]>([])
+  const [manualTasksLoaded, setManualTasksLoaded] = useState(false)
   const [formError, setFormError] = useState('')
   const [filters, setFilters] = useState<TimeFilters>({ client: 'ALL', project: 'ALL', task: 'ALL', billable: 'ALL', invoice: 'ALL', from: '', to: '' })
 
-  const activeProjects = useMemo(() => (data?.projects || []).filter((project) => project.status === 'ACTIVE'), [data?.projects])
+  const activeProjects = useMemo(
+    () => (data?.projects || []).filter((project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED'),
+    [data?.projects],
+  )
+
+  useEffect(() => {
+    if (!manualOpen || !manualForm.project_id) {
+      setManualTasks([])
+      setManualTasksLoaded(false)
+      return undefined
+    }
+
+    let active = true
+    setManualTasksLoaded(false)
+    listTimerTasks(manualForm.project_id)
+      .then((tasks) => {
+        if (!active) return
+        setManualTasks(tasks)
+        setManualTasksLoaded(true)
+      })
+      .catch(() => {
+        if (!active) return
+        setManualTasks(data.tasks.filter((task) => task.project_id === manualForm.project_id))
+        setManualTasksLoaded(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [data.tasks, manualForm.project_id, manualOpen])
+
   if (loading) return <LoadingState label="LoadingTime entries..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
 
@@ -88,19 +124,29 @@ function TimeTrackerPage() {
       return
     }
 
-    const profile = data.profiles[0]
-    const { manual_mode: _manualMode, entry_date: _entryDate, start_time: _startTime, end_time: _endTime, ...record } = manualForm
-    await save('time_entries', {
-      ...record,
-      task_id: manualForm.task_id || null,
-      started_at: startedAt.toISOString(),
-      ended_at: endedAt.toISOString(),
-      duration_minutes: duration,
-      rate_snapshot: project.billing_type === 'HOURLY' ? (Number(manualForm.rate_snapshot) || project.hourly_rate || profile?.default_hourly_rate || 0) : 0,
-      currency: project.currency || profile?.currency || 'THB',
-      invoice_id: manualForm.invoice_id || null,
-    })
-    setManualOpen(false)
+    try {
+      if (manualForm.id) {
+        await updateTimeEntry(manualForm.id, {
+          projectId: manualForm.project_id,
+          ...(manualForm.task_id ? { taskId: manualForm.task_id } : { clearTask: true }),
+          description: manualForm.description,
+          startedAt: startedAt.toISOString(),
+          endedAt: endedAt.toISOString(),
+        })
+      } else {
+        await createManualTimeEntry({
+          projectId: manualForm.project_id,
+          taskId: manualForm.task_id || null,
+          description: manualForm.description,
+          startedAt: startedAt.toISOString(),
+          ...(manualForm.manual_mode === 'RANGE' ? { endedAt: endedAt.toISOString() } : { durationMinutes: duration }),
+        })
+      }
+      await refresh()
+      setManualOpen(false)
+    } catch (saveError: unknown) {
+      setFormError(getErrorMessage(saveError, 'บันทึกรายการเวลาไม่สำเร็จ'))
+    }
   }
 
   const duplicateEntry = (entry: TimeEntry) => {
@@ -153,7 +199,7 @@ function TimeTrackerPage() {
       </section>
 
       <Modal open={manualOpen} onClose={() => setManualOpen(false)} title={manualForm.id ? 'แก้ไขTime entries' : 'เพิ่มTime entries'} size="large">
-        <TimeEntryForm value={manualForm} projects={data.projects} tasks={data.tasks} error={formError} onChange={handleManualChange} onSubmit={saveManualEntry} onCancel={() => setManualOpen(false)} />
+        <TimeEntryForm value={manualForm} projects={data.projects} tasks={manualTasksLoaded ? manualTasks : data.tasks.filter((task) => task.project_id === manualForm.project_id)} error={formError} onChange={handleManualChange} onSubmit={saveManualEntry} onCancel={() => setManualOpen(false)} />
       </Modal>
     </div>
   )

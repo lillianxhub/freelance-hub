@@ -14,8 +14,13 @@ export interface ApiUser {
   id: string
   email: string
   displayName?: string
+  firstName?: string
+  lastName?: string
   phone?: string
   address?: string
+  city?: string
+  country?: string
+  postalCode?: string
   timezone?: string
   dateFormat?: string
 }
@@ -55,6 +60,26 @@ export interface ApiTask {
   description?: string
   status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
   sortOrder: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ApiTimeEntry {
+  id: string
+  clientId?: string
+  clientName?: string
+  projectId: string
+  projectName?: string
+  taskId?: string
+  taskName?: string
+  description?: string
+  entryType: 'TIMER' | 'MANUAL'
+  startedAt: string
+  endedAt?: string
+  durationMinutes?: number
+  lockedAt?: string
+  running: boolean
+  locked: boolean
   createdAt?: string
   updatedAt?: string
 }

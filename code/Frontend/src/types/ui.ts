@@ -9,7 +9,7 @@ import type { TaskStatus } from './task'
 import type { InvoiceStatus } from './billing'
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'danger'
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'text'
 }
 
 export interface ModalProps extends PropsWithChildren {

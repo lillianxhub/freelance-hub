@@ -9,5 +9,4 @@ export const manageLinks = [
   { to: '/finances', label: 'การเงิน', icon: '฿' },
   // { to: '/invoices', label: 'Invoices', icon: '▤' },
   { to: '/reports', label: 'รายงาน', icon: '◒' },
-  { to: '/settings', label: 'ตั้งค่า', icon: '⚙' },
 ]
