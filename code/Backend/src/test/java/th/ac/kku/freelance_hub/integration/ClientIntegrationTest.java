@@ -60,6 +60,61 @@ class ClientIntegrationTest {
     }
 
     @Test
+    void searchByPhoneReturnsOnlyTheCurrentUsersMatchingClients() throws Exception {
+        String ownerToken = registerAndGetToken("client-phone-owner@example.com");
+        String otherToken = registerAndGetToken("client-phone-other@example.com");
+
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Phone Match\",\"phone\":\"0812345678\"}"))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Different Phone\",\"phone\":\"0999999999\"}"))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Other Owner\",\"phone\":\"0812999999\"}"))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .param("search", "0812"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Phone Match"))
+            .andExpect(jsonPath("$.content[0].phone").value("0812345678"));
+    }
+
+    @Test
+    void searchByAddressReturnsOnlyTheCurrentUsersMatchingClients() throws Exception {
+        String ownerToken = registerAndGetToken("client-address-owner@example.com");
+        String otherToken = registerAndGetToken("client-address-other@example.com");
+
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Address Match\",\"address\":\"123 Main Road\"}"))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Other Owner\",\"address\":\"123 Other Road\"}"))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .param("search", "123"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Address Match"))
+            .andExpect(jsonPath("$.content[0].address").value("123 Main Road"));
+    }
+
+    @Test
     void ownerCanManageClientWhileAnotherUserCannotReadOrChangeIt() throws Exception {
         String ownerToken = registerAndGetToken("client-integration-owner@example.com");
         String otherToken = registerAndGetToken("client-integration-other@example.com");
