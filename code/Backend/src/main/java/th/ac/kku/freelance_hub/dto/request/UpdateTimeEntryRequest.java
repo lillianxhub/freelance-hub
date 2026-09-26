@@ -29,7 +29,7 @@ public class UpdateTimeEntryRequest {
     private UUID taskId;
 
     /** True removes the current task association; cannot be used with taskId. */
-    private boolean clearTask;
+    private Boolean clearTask;
 
     private String description;
 
@@ -42,7 +42,7 @@ public class UpdateTimeEntryRequest {
     public boolean isAnyFieldProvided() {
         return projectId != null
                 || taskId != null
-                || clearTask
+                || isClearTask()
                 || description != null
                 || startedAt != null
                 || endedAt != null;
@@ -51,7 +51,7 @@ public class UpdateTimeEntryRequest {
     @AssertTrue(message = "Task ID and clear task cannot be used together")
     @JsonIgnore
     public boolean isTaskUpdateValid() {
-        return taskId == null || !clearTask;
+        return taskId == null || !isClearTask();
     }
 
     @AssertTrue(message = "Start time and end time must be provided together")
@@ -66,5 +66,9 @@ public class UpdateTimeEntryRequest {
         return startedAt == null
                 || endedAt == null
                 || endedAt.isAfter(startedAt);
+    }
+
+    public boolean isClearTask() {
+        return Boolean.TRUE.equals(clearTask);
     }
 }

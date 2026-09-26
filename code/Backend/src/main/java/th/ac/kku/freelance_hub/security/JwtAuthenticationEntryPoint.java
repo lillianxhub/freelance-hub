@@ -16,20 +16,18 @@ import java.time.LocalDateTime;
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    @Override
-    public void commence(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException authException
-    ) throws IOException, ServletException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write(String.format(
-                "{\"timestamp\":\"%s\",\"status\":401,"
-                        + "\"error\":\"Unauthorized\","
-                        + "\"message\":\"Authentication is required\"}",
-                LocalDateTime.now()
-        ));
-    }
+        @Override
+        public void commence(
+                        HttpServletRequest request,
+                        HttpServletResponse response,
+                        AuthenticationException authException) throws IOException, ServletException {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write(String.format(
+                                "{\"timestamp\":\"%s\",\"status\":401,"
+                                                + "\"error\":\"Unauthorized\","
+                                                + "\"message\":\"Authentication is required\"}",
+                                LocalDateTime.now()));
+        }
 }

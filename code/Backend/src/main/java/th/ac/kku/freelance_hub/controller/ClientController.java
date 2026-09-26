@@ -83,9 +83,8 @@ public class ClientController {
     @PatchMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ClientResponse> update(
-        @PathVariable UUID id,
-        @Valid @RequestBody UpdateClientRequest request
-    ) {
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateClientRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(clientService.update(ownerId, id, request));
     }
