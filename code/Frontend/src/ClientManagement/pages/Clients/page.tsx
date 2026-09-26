@@ -12,7 +12,7 @@ import { validateClient } from '../../client.validators'
 import { getErrorMessage } from '../../../api/apiError'
 
 const emptyForm: ResourceInput<'clients'> = {
-  name: '', company_name: '', email: '', phone: '', address: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#3867f4',
+  name: '', company_name: '', email: '', phone: '', address: '', province: '', district: '', sub_district: '', postal_code: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#3867f4',
 }
 
 function ClientsPage() {
@@ -59,6 +59,10 @@ function ClientsPage() {
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target
     setForm((current) => ({ ...current, [name]: value }))
+  }
+
+  const handleFieldsChange = (values: Partial<ResourceInput<'clients'>>) => {
+    setForm((current) => ({ ...current, ...values }))
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -130,7 +134,7 @@ function ClientsPage() {
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'} size="large">
-        <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
+        <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onFieldsChange={handleFieldsChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
       </Modal>
     </div>
   )

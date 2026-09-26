@@ -5,3 +5,7 @@ export function isValidEmail(email: string): boolean {
 export function hasRequiredPassword(password: string): boolean {
   return password.length >= 8
 }
+
+export function passwordsMatch(password: string, confirmation: string): boolean {
+  return password === confirmation
+}

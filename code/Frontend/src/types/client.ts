@@ -8,6 +8,10 @@ export interface Client extends OwnedRecord {
   email: string
   phone: string
   address: string
+  province: string
+  district: string
+  sub_district: string
+  postal_code: string
   tax_id: string
   notes: string
   status: ClientStatus

@@ -52,7 +52,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
           {manageLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
         </nav>
 
-        <div className="sidebar-bottom">
+        {/* <div className="sidebar-bottom">
           <NavLink className="help-card" to="/reports" onClick={onClose}>
             <span className="help-icon">?</span>
             <span><strong>ต้องการความช่วยเหลือ?</strong><small>ดูรายงานและคู่มือ</small></span>
@@ -62,7 +62,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
             <span className="avatar">{initials(name)}</span>
             <span className="profile-copy"><strong>{name}</strong><small>{profile?.email || user?.email}</small></span>
           </div>
-        </div>
+        </div> */}
       </aside>
     </>
   )

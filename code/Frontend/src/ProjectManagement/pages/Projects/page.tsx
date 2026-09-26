@@ -123,14 +123,14 @@ function ProjectsPage() {
       setFormError("กรุณาระบุชื่อโปรเจกต์และลูกค้า");
       return;
     }
-    if (form.billing_type === "HOURLY" && Number(form.hourly_rate) <= 0) {
-      setFormError("โปรเจกต์รายชั่วโมงต้องมีอัตราต่อชั่วโมงมากกว่า 0");
-      return;
-    }
-    if (form.billing_type === "FIXED_PRICE" && Number(form.fixed_price) <= 0) {
-      setFormError("โปรเจกต์เหมาจ่ายต้องมีมูลค่างานมากกว่า 0");
-      return;
-    }
+    // if (form.billing_type === "HOURLY" && Number(form.hourly_rate) <= 0) {
+    //   setFormError("โปรเจกต์รายชั่วโมงต้องมีอัตราต่อชั่วโมงมากกว่า 0");
+    //   return;
+    // }
+    // if (form.billing_type === "FIXED_PRICE" && Number(form.fixed_price) <= 0) {
+    //   setFormError("โปรเจกต์เหมาจ่ายต้องมีมูลค่างานมากกว่า 0");
+    //   return;
+    // }
     if (form.start_date && form.end_date && form.end_date < form.start_date) {
       setFormError("วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่ม");
       return;
