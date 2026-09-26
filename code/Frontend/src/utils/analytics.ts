@@ -1,8 +1,5 @@
 import { calculateTimeValue } from './formatters'
-import type { TimeEntry } from '../types/domain'
-
-type TimeSummaryEntry = Pick<TimeEntry, 'duration_minutes' | 'billable' | 'rate_snapshot' | 'invoice_id'>
-type CsvValue = string | number | boolean | null | undefined
+import type { CsvValue, TimeSummaryEntry } from '../types/analytics'
 
 export function inDateRange(value: string, from: string, to: string) {
   const date = String(value || '').slice(0, 10)

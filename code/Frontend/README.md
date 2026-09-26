@@ -1,77 +1,23 @@
 # Freelance Hub Frontend
 
-React + TypeScript frontend สำหรับจัดการลูกค้า โปรเจกต์ Task เวลา รายรับ–รายจ่าย Invoice และรายงานของ Freelancer ออกแบบเป็น light workspace ตาม mockup ของทีม และรองรับมือถือ แท็บเล็ต และเดสก์ท็อป
+React + TypeScript frontend สำหรับจัดการลูกค้า โปรเจกต์ งาน เวลา การเงิน Invoice และรายงาน ข้อมูล workspace ถูกบันทึกผ่าน Spring Boot backend พร้อม JWT ของผู้ใช้แต่ละคน
 
-ระบบทำงานได้ 2 โหมด:
+## เริ่มใช้งาน
 
-- Demo mode: ใช้ข้อมูลตัวอย่างใน Local Storage สำหรับพัฒนา UI และสาธิตโดยไม่ต้องมี backend
-- Supabase mode: ใช้ Supabase Auth, PostgreSQL และ Row Level Security จริง โดยไม่ต้องแก้ component
+1. ตั้งค่า PostgreSQL และค่าใน `code/Backend/.env` ตาม `.env.example`
+2. จาก `code/Backend` รัน `bash ./mvnw spring-boot:run` (ค่าเริ่มต้นที่ port 8080)
+3. จาก `code/Frontend` รัน `npm install` และ `npm run dev`
+4. เปิด `http://localhost:5173` และสมัครบัญชีใหม่
 
-## ฟีเจอร์ที่พร้อมใช้งาน
+Vite ส่งคำขอ `/api` ไปที่ backend ในเครื่องโดยอัตโนมัติ หากใช้ reverse proxy หรือ URL อื่นให้ตั้ง `VITE_API_BASE_URL` ตาม `.env.example` และให้ backend อนุญาต origin นั้น
 
-- สมัคร เข้าสู่ระบบ ออกจากระบบ และขอ reset password
-- Client CRUD, search, status filter, pagination, archive และหน้ารายละเอียด
-- Project/Task CRUD, reorder, status, hourly/fixed price และ budget alerts
-- Timer ที่ทำงานได้ครั้งละหนึ่งรายการ, manual entry, edit/delete/duplicate และ filters
-- Income/expense พร้อมสรุป cash flow
-- Invoice จาก unbilled time หรือ manual items, tax/discount, Draft edit, Issue, partial/full payment, Void และพิมพ์เป็น PDF
-- Dashboard วันนี้/สัปดาห์/เดือน, utilization, revenue states, project progress และ upcoming tasks
-- Reports ตามช่วงวันที่/สกุลเงิน, project/client breakdown, effective hourly rate และ CSV exports
-- Profile, invoice seller/bank details, timezone, currency, date format, default rate และ tax
-- Loading, empty และ error states ทุกกลุ่มหน้าหลัก
+การเข้าสู่ระบบใช้ `/api/auth/login`, การสมัครใช้ `/api/auth/register`, และการตรวจ session ใช้ `/api/users/me` หน้าอื่นใช้ `/api/workspace/{resource}` เพื่ออ่าน บันทึก และลบข้อมูลของบัญชีปัจจุบัน backend ใช้ตาราง `workspace_records` จาก Flyway migration V7 และกำหนด `owner_id` จาก JWT เสมอ
 
-## เริ่มใช้งานแบบ Demo
+ข้อมูลตัวอย่างเดิมที่อยู่ใน Local Storage หรือ Supabase จะไม่ถูกย้ายเข้าฐานข้อมูลใหม่นี้โดยอัตโนมัติ
 
-ต้องมี Node.js 20 ขึ้นไป จากโฟลเดอร์ `code/Frontend` รัน:
+API ตั้งรหัสผ่านใหม่ยังไม่มีใน backend หน้าลืมรหัสผ่านจะแสดงสถานะนี้ให้ผู้ใช้ทราบ
 
-```bash
-npm install
-npm run dev
-```
-
-เปิด <http://localhost:5173> และใช้บัญชี:
-
-- Email: `demo@freelancehub.test`
-- Password: `demo1234`
-
-Demo mode เป็นค่าเริ่มต้น ข้อมูลอยู่ใน Local Storage และกดคืนข้อมูลเริ่มต้นได้ที่ Settings
-
-## เชื่อม Supabase
-
-1. สร้าง Supabase project
-2. เปิด SQL Editor แล้วรัน `supabase/migrations/202609250001_initial_schema.sql`
-3. เปิด Email/Password provider ที่ Authentication
-4. คัดลอก `.env.example` เป็น `.env.local`
-5. ใส่ค่า Project URL และ Publishable key จาก Supabase
-
-```env
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
-VITE_DEMO_MODE=false
-```
-
-รีสตาร์ต dev server หลังแก้ environment variables ห้ามนำ `service_role` key ใส่ frontend เพราะ key นี้ข้าม Row Level Security ได้
-
-Schema สร้าง 9 ตาราง, foreign keys, indexes, validation constraints, trigger สร้าง profile หลังสมัคร, one-running-timer guard, duplicate invoice-time guard และ RLS ที่บังคับ `owner_id = auth.uid()` แล้ว
-
-ดูรายละเอียดสำหรับส่งต่อ backend ที่ [Supabase handoff](docs/SUPABASE_HANDOFF.md)
-
-## Routes
-
-| Route | หน้าที่ |
-|---|---|
-| `/login`, `/register`, `/forgot-password` | Authentication |
-| `/dashboard` | ภาพรวมและ analytics |
-| `/clients`, `/clients/:clientId` | ลูกค้า |
-| `/projects`, `/projects/:projectId` | โปรเจกต์และ Task |
-| `/time-tracker` | Timer และ time entries |
-| `/finances` | รายรับและค่าใช้จ่าย |
-| `/invoices`, `/invoices/new` | รายการและสร้าง Invoice |
-| `/invoices/:invoiceId`, `/invoices/:invoiceId/edit` | ดูและแก้ไข Draft |
-| `/reports` | Analytics และ CSV |
-| `/settings` | Profile และค่าเริ่มต้น |
-
-## ตรวจสอบก่อนส่งงาน
+## ตรวจสอบ
 
 ```bash
 npm test
@@ -80,25 +26,14 @@ npm run typecheck
 npm run build
 ```
 
-Automated tests ตรวจสูตรเวลาทำงาน, utilization, invoice balance/overdue และ CSV escaping ส่วน production build อยู่ใน `dist/` ซึ่งไม่ถูก commit
+## โครงสร้าง
 
-## โครงสร้างสำคัญ
+`src/Authentication`, `src/Workspace`, `src/ClientManagement`, `src/ProjectManagement`, `src/TimeTracking`, `src/Analytics`, `src/Billing` และ `src/Settings` แยก Context, hooks, components และ pages ตามหน้าที่ ส่วนโค้ดที่ใช้ร่วมกันอยู่ในโฟลเดอร์กลาง:
 
-```text
-src/
-├── components/       shared UI และ app shell
-├── contexts/         auth/workspace state
-├── data/             demo seed data
-├── lib/              Supabase client
-├── pages/            route-level screens
-├── routes/           typed public/protected route definitions
-├── services/         auth และ data repository abstraction
-├── types/            shared domain models และ UI style types
-└── utils/            calculations, formatting และ tests
-supabase/
-└── migrations/       PostgreSQL schema + RLS
-```
+- `src/api` เก็บ fetch wrapper และ HTTP helpers
+- `src/services` เก็บการเรียก backend และการจัดการข้อมูลจาก API
+- `src/utils` เก็บฟังก์ชันคำนวณ จัดรูปแบบ และแปลงข้อมูล
+- `src/components` เก็บ UI ที่ใช้ร่วมกันหลายฟีเจอร์
+- `src/types` เก็บ type และ interface โดยแยกไฟล์ตามข้อมูลหรือหน้าที่ใช้งาน
 
-Source code ทั้งหมดใน `src/` ใช้ TypeScript (`.ts`/`.tsx`) และเปิด `strict` type checking ไว้ ข้อมูลจากทุกหน้าอ้างอิง domain model ชุดเดียวใน `src/types/domain.ts`
-
-UI ไม่เรียก Supabase โดยตรง ทุกหน้าใช้ `workspaceRepository` ผ่าน `WorkspaceContext` ทำให้เพื่อน backend เปลี่ยน data implementation หรือเพิ่ม RPC ได้โดยไม่ต้องแก้ทุกหน้า
+โค้ด TypeScript ไม่ใช้ `any` เมื่อระบุชนิดข้อมูลได้ หากรับค่าที่ไม่ทราบรูปแบบ ให้ใช้ `unknown` และตรวจชนิดก่อนนำไปใช้งาน

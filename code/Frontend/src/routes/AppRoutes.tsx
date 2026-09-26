@@ -1,30 +1,25 @@
-import { lazy, type ReactNode } from 'react'
+import { lazy } from 'react'
 import { Navigate, useRoutes, type RouteObject } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
-import ProtectedRoute from '../components/ProtectedRoute'
-import { WorkspaceProvider } from '../contexts/WorkspaceContext'
+import ProtectedRoute from '../Authentication/components/ProtectedRoute'
+import { WorkspaceProvider } from '../Workspace/WorkspaceContext'
+import type { AppRouteDefinition } from '../types/routes'
 
-const LoginPage = lazy(() => import('../pages/LoginPage'))
-const RegisterPage = lazy(() => import('../pages/RegisterPage'))
-const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage'))
-const DashboardPage = lazy(() => import('../pages/DashboardPage'))
-const ClientsPage = lazy(() => import('../pages/ClientsPage'))
-const ClientDetailPage = lazy(() => import('../pages/ClientDetailPage'))
-const ProjectsPage = lazy(() => import('../pages/ProjectsPage'))
-const ProjectDetailPage = lazy(() => import('../pages/ProjectDetailPage'))
-const TimeTrackerPage = lazy(() => import('../pages/TimeTrackerPage'))
-const FinancesPage = lazy(() => import('../pages/FinancesPage'))
-const InvoicesPage = lazy(() => import('../pages/InvoicesPage'))
-const NewInvoicePage = lazy(() => import('../pages/NewInvoicePage'))
-const InvoiceDetailPage = lazy(() => import('../pages/InvoiceDetailPage'))
-const ReportsPage = lazy(() => import('../pages/ReportsPage'))
-const SettingsPage = lazy(() => import('../pages/SettingsPage'))
-
-type AppRouteDefinition = {
-  path: string
-  label: string
-  element: ReactNode
-}
+const LoginPage = lazy(() => import('../Authentication/pages/Login/page'))
+const RegisterPage = lazy(() => import('../Authentication/pages/Register/page'))
+const ForgotPasswordPage = lazy(() => import('../Authentication/pages/ForgotPassword/page'))
+const DashboardPage = lazy(() => import('../Analytics/pages/Dashboard/page'))
+const ClientsPage = lazy(() => import('../ClientManagement/pages/Clients/page'))
+const ClientDetailPage = lazy(() => import('../ClientManagement/pages/ClientDetail/page'))
+const ProjectsPage = lazy(() => import('../ProjectManagement/pages/Projects/page'))
+const ProjectDetailPage = lazy(() => import('../ProjectManagement/pages/ProjectDetail/page'))
+const TimeTrackerPage = lazy(() => import('../TimeTracking/pages/TimeTracker/page'))
+const FinancesPage = lazy(() => import('../Billing/pages/Finances/page'))
+const InvoicesPage = lazy(() => import('../Billing/pages/Invoices/page'))
+const NewInvoicePage = lazy(() => import('../Billing/pages/NewInvoice/page'))
+const InvoiceDetailPage = lazy(() => import('../Billing/pages/InvoiceDetail/page'))
+const ReportsPage = lazy(() => import('../Analytics/pages/Reports/page'))
+const SettingsPage = lazy(() => import('../Settings/pages/Settings/page'))
 
 const publicRoutes: AppRouteDefinition[] = [
   { path: '/login', label: 'Login', element: <LoginPage /> },

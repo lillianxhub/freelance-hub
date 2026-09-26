@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import type { EmptyStateProps, ErrorStateProps, LoadingStateProps } from '../types/ui'
 
-export function LoadingState({ label = 'กำลังโหลดข้อมูล...' }: { label?: string }) {
+export function LoadingState({ label = 'กำลังโหลดข้อมูล...' }: LoadingStateProps) {
   return (
     <div className="view-state" aria-busy="true">
       <span className="loading-spinner" />
@@ -9,7 +9,7 @@ export function LoadingState({ label = 'กำลังโหลดข้อม�
   )
 }
 
-export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div className="view-state error-view" role="alert">
       <span className="state-symbol">!</span>
@@ -18,13 +18,6 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       {onRetry && <button className="button button-primary" type="button" onClick={onRetry}>ลองใหม่</button>}
     </div>
   )
-}
-
-interface EmptyStateProps {
-  icon?: string
-  title: string
-  description: string
-  action?: ReactNode
 }
 
 export function EmptyState({ icon = '◇', title, description, action }: EmptyStateProps) {

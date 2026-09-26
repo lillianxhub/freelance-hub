@@ -1,33 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { useAuth } from '../contexts/authContextValue'
-import { useWorkspace } from '../contexts/workspaceContextValue'
+import { useAuth } from '../Authentication/useAuthentication'
+import { useWorkspace } from '../Workspace/useWorkspace'
 import { initials } from '../utils/formatters'
-
-const workspaceLinks = [
-  { to: '/dashboard', label: 'Overview', icon: '⌂' },
-  { to: '/projects', label: 'Projects', icon: '▦' },
-  { to: '/time-tracker', label: 'Time tracker', icon: '◷' },
-  { to: '/clients', label: 'Clients', icon: '♧' },
-]
-
-const manageLinks = [
-  { to: '/finances', label: 'Finances', icon: '฿' },
-  { to: '/invoices', label: 'Invoices', icon: '▤' },
-  { to: '/reports', label: 'Reports', icon: '◒' },
-  { to: '/settings', label: 'Settings', icon: '⚙' },
-]
-
-interface SidebarLinkProps {
-  to: string
-  label: string
-  icon: string
-  badge?: number
-}
-
-interface SidebarProps {
-  open: boolean
-  onClose: () => void
-}
+import { manageLinks, workspaceLinks } from '../constants/navigation'
+import type { SidebarLinkProps, SidebarProps } from '../types/ui'
 
 function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
   return (

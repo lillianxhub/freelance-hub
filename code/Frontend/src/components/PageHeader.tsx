@@ -1,11 +1,4 @@
-import type { ReactNode } from 'react'
-
-interface PageHeaderProps {
-  eyebrow?: string
-  title: string
-  description?: string
-  actions?: ReactNode
-}
+import type { PageHeaderProps } from '../types/ui'
 
 function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (

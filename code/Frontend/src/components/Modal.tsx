@@ -1,12 +1,5 @@
-import { useEffect, type PropsWithChildren } from 'react'
-
-interface ModalProps extends PropsWithChildren {
-  open: boolean
-  title: string
-  eyebrow?: string
-  onClose: () => void
-  size?: 'small' | 'medium' | 'large'
-}
+import { useEffect } from 'react'
+import type { ModalProps } from '../types/ui'
 
 function Modal({ open, title, eyebrow = 'Workspace', onClose, children, size = 'medium' }: ModalProps) {
   useEffect(() => {

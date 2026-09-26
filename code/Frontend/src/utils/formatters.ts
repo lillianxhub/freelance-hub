@@ -1,4 +1,4 @@
-import type { TimeEntry } from '../types/domain'
+import type { TimeEntry } from '../types/timeTracking'
 
 export function formatMoney(amount: number | string | null | undefined = 0, currency = 'THB') {
   return new Intl.NumberFormat('th-TH', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(amount) || 0)

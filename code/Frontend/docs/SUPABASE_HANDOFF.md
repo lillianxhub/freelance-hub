@@ -1,5 +1,7 @@
 # Supabase backend handoff
 
+> เอกสารเก่าสำหรับระบบ Supabase เดิม โครงสร้างและ backend ปัจจุบันอธิบายใน `README.md`; path ในเอกสารนี้ไม่ได้ใช้งานแล้ว
+
 เอกสารนี้อธิบายจุดเชื่อมระหว่าง React frontend และ Supabase เพื่อให้แก้ backend โดยไม่กระทบ UI
 
 ## จุดเชื่อมหลัก
