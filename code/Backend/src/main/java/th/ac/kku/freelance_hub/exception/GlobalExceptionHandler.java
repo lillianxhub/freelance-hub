@@ -62,6 +62,17 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
+        @ExceptionHandler(InvalidCredentialsException.class)
+        public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+                ErrorResponse error = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.UNAUTHORIZED.value())
+                                .error("Unauthorized")
+                                .message("Invalid email or password")
+                                .build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
         @ExceptionHandler(MethodArgumentNotValidException.class)
         public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
                         MethodArgumentNotValidException ex) {

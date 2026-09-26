@@ -22,6 +22,10 @@ public class ClientResponse {
     private String email;
     private String phone;
     private String address;
+    private String subdistrict;
+    private String district;
+    private String province;
+    private String postalCode;
     private String taxId;
     private String notes;
     private ClientStatus status;

@@ -21,7 +21,7 @@
 
 ## UC-CLI-01 Create Client
 
-1. Freelancer ส่งชื่อ Client และข้อมูลติดต่อ/บริษัท/ที่อยู่/เลขผู้เสียภาษี/หมายเหตุที่ต้องการ
+1. Freelancer ส่งชื่อ Client และข้อมูลติดต่อ/บริษัท/ที่อยู่/เลขผู้เสียภาษี/หมายเหตุที่ต้องการ โดยที่อยู่ใช้ flat fields `address`, `subdistrict`, `district`, `province`, `postalCode`
 2. Controller ตรวจ `CreateClientRequest` ด้วย `@Valid` และอ่าน owner จากผู้ใช้ที่ล็อกอิน
 3. Service โหลด owner, ให้ mapper สร้าง `Client` แล้ว repository บันทึก
 4. ระบบคืน `201 Created`, `ClientResponse` และ `Location: /api/clients/{id}`
@@ -32,7 +32,7 @@
 ## UC-CLI-02 List/Search Clients
 
 1. Freelancer เรียก `GET /api/clients` พร้อม query parameter ที่ต้องการ: `status`, `search`, `page`, `size`, `sortBy`, `direction`
-2. Service สร้าง query ที่จำกัด `ownerId` ก่อนเสมอ และเพิ่ม status หรือ prefix search ใน `name`, `companyName`, `email`, `phone`, `address` เมื่อระบุ
+2. Service สร้าง query ที่จำกัด `ownerId` ก่อนเสมอ และเพิ่ม status หรือ prefix search ใน `name`, `companyName`, `email`, `phone` และข้อมูลที่อยู่เมื่อระบุ; ที่อยู่ถูกเก็บผ่าน `addresses` และ `address_id`
 3. Repository คืน `Page<Client>`; mapper แปลงเป็น `Page<ClientResponse>` และ controller คืน `200`
 
 **Alternative flow:** ไม่ระบุ status = รวม `ACTIVE` และ `ARCHIVED`; ไม่มีผลลัพธ์ = page ว่าง; filter/page/size/sort ไม่ถูกต้อง = `400`; ไม่มี JWT = `401`  
@@ -56,6 +56,9 @@
 
 **Alternative flow:** ข้อมูลไม่ถูกต้อง = `400`; ไม่พบ/ไม่ใช่เจ้าของ = `404`; ไม่มี JWT = `401`  
 **Postcondition:** เฉพาะข้อมูลที่ส่งมาได้รับการแก้ไข; `status` ไม่ใช่ฟิลด์ของ PATCH
+
+ข้อมูลที่อยู่ของ Client ใช้ contract เดียวกับ User Profile และ response ยังคงแสดงเป็น flat fields
+แม้ persistence จะอ้างอิงตาราง `addresses` ผ่าน `address_id`
 
 ## UC-CLI-05 Archive Client
 

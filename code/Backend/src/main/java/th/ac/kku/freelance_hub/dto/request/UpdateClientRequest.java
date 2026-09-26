@@ -39,6 +39,18 @@ public class UpdateClientRequest {
 
     private String address;
 
+    @Size(max = 100, message = "Subdistrict must not exceed 100 characters")
+    private String subdistrict;
+
+    @Size(max = 100, message = "District must not exceed 100 characters")
+    private String district;
+
+    @Size(max = 100, message = "Province must not exceed 100 characters")
+    private String province;
+
+    @Size(max = 20, message = "Postal code must not exceed 20 characters")
+    private String postalCode;
+
     @Size(max = 30, message = "Tax ID must not exceed 30 characters")
     private String taxId;
 

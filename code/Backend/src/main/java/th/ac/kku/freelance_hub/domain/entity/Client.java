@@ -18,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -71,8 +72,12 @@ public class Client {
     @Column(length = 30)
     private String phone;
 
-    @Column(columnDefinition = "text")
-    private String address;
+    @OneToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(
+        name = "address_id",
+        foreignKey = @ForeignKey(name = "fk_clients_address")
+    )
+    private Address address;
 
     @Column(name = "tax_id", length = 30)
     private String taxId;
@@ -102,6 +107,25 @@ public class Client {
         this.name = requireName(name);
     }
 
+    public void updateDetailsWithAddress(
+        String name,
+        String companyName,
+        String email,
+        String phone,
+        Address address,
+        String taxId,
+        String notes
+    ) {
+        this.name = requireName(name);
+        this.companyName = trimToNull(companyName);
+        this.email = trimToNull(email);
+        this.phone = trimToNull(phone);
+        this.address = address;
+        this.taxId = trimToNull(taxId);
+        this.notes = trimToNull(notes);
+    }
+
+    /** Backward-compatible overload for callers that only have a free-form address. */
     public void updateDetails(
         String name,
         String companyName,
@@ -111,13 +135,15 @@ public class Client {
         String taxId,
         String notes
     ) {
-        this.name = requireName(name);
-        this.companyName = trimToNull(companyName);
-        this.email = trimToNull(email);
-        this.phone = trimToNull(phone);
-        this.address = trimToNull(address);
-        this.taxId = trimToNull(taxId);
-        this.notes = trimToNull(notes);
+        updateDetailsWithAddress(
+            name,
+            companyName,
+            email,
+            phone,
+            address == null || address.isBlank() ? null : new Address(address, null, null, null, null),
+            taxId,
+            notes
+        );
     }
 
     /** Marks this client as archived without deleting its historical data. */
@@ -180,7 +206,7 @@ public class Client {
         return phone;
     }
 
-    public String getAddress() {
+    public Address getAddress() {
         return address;
     }
 

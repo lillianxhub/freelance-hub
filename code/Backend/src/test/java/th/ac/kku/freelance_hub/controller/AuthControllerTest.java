@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -255,6 +256,42 @@ class AuthControllerTest {
                 mockMvc.perform(get("/api/users/me")
                                 .header("Authorization", bearer(newToken)))
                                 .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("PATCH /api/users/me/password - Should change password with old and new values")
+        void shouldChangePasswordUsingOldAndNewPassword() throws Exception {
+                String token = registerAndGetToken();
+
+                mockMvc.perform(patch("/api/users/me/password")
+                                .header("Authorization", bearer(token))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"oldPassword\":\"password123\",\"newPassword\":\"newPassword123\"}"))
+                                .andExpect(status().isNoContent());
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"email\":\"test@example.com\",\"password\":\"newPassword123\"}"))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("PATCH /api/users/me - Should update profile and normalized address")
+        void shouldUpdateProfileAddressAsFlatFields() throws Exception {
+                String token = registerAndGetToken();
+
+                mockMvc.perform(patch("/api/users/me")
+                                .header("Authorization", bearer(token))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"address\":\"99 ถนนมิตรภาพ\",\"subdistrict\":\"ในเมือง\","
+                                                + "\"district\":\"เมืองขอนแก่น\",\"province\":\"ขอนแก่น\","
+                                                + "\"postalCode\":\"40000\"}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.address").value("99 ถนนมิตรภาพ"))
+                                .andExpect(jsonPath("$.subdistrict").value("ในเมือง"))
+                                .andExpect(jsonPath("$.district").value("เมืองขอนแก่น"))
+                                .andExpect(jsonPath("$.province").value("ขอนแก่น"))
+                                .andExpect(jsonPath("$.postalCode").value("40000"));
         }
 
         @Test

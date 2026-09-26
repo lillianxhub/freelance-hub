@@ -41,17 +41,12 @@ public class UserProfile {
     @Column(length = 20)
     private String phone;
 
-    @Column(length = 500)
-    private String address;
-
-    @Column(length = 255)
-    private String city;
-
-    @Column(length = 255)
-    private String country;
-
-    @Column(length = 20)
-    private String postalCode;
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(
+        name = "address_id",
+        foreignKey = @ForeignKey(name = "fk_user_profiles_address")
+    )
+    private Address address;
 
     @Column(length = 50)
     @Builder.Default
