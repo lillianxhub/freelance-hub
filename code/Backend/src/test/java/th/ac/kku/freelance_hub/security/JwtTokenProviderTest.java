@@ -1,11 +1,15 @@
 package th.ac.kku.freelance_hub.security;
 
+import java.time.Instant;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @DisplayName("JwtTokenProvider Tests")
 class JwtTokenProviderTest {
@@ -48,6 +52,18 @@ class JwtTokenProviderTest {
 
         // Then
         assertThat(extractedEmail).isEqualTo(email);
+    }
+
+    @Test
+    @DisplayName("Should include a UUID jti and expose expiration")
+    void shouldIncludeJtiAndExpiration() {
+        Instant beforeGeneration = Instant.now();
+        String token = jwtTokenProvider.generateToken("test@example.com");
+
+        assertThatCode(() -> UUID.fromString(jwtTokenProvider.getJtiFromToken(token)))
+                .doesNotThrowAnyException();
+        assertThat(jwtTokenProvider.getExpirationFromToken(token).toInstant())
+                .isAfter(beforeGeneration);
     }
 
     @Test
@@ -132,17 +148,18 @@ class JwtTokenProviderTest {
 
     @Test
     @DisplayName("Should generate different tokens for same email at different times")
-    void shouldGenerateDifferentTokensForSameEmailAtDifferentTimes() throws InterruptedException {
+    void shouldGenerateDifferentTokensForSameEmail() {
         // Given
         String email = "test@example.com";
 
         // When
         String token1 = jwtTokenProvider.generateToken(email);
-        Thread.sleep(1000); // Wait 1 second to ensure different issuedAt timestamp
         String token2 = jwtTokenProvider.generateToken(email);
 
         // Then
         assertThat(token1).isNotEqualTo(token2);
+        assertThat(jwtTokenProvider.getJtiFromToken(token1))
+                .isNotEqualTo(jwtTokenProvider.getJtiFromToken(token2));
         assertThat(jwtTokenProvider.getEmailFromToken(token1)).isEqualTo(email);
         assertThat(jwtTokenProvider.getEmailFromToken(token2)).isEqualTo(email);
     }

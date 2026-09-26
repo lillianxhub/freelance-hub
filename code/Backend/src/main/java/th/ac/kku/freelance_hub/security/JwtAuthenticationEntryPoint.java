@@ -8,6 +8,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 /**
  * Entry point for handling authentication errors
@@ -22,7 +23,13 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException authException
     ) throws IOException, ServletException {
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+        response.getWriter().write(String.format(
+                "{\"timestamp\":\"%s\",\"status\":401,"
+                        + "\"error\":\"Unauthorized\","
+                        + "\"message\":\"Authentication is required\"}",
+                LocalDateTime.now()
+        ));
     }
 }

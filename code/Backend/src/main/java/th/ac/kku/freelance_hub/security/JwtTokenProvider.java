@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * Utility class for JWT token operations
@@ -30,6 +31,7 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(email)
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -41,13 +43,17 @@ public class JwtTokenProvider {
      * Get email from JWT token
      */
     public String getEmailFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        return getClaims(token).getSubject();
+    }
 
-        return claims.getSubject();
+    /** Get the unique JWT ID used for server-side revocation. */
+    public String getJtiFromToken(String token) {
+        return getClaims(token).getId();
+    }
+
+    /** Get the token expiration timestamp. */
+    public Date getExpirationFromToken(String token) {
+        return getClaims(token).getExpiration();
     }
 
     /**
@@ -70,6 +76,14 @@ public class JwtTokenProvider {
      */
     public Long getExpirationTime() {
         return jwtExpiration;
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     /**
