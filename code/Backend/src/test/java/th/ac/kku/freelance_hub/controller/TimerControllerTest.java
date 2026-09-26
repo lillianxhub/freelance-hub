@@ -32,7 +32,7 @@ import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.RunningTimerNotFoundException;
 import th.ac.kku.freelance_hub.exception.TimerAlreadyRunningException;
-import th.ac.kku.freelance_hub.service.TimeEntryService;
+import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +45,7 @@ class TimerControllerTest {
             Instant.parse("2026-09-26T08:00:00Z");
 
     @Mock
-    private TimeEntryService timeEntryService;
+    private TimerService timeEntryService;
 
     @Mock
     private UserService userService;
