@@ -38,6 +38,7 @@ import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
+import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +57,9 @@ class TimeEntryControllerTest {
     private TimeEntryService timeEntryService;
 
     @Mock
+    private TimeEntryQueryService timeEntryQueryService;
+
+    @Mock
     private UserService userService;
 
     private MockMvc mockMvc;
@@ -68,6 +72,7 @@ class TimeEntryControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new TimeEntryController(
                                 timeEntryService,
+                                timeEntryQueryService,
                                 userService
                         )
                 )
@@ -122,7 +127,7 @@ class TimeEntryControllerTest {
     void listsEntriesUsingBoundFiltersAndCurrentUser() throws Exception {
         stubCurrentUser();
         PageRequest pageable = PageRequest.of(1, 5);
-        when(timeEntryService.list(
+        when(timeEntryQueryService.list(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         )).thenReturn(new PageImpl<>(
@@ -143,7 +148,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.content[0].description")
                         .value("Listed work"));
 
-        verify(timeEntryService).list(
+        verify(timeEntryQueryService).list(
                 eq(OWNER_ID),
                 org.mockito.ArgumentMatchers.argThat(filter ->
                         PROJECT_ID.equals(filter.getProjectId())
@@ -160,7 +165,7 @@ class TimeEntryControllerTest {
     @Test
     void summarizesEntriesForCurrentUser() throws Exception {
         stubCurrentUser();
-        when(timeEntryService.summarize(
+        when(timeEntryQueryService.summarize(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         )).thenReturn(TimeEntrySummaryResponse.builder()
@@ -177,7 +182,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.entryCount").value(3))
                 .andExpect(jsonPath("$.totalMinutes").value(90));
 
-        verify(timeEntryService).summarize(
+        verify(timeEntryQueryService).summarize(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         );

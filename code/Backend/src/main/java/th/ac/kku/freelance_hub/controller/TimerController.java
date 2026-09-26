@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.StartTimerRequest;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
-import th.ac.kku.freelance_hub.service.TimeEntryService;
+import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.UserService;
 
 @Tag(name = "Timer", description = "Control the authenticated user's timer")
@@ -32,7 +32,7 @@ import th.ac.kku.freelance_hub.service.UserService;
 @PreAuthorize("isAuthenticated()")
 public class TimerController {
 
-    private final TimeEntryService timeEntryService;
+    private final TimerService timerService;
     private final UserService userService;
 
     @Operation(summary = "Start a timer")
@@ -57,7 +57,7 @@ public class TimerController {
     public ResponseEntity<TimeEntryResponse> start(
             @Valid @RequestBody StartTimerRequest request
     ) {
-        TimeEntryResponse response = timeEntryService.startTimer(
+        TimeEntryResponse response = timerService.startTimer(
                 currentOwnerId(),
                 request
         );
@@ -79,7 +79,7 @@ public class TimerController {
     @GetMapping("/current")
     public ResponseEntity<TimeEntryResponse> current() {
         return ResponseEntity.ok(
-                timeEntryService.getCurrentTimer(currentOwnerId())
+                timerService.getCurrentTimer(currentOwnerId())
         );
     }
 
@@ -90,7 +90,7 @@ public class TimerController {
     @PostMapping("/stop")
     public ResponseEntity<TimeEntryResponse> stop() {
         return ResponseEntity.ok(
-                timeEntryService.stopTimer(currentOwnerId())
+                timerService.stopTimer(currentOwnerId())
         );
     }
 
@@ -104,7 +104,7 @@ public class TimerController {
     @ApiResponse(responseCode = "404", description = "No timer is running")
     @DeleteMapping("/current")
     public ResponseEntity<Void> cancel() {
-        timeEntryService.cancelTimer(currentOwnerId());
+        timerService.cancelTimer(currentOwnerId());
         return ResponseEntity.noContent().build();
     }
 
