@@ -36,7 +36,7 @@ function LoginForm() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-brand"><span>FH</span><strong>freelance hub</strong></div>
         <h1>เข้าสู่ระบบ</h1>
-        <p className="auth-description">จัดการลูกค้า โปรเจกต์ เวลา และ Invoice ในที่เดียว</p>
+        <p className="auth-description">จัดการลูกค้า โปรเจกต์ เวลา และ ใบแจ้งหนี้ ในที่เดียว</p>
         {error && <p className="auth-error">{error}</p>}
 
         <AuthInput label="อีเมล" type="email" name="email" value={form.email} onChange={handleChange} />
@@ -44,7 +44,7 @@ function LoginForm() {
 
         <div className="auth-options"><span /> <Link to="/forgot-password">ลืมรหัสผ่าน?</Link></div>
 
-        <button type="submit" disabled={loading}>
+        <button className="button button-primary wide" type="submit" disabled={loading}>
           {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
         </button>
 

@@ -62,13 +62,13 @@ function FinancesPage() {
 
   return (
     <div className="page-view">
-      <PageHeader eyebrow="Manage / Finances" title="Finances" description="ติดตามกระแสเงินสด รายได้ ค่าใช้จ่าย และเงินที่รอเรียกเก็บ" actions={<button className="button button-primary" type="button" onClick={() => openForm()}>＋ เพิ่มรายการ</button>} />
+      <PageHeader eyebrow="จัดการ / การเงิน" title="การเงิน" description="ติดตามกระแสเงินสด รายได้ ค่าใช้จ่าย และเงินที่รอเรียกเก็บ" actions={<button className="button button-primary" type="button" onClick={() => openForm()}>＋ เพิ่มรายการ</button>} />
 
       <div className="summary-grid">
-        <article className="metric-card accent-green"><div className="metric-top"><span>เงินรับแล้ว</span><span className="metric-icon">↗</span></div><div className="metric-value metric-compact">{formatMoney(income + paidInvoices)}</div><div className="metric-foot">Invoice ที่ชำระแล้ว + รายได้อื่น</div></article>
+        <article className="metric-card accent-green"><div className="metric-top"><span>เงินรับแล้ว</span><span className="metric-icon">↗</span></div><div className="metric-value metric-compact">{formatMoney(income + paidInvoices)}</div><div className="metric-foot">ใบแจ้งหนี้ ที่ชำระแล้ว + รายได้อื่น</div></article>
         <article className="metric-card accent-red"><div className="metric-top"><span>ค่าใช้จ่าย</span><span className="metric-icon">↘</span></div><div className="metric-value metric-compact">{formatMoney(expenses)}</div><div className="metric-foot">ค่าใช้จ่ายที่บันทึกทั้งหมด</div></article>
-        <article className="metric-card accent-orange"><div className="metric-top"><span>ยอดค้างรับ</span><span className="metric-icon">◷</span></div><div className="metric-value metric-compact">{formatMoney(outstanding)}</div><div className="metric-foot">Invoice ที่ออกแล้วแต่ยังไม่ครบ</div></article>
-        <article className="metric-card accent-violet"><div className="metric-top"><span>เวลาที่ยังไม่วางบิล</span><span className="metric-icon">◇</span></div><div className="metric-value metric-compact">{formatMoney(unbilled)}</div><div className="metric-foot">มูลค่าจาก billable time</div></article>
+        <article className="metric-card accent-orange"><div className="metric-top"><span>ยอดค้างรับ</span><span className="metric-icon">◷</span></div><div className="metric-value metric-compact">{formatMoney(outstanding)}</div><div className="metric-foot">ใบแจ้งหนี้ ที่ออกแล้วแต่ยังไม่ครบ</div></article>
+        <article className="metric-card accent-violet"><div className="metric-top"><span>เวลาที่ยังไม่วางบิล</span><span className="metric-icon">◇</span></div><div className="metric-value metric-compact">{formatMoney(unbilled)}</div><div className="metric-foot">มูลค่าจาก เวลาที่คิดค่าบริการ</div></article>
       </div>
 
       <section className="panel finance-overview">
@@ -77,14 +77,14 @@ function FinancesPage() {
       </section>
 
       <section className="panel">
-        <div className="panel-heading"><div><h2>Income & expenses</h2><p>รายการที่เพิ่มด้วยตนเอง แยกจากการรับชำระ Invoice</p></div><strong>{entries.length} รายการ</strong></div>
+        <div className="panel-heading"><div><h2>รายรับและรายจ่าย</h2><p>รายการที่เพิ่มด้วยตนเอง แยกจากการรับชำระ ใบแจ้งหนี้</p></div><strong>{entries.length} รายการ</strong></div>
         <div className="entry-filters finance-filters">
           <select value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value as FinanceFilters['type'] }))}><option value="ALL">ทุกประเภท</option><option value="INCOME">รายได้</option><option value="EXPENSE">ค่าใช้จ่าย</option></select>
           <select value={filters.project} onChange={(event) => setFilters((current) => ({ ...current, project: event.target.value }))}><option value="ALL">ทุกโปรเจกต์</option>{data.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
           <input type="date" value={filters.from} aria-label="จากวันที่" onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} />
           <input type="date" value={filters.to} aria-label="ถึงวันที่" onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} />
         </div>
-        {entries.length === 0 ? <EmptyState icon="฿" title="ยังไม่มีรายการการเงิน" description="เพิ่มรายได้หรือค่าใช้จ่าย หรือเปลี่ยนตัวกรองเพื่อดูข้อมูล" /> : (
+        {entries.length === 0 ? <EmptyState icon="฿" title="ยังไม่มีรายการFinances" description="เพิ่มรายได้หรือค่าใช้จ่าย หรือเปลี่ยนตัวกรองเพื่อดูข้อมูล" /> : (
           <div className="table-wrap"><table className="data-table"><thead><tr><th>รายการ</th><th>วันที่</th><th>โปรเจกต์</th><th>ประเภท</th><th>จำนวนเงิน</th><th /></tr></thead><tbody>{entries.map((entry) => {
             const project = data.projects.find((item) => item.id === entry.project_id)
             return <tr key={entry.id}><td><div className="table-primary"><span className={`finance-icon ${entry.type.toLowerCase()}`}>{entry.type === 'INCOME' ? '↗' : '↘'}</span><span><strong>{entry.category}</strong><small>{entry.notes || 'ไม่มีรายละเอียด'}</small></span></div></td><td>{formatDate(entry.entry_date)}</td><td>{project?.name || 'ทั่วไป'}</td><td><span className={`type-badge ${entry.type === 'INCOME' ? 'income' : 'expense'}`}>{entry.type === 'INCOME' ? 'รายได้' : 'ค่าใช้จ่าย'}</span></td><td><strong className={entry.type === 'INCOME' ? 'positive-money' : 'negative-money'}>{entry.type === 'INCOME' ? '+' : '−'}{formatMoney(entry.amount, entry.currency)}</strong></td><td><div className="table-actions"><button className="mini-button" type="button" onClick={() => openForm(entry)}>แก้ไข</button><button className="mini-button" type="button" onClick={() => remove('finance_entries', entry.id)}>ลบ</button></div></td></tr>

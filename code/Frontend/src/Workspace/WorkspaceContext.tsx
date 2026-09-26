@@ -57,7 +57,8 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
       return saved
     },
     async remove(resource: ResourceName, id: string) {
-      await deleteResource(resource, id)
+      const projectId = resource === 'tasks' ? data.tasks.find((task) => task.id === id)?.project_id : undefined
+      await deleteResource(resource, id, projectId)
       await refresh()
     },
   }), [data, error, loading, refresh])

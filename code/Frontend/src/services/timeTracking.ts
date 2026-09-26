@@ -1,10 +1,8 @@
-import { api } from '../api/apiClient'
-import type { ResourceInput, WorkspaceData } from '../types/workspace'
+import type { ResourceInput } from '../types/workspace'
 import { deleteResource, saveResource } from './workspace'
 
 export async function listTimeEntries(projectId?: string) {
-  const entries = await api.get<WorkspaceData['time_entries']>('/workspace/time_entries')
-  return projectId ? entries.filter((entry) => entry.project_id === projectId) : entries
+  throw new Error(`Time Tracking${projectId ? ` สำหรับ project ${projectId}` : ''} ยังไม่มี endpoint ใน Swagger ของ backend`)
 }
 
 export function saveTimeEntry(entry: ResourceInput<'time_entries'>) {

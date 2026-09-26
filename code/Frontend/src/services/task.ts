@@ -1,9 +1,8 @@
-import { api } from '../api/apiClient'
-import type { ResourceInput, WorkspaceData } from '../types/workspace'
-import { deleteResource, saveResource } from './workspace'
+import type { ResourceInput } from '../types/workspace'
+import { deleteResource, loadAllResources, saveResource } from './workspace'
 
 export async function listTasks(projectId?: string) {
-  const tasks = await api.get<WorkspaceData['tasks']>('/workspace/tasks')
+  const tasks = (await loadAllResources()).tasks
   return projectId ? tasks.filter((task) => task.project_id === projectId) : tasks
 }
 

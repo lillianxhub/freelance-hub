@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { ModalProps } from '../types/ui'
 
-function Modal({ open, title, eyebrow = 'Workspace', onClose, children, size = 'medium' }: ModalProps) {
+function Modal({ open, title, eyebrow = 'พื้นที่ทำงาน', onClose, children, size = 'medium' }: ModalProps) {
   useEffect(() => {
     if (!open) return undefined
     const handleKey = (event: KeyboardEvent) => {

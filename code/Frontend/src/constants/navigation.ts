@@ -1,13 +1,13 @@
 export const workspaceLinks = [
-  { to: '/dashboard', label: 'Overview', icon: '⌂' },
-  { to: '/projects', label: 'Projects', icon: '▦' },
-  { to: '/time-tracker', label: 'Time tracker', icon: '◷' },
-  { to: '/clients', label: 'Clients', icon: '♧' },
+  { to: '/dashboard', label: 'ภาพรวม', icon: '⌂' },
+  { to: '/projects', label: 'โปรเจกต์', icon: '▦' },
+  { to: '/time-tracker', label: 'บันทึกเวลา', icon: '◷' },
+  { to: '/clients', label: 'ลูกค้า', icon: '♧' },
 ]
 
 export const manageLinks = [
-  { to: '/finances', label: 'Finances', icon: '฿' },
-  { to: '/invoices', label: 'Invoices', icon: '▤' },
-  { to: '/reports', label: 'Reports', icon: '◒' },
-  { to: '/settings', label: 'Settings', icon: '⚙' },
+  { to: '/finances', label: 'การเงิน', icon: '฿' },
+  // { to: '/invoices', label: 'Invoices', icon: '▤' },
+  { to: '/reports', label: 'รายงาน', icon: '◒' },
+  { to: '/settings', label: 'ตั้งค่า', icon: '⚙' },
 ]
