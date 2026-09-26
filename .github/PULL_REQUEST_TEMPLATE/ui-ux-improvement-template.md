@@ -1,31 +1,38 @@
 # UI/UX Improvement Pull Request Template
 
 ## UI/UX Improvement Title
-[Provide a title, e.g., "Enhance user settings page for improved usability"]
+
+<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงการปรับปรุง UI/UX -->
 
 ## Type of Change
-- [X] UI/UX improvement (change enhancing user interface and experience)
+
+- [x] UI/UX improvement
 
 ## Description of the UI/UX Improvement
-[Detail the specific UI/UX improvements and the reasons behind them.]
+
+<!-- อธิบายสิ่งที่ปรับปรุงและเหตุผลด้านการใช้งาน -->
 
 ## Impact of the Improvement
-[Discuss the expected improvements in usability or user experience.]
+
+<!-- อธิบายผลต่อประสบการณ์ผู้ใช้ การเข้าถึง และการทำงานของระบบ -->
 
 ## Testing Conducted
-[Detail the testing done to ensure the UI/UX changes are effective and functional.]
+
+- [ ] ทดสอบบนขนาดหน้าจอที่เกี่ยวข้องแล้ว
+- [ ] ทดสอบการใช้งานด้วยตนเองแล้ว
+- [ ] ตรวจสอบการเข้าถึงเบื้องต้นแล้ว
 
 ## Screenshots/Videos (if applicable)
-[Attach screenshots or videos demonstrating the improvements.]
+
+<!-- แนบภาพหรือวิดีโอก่อนและหลังการปรับปรุง ถ้ามี -->
 
 ## Additional Remarks
-[Any additional information for reviewers.]
+
+<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
 
 ## Checklist
 
-- [ ] The UI/UX improvements enhance user interaction and experience.
-- [ ] I have tested the changes across different screen sizes and devices.
-- [ ] The improvements are visually appealing and accessible.
-- [ ] I have documented the rationale behind the UI/UX changes.
-- [ ] User feedback, if available, has been considered and incorporated.
-
+- [ ] ปรับปรุงการใช้งานของผู้ใช้ได้ตามเป้าหมาย
+- [ ] ตรวจสอบ Responsive แล้ว
+- [ ] คำนึงถึง Accessibility แล้ว
+- [ ] อัปเดตเอกสารที่เกี่ยวข้องแล้ว

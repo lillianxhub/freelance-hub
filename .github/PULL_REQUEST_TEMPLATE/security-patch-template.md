@@ -1,27 +1,34 @@
 # Security Patch Pull Request Template
 
 ## Security Patch Title
-[Provide a title, e.g., "Patch for SQL injection vulnerability"]
+
+<!-- เขียนชื่อ PR เป็นภาษาอังกฤษโดยไม่เปิดเผยรายละเอียดช่องโหว่เกินความจำเป็น -->
 
 ## Type of Change
-- [X] Security patch (change addressing a security vulnerability)
+
+- [x] Security patch
 
 ## Description of the Security Patch
-[Detail the vulnerability and the applied patch.]
+
+<!-- อธิบายช่องโหว่และแนวทางแก้ไขโดยไม่ใส่ข้อมูลละเอียดอ่อน -->
 
 ## Impact of the Patch
-[Discuss implications for system security and user data protection.]
+
+<!-- อธิบายผลกระทบต่อความปลอดภัยและข้อมูลของผู้ใช้ -->
 
 ## Testing Conducted
-[Provide testing details to ensure the vulnerability is fully addressed.]
+
+- [ ] ทดสอบว่าแนวทางแก้ไขปิดช่องโหว่แล้ว
+- [ ] ทดสอบว่าไม่เกิด Regression แล้ว
+- [ ] ตรวจสอบผลกระทบด้านความปลอดภัยเพิ่มเติมแล้ว
 
 ## Additional Remarks
-[Notes on any additional security considerations.]
+
+<!-- ระบุข้อควรระวังหรือข้อมูลด้านความปลอดภัยเพิ่มเติม -->
 
 ## Checklist
 
-- [ ] The patch adequately addresses the identified security vulnerability.
-- [ ] I have tested the security patch to ensure it resolves the issue.
-- [ ] The patch does not introduce new vulnerabilities or bugs.
-- [ ] I have documented the vulnerability and the rationale for the patch.
-- [ ] The security patch adheres to industry-standard security practices.
+- [ ] แก้ไขช่องโหว่ที่ระบุได้ครบถ้วน
+- [ ] ไม่มีช่องโหว่หรือบั๊กใหม่จากการเปลี่ยนแปลง
+- [ ] ปฏิบัติตามแนวทางด้านความปลอดภัยของโปรเจกต์
+- [ ] หลีกเลี่ยงการใส่ข้อมูลลับใน PR
