@@ -1,6 +1,7 @@
 # Freelance Hub MVP — ER Diagram
 
-แผนภาพนี้เป็น logical database schema สำหรับ MVP เท่านั้น โดย Dashboard และ Analytics
+แผนภาพนี้เป็น logical database schema สำหรับ MVP เท่านั้น โดยที่อยู่ถูก normalize เป็น `addresses`
+และถูกอ้างอิงจาก User Profile/Client ส่วน Dashboard และ Analytics
 คำนวณจาก `time_entries` จึงไม่ต้องมีตารางสรุปแยกในระยะแรก
 
 ```mermaid
@@ -22,7 +23,7 @@ erDiagram
         varchar first_name
         varchar last_name
         varchar phone
-        text address
+        uuid address_id FK
         varchar avatar_url
         varchar timezone
         varchar date_format
@@ -32,6 +33,16 @@ erDiagram
         timestamp updated_at
         bigint version
     }
+    ADDRESSES {
+        uuid id PK
+        text address
+        varchar subdistrict
+        varchar district
+        varchar province
+        varchar postal_code
+        timestamptz created_at
+        timestamptz updated_at
+    }
     CLIENTS {
         uuid id PK
         uuid owner_id FK
@@ -39,7 +50,7 @@ erDiagram
         varchar company_name
         varchar email
         varchar phone
-        text address
+        uuid address_id FK
         varchar tax_id
         text notes
         varchar status
@@ -91,7 +102,9 @@ erDiagram
     }
 
     USERS ||--|| USER_PROFILES : has
+    USER_PROFILES ||--o| ADDRESSES : uses
     USERS ||--o{ CLIENTS : owns
+    CLIENTS ||--o| ADDRESSES : uses
     USERS ||--o{ PROJECTS : owns
     USERS ||--o{ TIME_ENTRIES : owns
     CLIENTS ||--o{ PROJECTS : has
@@ -103,6 +116,7 @@ erDiagram
 ## Cardinality และกติกาสำคัญ
 
 - `users` 1 — 1 `user_profiles`: ใช้ `user_profiles.user_id` เป็นทั้ง PK และ FK เพื่อบังคับ One-to-One จริง
+- `user_profiles` และ `clients` อ้างอิง `addresses` ผ่าน `address_id`; แต่ละ record มีที่อยู่ได้ไม่เกินหนึ่งรายการ และไม่มีการใช้ polymorphic owner key
 - `users` 1 — N `clients`, `projects`, `time_entries`: `owner_id` ใช้แยกข้อมูลของผู้ใช้และช่วยให้ query ด้าน security ตรงไปตรงมา
 - `clients` 1 — N `projects`: ทุกโปรเจกต์ต้องมีลูกค้าหนึ่งราย
 - `projects` 1 — N `tasks` และ `time_entries`: time entry ต้องมีโปรเจกต์เสมอ
@@ -110,6 +124,7 @@ erDiagram
 - Unique partial index ที่ `time_entries(owner_id) WHERE ended_at IS NULL` บังคับให้ผู้ใช้มี running timer ได้สูงสุดหนึ่งรายการ
 - Composite FK `(client_id, owner_id)` และ `(project_id, owner_id)` ป้องกันการผูกข้อมูลข้ามเจ้าของ ส่วน `(task_id, project_id)` ป้องกันการเลือก task ข้าม project
 - Archive ใช้สถานะ `ARCHIVED` ไม่ลบ `clients` หรือ `projects` ที่มีประวัติ เพื่อรักษา time entries
+- API map `addresses.postal_code` เป็น `postalCode` และแสดงที่อยู่เป็น flat fields (`address`, `subdistrict`, `district`, `province`, `postalCode`)
 - ตาราง auth ปัจจุบันใช้ `timestamp` ตาม migration V1/V2; entity `User` และ `UserProfile` ใช้ `LocalDateTime`
 - เก็บเวลาเป้าหมายและเวลาทำงานเป็นนาทีจำนวนเต็ม ป้องกันความคลาดเคลื่อนจากเลขทศนิยม
 

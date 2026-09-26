@@ -32,8 +32,9 @@ public class UserResponse {
     private String lastName;
     private String phone;
     private String address;
-    private String city;
-    private String country;
+    private String subdistrict;
+    private String district;
+    private String province;
     private String postalCode;
     private String avatarUrl;
     private String timezone;

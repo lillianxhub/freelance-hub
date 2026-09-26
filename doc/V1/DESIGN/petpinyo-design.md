@@ -2,7 +2,7 @@
 
 **เจ้าของ feature:** `petpinyo_673380073-7_02`
 
-บันทึกเฉพาะ pattern ที่มี implementation จริงในโค้ด Auth/User ณ ปัจจุบัน
+บันทึก pattern ของโค้ด Auth/User และ contract ที่ต้องรองรับในรอบ Authentication/User ปัจจุบัน
 ยังไม่ระบุ Strategy, State หรือ Observer แบบ GoF เพราะไม่พบ implementation ใน feature นี้
 
 | Pattern | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ |
@@ -22,6 +22,7 @@
 ```mermaid
 classDiagram
     class AuthController
+    class UserController
     class AuthService {
         <<interface>>
         +register(RegisterRequest) AuthResponse
@@ -37,18 +38,46 @@ classDiagram
     class JwtTokenProvider
     class JwtAuthenticationFilter
     class RevokedTokenService
+    class UserService {
+        +updateCurrentUser(UpdateUserProfileRequest) UserResponse
+        +changePassword(ChangePasswordRequest) void
+    }
     class User
-    class UserProfile
+    class UserProfile {
+        +Address address
+    }
+    class Client {
+        +Address address
+    }
+    class Address {
+        +UUID id
+        +String address
+        +String subdistrict
+        +String district
+        +String province
+        +String postalCode
+    }
 
     AuthController --> AuthService
     AuthServiceImpl ..|> AuthService
     AuthServiceImpl --> UserRepository
     AuthServiceImpl --> JwtTokenProvider
     AuthServiceImpl --> RevokedTokenService
+    UserController --> UserService
     User "1" o-- "0..1" UserProfile
+    UserProfile "1" --> "0..1" Address : addressId
+    Client "1" --> "0..1" Address : addressId
     JwtAuthenticationFilter --> JwtTokenProvider
     JwtAuthenticationFilter --> RevokedTokenService
 ```
+
+## Password และ address contract
+
+- `PATCH /api/users/me/password` รับ `oldPassword` และ `newPassword`; service ต้องตรวจ
+  รหัสผ่านเดิมก่อน hash ค่าใหม่ และไม่รองรับการ reset ผ่านอีเมลใน MVP
+- `UserProfile` และ `Client` อ้างอิง `Address` ด้วย `addressId` ขณะที่ DTO แสดงข้อมูลที่อยู่
+  เป็น flat fields (`address`, `subdistrict`, `district`, `province`, `postalCode`)
+- `Address` เป็น persistence entity กลาง ไม่ควรส่ง JPA entity ออกตรง ๆ จาก controller
 
 ## Pattern boundary
 

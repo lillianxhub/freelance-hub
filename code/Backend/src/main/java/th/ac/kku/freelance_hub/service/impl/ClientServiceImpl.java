@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import th.ac.kku.freelance_hub.domain.entity.Address;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
@@ -85,8 +88,15 @@ public class ClientServiceImpl implements ClientService {
                         cb.like(root.get("name"), pattern, '\\'),
                         cb.like(root.get("companyName"), pattern, '\\'),
                         cb.like(root.get("email"), pattern, '\\'),
-                        cb.like(root.get("phone"), pattern, '\\'),
-                        cb.like(root.get("address"), pattern, '\\'));
+                        cb.like(root.get("phone"), pattern, '\\'));
+                Join<Client, Address> address = root.join("address", JoinType.LEFT);
+                match = cb.or(
+                        match,
+                        cb.like(address.get("address"), pattern, '\\'),
+                        cb.like(address.get("subdistrict"), pattern, '\\'),
+                        cb.like(address.get("district"), pattern, '\\'),
+                        cb.like(address.get("province"), pattern, '\\'),
+                        cb.like(address.get("postalCode"), pattern, '\\'));
                 predicate = cb.and(predicate, match);
             }
             return predicate;

@@ -1,6 +1,7 @@
 # Data Dictionary — Freelance Hub MVP
 
-ชนิดข้อมูลด้านล่างสอดคล้องกับ Flyway migrations ปัจจุบันและ JPA/Hibernate โดยใช้ UUID เป็น primary key
+ชนิดข้อมูลด้านล่างเป็น logical model เป้าหมายของ Flyway migrations และ JPA/Hibernate โดยใช้ UUID เป็น primary key
+ที่อยู่ถูก normalize เป็นตารางกลาง `addresses`; API map `postal_code` เป็น `postalCode` และส่งข้อมูลที่อยู่เป็น flat fields
 
 ## `users`
 
@@ -27,10 +28,7 @@ Indexes: `idx_users_email`, `idx_users_status`; ความ unique ของอ
 | `first_name` | `varchar(100)` | Yes | | ชื่อ |
 | `last_name` | `varchar(100)` | Yes | | นามสกุล |
 | `phone` | `varchar(20)` | Yes | | เบอร์โทรศัพท์ |
-| `address` | `text` | Yes | | ที่อยู่ |
-| `city` | `varchar(100)` | Yes | | เมือง |
-| `country` | `varchar(100)` | Yes | | ประเทศ |
-| `postal_code` | `varchar(20)` | Yes | | รหัสไปรษณีย์ |
+| `address_id` | `uuid` | Yes | FK → `addresses.id` | ที่อยู่ที่ normalize แล้ว |
 | `avatar_url` | `varchar(500)` | Yes | | URL รูปโปรไฟล์ |
 | `timezone` | `varchar(50)` | Yes | default `UTC` | เขตเวลา |
 | `date_format` | `varchar(20)` | Yes | default `YYYY-MM-DD` | รูปแบบวันที่ที่แสดง |
@@ -42,6 +40,21 @@ Indexes: `idx_users_email`, `idx_users_status`; ความ unique ของอ
 
 FK delete policy: `ON DELETE CASCADE` ใช้ได้เฉพาะการลบบัญชีผู้ใช้ทั้งระบบ
 
+## `addresses`
+
+| Column | Type | Null | Constraint / Index | Description |
+|---|---|---:|---|---|
+| `id` | `uuid` | No | PK | รหัสที่อยู่ |
+| `address` | `text` | Yes | | บ้านเลขที่/รายละเอียดที่อยู่ |
+| `subdistrict` | `varchar(100)` | Yes | | ตำบล/แขวง |
+| `district` | `varchar(100)` | Yes | | อำเภอ/เขต |
+| `province` | `varchar(100)` | Yes | | จังหวัด |
+| `postal_code` | `varchar(20)` | Yes | | รหัสไปรษณีย์; API ใช้ชื่อ `postalCode` |
+| `created_at` | `timestamptz` | No | default `CURRENT_TIMESTAMP` | เวลาสร้าง |
+| `updated_at` | `timestamptz` | No | default `CURRENT_TIMESTAMP` | เวลาแก้ไขล่าสุด |
+
+Indexes: `idx_addresses_province`, `idx_addresses_postal_code`, `uk_user_profiles_address_id`, `uk_clients_address_id`; unique partial indexes ของ foreign key ช่วยบังคับ optional One-to-One และเร่ง join
+
 ## `clients`
 
 | Column | Type | Null | Constraint / Index | Description |
@@ -52,7 +65,7 @@ FK delete policy: `ON DELETE CASCADE` ใช้ได้เฉพาะการ
 | `company_name` | `varchar(200)` | Yes | | ชื่อบริษัท |
 | `email` | `varchar(254)` | Yes | | อีเมลติดต่อ |
 | `phone` | `varchar(30)` | Yes | | เบอร์โทรศัพท์ |
-| `address` | `text` | Yes | | ที่อยู่ |
+| `address_id` | `uuid` | Yes | FK → `addresses.id` | ที่อยู่ที่ normalize แล้ว |
 | `tax_id` | `varchar(30)` | Yes | | เลขประจำตัวผู้เสียภาษี |
 | `notes` | `text` | Yes | | หมายเหตุภายใน |
 | `status` | `varchar(20)` | No | CHECK `ACTIVE/ARCHIVED` | สถานะลูกค้า |
@@ -60,7 +73,7 @@ FK delete policy: `ON DELETE CASCADE` ใช้ได้เฉพาะการ
 | `updated_at` | `timestamptz` | No | | เวลาแก้ไขล่าสุด |
 | `version` | `bigint` | No | default `0` | Optimistic lock |
 
-Indexes: `(owner_id, status)`, `(owner_id, lower(name))`; unique `(id, owner_id)` สำหรับ composite FK
+Indexes: `(owner_id, status)`, `(owner_id, lower(name))`, `address_id`; unique `(id, owner_id)` สำหรับ composite FK
 
 ## `projects`
 
@@ -141,7 +154,9 @@ Delete policy: FK ทั้งหมด `RESTRICT`; อนุญาตลบเ�
 | Relationship | Cardinality | Database delete | JPA cascade | Fetch |
 |---|---|---|---|---|
 | User → UserProfile | 1:1 | Profile cascade เฉพาะเมื่อลบบัญชี | `PERSIST`, `MERGE` | `LAZY` |
+| UserProfile → Address | 1:1 optional | `RESTRICT` หรือ orphan cleanup ตาม lifecycle ที่ service กำหนด | `PERSIST`, `MERGE`, `REMOVE` ตาม lifecycle | `LAZY` |
 | User → Client | 1:N | `RESTRICT` | ไม่มี | `LAZY` |
+| Client → Address | 1:1 optional | `RESTRICT` หรือ orphan cleanup ตาม lifecycle ที่ service กำหนด | `PERSIST`, `MERGE`, `REMOVE` ตาม lifecycle | `LAZY` |
 | User → Project | 1:N | `RESTRICT` | ไม่มี | `LAZY` |
 | User → TimeEntry | 1:N | `RESTRICT` | ไม่มี | `LAZY` |
 | Client → Project | 1:N | `RESTRICT` | ไม่มี | `LAZY` |
@@ -151,4 +166,18 @@ Delete policy: FK ทั้งหมด `RESTRICT`; อนุญาตลบเ�
 
 Dashboard และ productivity metrics เป็น query/projection จาก completed `time_entries`
 (`ended_at IS NOT NULL`) ภายใต้ owner และช่วงวันที่เดียวกัน ไม่สร้างตาราง analytics ใน MVP
+
+## API representation ของ Address
+
+แม้ฐานข้อมูลจะเก็บที่อยู่แยกใน `addresses` และอ้างอิงด้วย `address_id` แต่ request/response ของ User Profile และ Client ใช้โครงสร้าง flat เดียวกัน:
+
+```json
+{
+  "address": "ที่อยู่",
+  "subdistrict": "ตำบล",
+  "district": "อำเภอ",
+  "province": "จังหวัด",
+  "postalCode": "รหัสไปรษณีย์"
+}
+```
 

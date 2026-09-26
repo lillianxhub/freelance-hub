@@ -39,7 +39,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 ### Epic A: Foundation และ Authentication
 
 - A1: ตั้งค่า package Layered Architecture, profile config, error response และ logging
-- A2: ออกแบบ migration 6 ตาราง: users, user_profiles, clients, projects, tasks, time_entries
+- A2: ออกแบบ migration 7 ตาราง: users, user_profiles, addresses, clients, projects, tasks, time_entries
 - A3: register/login/logout, password hashing และ validation
 - A4: owner isolation และ security test ว่าผู้ใช้ A อ่านข้อมูลผู้ใช้ B ไม่ได้
 - A5: เพิ่ม OpenAPI/Swagger configuration และ health endpoint
@@ -122,7 +122,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 - [ ] Authentication และ owner isolation ผ่าน security tests
 - [ ] Time tracking มี start/stop/manual/timezone/duplicate guard
 - [ ] Dashboard มี tracked hours, utilization, project progress และ productivity insights
-- [ ] PostgreSQL migration มี 6 ตาราง, FK, index, One-to-One และ One-to-Many
+- [ ] PostgreSQL migration มี 7 ตาราง รวม `addresses`, FK, index, One-to-One และ One-to-Many
 - [ ] Swagger UI, Global Exception Handler และ React frontend ใช้งานได้
 - [ ] JUnit/Mockito/Spring Boot tests ผ่านและมี report
 - [ ] Docker Compose ทำงานได้ และ public deployment URL เปิดได้

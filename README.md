@@ -56,11 +56,12 @@ Domain Layer (Entity / Value Object / Enum)
 
 ## Database Design (ER Diagram)
 
-ฐานข้อมูล MVP ประกอบด้วย 6 ตารางหลัก ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา
+ฐานข้อมูล MVP ประกอบด้วย 7 ตารางหลัก ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา โดย `addresses` เป็นตารางกลางสำหรับข้อมูลที่อยู่ของ User Profile และ Client
 
 ความสัมพันธ์หลัก:
 
 - One-to-One: `users` → `user_profiles`
+- One-to-One (optional): `user_profiles` และ `clients` → `addresses` ผ่าน `address_id`
 - One-to-Many: `clients` → `projects`
 - One-to-Many: `projects` → `tasks` และ `time_entries`
 - ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
@@ -173,6 +174,8 @@ docker compose down
 | Register     | `/api/auth/register` |
 | Login        | `/api/auth/login`    |
 | Logout       | `/api/auth/logout`   |
+| My profile   | `/api/users/me`      |
+| Change password | `/api/users/me/password` |
 | Clients      | `/api/clients`       |
 | Projects     | `/api/projects`      |
 | Time entries | `/api/time-entries`  |
@@ -180,6 +183,22 @@ docker compose down
 | Analytics    | `/api/analytics`     |
 
 Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
+
+ข้อมูลที่อยู่ของ User Profile และ Client ใช้ API contract เดียวกันและส่งเป็น flat fields
+แม้ฐานข้อมูลจะ normalize ไว้ใน `addresses`:
+
+```json
+{
+  "address": "ที่อยู่",
+  "subdistrict": "ตำบล",
+  "district": "อำเภอ",
+  "province": "จังหวัด",
+  "postalCode": "รหัสไปรษณีย์"
+}
+```
+
+การเปลี่ยนรหัสผ่านใช้ `PATCH /api/users/me/password` พร้อม bearer JWT และ body
+`{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ไม่มีการ reset password ผ่านอีเมล
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
 

@@ -45,6 +45,28 @@ class ClientMapperTest {
     }
 
     @Test
+    void mapsFlatAddressFieldsToNormalizedAddress() {
+        User owner = User.builder().id(OWNER_ID).build();
+        CreateClientRequest request = CreateClientRequest.builder()
+            .name("Alice")
+            .address("99 ถนนมิตรภาพ")
+            .subdistrict("ในเมือง")
+            .district("เมืองขอนแก่น")
+            .province("ขอนแก่น")
+            .postalCode("40000")
+            .build();
+
+        Client client = mapper.toEntity(request, owner);
+
+        assertThat(client.getAddress()).isNotNull();
+        assertThat(client.getAddress().getAddress()).isEqualTo("99 ถนนมิตรภาพ");
+        assertThat(client.getAddress().getSubdistrict()).isEqualTo("ในเมือง");
+        assertThat(client.getAddress().getDistrict()).isEqualTo("เมืองขอนแก่น");
+        assertThat(client.getAddress().getProvince()).isEqualTo("ขอนแก่น");
+        assertThat(client.getAddress().getPostalCode()).isEqualTo("40000");
+    }
+
+    @Test
     void updatesOnlySuppliedFields() {
         User owner = User.builder().id(OWNER_ID).build();
         Client client = new Client(owner, "Alice");

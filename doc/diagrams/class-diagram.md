@@ -3,6 +3,11 @@
 Class Diagram นี้เน้น JPA Entity และพฤติกรรมของ domain ไม่รวม Controller, DTO,
 Service และ Repository เพื่อให้เห็นโครงสร้างข้อมูลหลักชัดเจน
 
+`Address` เป็น entity กลางที่ถูกอ้างอิงด้วย `addressId` จาก `UserProfile` และ `Client`
+(แต่ละ record มี address ได้ไม่เกินหนึ่งรายการ);
+DTO ของทั้งสอง resource ยังคงแสดงข้อมูลเป็น flat fields (`address`, `subdistrict`,
+`district`, `province`, `postalCode`)
+
 ```mermaid
 classDiagram
     direction LR
@@ -21,7 +26,7 @@ classDiagram
         +UUID userId
         +String displayName
         +String phone
-        +String address
+        +Address address
         +String firstName
         +String lastName
         +String profileImageUrl
@@ -31,6 +36,14 @@ classDiagram
         +updateContact(...)
         +changePreferences(...)
     }
+    class Address {
+        +UUID id
+        +String address
+        +String subdistrict
+        +String district
+        +String province
+        +String postalCode
+    }
     class Client {
         +UUID id
         +UUID ownerId
@@ -38,7 +51,7 @@ classDiagram
         +String companyName
         +String email
         +String phone
-        +String address
+        +Address address
         +String taxId
         +String notes
         +ClientStatus status
@@ -127,7 +140,9 @@ classDiagram
     }
 
     User "1" *-- "1" UserProfile : profile
+    UserProfile "1" --> "0..1" Address : address
     User "1" --> "0..*" Client : owns
+    Client "1" --> "0..1" Address : address
     User "1" --> "0..*" Project : owns
     User "1" --> "0..*" TimeEntry : owns
     Client "1" --> "0..*" Project : projects

@@ -7,7 +7,7 @@
 | Actor | หน้าที่ |
 |---|---|
 | Guest | สมัครสมาชิกและเข้าสู่ระบบ |
-| Authenticated User | ออกจากระบบและดู profile ของตนเอง |
+| Authenticated User | ออกจากระบบ ดู/แก้ profile และเปลี่ยนรหัสผ่านของตนเอง |
 | Admin | ดูข้อมูล user ตาม id |
 | Spring Security/JWT | ตรวจ token, โหลด user และกำหนด SecurityContext |
 
@@ -19,7 +19,9 @@
 | UC-AUTH-02 | Login | Guest | `POST /api/auth/login` | ตรวจ credentials และคืน JWT (`200`) |
 | UC-AUTH-03 | Logout | Authenticated User | `POST /api/auth/logout` | revoke token JTI และคืน `204` |
 | UC-USER-01 | View My Profile | Authenticated User | `GET /api/users/me` | คืนข้อมูล User + Profile ของตนเอง (`200`) |
-| UC-USER-02 | View User by ID | Admin | `GET /api/users/{id}` | คืน user ที่ร้องขอ หรือ `404`; role อื่นได้ `403` |
+| UC-USER-02 | Update My Profile | Authenticated User | `PATCH /api/users/me` | แก้ข้อมูล profile และที่อยู่ (`200`) |
+| UC-USER-03 | Change Password | Authenticated User | `PATCH /api/users/me/password` | ตรวจ `oldPassword`, บันทึก `newPassword` เป็น hash (`204`) |
+| UC-USER-04 | View User by ID | Admin | `GET /api/users/{id}` | คืน user ที่ร้องขอ หรือ `404`; role อื่นได้ `403` |
 
 ## UC-AUTH-01 Register
 
@@ -27,7 +29,7 @@
 
 **Main flow:**
 
-1. ส่ง email, password, display name และข้อมูล profile
+1. ส่ง email, password, display name และข้อมูล profile ที่รองรับในการสมัคร
 2. Controller ตรวจ `@Valid RegisterRequest`
 3. Service ตรวจ `existsByEmail`
 4. `PasswordEncoder` hash password
@@ -61,6 +63,34 @@ credentials ผ่าน `DaoAuthenticationProvider`; `CustomUserDetailsService`
 **Alternative flow:** token หาย/malformed/expired/revoked = `401`; subject ไม่ตรง =
 `400` ตาม handler ปัจจุบัน; JTI เดิมไม่บันทึกซ้ำ
 
+## UC-USER-02 Update My Profile
+
+1. ผู้ใช้เรียก `PATCH /api/users/me` พร้อม bearer JWT
+2. `JwtAuthenticationFilter` ตรวจ token และใส่ authenticated principal ใน SecurityContext
+3. `UserService` อ่าน user จาก principal ไม่รับ `userId` หรือ `ownerId` จาก body
+4. Service แก้ข้อมูล profile และ upsert ข้อมูลใน `addresses` ผ่าน `address_id`
+5. Controller คืน `200 UserResponse` โดยแสดงข้อมูลที่อยู่เป็น flat fields
+
+**Alternative flow:** ไม่มี/malformed JWT = `401`; validation ไม่ผ่าน = `400`
+
+## UC-USER-03 Change Password
+
+**Request body:**
+
+```json
+{
+  "oldPassword": "รหัสผ่านเดิม",
+  "newPassword": "รหัสผ่านใหม่"
+}
+```
+
+1. ผู้ใช้เรียก `PATCH /api/users/me/password` พร้อม bearer JWT
+2. Service โหลด user จาก authenticated principal และตรวจ `oldPassword` ด้วย `PasswordEncoder`
+3. เมื่อถูกต้อง ระบบ hash และบันทึก `newPassword`; ห้ามบันทึกรหัสผ่านแบบ plain text
+4. คืน `204 No Content`; old password ผิด = `401`, validation หรือ new password ซ้ำค่าเดิม = `400`
+
+MVP นี้ไม่มี email reset-password flow
+
 ## UC-USER-01 View My Profile
 
 1. เรียก `GET /api/users/me` พร้อม JWT
@@ -69,7 +99,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; `CustomUserDetailsService`
 4. `UserMapper` รวมข้อมูล UserProfile เป็น `UserResponse`
 5. คืน `200 OK`
 
-## UC-USER-02 View User by ID
+## UC-USER-04 View User by ID
 
 1. Admin เรียก `GET /api/users/{id}` พร้อม JWT
 2. `@PreAuthorize("hasRole('ADMIN')")` ตรวจ role
@@ -104,9 +134,3 @@ sequenceDiagram
     F->>U: continue with SecurityContext
     U-->>User: 200 UserResponse
 ```
-
-## Scope note
-
-Requirement ระบุการแก้ไข profile (`PATCH /api/users/me`) แต่ implementation ปัจจุบัน
-มีเฉพาะ GET ใน `UserController.java:21-40` และยังไม่มี update request/service use case
-จึงต้องทำเป็นงานถัดไปก่อนประกาศว่า FR-AUTH-04/05 เสร็จสมบูรณ์
