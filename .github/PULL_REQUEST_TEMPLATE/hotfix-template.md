@@ -1,5 +1,3 @@
-# Hotfix Pull Request Template
-
 ## Hotfix Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงปัญหาเร่งด่วน -->
