@@ -83,6 +83,12 @@ class CorsSecurityIntegrationTest {
     }
 
     @Test
+    void actuatorHealthIsPublicForDeploymentProbes() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void disallowedOriginDoesNotReceiveAllowOriginHeader() throws Exception {
         mockMvc.perform(options("/api/clients")
                         .header(HttpHeaders.ORIGIN, "https://not-allowed.example")
