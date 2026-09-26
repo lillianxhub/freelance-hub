@@ -86,7 +86,9 @@ public class ClientServiceImpl implements ClientService {
                 Predicate match = cb.or(
                     cb.like(root.get("name"), pattern, '\\'),
                     cb.like(root.get("companyName"), pattern, '\\'),
-                    cb.like(root.get("email"), pattern, '\\')
+                    cb.like(root.get("email"), pattern, '\\'),
+                    cb.like(root.get("phone"), pattern, '\\'),
+                    cb.like(root.get("address"), pattern, '\\')
                 );
                 predicate = cb.and(predicate, match);
             }

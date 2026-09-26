@@ -32,7 +32,7 @@
 ## UC-CLI-02 List/Search Clients
 
 1. Freelancer เรียก `GET /api/clients` พร้อม query parameter ที่ต้องการ: `status`, `search`, `page`, `size`, `sortBy`, `direction`
-2. Service สร้าง query ที่จำกัด `ownerId` ก่อนเสมอ และเพิ่ม status หรือ prefix search ใน `name`, `companyName`, `email` เมื่อระบุ
+2. Service สร้าง query ที่จำกัด `ownerId` ก่อนเสมอ และเพิ่ม status หรือ prefix search ใน `name`, `companyName`, `email`, `phone`, `address` เมื่อระบุ
 3. Repository คืน `Page<Client>`; mapper แปลงเป็น `Page<ClientResponse>` และ controller คืน `200`
 
 **Alternative flow:** ไม่ระบุ status = รวม `ACTIVE` และ `ARCHIVED`; ไม่มีผลลัพธ์ = page ว่าง; filter/page/size/sort ไม่ถูกต้อง = `400`; ไม่มี JWT = `401`  
@@ -98,7 +98,7 @@ sequenceDiagram
 ## ขอบเขตที่ยังไม่เสร็จ
 
 - `FR-CLI-04` ต้องแสดงโปรเจกต์และเวลาในหน้ารายละเอียดลูกค้า แต่ `GET /api/clients/{id}` ปัจจุบันคืนเฉพาะ `ClientResponse` ไม่มีข้อมูลโปรเจกต์หรือเวลา
-- การค้นหาใน `FR-CLI-03` ปัจจุบันครอบคลุมชื่อ บริษัท และอีเมลแบบ prefix; ยังไม่ค้นหาจากเบอร์โทรศัพท์
+- การค้นหาใน `FR-CLI-03` เป็น prefix search จากชื่อ บริษัท อีเมล เบอร์โทร และที่อยู่ตามรูปแบบที่บันทึกไว้; ยังไม่ใช่การค้นหาแบบตัดช่องว่างหรือเครื่องหมายในเบอร์โทร
 - การป้องกันเริ่ม timer ใหม่เมื่อ Client ถูก archive เป็นกติกาข้าม feature ใน `BR-06` ไม่ใช่พฤติกรรมที่ Client API นี้พิสูจน์แล้ว
 - ยังไม่พบ Use Case Diagram ใน `doc/diagrams/`; ก่อนรวมเอกสารหลักควรเทียบชื่อ actor/use case กับ diagram ฉบับทีม
 

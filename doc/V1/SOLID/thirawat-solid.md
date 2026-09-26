@@ -11,17 +11,17 @@
 | Single Responsibility | `mapper/ClientMapper.java:15-69` | Mapper แปลง request/response กับ `Client` และจัดการ semantics ของ PATCH; ไม่ติดต่อฐานข้อมูล |
 | Single Responsibility | `repository/ClientRepository.java:19-32` | Repository รับผิดชอบ data-access contract ของ Client โดยเฉพาะ |
 | Open/Closed | `service/ClientService.java:13-25`, `controller/ClientController.java:41,50-103` | Controller พึ่ง service contract; สามารถเปลี่ยน implementation ของ service หรือใช้ test double โดยไม่แก้ controller ทั้งนี้การเพิ่มรูปแบบ filter ใหม่ยังต้องแก้ `ClientServiceImpl` ปัจจุบัน |
-| Liskov Substitution | `service/ClientService.java:13-25`, `service/impl/ClientServiceImpl.java:29,49-117` | `ClientServiceImpl` implement operation ทั้งห้าตามชนิดผลลัพธ์ใน interface และถูกเรียกผ่าน `ClientService`; ปัจจุบันมี production implementation เดียว จึงยังไม่มีการพิสูจน์การแทนที่ระหว่าง implementation หลายตัว |
+| Liskov Substitution | `service/ClientService.java:13-25`, `service/impl/ClientServiceImpl.java:29,49-119` | `ClientServiceImpl` implement operation ทั้งห้าตามชนิดผลลัพธ์ใน interface และถูกเรียกผ่าน `ClientService`; ปัจจุบันมี production implementation เดียว จึงยังไม่มีการพิสูจน์การแทนที่ระหว่าง implementation หลายตัว |
 | Interface Segregation | `service/ClientService.java:13-25`, `controller/ClientController.java:41` | Contract นี้มีเฉพาะงาน Client ที่ controller ใช้ ไม่รวม Auth, Project หรือ Time Entry |
 | Dependency Inversion | `controller/ClientController.java:38-42`, `service/impl/ClientServiceImpl.java:34-48`, `repository/ClientRepository.java:19-20` | Controller รับ `ClientService` interface และ service รับ repository interfaces ผ่าน constructor แทนการสร้าง dependency เอง; `ClientMapper` และ `UserService` ยังเป็น concrete class จึงเป็นการใช้ DIP บางส่วน |
 
 ## Evidence จาก Client flow
 
 - Owner ID มาจาก authenticated user ใน controller ไม่รับจาก request: `ClientController.java:50-52,62-64,73-75,85-90,100-102`
-- การอ่าน/แก้/archive ใช้ `findByIdAndOwnerId`; ไม่พบหรือเป็นของผู้อื่นจะได้ `ClientNotFoundException`: `ClientServiceImpl.java:61-62,105-123`
-- รายการลูกค้าเริ่มด้วย predicate ของ owner และต่อ status/search ก่อน pagination: `ClientServiceImpl.java:67-100`
+- การอ่าน/แก้/archive ใช้ `findByIdAndOwnerId`; ไม่พบหรือเป็นของผู้อื่นจะได้ `ClientNotFoundException`: `ClientServiceImpl.java:61-62,107-125`
+- รายการลูกค้าเริ่มด้วย predicate ของ owner และต่อ status/search ก่อน pagination: `ClientServiceImpl.java:67-102`
 - Mapper คงฟิลด์เดิมเมื่อ PATCH ส่ง `null`: `ClientMapper.java:34-46,67-69`
-- Archive เปลี่ยน `ClientStatus` โดยไม่ลบ record: `ClientServiceImpl.java:111-117`, `Client.java:123-126`
+- Archive เปลี่ยน `ClientStatus` โดยไม่ลบ record: `ClientServiceImpl.java:115-119`, `Client.java:123-126`
 
 ## ข้อสังเกตสำหรับรวมเอกสารหลัก
 
