@@ -23,7 +23,10 @@ public class ClientFilterRequest {
     /** Null includes both active and archived clients. */
     private ClientStatus status;
 
-    /** Optional prefix search over name, company, email, phone, and address; blank means no search. */
+    /**
+     * Optional prefix search over name, company, email, phone, and address; blank
+     * means no search.
+     */
     @Size(max = 150, message = "Search must not exceed 150 characters")
     private String search;
 
@@ -39,10 +42,7 @@ public class ClientFilterRequest {
     /** Allow only known Client properties as sort keys. */
     @Builder.Default
     @NotBlank(message = "Sort field is required")
-    @Pattern(
-        regexp = "name|companyName|email|createdAt|updatedAt",
-        message = "Sort field is not supported"
-    )
+    @Pattern(regexp = "name|companyName|email|createdAt|updatedAt", message = "Sort field is not supported")
     private String sortBy = "name";
 
     @Builder.Default

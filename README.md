@@ -30,7 +30,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
 | Version Control   | Git + Github                                                    |
-| Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database) |
+| Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database)      |
 
 ## System Architecture
 
@@ -168,16 +168,16 @@ docker compose down
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-| Resource       | Endpoint             |
-| -------------- | -------------------- |
-| Register       | `/api/auth/register` |
-| Login          | `/api/auth/login`    |
-| Logout         | `/api/auth/logout`   |
-| Clients        | `/api/clients`       |
-| Projects       | `/api/projects`      |
-| Time entries   | `/api/time-entries`  |
-| Timer          | `/api/timer`         |
-| Analytics      | `/api/analytics`     |
+| Resource     | Endpoint             |
+| ------------ | -------------------- |
+| Register     | `/api/auth/register` |
+| Login        | `/api/auth/login`    |
+| Logout       | `/api/auth/logout`   |
+| Clients      | `/api/clients`       |
+| Projects     | `/api/projects`      |
+| Time entries | `/api/time-entries`  |
+| Timer        | `/api/timer`         |
+| Analytics    | `/api/analytics`     |
 
 Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
 
@@ -210,11 +210,11 @@ Maven test result อยู่ใน `code/Backend/target/surefire-reports/` แ
 
 ## Deployment URL
 
-| Environment | URL                                                  | Status       |
-| ----------- | ---------------------------------------------------- | ------------ |
-| Frontend (Vercel) | TODO: `https://your-frontend.vercel.app` | Not deployed |
-| Backend API (Render) | TODO: `https://your-backend.onrender.com` | Not deployed |
-| Swagger UI | TODO: `https://your-backend.example.com/swagger-ui.html` | Not deployed |
+| Environment          | URL                                                      | Status       |
+| -------------------- | -------------------------------------------------------- | ------------ |
+| Frontend (Vercel)    | TODO: `https://your-frontend.vercel.app`                 | Not deployed |
+| Backend API (Render) | TODO: `https://your-backend.onrender.com`                | Not deployed |
+| Swagger UI           | TODO: `https://your-backend.example.com/swagger-ui.html` | Not deployed |
 
 Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อม `VITE_API_URL` ชี้ไปยัง Backend
 

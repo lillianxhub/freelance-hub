@@ -220,8 +220,26 @@ erDiagram
 
 REST API ใช้ prefix `/api` โดยไม่มี version segment และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
 
-| Method           | Endpoint                    | หน้าที่                    |
-| ---------------- | --------------------------- | -------------------------- |
+| Method           | Endpoint                        | หน้าที่                    |
+| ---------------- | ------------------------------- | -------------------------- |
+| POST             | `/auth/register`                | สมัครสมาชิก                |
+| POST             | `/auth/login`                   | เข้าสู่ระบบ                |
+| GET/PATCH        | `/me`                           | ดู/แก้โปรไฟล์และค่าตั้งต้น |
+| GET/POST         | `/clients`                      | รายการ/สร้างลูกค้า         |
+| GET/PATCH/DELETE | `/clients/{id}`                 | ดู/แก้/archive ลูกค้า      |
+| GET/POST         | `/projects`                     | รายการ/สร้างโปรเจกต์       |
+| GET/PATCH/DELETE | `/projects/{id}`                | ดู/แก้/archive โปรเจกต์    |
+| GET/POST         | `/projects/{id}/tasks`          | รายการ/สร้าง task          |
+| GET/POST         | `/time-entries`                 | ค้นหา/เพิ่ม time entry     |
+| PATCH/DELETE     | `/time-entries/{id}`            | แก้/ลบ time entry          |
+| POST             | `/timer/start`                  | เริ่ม timer                |
+| POST             | `/timer/stop`                   | หยุด timer ปัจจุบัน        |
+| GET              | `/timer/current`                | ดู timer ปัจจุบัน          |
+| GET              | `/analytics/summary`            | KPI ตามช่วงวันที่          |
+| GET              | `/analytics/time-breakdown`     | วิเคราะห์เวลา              |
+| GET              | `/reports/time-entries.csv`     | ส่งออกเวลาเป็น CSV         |
+| Method           | Endpoint                        | หน้าที่                    |
+| ---------------- | ---------------------------     | -------------------------- |
 | POST             | `/api/auth/register`            | สมัครสมาชิก                |
 | POST             | `/api/auth/login`               | เข้าสู่ระบบ                |
 | POST             | `/api/auth/logout`              | ออกจากระบบและ revoke token |
@@ -431,18 +449,30 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ข้อกำหนดในตารางนี้เป็นเงื่อนไขการส่งงานและถือเป็น **Must** ทั้งหมด
 
-| หัวข้อ          | Requirement                                               |
-| --------------- | --------------------------------------------------------- |
-| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                 |
-| Build           | Maven Wrapper                                             |
-| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                          |
-| ORM             | Spring Data JPA / Hibernate                               |
-| API             | RESTful API พร้อม OpenAPI และ Swagger UI                  |
+| หัวข้อ          | Requirement                                                               |
+| --------------- | ------------------------------------------------------------------------- |
+| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                                 |
+| Build           | Maven Wrapper                                                             |
+| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                                          |
+| ORM             | Spring Data JPA / Hibernate                                               |
+| API             | RESTful API พร้อม OpenAPI และ Swagger UI                                  |
+| Frontend        | Thymeleaf เชื่อมต่อกับ backend และใช้งาน flow หลักได้จริง                 |
+| Testing         | JUnit 5, Mockito และ Spring Boot Test                                     |
+| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                                   |
+| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL                      |
+| Container       | มี `Dockerfile` และ `docker-compose.yml`                                  |
+| หัวข้อ          | Requirement                                                               |
+| --------------- | ---------------------------------------------------------                 |
+| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                                 |
+| Build           | Maven Wrapper                                                             |
+| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                                          |
+| ORM             | Spring Data JPA / Hibernate                                               |
+| API             | RESTful API พร้อม OpenAPI และ Swagger UI                                  |
 | Frontend        | React + Vite เชื่อมต่อกับ Spring Boot REST API และใช้งาน flow หลักได้จริง |
-| Testing         | JUnit 5, Mockito และ Spring Boot Test                     |
-| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                   |
-| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL      |
-| Container       | มี `Dockerfile` และ `docker-compose.yml`                  |
+| Testing         | JUnit 5, Mockito และ Spring Boot Test                                     |
+| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                                   |
+| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL                      |
+| Container       | มี `Dockerfile` และ `docker-compose.yml`                                  |
 
 หมายเหตุ: `pom.xml` ปัจจุบันใช้ Spring Boot `4.2.0-SNAPSHOT` ซึ่งผ่านเงื่อนไข 3.x+ แต่ก่อนพัฒนาจริงควรเปลี่ยนเป็นรุ่น stable ที่รองรับ Java 17 เพื่อลดความเสี่ยงจาก snapshot dependency
 

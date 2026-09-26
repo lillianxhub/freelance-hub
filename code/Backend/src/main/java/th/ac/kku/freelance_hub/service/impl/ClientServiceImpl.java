@@ -29,18 +29,16 @@ import th.ac.kku.freelance_hub.service.ClientService;
 public class ClientServiceImpl implements ClientService {
 
     private static final Set<String> SORT_FIELDS = Set.of(
-        "name", "companyName", "email", "createdAt", "updatedAt"
-    );
+            "name", "companyName", "email", "createdAt", "updatedAt");
 
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
     private final ClientMapper clientMapper;
 
     public ClientServiceImpl(
-        ClientRepository clientRepository,
-        UserRepository userRepository,
-        ClientMapper clientMapper
-    ) {
+            ClientRepository clientRepository,
+            UserRepository userRepository,
+            ClientMapper clientMapper) {
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.clientMapper = clientMapper;
@@ -51,7 +49,7 @@ public class ClientServiceImpl implements ClientService {
     public ClientResponse create(UUID ownerId, CreateClientRequest request) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         User owner = userRepository.findById(ownerId)
-            .orElseThrow(() -> new UserNotFoundException(ownerId));
+                .orElseThrow(() -> new UserNotFoundException(ownerId));
         Client client = clientMapper.toEntity(request, owner);
         return clientMapper.toResponse(clientRepository.save(client));
     }
@@ -84,21 +82,19 @@ public class ClientServiceImpl implements ClientService {
                 // Prefix matching avoids the leading wildcard that prevents ordinary index use.
                 String pattern = escapeLike(search.trim()) + "%";
                 Predicate match = cb.or(
-                    cb.like(root.get("name"), pattern, '\\'),
-                    cb.like(root.get("companyName"), pattern, '\\'),
-                    cb.like(root.get("email"), pattern, '\\'),
-                    cb.like(root.get("phone"), pattern, '\\'),
-                    cb.like(root.get("address"), pattern, '\\')
-                );
+                        cb.like(root.get("name"), pattern, '\\'),
+                        cb.like(root.get("companyName"), pattern, '\\'),
+                        cb.like(root.get("email"), pattern, '\\'),
+                        cb.like(root.get("phone"), pattern, '\\'),
+                        cb.like(root.get("address"), pattern, '\\'));
                 predicate = cb.and(predicate, match);
             }
             return predicate;
         };
 
         PageRequest pageable = PageRequest.of(
-            filter.getPage(), filter.getSize(),
-            Sort.by(filter.getDirection(), filter.getSortBy())
-        );
+                filter.getPage(), filter.getSize(),
+                Sort.by(filter.getDirection(), filter.getSortBy()));
         return clientRepository.findAll(specification, pageable).map(clientMapper::toResponse);
     }
 
@@ -122,7 +118,7 @@ public class ClientServiceImpl implements ClientService {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(clientId, "clientId is required");
         return clientRepository.findByIdAndOwnerId(clientId, ownerId)
-            .orElseThrow(() -> new ClientNotFoundException(clientId));
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
     }
 
     private static String escapeLike(String value) {

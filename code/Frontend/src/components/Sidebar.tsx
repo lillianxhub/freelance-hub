@@ -20,7 +20,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
   const { data } = useWorkspace()
   const profile = data?.profiles?.[0]
   const projectCount = data?.projects?.filter((project) => project.status === 'ACTIVE').length || 0
-  const name = profile?.full_name || user?.user_metadata?.full_name || 'Freelancer'
+  const name = profile?.full_name || user?.user_metadata?.full_name || 'ฟรีแลนซ์'
 
   return (
     <>
@@ -30,24 +30,24 @@ function Sidebar({ open, onClose }: SidebarProps) {
           <div className="logo-box">FH</div>
           <div>
             <div className="sidebar-title">freelance hub</div>
-            <div className="sidebar-subtitle">workspace</div>
+            <div className="sidebar-subtitle">พื้นที่ทำงาน</div>
           </div>
         </div>
 
-        <div className="workspace-switcher">
+        {/* <div className="workspace-switcher">
           <span className="avatar avatar-small">{initials(name)}</span>
-          <span><strong>Personal workspace</strong><small>Freelancer</small></span>
+          <span><strong>พื้นที่ทำงานส่วนตัว</strong><small>ฟรีแลนซ์</small></span>
           <span className="workspace-chevron">⌄</span>
-        </div>
+        </div> */}
 
-        <div className="sidebar-section-label">Workspace</div>
+        <div className="sidebar-section-label">งานของคุณ</div>
         <nav className="sidebar-nav" onClick={onClose}>
           {workspaceLinks.map((link) => (
             <SidebarLink key={link.to} {...link} badge={link.to === '/projects' ? projectCount : undefined} />
           ))}
         </nav>
 
-        <div className="sidebar-section-label">Manage</div>
+        <div className="sidebar-section-label">จัดการ</div>
         <nav className="sidebar-nav" onClick={onClose}>
           {manageLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
         </nav>
@@ -55,7 +55,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
         <div className="sidebar-bottom">
           <NavLink className="help-card" to="/reports" onClick={onClose}>
             <span className="help-icon">?</span>
-            <span><strong>Need a hand?</strong><small>ดูรายงานและคู่มือ</small></span>
+            <span><strong>ต้องการความช่วยเหลือ?</strong><small>ดูรายงานและคู่มือ</small></span>
             <span>↗</span>
           </NavLink>
           <div className="profile-row">
