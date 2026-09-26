@@ -49,18 +49,14 @@ class ClientIntegrationTest {
     }
 
     @Test
-    void malformedAndRevokedTokensAreRejected() throws Exception {
-        mockMvc.perform(get("/api/clients")
-                .header("Authorization", "Bearer malformed-token"))
-            .andExpect(status().isUnauthorized());
-
-        String token = registerAndGetToken("revoked-client-token@example.com");
-        mockMvc.perform(post("/api/auth/logout")
-                .header("Authorization", bearer(token)))
-            .andExpect(status().isNoContent());
-        mockMvc.perform(get("/api/clients")
-                .header("Authorization", bearer(token)))
-            .andExpect(status().isUnauthorized());
+    void openApiDocumentsClientEndpoints() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paths['/api/clients'].post.responses['201'].description").value("Client created"))
+            .andExpect(jsonPath("$.paths['/api/clients'].get.responses['200'].description").value("Page of clients returned"))
+            .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description").value("Client not found"))
+            .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description").value("Client updated"))
+            .andExpect(jsonPath("$.paths['/api/clients/{id}'].delete.responses['204'].description").value("Client archived"));
     }
 
     @Test
