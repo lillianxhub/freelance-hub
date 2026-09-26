@@ -218,26 +218,45 @@ erDiagram
 
 ## 8. API ระดับสูง
 
-REST API ใช้ prefix `/api/v1` และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
+REST API ใช้ prefix `/api` โดยไม่มี version segment และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
 
-| Method           | Endpoint                    | หน้าที่                    |
-| ---------------- | --------------------------- | -------------------------- |
-| POST             | `/auth/register`            | สมัครสมาชิก                |
-| POST             | `/auth/login`               | เข้าสู่ระบบ                |
-| GET/PATCH        | `/me`                       | ดู/แก้โปรไฟล์และค่าตั้งต้น |
-| GET/POST         | `/clients`                  | รายการ/สร้างลูกค้า         |
-| GET/PATCH/DELETE | `/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
-| GET/POST         | `/projects`                 | รายการ/สร้างโปรเจกต์       |
-| GET/PATCH/DELETE | `/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
-| GET/POST         | `/projects/{id}/tasks`      | รายการ/สร้าง task          |
-| GET/POST         | `/time-entries`             | ค้นหา/เพิ่ม time entry     |
-| PATCH/DELETE     | `/time-entries/{id}`        | แก้/ลบ time entry          |
-| POST             | `/timer/start`              | เริ่ม timer                |
-| POST             | `/timer/stop`               | หยุด timer ปัจจุบัน        |
-| GET              | `/timer/current`            | ดู timer ปัจจุบัน          |
-| GET              | `/analytics/summary`        | KPI ตามช่วงวันที่          |
-| GET              | `/analytics/time-breakdown` | วิเคราะห์เวลา              |
-| GET              | `/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
+| Method           | Endpoint                        | หน้าที่                    |
+| ---------------- | ------------------------------- | -------------------------- |
+| POST             | `/auth/register`                | สมัครสมาชิก                |
+| POST             | `/auth/login`                   | เข้าสู่ระบบ                |
+| GET/PATCH        | `/me`                           | ดู/แก้โปรไฟล์และค่าตั้งต้น |
+| GET/POST         | `/clients`                      | รายการ/สร้างลูกค้า         |
+| GET/PATCH/DELETE | `/clients/{id}`                 | ดู/แก้/archive ลูกค้า      |
+| GET/POST         | `/projects`                     | รายการ/สร้างโปรเจกต์       |
+| GET/PATCH/DELETE | `/projects/{id}`                | ดู/แก้/archive โปรเจกต์    |
+| GET/POST         | `/projects/{id}/tasks`          | รายการ/สร้าง task          |
+| GET/POST         | `/time-entries`                 | ค้นหา/เพิ่ม time entry     |
+| PATCH/DELETE     | `/time-entries/{id}`            | แก้/ลบ time entry          |
+| POST             | `/timer/start`                  | เริ่ม timer                |
+| POST             | `/timer/stop`                   | หยุด timer ปัจจุบัน        |
+| GET              | `/timer/current`                | ดู timer ปัจจุบัน          |
+| GET              | `/analytics/summary`            | KPI ตามช่วงวันที่          |
+| GET              | `/analytics/time-breakdown`     | วิเคราะห์เวลา              |
+| GET              | `/reports/time-entries.csv`     | ส่งออกเวลาเป็น CSV         |
+| Method           | Endpoint                        | หน้าที่                    |
+| ---------------- | ---------------------------     | -------------------------- |
+| POST             | `/api/auth/register`            | สมัครสมาชิก                |
+| POST             | `/api/auth/login`               | เข้าสู่ระบบ                |
+| POST             | `/api/auth/logout`              | ออกจากระบบและ revoke token |
+| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น |
+| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า         |
+| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
+| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์       |
+| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
+| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task          |
+| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry     |
+| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry          |
+| POST             | `/api/timer/start`              | เริ่ม timer                |
+| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน        |
+| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน          |
+| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่          |
+| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา              |
+| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
 
 ข้อกำหนดร่วมของ API:
 
@@ -298,7 +317,7 @@ REST API ใช้ prefix `/api/v1` และตอบกลับเป็น J
 ระบบต้องใช้ **Layered Architecture** และห้ามเรียกข้ามชั้น โดย request ต้องไหลตามลำดับต่อไปนี้:
 
 ```text
-Presentation (Controller / RestController / Thymeleaf View)
+Presentation (React UI / RestController)
                     ↓
 Service (Business Logic / Transaction)
                     ↓
@@ -319,9 +338,7 @@ Domain (Entity / Value Object / Enum)
 ```text
 code/src/main/java/th/ac/kku/freelance_hub/
 ├─ config/
-├─ controller/
-│  ├─ api/             # REST controllers
-│  └─ web/             # Thymeleaf controllers
+├─ controller/         # REST controllers
 ├─ service/
 │  └─ impl/
 ├─ repository/
@@ -345,9 +362,7 @@ code/src/main/java/th/ac/kku/freelance_hub/
 
 ```mermaid
 flowchart LR
-    UI[Thymeleaf Web UI] --> WEB[Web Controller]
-    EXT[REST Client] --> API[REST Controller]
-    WEB --> APP[Service Interfaces]
+    UI[React + Vite UI] --> API[REST Controller]
     API --> APP
     APP --> REPO[JPA Repositories]
     APP --> PDF[PDF Service]
@@ -434,18 +449,30 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ข้อกำหนดในตารางนี้เป็นเงื่อนไขการส่งงานและถือเป็น **Must** ทั้งหมด
 
-| หัวข้อ          | Requirement                                               |
-| --------------- | --------------------------------------------------------- |
-| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                 |
-| Build           | Maven Wrapper                                             |
-| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                          |
-| ORM             | Spring Data JPA / Hibernate                               |
-| API             | RESTful API พร้อม OpenAPI และ Swagger UI                  |
-| Frontend        | Thymeleaf เชื่อมต่อกับ backend และใช้งาน flow หลักได้จริง |
-| Testing         | JUnit 5, Mockito และ Spring Boot Test                     |
-| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                   |
-| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL      |
-| Container       | มี `Dockerfile` และ `docker-compose.yml`                  |
+| หัวข้อ          | Requirement                                                               |
+| --------------- | ------------------------------------------------------------------------- |
+| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                                 |
+| Build           | Maven Wrapper                                                             |
+| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                                          |
+| ORM             | Spring Data JPA / Hibernate                                               |
+| API             | RESTful API พร้อม OpenAPI และ Swagger UI                                  |
+| Frontend        | Thymeleaf เชื่อมต่อกับ backend และใช้งาน flow หลักได้จริง                 |
+| Testing         | JUnit 5, Mockito และ Spring Boot Test                                     |
+| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                                   |
+| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL                      |
+| Container       | มี `Dockerfile` และ `docker-compose.yml`                                  |
+| หัวข้อ          | Requirement                                                               |
+| --------------- | ---------------------------------------------------------                 |
+| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                                 |
+| Build           | Maven Wrapper                                                             |
+| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                                          |
+| ORM             | Spring Data JPA / Hibernate                                               |
+| API             | RESTful API พร้อม OpenAPI และ Swagger UI                                  |
+| Frontend        | React + Vite เชื่อมต่อกับ Spring Boot REST API และใช้งาน flow หลักได้จริง |
+| Testing         | JUnit 5, Mockito และ Spring Boot Test                                     |
+| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                                   |
+| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL                      |
+| Container       | มี `Dockerfile` และ `docker-compose.yml`                                  |
 
 หมายเหตุ: `pom.xml` ปัจจุบันใช้ Spring Boot `4.2.0-SNAPSHOT` ซึ่งผ่านเงื่อนไข 3.x+ แต่ก่อนพัฒนาจริงควรเปลี่ยนเป็นรุ่น stable ที่รองรับ Java 17 เพื่อลดความเสี่ยงจาก snapshot dependency
 
@@ -492,14 +519,21 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ```text
 freelance-hub/
-├─ code/                         # Spring Boot source และ deployable configuration
-│  ├─ src/
-│  ├─ Dockerfile
-│  ├─ docker-compose.yml
-│  ├─ .dockerignore
-│  ├─ .env.example
-│  ├─ pom.xml
-│  └─ mvnw
+├─ code/
+│  ├─ Backend/                   # Spring Boot REST API และ Docker deployment
+│  │  ├─ src/
+│  │  ├─ Dockerfile
+│  │  ├─ docker-compose.yml
+│  │  ├─ .dockerignore
+│  │  ├─ .env.example
+│  │  ├─ pom.xml
+│  │  └─ mvnw
+│  └─ Frontend/                  # React + Vite SPA
+│     ├─ src/
+│     ├─ public/
+│     ├─ package.json
+│     ├─ package-lock.json
+│     └─ vite.config.js
 ├─ test/                         # การทดสอบทั้งหมด/รายงานผลทดสอบ
 ├─ doc/
 │  ├─ diagrams/
@@ -543,9 +577,16 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 
 ## 21. Deployment และเกณฑ์พร้อมส่งรายวิชา
 
+แนวทาง deployment ที่เลือกใช้สำหรับโปรเจกต์นี้คือ **Vercel + Render + Supabase**:
+
+- React + Vite Frontend: Vercel, Root Directory `code/Frontend`, build command `npm run build`, output directory `dist`
+- Spring Boot Backend: Render Web Service, Root Directory `code/Backend`, runtime Docker และ Dockerfile `code/Backend/Dockerfile`
+- PostgreSQL: Supabase โดยส่ง `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` และ `SPRING_DATASOURCE_PASSWORD` ให้ Render ผ่าน Environment Variables
+
 - ระบบต้อง deploy และเข้าถึงได้จริงผ่าน public URL ในวันนำเสนอ
-- deploy ตัวแอปและ PostgreSQL บน Cloud/Server พร้อม environment variables สำหรับ secrets
-- มี `code/Dockerfile` สำหรับ application และ `code/docker-compose.yml` สำหรับ local application + database โดย deploy ด้วย Root Directory `code`
+- deploy Frontend และ Backend บน Cloud พร้อม environment variables สำหรับ secrets; ใช้ Supabase เป็น PostgreSQL production database
+- มี `code/Backend/Dockerfile` และ `code/Backend/docker-compose.yml` สำหรับ Backend/local database โดย deploy Backend ด้วย Root Directory `code/Backend`
+- มี React Frontend ใน `code/Frontend` และ deploy ด้วย Root Directory `code/Frontend`
 - Swagger UI ต้องเปิดใช้งานได้บน deployment
 - test ทั้งหมดต้องผ่านและมี test report
 - frontend ต้องเชื่อม backend และสาธิต flow หลักในหัวข้อ 14 ได้จริง

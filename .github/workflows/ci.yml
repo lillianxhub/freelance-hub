@@ -1,106 +1,124 @@
 name: CI
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
+    pull_request:
+        branches:
+            - dev
+            - main
+    push:
+        branches:
+            - dev
+            - main
 
 permissions:
-  contents: read
+    contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 env:
-  BACKEND_DIR: code/Backend
+    BACKEND_DIR: code/Backend
 
 jobs:
-  test:
-    name: Test backend
-    runs-on: ubuntu-latest
+    main-pr-source:
+        name: Main PR must come from dev
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            - name: Check pull request source branch
+              env:
+                  PR_HEAD_BRANCH: ${{ github.head_ref }}
+              run: |
+                  if [ "$PR_HEAD_BRANCH" != "dev" ]; then
+                    echo "Pull requests into main must come from dev."
+                    echo "Received source branch: $PR_HEAD_BRANCH"
+                    exit 1
+                  fi
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-          cache-dependency-path: ${{ env.BACKEND_DIR }}/pom.xml
+    test:
+        name: Test backend
+        runs-on: ubuntu-latest
 
-      - name: Make Maven wrapper executable
-        working-directory: ${{ env.BACKEND_DIR }}
-        run: chmod +x mvnw
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Run tests
-        working-directory: ${{ env.BACKEND_DIR }}
-        run: ./mvnw --batch-mode --no-transfer-progress verify
+            - name: Set up Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: temurin
+                  java-version: "17"
+                  cache: maven
+                  cache-dependency-path: ${{ env.BACKEND_DIR }}/pom.xml
 
-  migration:
-    name: Validate Flyway migrations
-    runs-on: ubuntu-latest
+            - name: Make Maven wrapper executable
+              working-directory: ${{ env.BACKEND_DIR }}
+              run: chmod +x mvnw
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: freelance_hub
-          POSTGRES_USER: ci_user
-          POSTGRES_PASSWORD: ci_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ci_user -d freelance_hub"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
+            - name: Run tests
+              working-directory: ${{ env.BACKEND_DIR }}
+              run: ./mvnw --batch-mode --no-transfer-progress verify
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    migration:
+        name: Validate Flyway migrations
+        runs-on: ubuntu-latest
 
-      - name: Run migrations against an empty PostgreSQL database
-        run: >-
-          docker run --rm --network host
-          -v "$GITHUB_WORKSPACE/${{ env.BACKEND_DIR }}/src/main/resources/db/migration:/flyway/sql:ro"
-          flyway/flyway:11.14.1
-          -url=jdbc:postgresql://localhost:5432/freelance_hub
-          -user=ci_user
-          -password=ci_password
-          -schemas=public
-          -locations=filesystem:/flyway/sql
-          -connectRetries=30
-          migrate
+        services:
+            postgres:
+                image: postgres:16-alpine
+                env:
+                    POSTGRES_DB: freelance_hub
+                    POSTGRES_USER: ci_user
+                    POSTGRES_PASSWORD: ci_password
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U ci_user -d freelance_hub"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 20
 
-      - name: Validate migration history
-        run: >-
-          docker run --rm --network host
-          -v "$GITHUB_WORKSPACE/${{ env.BACKEND_DIR }}/src/main/resources/db/migration:/flyway/sql:ro"
-          flyway/flyway:11.14.1
-          -url=jdbc:postgresql://localhost:5432/freelance_hub
-          -user=ci_user
-          -password=ci_password
-          -schemas=public
-          -locations=filesystem:/flyway/sql
-          validate
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-  docker:
-    name: Build Docker image
-    needs:
-      - test
-      - migration
-    runs-on: ubuntu-latest
+            - name: Run migrations against an empty PostgreSQL database
+              run: >-
+                  docker run --rm --network host
+                  -v "$GITHUB_WORKSPACE/${{ env.BACKEND_DIR }}/src/main/resources/db/migration:/flyway/sql:ro"
+                  flyway/flyway:11.14.1
+                  -url=jdbc:postgresql://localhost:5432/freelance_hub
+                  -user=ci_user
+                  -password=ci_password
+                  -schemas=public
+                  -locations=filesystem:/flyway/sql
+                  -connectRetries=30
+                  migrate
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            - name: Validate migration history
+              run: >-
+                  docker run --rm --network host
+                  -v "$GITHUB_WORKSPACE/${{ env.BACKEND_DIR }}/src/main/resources/db/migration:/flyway/sql:ro"
+                  flyway/flyway:11.14.1
+                  -url=jdbc:postgresql://localhost:5432/freelance_hub
+                  -user=ci_user
+                  -password=ci_password
+                  -schemas=public
+                  -locations=filesystem:/flyway/sql
+                  validate
 
-      - name: Build backend image
-        run: docker build --tag freelance-hub-backend:${{ github.sha }} ${{ env.BACKEND_DIR }}
+    docker:
+        name: Build Docker image
+        needs:
+            - test
+            - migration
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Build backend image
+              run: docker build --tag freelance-hub-backend:${{ github.sha }} ${{ env.BACKEND_DIR }}

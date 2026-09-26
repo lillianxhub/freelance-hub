@@ -18,7 +18,7 @@ public class ProjectResponse {
 
     private UUID id;
 
-    private UUID ownerId;
+    // private UUID ownerId;
 
     private UUID clientId;
 
