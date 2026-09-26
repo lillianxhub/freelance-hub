@@ -16,15 +16,15 @@ function NewInvoicePage() {
   const { invoiceId } = useParams()
   const { data, loading, error, refresh } = workspace
 
-  if (loading) return <LoadingState label="กำลังเตรียม Invoice..." />
+  if (loading) return <LoadingState label="กำลังเตรียม Invoices..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
 
   const existing = invoiceId ? data.invoices.find((invoice) => invoice.id === invoiceId) : null
-  if (invoiceId && (!existing || existing.status !== 'DRAFT')) return <EmptyState icon="!" title="แก้ไข Invoice นี้ไม่ได้" description="แก้ไขได้เฉพาะ Invoice สถานะ Draft เท่านั้น" action={<Link className="button button-primary" to={existing ? `/invoices/${existing.id}` : '/invoices'}>กลับไป Invoice</Link>} />
-  return <InvoiceEditor key={existing?.id || 'new-invoice'} workspace={workspace} existing={existing} />
+  if (invoiceId && (!existing || existing.status !== 'DRAFT')) return <EmptyState icon="!" title="แก้ไข ใบแจ้งหนี้นี้ไม่ได้" description="แก้ไขได้เฉพาะ Invoices Status ฉบับร่างเท่านั้น" action={<Link className="button button-primary" to={existing ? `/invoices/${existing.id}` : '/invoices'}>กลับไป ใบแจ้งหนี้</Link>} />
+  return <InvoicesEditor key={existing?.id || 'new-invoice'} workspace={workspace} existing={existing} />
 }
 
-function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
+function InvoicesEditor({ workspace, existing = null }: InvoiceEditorProps) {
   const navigate = useNavigate()
   const { data, save, remove } = workspace
   const existingItems = existing ? data.invoice_items.filter((item) => item.invoice_id === existing.id) : []
@@ -44,19 +44,19 @@ function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
   const [saving, setSaving] = useState(false)
 
   const activeClients = useMemo(() => data.clients.filter((client) => client.status === 'ACTIVE' || client.id === existing?.client_id), [data.clients, existing?.client_id])
-  const effectiveClientId = clientId || activeClients[0]?.id || ''
-  const clientProjects = useMemo(() => data.projects.filter((project) => project.client_id === effectiveClientId), [data.projects, effectiveClientId])
+  const effectiveClientsId = clientId || activeClients[0]?.id || ''
+  const clientProjects = useMemo(() => data.projects.filter((project) => project.client_id === effectiveClientsId), [data.projects, effectiveClientsId])
   const eligibleTime = useMemo(() => {
     const projectIds = new Set(clientProjects.map((project) => project.id))
     return data.time_entries.filter((entry) => entry.billable && entry.ended_at && (!entry.invoice_id || entry.invoice_id === existing?.id) && projectIds.has(entry.project_id) && (projectId === 'ALL' || entry.project_id === projectId))
   }, [clientProjects, data.time_entries, existing?.id, projectId])
 
-  const client = data.clients.find((item) => item.id === effectiveClientId)
+  const client = data.clients.find((item) => item.id === effectiveClientsId)
   const selectedTime = data.time_entries.filter((entry) => selectedTimeIds.includes(entry.id))
   const timeItems = selectedTime.map((entry) => {
     const project = data.projects.find((item) => item.id === entry.project_id)
     const quantity = Number(entry.duration_minutes) / 60
-    return { time_entry_id: entry.id, description: `${project?.name || 'Project'} — ${entry.description || 'Billable time'}`, quantity, unit_price: Number(entry.rate_snapshot), amount: quantity * Number(entry.rate_snapshot) }
+    return { time_entry_id: entry.id, description: `${project?.name || 'โปรเจกต์'} — ${entry.description || 'เวลาที่billable'}`, quantity, unit_price: Number(entry.rate_snapshot), amount: quantity * Number(entry.rate_snapshot) }
   })
   const validManualItems = manualItems.filter((item) => item.description.trim() && Number(item.quantity) > 0)
     .map((item) => ({ ...item, quantity: Number(item.quantity), unit_price: Number(item.unit_price), amount: Number(item.quantity) * Number(item.unit_price), time_entry_id: null }))
@@ -69,7 +69,7 @@ function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
   const updateManualItem = (id: string, field: 'description' | 'quantity' | 'unit_price', value: string) => setManualItems((items) => items.map((item) => item.id === id ? { ...item, [field]: value } : item))
   const toggleTime = (id: string) => setSelectedTimeIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id])
 
-  const createInvoiceNumber = () => {
+  const createInvoicesNumber = () => {
     if (existing) return existing.invoice_number
     const year = new Date(form.issue_date).getFullYear()
     const maximum = data.invoices.reduce((max, invoice) => {
@@ -86,7 +86,7 @@ function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
       return
     }
     if (form.due_date < form.issue_date) {
-      setFormError('วันครบกำหนดต้องไม่ก่อนวันที่ออก Invoice')
+      setFormError('วันครบกำหนดต้องไม่ก่อนวันที่ออกใบแจ้งหนี้')
       return
     }
     setSaving(true)
@@ -101,7 +101,7 @@ function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
       await save('invoices', {
         ...(existing || {}),
         id: invoiceId, client_id: client.id, project_id: projectId === 'ALL' ? null : projectId,
-        invoice_number: createInvoiceNumber(), issue_date: form.issue_date, due_date: form.due_date, status: 'DRAFT',
+        invoice_number: createInvoicesNumber(), issue_date: form.issue_date, due_date: form.due_date, status: 'DRAFT',
         currency: profile?.currency || 'THB', subtotal, discount_amount: discount, tax_rate: Number(form.tax_rate) || 0,
         tax_amount: taxAmount, total, amount_paid: 0, notes: form.notes,
         seller_snapshot: { name: profile?.full_name, email: profile?.email, phone: profile?.phone, address: profile?.address, tax_id: profile?.tax_id, bank_name: profile?.bank_name, bank_account_name: profile?.bank_account_name, bank_account_number: profile?.bank_account_number },
@@ -123,26 +123,26 @@ function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
       }
       navigate(`/invoices/${invoiceId}`)
     } catch (err) {
-      setFormError(getErrorMessage(err, 'ไม่สามารถบันทึก Invoice ได้'))
+      setFormError(getErrorMessage(err, 'ไม่สามารถบันทึกใบแจ้งหนี้ได้'))
       setSaving(false)
     }
   }
 
   return (
     <div className="page-view">
-      <Link className="back-link" to="/invoices">← กลับไป Invoices</Link>
-      <PageHeader eyebrow={existing ? 'Invoices / Edit draft' : 'Invoices / New'} title={existing ? `Edit ${existing.invoice_number}` : 'Create invoice'} description="รวมเวลาที่ยังไม่วางบิลและรายการกำหนดเองไว้ในเอกสารเดียว" />
+      <Link className="back-link" to="/invoices">← กลับไป ใบแจ้งหนี้</Link>
+      <PageHeader eyebrow={existing ? 'ใบแจ้งหนี้ / แก้ไขฉบับร่าง' : 'ใบแจ้งหนี้ / สร้างใหม่'} title={existing ? `แก้ไข ${existing.invoice_number}` : 'สร้างใบแจ้งหนี้'} description="รวมเวลาที่ยังไม่วางบิลและรายการกำหนดเองไว้ในเอกสารเดียว" />
       <form className="invoice-editor" onSubmit={handleSubmit}>
         {formError && <p className="form-error">{formError}</p>}
         <div className="invoice-editor-grid">
           <div className="section-stack">
-            <section className="panel"><div className="panel-heading"><div><h2>1. ลูกค้าและกำหนดชำระ</h2><p>ข้อมูลจะถูก snapshot เมื่อสร้างเอกสาร</p></div></div><div className="form-grid">
-              <div className="form-field full"><label htmlFor="invoice-client">ลูกค้า</label><select id="invoice-client" value={effectiveClientId} onChange={(event) => { setClientId(event.target.value); setProjectId('ALL'); setSelectedTimeIds([]) }}>{activeClients.map((item) => <option key={item.id} value={item.id}>{item.company_name || item.name}</option>)}</select></div>
+            <section className="panel"><div className="panel-heading"><div><h2>1. ลูกค้าและกำหนดชำระ</h2><p>ข้อมูลจะถูก คัดลอกข้อมูล เมื่อสร้างเอกสาร</p></div></div><div className="form-grid">
+              <div className="form-field full"><label htmlFor="invoice-client">ลูกค้า</label><select id="invoice-client" value={effectiveClientsId} onChange={(event) => { setClientId(event.target.value); setProjectId('ALL'); setSelectedTimeIds([]) }}>{activeClients.map((item) => <option key={item.id} value={item.id}>{item.company_name || item.name}</option>)}</select></div>
               <div className="form-field"><label htmlFor="invoice-issue">วันที่ออก</label><input id="invoice-issue" type="date" value={form.issue_date} onChange={(event) => setForm((current) => ({ ...current, issue_date: event.target.value }))} /></div>
               <div className="form-field"><label htmlFor="invoice-due">ครบกำหนด</label><input id="invoice-due" type="date" value={form.due_date} onChange={(event) => setForm((current) => ({ ...current, due_date: event.target.value }))} /></div>
             </div></section>
 
-            <section className="panel"><div className="panel-heading"><div><h2>2. เลือกเวลาที่ยังไม่วางบิล</h2><p>เลือกได้เฉพาะเวลาของลูกค้ารายนี้และไม่เคยอยู่ใน Invoice</p></div><select className="select-button" value={projectId} onChange={(event) => { setProjectId(event.target.value); setSelectedTimeIds([]) }}><option value="ALL">ทุกโปรเจกต์</option>{clientProjects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></div>
+            <section className="panel"><div className="panel-heading"><div><h2>2. เลือกเวลาที่ยังไม่วางบิล</h2><p>เลือกได้เฉพาะเวลาของลูกค้ารายนี้และไม่เคยอยู่ใน ใบแจ้งหนี้</p></div><select className="select-button" value={projectId} onChange={(event) => { setProjectId(event.target.value); setSelectedTimeIds([]) }}><option value="ALL">ทุกโปรเจกต์</option>{clientProjects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></div>
               {eligibleTime.length === 0 ? <p className="inline-empty">ไม่มีเวลาที่ยังไม่วางบิลสำหรับตัวเลือกนี้</p> : <div className="invoice-time-list">{eligibleTime.map((entry) => { const project = data.projects.find((item) => item.id === entry.project_id); const hours = Number(entry.duration_minutes) / 60; return <label key={entry.id} className="invoice-time-row"><input type="checkbox" checked={selectedTimeIds.includes(entry.id)} onChange={() => toggleTime(entry.id)} /><span><strong>{entry.description || project?.name}</strong><small>{project?.name} · {formatDate(entry.started_at)}</small></span><strong>{hours.toFixed(2)} ชม.</strong><b>{formatMoney(hours * Number(entry.rate_snapshot), entry.currency)}</b></label> })}</div>}
             </section>
 
@@ -151,7 +151,7 @@ function InvoiceEditor({ workspace, existing = null }: InvoiceEditorProps) {
             </section>
           </div>
 
-          <aside className="panel invoice-summary-card"><div><span>Invoice number</span><strong>{createInvoiceNumber()}</strong></div><div className="invoice-client-summary"><span>เรียกเก็บจาก</span><strong>{client?.company_name || client?.name}</strong><small>{client?.email}</small></div><div className="form-field"><label htmlFor="invoice-tax">ภาษี (%)</label><input id="invoice-tax" type="number" min="0" max="100" step="0.01" value={form.tax_rate} onChange={(event) => setForm((current) => ({ ...current, tax_rate: event.target.value }))} /></div><div className="form-field"><label htmlFor="invoice-discount">ส่วนลด</label><input id="invoice-discount" type="number" min="0" step="0.01" value={form.discount_amount} onChange={(event) => setForm((current) => ({ ...current, discount_amount: event.target.value }))} /></div><div className="invoice-totals"><p><span>ยอดก่อนภาษี</span><strong>{formatMoney(subtotal)}</strong></p><p><span>ส่วนลด</span><strong>−{formatMoney(discount)}</strong></p><p><span>ภาษี {Number(form.tax_rate) || 0}%</span><strong>{formatMoney(taxAmount)}</strong></p><p className="grand-total"><span>ยอดรวม</span><strong>{formatMoney(total)}</strong></p></div><div className="form-field"><label htmlFor="invoice-notes">หมายเหตุ</label><textarea id="invoice-notes" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></div><button className="button button-primary wide" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : existing ? 'บันทึกการแก้ไข' : 'บันทึกเป็น Draft'}</button><Link className="button button-secondary wide" to={existing ? `/invoices/${existing.id}` : '/invoices'}>ยกเลิก</Link></aside>
+          <aside className="panel invoice-summary-card"><div><span>เลขที่ใบแจ้งหนี้</span><strong>{createInvoicesNumber()}</strong></div><div className="invoice-client-summary"><span>เรียกเก็บจาก</span><strong>{client?.company_name || client?.name}</strong><small>{client?.email}</small></div><div className="form-field"><label htmlFor="invoice-tax">ภาษี (%)</label><input id="invoice-tax" type="number" min="0" max="100" step="0.01" value={form.tax_rate} onChange={(event) => setForm((current) => ({ ...current, tax_rate: event.target.value }))} /></div><div className="form-field"><label htmlFor="invoice-discount">ส่วนลด</label><input id="invoice-discount" type="number" min="0" step="0.01" value={form.discount_amount} onChange={(event) => setForm((current) => ({ ...current, discount_amount: event.target.value }))} /></div><div className="invoice-totals"><p><span>ยอดก่อนภาษี</span><strong>{formatMoney(subtotal)}</strong></p><p><span>ส่วนลด</span><strong>−{formatMoney(discount)}</strong></p><p><span>ภาษี {Number(form.tax_rate) || 0}%</span><strong>{formatMoney(taxAmount)}</strong></p><p className="grand-total"><span>ยอดรวม</span><strong>{formatMoney(total)}</strong></p></div><div className="form-field"><label htmlFor="invoice-notes">หมายเหตุ</label><textarea id="invoice-notes" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></div><button className="button button-primary wide" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : existing ? 'บันทึกการแก้ไข' : 'บันทึกเป็นฉบับร่าง'}</button><Link className="button button-secondary wide" to={existing ? `/invoices/${existing.id}` : '/invoices'}>ยกเลิก</Link></aside>
         </div>
       </form>
     </div>

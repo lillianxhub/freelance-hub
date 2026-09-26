@@ -1,5 +1,3 @@
-# Security Patch Pull Request Template
-
 ## Security Patch Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษโดยไม่เปิดเผยรายละเอียดช่องโหว่เกินความจำเป็น -->

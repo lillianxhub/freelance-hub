@@ -1,5 +1,3 @@
-# Feature Pull Request Template
-
 ## Feature Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงฟีเจอร์ใหม่ -->

@@ -1,5 +1,3 @@
-# Documentation Update Pull Request Template
-
 ## Documentation Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงเอกสารที่ปรับปรุง -->

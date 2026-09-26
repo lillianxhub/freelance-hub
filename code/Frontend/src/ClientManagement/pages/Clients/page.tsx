@@ -81,7 +81,7 @@ function ClientsPage() {
     }
   }
 
-  const archiveClient = async (client: Client) => {
+  const archiveClients = async (client: Client) => {
     await save('clients', { ...client, status: client.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED' })
   }
 
@@ -91,24 +91,24 @@ function ClientsPage() {
   return (
     <div className="page-view">
       <PageHeader
-        eyebrow="Workspace / Clients"
-        title="Clients"
+        eyebrow="พื้นที่ทำงาน / ลูกค้า"
+        title="ลูกค้า"
         description="เก็บข้อมูลลูกค้า โปรเจกต์ และกิจกรรมทั้งหมดไว้ในที่เดียว"
         actions={<button className="button button-primary" type="button" onClick={openCreate}>＋ เพิ่มลูกค้า</button>}
       />
 
       <div className="filter-row">
-        <div className="search-box"><span>⌕</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร" aria-label="ค้นหาลูกค้า" /></div>
-        <select className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองสถานะลูกค้า">
+        <div className="search-box"><span>⌕</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร" aria-label="ค้นหาClients" /></div>
+        <select className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองStatusClients">
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งานอยู่</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </select>
-        <select className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับลูกค้า"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></select>
+        <select className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับClients"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></select>
       </div>
 
       {visibleClients.length === 0 ? (
-        <section className="panel"><EmptyState icon="♧" title="ยังไม่พบลูกค้า" description="เพิ่มลูกค้ารายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<button className="button button-primary" type="button" onClick={openCreate}>เพิ่มลูกค้า</button>} /></section>
+        <section className="panel"><EmptyState icon="♧" title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<button className="button button-primary" type="button" onClick={openCreate}>เพิ่มลูกค้า</button>} /></section>
       ) : (
         <div className="card-grid">
           {visibleClients.map((client) => {
@@ -116,7 +116,7 @@ function ClientsPage() {
             const projectIds = new Set(clientProjects.map((project) => project.id))
             const minutes = data.time_entries.filter((entry) => projectIds.has(entry.project_id)).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
             const revenue = data.time_entries.filter((entry) => projectIds.has(entry.project_id) && entry.billable).reduce((sum, entry) => sum + ((entry.duration_minutes || 0) / 60) * (entry.rate_snapshot || 0), 0)
-            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={revenue} onEdit={openEdit} onArchive={archiveClient} />
+            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={revenue} onEdit={openEdit} onArchive={archiveClients} />
           })}
         </div>
       )}
@@ -129,7 +129,7 @@ function ClientsPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้า'} size="large">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'} size="large">
         <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
       </Modal>
     </div>

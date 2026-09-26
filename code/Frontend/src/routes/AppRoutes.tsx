@@ -29,18 +29,18 @@ const publicRoutes: AppRouteDefinition[] = [
 
 const protectedRoutes: AppRouteDefinition[] = [
   { path: '/dashboard', label: 'Dashboard', element: <DashboardPage /> },
-  { path: '/clients', label: 'Clients', element: <ClientsPage /> },
-  { path: '/clients/:clientId', label: 'Client detail', element: <ClientDetailPage /> },
-  { path: '/projects', label: 'Projects', element: <ProjectsPage /> },
-  { path: '/projects/:projectId', label: 'Project detail', element: <ProjectDetailPage /> },
-  { path: '/time-tracker', label: 'Time tracker', element: <TimeTrackerPage /> },
-  { path: '/finances', label: 'Finances', element: <FinancesPage /> },
-  { path: '/invoices', label: 'Invoices', element: <InvoicesPage /> },
-  { path: '/invoices/new', label: 'Create invoice', element: <NewInvoicePage /> },
-  { path: '/invoices/:invoiceId/edit', label: 'Edit invoice draft', element: <NewInvoicePage /> },
-  { path: '/invoices/:invoiceId', label: 'Invoice detail', element: <InvoiceDetailPage /> },
-  { path: '/reports', label: 'Reports', element: <ReportsPage /> },
-  { path: '/settings', label: 'Settings', element: <SettingsPage /> },
+  { path: '/clients', label: 'ลูกค้า', element: <ClientsPage /> },
+  { path: '/clients/:clientId', label: 'Clients detail', element: <ClientDetailPage /> },
+  { path: '/projects', label: 'โปรเจกต์', element: <ProjectsPage /> },
+  { path: '/projects/:projectId', label: 'Projects detail', element: <ProjectDetailPage /> },
+  { path: '/time-tracker', label: 'บันทึกเวลา', element: <TimeTrackerPage /> },
+  { path: '/finances', label: 'การเงิน', element: <FinancesPage /> },
+  // { path: '/invoices', label: 'ใบแจ้งหนี้', element: <InvoicesPage /> },
+  // { path: '/invoices/new', label: 'สร้างใบแจ้งหนี้', element: <NewInvoicePage /> },
+  // { path: '/invoices/:invoiceId/edit', label: 'แก้ไข invoice draft', element: <NewInvoicePage /> },
+  // { path: '/invoices/:invoiceId', label: 'Invoices detail', element: <InvoiceDetailPage /> },
+  { path: '/reports', label: 'รายงาน', element: <ReportsPage /> },
+  { path: '/settings', label: 'ตั้งค่า', element: <SettingsPage /> },
 ]
 
 function ProtectedWorkspace() {

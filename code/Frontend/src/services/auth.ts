@@ -31,7 +31,11 @@ export async function signUp(fullName: string, email: string, password: string):
 }
 
 export async function signOut(): Promise<void> {
-  setApiToken(null)
+  try {
+    if (getApiToken()) await api.post<void>('/auth/logout')
+  } finally {
+    setApiToken(null)
+  }
 }
 
 export function subscribeToAuthChanges(callback: (session: AuthSession | null) => void): () => void {
