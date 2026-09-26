@@ -1,30 +1,35 @@
 # Refactoring Pull Request Template
 
 ## Refactoring Title
-[Provide a clear title, e.g., "Refactor user authentication logic for improved clarity"]
+
+<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงส่วนที่รีแฟกเตอร์ -->
 
 ## Type of Change
-- [X] Refactor (non-breaking change which improves code maintainability and readability)
+
+- [x] Refactoring
 
 ## Description of Refactoring
-[Explain the refactoring changes and the motivations behind them.]
+
+<!-- อธิบายสิ่งที่รีแฟกเตอร์และเหตุผลของการเปลี่ยนแปลง -->
 
 ## Impact of Refactoring
-[Discuss any impacts on code readability, performance, or maintainability.]
+
+<!-- อธิบายผลกระทบต่อความอ่านง่าย การดูแลรักษา ประสิทธิภาพ และพฤติกรรมเดิม -->
 
 ## Testing Conducted
-[Detail the testing done to ensure functionality remains intact and efficient.]
+
+- [ ] ทดสอบฟังก์ชันที่เกี่ยวข้องแล้ว
+- [ ] ทดสอบชุดทดสอบทั้งหมดแล้ว
+- [ ] ยืนยันว่าไม่มีการเปลี่ยนแปลงพฤติกรรมโดยไม่ตั้งใจแล้ว
 
 ## Additional Remarks
-[Any additional information for reviewers.]
+
+<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
 
 ## Checklist
-- [ ] My refactorings adhere to best coding practices.
-- [ ] I have performed a self-review of the refactored code.
-- [ ] I have commented on my changes, particularly in complex or unclear areas.
-- [ ] My changes do not degrade the performance of the application.
-- [ ] I have added tests to cover my changes where applicable.
-- [ ] All tests related to the changed code pass successfully.
-- [ ] The refactoring does not unintentionally introduce new bugs or errors.
-- [ ] The code remains readable and maintainable.
+
+- [ ] โค้ดหลังรีแฟกเตอร์ยังอ่านง่ายและดูแลรักษาได้
+- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
+- [ ] เพิ่มหรือปรับปรุงการทดสอบที่จำเป็นแล้ว
+- [ ] ไม่มี Warning หรือ Error ใหม่
 

@@ -1,38 +1,44 @@
 # Feature Pull Request Template
 
 ## Feature Title
-[Provide a succinct and clear title for the feature, e.g., "Introduce advanced search functionality"]
+
+<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงฟีเจอร์ใหม่ -->
 
 ## Type of Change
-- [X] New feature (non-breaking change which adds functionality)
+
+- [x] New feature
 
 ## Description of the Feature
-[A brief overview of the feature being added. Explain the functionality and its intended purpose.]
+
+<!-- อธิบายฟีเจอร์ จุดประสงค์ และปัญหาที่ฟีเจอร์นี้ช่วยแก้ -->
 
 ## Implementation Details
-[Describe your approach to implementing the feature. Include any design decisions and methods used.]
+
+<!-- อธิบายแนวทางการพัฒนาและเหตุผลของการตัดสินใจที่สำคัญ -->
 
 ## Impact of the Feature
-[Discuss how this feature affects the existing codebase, including any potential behavioural or performance changes.]
+
+<!-- อธิบายผลกระทบต่อโค้ดเดิม ประสิทธิภาพ และพฤติกรรมของระบบ -->
 
 ## Testing Conducted
-[Detail the tests carried out to ensure the feature works as intended and integrates well with the existing system.]
+
+- [ ] ทดสอบฟีเจอร์หลักแล้ว
+- [ ] ทดสอบกรณีผิดพลาดหรือกรณีขอบแล้ว
+- [ ] ทดสอบชุดทดสอบที่เกี่ยวข้องแล้ว
 
 ## Screenshots/Videos (if applicable)
-[Attach screenshots or videos demonstrating the new feature in action.]
+
+<!-- แนบภาพหรือวิดีโอประกอบ ถ้ามี -->
 
 ## Additional Remarks
-[Any additional comments or information for the reviewers.]
+
+<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
 
 ## Checklist
 
-- [ ] My code adheres to the project's coding and style guidelines.
-- [ ] I have conducted a self-review of my code.
-- [ ] I have commented my code, particularly in complex areas.
-- [ ] I have made corresponding changes to the documentation.
-- [ ] I have tested my feature thoroughly in different environments.
-- [ ] I have added tests that prove my feature works as intended.
-- [ ] New and existing unit tests pass locally with my changes.
-- [ ] I have assessed the performance impact of the feature.
-- [ ] My changes do not introduce new warnings or errors.
-- [ ] I have checked for compatibility with other parts of the codebase.
+- [ ] โค้ดเป็นไปตามมาตรฐานของโปรเจกต์
+- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
+- [ ] เพิ่มการทดสอบที่จำเป็นแล้ว
+- [ ] อัปเดตเอกสารที่เกี่ยวข้องแล้ว
+- [ ] ไม่มี Warning หรือ Error ใหม่
+

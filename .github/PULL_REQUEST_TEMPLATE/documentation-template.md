@@ -1,29 +1,33 @@
 # Documentation Update Pull Request Template
 
 ## Documentation Title
-[Provide a title summarising the documentation update, e.g., "Revise README for new feature integration"]
+
+<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงเอกสารที่ปรับปรุง -->
 
 ## Type of Change
-- [X] Documentation update (changes to documentation)
+
+- [x] Documentation update
 
 ## Description of Changes
-[Detail what documentation has been added, modified, or removed. Explain the rationale behind these changes.]
+
+<!-- อธิบายเอกสารที่เพิ่ม แก้ไข หรือลบ และเหตุผลของการเปลี่ยนแปลง -->
 
 ## Relevant Sections
-[List the sections of the documentation that are affected.]
+
+<!-- ระบุส่วนหรือไฟล์เอกสารที่ได้รับผลกระทบ -->
 
 ## Review Considerations
-[Highlight specific areas that reviewers should focus on.]
+
+<!-- ระบุจุดที่อยากให้ Reviewer เน้นตรวจสอบ -->
 
 ## Additional Remarks
-[Any additional information or context for the documentation changes.]
+
+<!-- ระบุข้อมูลเพิ่มเติมที่เกี่ยวข้องกับเอกสาร -->
 
 ## Checklist
 
-- [ ] I have thoroughly reviewed the changes made in the documentation.
-- [ ] The updates are clear, concise, and correct grammatically.
-- [ ] All modified documentation pages have been tested for proper layout.
-- [ ] I have updated any relevant READMEs or other documentation guides.
-- [ ] The documentation accurately reflects the current state of the project.
-- [ ] Technical terms and jargon are explained or linked to additional resources.
+- [ ] ตรวจสอบความถูกต้องของเอกสารแล้ว
+- [ ] เนื้อหาชัดเจน อ่านเข้าใจง่าย และถูกต้องตามหลักภาษา
+- [ ] อัปเดต README หรือเอกสารที่เกี่ยวข้องแล้ว
+- [ ] เอกสารสอดคล้องกับสถานะปัจจุบันของโปรเจกต์
 
