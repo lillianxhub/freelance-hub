@@ -18,7 +18,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
-import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
@@ -233,12 +232,12 @@ public class TaskServiceImpl implements TaskService {
         // ล็อก Project เพื่อให้การสร้าง/ย้ายลำดับ Task ไม่ชนกัน
         entityManager.refresh(project, LockModeType.PESSIMISTIC_WRITE);
 
-        if (project.getStatus() == ProjectStatus.COMPLETED
-                || project.getStatus() == ProjectStatus.ARCHIVED) {
+        if(!project.canEditTasks()) {
             throw new IllegalStateException(
                     "Cannot change tasks in a completed or archived project"
             );
         }
+        
 
         return project;
     }
