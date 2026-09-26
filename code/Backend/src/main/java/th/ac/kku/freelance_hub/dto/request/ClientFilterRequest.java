@@ -23,7 +23,7 @@ public class ClientFilterRequest {
     /** Null includes both active and archived clients. */
     private ClientStatus status;
 
-    /** Optional text filter; blank input should be treated as no search. */
+    /** Optional prefix search over name, company, email, phone, and address; blank means no search. */
     @Size(max = 150, message = "Search must not exceed 150 characters")
     private String search;
 
