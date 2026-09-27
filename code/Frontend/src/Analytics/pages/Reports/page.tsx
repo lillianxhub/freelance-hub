@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import PageHeader from "../../../components/PageHeader";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
-import { useWorkspace } from "../../../Workspace/useWorkspace";
+import { useAnalytics } from "../../useAnalytics";
 import {
   downloadCsv,
   groupTimeBy,
@@ -29,7 +29,7 @@ const reportTo = new Date(
 const reportFrom = `${reportTo.slice(0, 8)}01`;
 
 function ReportsPage() {
-  const { data, loading, error, refresh } = useWorkspace();
+  const { data, loading, error, refresh } = useAnalytics();
   const [range, setRange] = useState({ from: reportFrom, to: reportTo });
   const currency = data?.profiles[0]?.currency || "THB";
   const [clientId, setClientId] = useState("ALL");
@@ -369,12 +369,12 @@ function ReportsPage() {
                 />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 9 }}
+                  tick={{ fontSize: 'var(--font-size-sm)' }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 9 }}
+                  tick={{ fontSize: 'var(--font-size-sm)' }}
                   axisLine={false}
                   tickLine={false}
                 />

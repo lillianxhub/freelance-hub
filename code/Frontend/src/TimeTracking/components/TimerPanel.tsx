@@ -1,9 +1,14 @@
 import { formatTimer } from "../../utils/formatters";
 import { FiPlay, FiSquare } from "react-icons/fi";
 import { useTimer } from "../useTimer";
+import type { WorkspaceContextValue } from "../../types/workspaceContext";
 
-export default function TimerPanel() {
-  const timer = useTimer();
+interface TimerPanelProps {
+  workspace: WorkspaceContextValue;
+}
+
+export default function TimerPanel({ workspace }: TimerPanelProps) {
+  const timer = useTimer(workspace);
   return (
     <section className="panel big-timer-card">
       <span className={`timer-pill${timer.runningEntry ? " live" : ""}`}>

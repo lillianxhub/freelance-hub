@@ -3,12 +3,12 @@ import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock } from 'react-icons/fi'
 import PageHeader from '../../../components/PageHeader'
 import StatusBadge from '../../../components/StatusBadge'
 import { ErrorState, LoadingState } from '../../../components/ViewState'
-import { useWorkspace } from '../../../Workspace/useWorkspace'
+import { useClients } from '../../useClients'
 import { calculateTimeValue, formatDate, formatDuration, formatMoney } from '../../../utils/formatters'
 
 function ClientDetailPage() {
   const { clientId } = useParams()
-  const { data, loading, error, refresh } = useWorkspace()
+  const { data, loading, error, refresh } = useClients()
 
   if (loading) return <LoadingState label="กำลังโหลดข้อมูลลูกค้า..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />

@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../Authentication/useAuthentication'
 import { initials } from '../utils/formatters'
 import type { TopbarProps } from '../types/ui'
-import { useWorkspace } from '../Workspace/useWorkspace'
 import { FiChevronDown, FiMenu } from 'react-icons/fi'
 
 const labels: Record<string, string> = {
@@ -15,13 +14,11 @@ function Topbar({ onMenu }: TopbarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const { data } = useWorkspace()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const segment = location.pathname.split('/').filter(Boolean)[0] || 'dashboard'
   const label = labels[segment] || 'พื้นที่ทำงาน'
-  const profile = data.profiles[0]
-  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'โปรไฟล์'
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'โปรไฟล์'
 
   useEffect(() => {
     const closeOnPointerDown = (event: MouseEvent) => {
@@ -67,8 +64,8 @@ function Topbar({ onMenu }: TopbarProps) {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
           >
-            <span className={`avatar${profile?.logo_url ? ' avatar-image' : ''}`} title={user?.email}>
-              {profile?.logo_url ? <img src={profile.logo_url} alt="" /> : initials(displayName)}
+            <span className="avatar" title={user?.email}>
+              {initials(displayName)}
             </span>
             <span className="account-copy">
               <strong>{displayName}</strong>
