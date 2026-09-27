@@ -266,7 +266,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 - endpoint ที่สร้างข้อมูลสำเร็จใช้ 201, อ่าน/แก้ไขสำเร็จใช้ 200, ลบหรือ archive ที่ไม่ส่ง body ใช้ 204 และข้อผิดพลาดใช้ 400/404/409/500 ตามกรณี
 - ใช้ `@Valid` และ Bean Validation กับ request DTO ทุก endpoint ที่รับข้อมูล
 - มี `@RestControllerAdvice` และ error response รูปแบบกลาง
-- ต้องเปิด OpenAPI และ Swagger UI ให้เข้าถึงได้ที่ `/swagger-ui.html` หรือ URL ที่ redirect ไปยัง Swagger UI ได้จริง
+- ต้องเปิด OpenAPI ที่ `/api-docs` และ Swagger UI ที่ `/swagger-ui.html` เฉพาะ local, dev และ staging; production ต้องปิดทั้งสอง endpoint
 
 ### 8.1 Profile, address และการเปลี่ยนรหัสผ่าน
 
@@ -601,7 +601,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - deploy Frontend และ Backend บน Cloud พร้อม environment variables สำหรับ secrets; ใช้ Supabase เป็น PostgreSQL production database
 - มี `code/Backend/Dockerfile` และ `code/Backend/docker-compose.yml` สำหรับ Backend/local database โดย deploy Backend ด้วย Root Directory `code/Backend`
 - มี React Frontend ใน `code/Frontend` และ deploy ด้วย Root Directory `code/Frontend`
-- Swagger UI ต้องเปิดใช้งานได้บน deployment
+- Swagger UI ต้องเปิดใช้งานได้บน staging deployment และต้องปิดบน production
 - test ทั้งหมดต้องผ่านและมี test report
 - frontend ต้องเชื่อม backend และสาธิต flow หลักในหัวข้อ 14 ได้จริง
 - เอกสารและ diagrams ในหัวข้อ 19 ต้องครบ
@@ -616,7 +616,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - [ ] branch ส่วนตัวทุกคนตั้งชื่อตามรูปแบบและมี commit อย่างน้อย 15 ครั้ง
 - [ ] version ส่งมอบถูก merge เข้า `main` ผ่าน Pull Request และผ่าน review
 - [ ] public Deployment URL เปิดใช้งานได้ในวันนำเสนอ
-- [ ] Swagger UI บนระบบที่ deploy เข้าถึงได้
+- [ ] Swagger UI บน staging เข้าถึงได้ และ production ไม่เปิด `/api-docs` หรือ Swagger UI
 - [ ] automated tests ผ่านและมี Test Report
 - [ ] diagrams และเอกสาร SOLID/Design Patterns/Data Dictionary ครบ
 - [ ] slide นำเสนออยู่ใน `doc/slide/`

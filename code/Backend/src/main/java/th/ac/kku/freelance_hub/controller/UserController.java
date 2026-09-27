@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +26,7 @@ public class UserController {
      * Get current authenticated user profile
      * GET /api/users/me
      */
+    @Tag(name = "Authentication")
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getCurrentUser() {
@@ -36,6 +38,7 @@ public class UserController {
      * Update the authenticated user's personal information and address.
      * PATCH /api/users/me
      */
+    @Tag(name = "Authentication")
     @PatchMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> updateCurrentUser(
@@ -47,6 +50,7 @@ public class UserController {
      * Change the authenticated user's password using the old and new values.
      * PATCH /api/users/me/password
      */
+    @Tag(name = "Authentication")
     @PatchMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> changePassword(

@@ -27,7 +27,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | ORM               | Spring Data JPA / Hibernate                                     |
 | Web / API         | Spring MVC, RESTful API                                         |
 | Frontend          | React 19, Vite 8, React Router, Recharts                        |
-| API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
+| API Documentation | OpenAPI / Swagger UI เปิดเฉพาะ local, dev และ staging           |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
 | Version Control   | Git + Github                                                    |
 | Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database)      |
@@ -114,6 +114,7 @@ cp .env.example .env
 | `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ production | Secret ของ deployment |
 | `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ production | Secret ของ deployment |
 | `JWT_SECRET`                 | Secret สำหรับลงนาม JWT              | Secret ของ deployment |
+| `OPENAPI_ENABLED`            | เปิด OpenAPI/Swagger เฉพาะ local, dev หรือ staging; production ให้ใช้ `false` หรือไม่กำหนด | `true` ผ่าน Docker Compose |
 
 ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
 
@@ -165,9 +166,12 @@ docker compose down
 
 ## API Documentation
 
+OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้นใน application configuration เพื่อไม่ให้เปิดบน production
+โดยตั้ง `OPENAPI_ENABLED=true` เฉพาะ local development หรือ staging เท่านั้น
+
 - Base URL: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- OpenAPI JSON: `http://localhost:8080/api-docs`
 
 | Resource     | Endpoint             |
 | ------------ | -------------------- |
@@ -233,13 +237,14 @@ Maven test result อยู่ใน `code/Backend/target/surefire-reports/` แ
 | -------------------- | -------------------------------------------------------- | ------------ |
 | Frontend (Vercel)    | TODO: `https://your-frontend.vercel.app`                 | Not deployed |
 | Backend API (Render) | TODO: `https://your-backend.onrender.com`                | Not deployed |
-| Swagger UI           | TODO: `https://your-backend.example.com/swagger-ui.html` | Not deployed |
+| Swagger UI (Staging) | TODO: `https://your-staging-backend.example.com/swagger-ui.html` | Not deployed |
 
 Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อม `VITE_API_URL` ชี้ไปยัง Backend
 
 Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
 Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
+ตั้ง `OPENAPI_ENABLED=true` เฉพาะ Render staging; production ให้ตั้ง `OPENAPI_ENABLED=false` หรือไม่กำหนด เพื่อปิด `/api-docs` และ Swagger UI
 
 > **TODO:** ระบุ Vercel URL, Render URL, Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
 

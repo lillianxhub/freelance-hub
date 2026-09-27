@@ -50,8 +50,11 @@ class ClientIntegrationTest {
 
     @Test
     void openApiDocumentsClientEndpoints() throws Exception {
-        mockMvc.perform(get("/v3/api-docs"))
+        mockMvc.perform(get("/api-docs"))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paths['/api/users/me'].get.tags[0]").value("Authentication"))
+            .andExpect(jsonPath("$.paths['/api/users/me'].patch.tags[0]").value("Authentication"))
+            .andExpect(jsonPath("$.paths['/api/users/me/password'].patch.tags[0]").value("Authentication"))
             .andExpect(jsonPath("$.paths['/api/clients'].post.responses['201'].description").value("Client created"))
             .andExpect(jsonPath("$.paths['/api/clients'].get.responses['200'].description").value("Page of clients returned"))
             .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description").value("Client not found"))
