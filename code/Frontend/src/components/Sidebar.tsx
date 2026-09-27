@@ -1,7 +1,4 @@
 import { NavLink } from 'react-router-dom'
-import { useAuth } from '../Authentication/useAuthentication'
-import { useWorkspace } from '../Workspace/useWorkspace'
-import { initials } from '../utils/formatters'
 import { manageLinks, workspaceLinks } from '../constants/navigation'
 import type { SidebarLinkProps, SidebarProps } from '../types/ui'
 
@@ -17,12 +14,6 @@ function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
 }
 
 function Sidebar({ open, onClose }: SidebarProps) {
-  const { user } = useAuth()
-  const { data } = useWorkspace()
-  const profile = data?.profiles?.[0]
-  const projectCount = data?.projects?.filter((project) => project.status === 'ACTIVE').length || 0
-  const name = profile?.full_name || user?.user_metadata?.full_name || 'ฟรีแลนซ์'
-
   return (
     <>
       <button className={`sidebar-backdrop${open ? ' visible' : ''}`} type="button" aria-label="ปิดเมนู" onClick={onClose} />
@@ -44,7 +35,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
         <div className="sidebar-section-label">งานของคุณ</div>
         <nav className="sidebar-nav" onClick={onClose}>
           {workspaceLinks.map((link) => (
-            <SidebarLink key={link.to} {...link} badge={link.to === '/projects' ? projectCount : undefined} />
+            <SidebarLink key={link.to} {...link} />
           ))}
         </nav>
 
