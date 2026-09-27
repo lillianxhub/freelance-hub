@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { ModalProps } from '../types/ui'
+import { FiX } from 'react-icons/fi'
 
 function Modal({ open, title, eyebrow = 'พื้นที่ทำงาน', onClose, children, size = 'medium' }: ModalProps) {
   useEffect(() => {
@@ -20,7 +21,7 @@ function Modal({ open, title, eyebrow = 'พื้นที่ทำงาน', 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className={`modal modal-${size}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button className="modal-close" type="button" onClick={onClose} aria-label="ปิด">×</button>
+        <button className="modal-close" type="button" onClick={onClose} aria-label="ปิด"><FiX aria-hidden="true" /></button>
         <p className="eyebrow">{eyebrow}</p>
         <h2 id="modal-title">{title}</h2>
         {children}

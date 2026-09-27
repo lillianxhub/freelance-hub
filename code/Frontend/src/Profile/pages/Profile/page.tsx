@@ -3,16 +3,20 @@ import { FiCamera } from "react-icons/fi";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import PageHeader from "../../../components/PageHeader";
+import Toast from "../../../components/Toast";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
 import { useWorkspace } from "../../../Workspace/useWorkspace";
 import type { ChangePasswordInput, Profile } from "../../../types/profile";
 import type { ResourceInput } from "../../../types/workspace";
+import type { ToastMessage } from "../../../types/toast";
 import { getErrorMessage } from "../../../api/apiError";
 import { initials } from "../../../utils/formatters";
 import {
+  changePassword,
   removeStoredProfileImage,
   saveStoredProfileImage,
 } from "../../../services/profile";
+import { updateProfile } from "../../../services/workspace";
 import {
   loadThaiAddressData,
   type ThaiProvince,
@@ -44,14 +48,15 @@ const emptyProfile: ResourceInput<"profiles"> = {
   date_format: "DD/MM/YYYY",
   default_tax_rate: 0,
   default_hourly_rate: 0,
+  bio: "",
 };
 
 function ProfilePage() {
-  const { data, loading, error, refresh, save } = useWorkspace();
+  const { data, loading, error, refresh } = useWorkspace();
   const [draft, setDraft] = useState<
     Profile | ResourceInput<"profiles"> | null
   >(null);
-  const [message, setMessage] = useState("");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
   const [saving, setSaving] = useState(false);
   const [provinces, setProvinces] = useState<ThaiProvince[]>([]);
   const [addressLoading, setAddressLoading] = useState(true);
@@ -61,7 +66,7 @@ function ProfilePage() {
     new_password: "",
     confirm_password: "",
   });
-  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,7 +109,6 @@ function ProfilePage() {
       ...(current || data.profiles[0] || emptyProfile),
       ...values,
     }));
-    setMessage("");
   };
 
   const update = (
@@ -117,7 +121,6 @@ function ProfilePage() {
       ...(current || data.profiles[0] || emptyProfile),
       [name]: value,
     }));
-    setMessage("");
   };
 
   const updateProvince = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -152,11 +155,11 @@ function ProfilePage() {
     event.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setMessage("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+      setToast({ success: false, message: "กรุณาเลือกไฟล์รูปภาพเท่านั้น" });
       return;
     }
     if (file.size > MAX_PROFILE_IMAGE_SIZE) {
-      setMessage("รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2 MB");
+      setToast({ success: false, message: "รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2 MB" });
       return;
     }
 
@@ -164,16 +167,16 @@ function ProfilePage() {
     reader.onload = () => {
       const imageUrl = reader.result;
       if (typeof imageUrl !== "string") {
-        setMessage("ไม่สามารถอ่านไฟล์รูปภาพได้");
+        setToast({ success: false, message: "ไม่สามารถอ่านไฟล์รูปภาพได้" });
         return;
       }
       setDraft((current) => ({
         ...(current || data.profiles[0] || emptyProfile),
         logo_url: imageUrl,
       }));
-      setMessage("เลือกรูปโปรไฟล์แล้ว กดบันทึกเพื่อยืนยัน");
+      setToast({ success: true, message: "เลือกรูปโปรไฟล์แล้ว กดบันทึกเพื่อยืนยัน" });
     };
-    reader.onerror = () => setMessage("ไม่สามารถอ่านไฟล์รูปภาพได้");
+    reader.onerror = () => setToast({ success: false, message: "ไม่สามารถอ่านไฟล์รูปภาพได้" });
     reader.readAsDataURL(file);
   };
 
@@ -182,38 +185,30 @@ function ProfilePage() {
       ...(current || data.profiles[0] || emptyProfile),
       logo_url: "",
     }));
-    setMessage("ลบรูปโปรไฟล์แล้ว กดบันทึกเพื่อยืนยัน");
+    setToast({ success: true, message: "ลบรูปโปรไฟล์แล้ว กดบันทึกเพื่อยืนยัน" });
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
-    if (profile.id) {
-      if (profile.logo_url)
-        saveStoredProfileImage(profile.id, profile.logo_url);
-      else removeStoredProfileImage(profile.id);
-    }
     try {
-      await save("profiles", {
+      const response = await updateProfile({
         ...profile,
         default_tax_rate: Number(profile.default_tax_rate) || 0,
         default_hourly_rate: Number(profile.default_hourly_rate) || 0,
       });
-      setDraft(null);
-      setMessage("บันทึกโปรไฟล์เรียบร้อยแล้ว");
-    } catch (err) {
-      setDraft(null);
-      await refresh();
-      if (
-        err instanceof Error &&
-        err.message.includes("profiles ยังไม่มี endpoint")
-      ) {
-        setMessage(
-          "บันทึกรูปโปรไฟล์เรียบร้อยแล้ว รูปจะถูกใช้ในอุปกรณ์นี้จนกว่าจะมี API สำหรับโปรไฟล์",
-        );
-      } else {
-        setMessage(getErrorMessage(err, "ไม่สามารถบันทึกโปรไฟล์ได้"));
+      if (profile.id) {
+        if (profile.logo_url) saveStoredProfileImage(profile.id, profile.logo_url);
+        else removeStoredProfileImage(profile.id);
       }
+      await refresh();
+      setDraft(null);
+      setToast({
+        success: response.success,
+        message: response.message || "บันทึกโปรไฟล์เรียบร้อยแล้ว",
+      });
+    } catch (err) {
+      setToast({ success: false, message: getErrorMessage(err, "ไม่สามารถบันทึกโปรไฟล์ได้") });
     } finally {
       setSaving(false);
     }
@@ -222,26 +217,35 @@ function ProfilePage() {
   const updatePassword = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setPasswordForm((current) => ({ ...current, [name]: value }));
-    setPasswordMessage("");
   };
 
-  const submitPassword = (event: FormEvent<HTMLFormElement>) => {
+  const submitPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (passwordForm.new_password.length < 8) {
-      setPasswordMessage("รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร");
+      setToast({ success: false, message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร" });
       return;
     }
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setPasswordMessage("ยืนยันรหัสผ่านใหม่ไม่ตรงกัน");
+      setToast({ success: false, message: "ยืนยันรหัสผ่านใหม่ไม่ตรงกัน" });
       return;
     }
     if (passwordForm.current_password === passwordForm.new_password) {
-      setPasswordMessage("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
+      setToast({ success: false, message: "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม" });
       return;
     }
-    setPasswordMessage(
-      "ระบบ backend ยังไม่มี API สำหรับเปลี่ยนรหัสผ่าน จึงยังไม่สามารถบันทึกการเปลี่ยนแปลงได้",
-    );
+    setPasswordSaving(true);
+    try {
+      const response = await changePassword(passwordForm.current_password, passwordForm.new_password);
+      setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      setToast({
+        success: response.success,
+        message: response.message || "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
+      });
+    } catch (passwordError) {
+      setToast({ success: false, message: getErrorMessage(passwordError, "ไม่สามารถเปลี่ยนรหัสผ่านได้") });
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   return (
@@ -349,6 +353,17 @@ function ProfilePage() {
                 onChange={update}
               />
             </div>
+            <div className="form-field full">
+              <label htmlFor="profile-bio">แนะนำตัว</label>
+              <textarea
+                id="profile-bio"
+                name="bio"
+                value={profile.bio || ""}
+                onChange={update}
+                maxLength={1000}
+                placeholder="เขียนแนะนำตัวหรือรายละเอียดการทำงานโดยย่อ"
+              />
+            </div>
           </div>
 
           <div className="profile-divider" />
@@ -443,14 +458,6 @@ function ProfilePage() {
             </div>
           </div>
 
-          {message && (
-            <p
-              className={`form-message ${message.includes("เรียบร้อย") || message.includes("เลือกรูป") || message.includes("ลบรูป") ? "success" : "error"}`}
-            >
-              {message}
-            </p>
-          )}
-
           <div className="profile-form-actions">
             <Button
               variant="secondary"
@@ -518,15 +525,19 @@ function ProfilePage() {
             />
           </div>
         </div>
-        {passwordMessage && (
-          <p className="form-message error">{passwordMessage}</p>
-        )}
         <div className="profile-form-actions">
-          <Button variant="primary" type="submit">
-            เปลี่ยนรหัสผ่าน
+          <Button variant="primary" type="submit" disabled={passwordSaving}>
+            {passwordSaving ? "กำลังเปลี่ยนรหัสผ่าน..." : "เปลี่ยนรหัสผ่าน"}
           </Button>
         </div>
       </form>
+      {toast && (
+        <Toast
+          success={toast.success}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

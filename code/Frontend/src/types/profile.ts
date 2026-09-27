@@ -24,6 +24,7 @@ export interface Profile extends OwnedRecord {
   date_format: string
   default_tax_rate: number
   default_hourly_rate: number
+  bio: string
 }
 
 export interface ChangePasswordInput {
