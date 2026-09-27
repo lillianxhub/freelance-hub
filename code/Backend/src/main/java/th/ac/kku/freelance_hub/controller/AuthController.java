@@ -35,9 +35,10 @@ public class AuthController {
         })
         @SecurityRequirements
         @PostMapping("/register")
-        public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
                 AuthResponse response = authService.register(request);
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Registration successful", response));
         }
 
         @Operation(summary = "Login user", description = "Authenticate user with email and password")
@@ -48,9 +49,9 @@ public class AuthController {
         })
         @SecurityRequirements
         @PostMapping("/login")
-        public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
                 AuthResponse response = authService.login(request);
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Login successful", response));
         }
 
         @Operation(summary = "Logout user", description = "Revoke the current bearer token on the server")
@@ -59,10 +60,10 @@ public class AuthController {
                         @ApiResponse(responseCode = "401", description = "Missing, malformed, expired, or revoked token", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
         })
         @PostMapping("/logout")
-        public ResponseEntity<Void> logout(
+        public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<Void>> logout(
                         @RequestHeader("Authorization") String authorization,
                         Authentication authentication) {
                 authService.logout(authorization.substring(7), authentication.getName());
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Logout successful", null));
         }
 }

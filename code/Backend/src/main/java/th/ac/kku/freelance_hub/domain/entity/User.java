@@ -5,9 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import th.ac.kku.freelance_hub.domain.enums.UserRole;
-import th.ac.kku.freelance_hub.domain.enums.UserStatus;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -40,14 +39,9 @@ public class User {
     @Builder.Default
     private UserRole role = UserRole.USER;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "is_active", nullable = false)
     @Builder.Default
-    private UserStatus status = UserStatus.ACTIVE;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean enabled = true;
+    private Boolean isActive = true;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private UserProfile profile;
@@ -57,11 +51,14 @@ public class User {
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     /**
      * Helper method to link UserProfile bidirectionally

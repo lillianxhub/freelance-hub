@@ -42,8 +42,6 @@ function LoginForm() {
         <AuthInput label="อีเมล" type="email" name="email" value={form.email} onChange={handleChange} />
         <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} />
 
-        <div className="auth-options"><span /> <Link to="/forgot-password">ลืมรหัสผ่าน?</Link></div>
-
         <button className="button button-primary wide" type="submit" disabled={loading}>
           {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
         </button>
