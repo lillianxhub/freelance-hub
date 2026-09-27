@@ -10,6 +10,6 @@ export default function TaskForm({ value, error, onChange, onSubmit, onCancel }:
       <div className="form-field"><label htmlFor="task-due">กำหนดส่ง</label><input id="task-due" type="date" value={value.due_date || ''} onChange={(event) => onChange({ ...value, due_date: event.target.value })} /></div>
       <div className="form-field full"><label htmlFor="task-description">รายละเอียด</label><textarea id="task-description" value={value.description} onChange={(event) => onChange({ ...value, description: event.target.value })} /></div>
     </div>
-    <div className="form-actions"><button className="button button-secondary" type="button" onClick={onCancel}>ยกเลิก</button><button className="button button-primary" type="submit">บันทึก Task</button></div>
+    <div className="form-actions"><button className="button button-secondary" type="button" onClick={onCancel}>ยกเลิก</button><button className="button button-primary" type="submit">บันทึก งาน</button></div>
   </form>
 }

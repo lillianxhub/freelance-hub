@@ -1,9 +1,8 @@
-import { api } from '../api/apiClient'
-import type { ResourceInput, WorkspaceData } from '../types/workspace'
-import { deleteResource, saveResource } from './workspace'
+import type { ResourceInput } from '../types/workspace'
+import { deleteResource, listProjects as loadProjects, saveResource } from './workspace'
 
-export function listProjects(): Promise<WorkspaceData['projects']> {
-  return api.get<WorkspaceData['projects']>('/workspace/projects')
+export function listProjects() {
+  return loadProjects()
 }
 
 export function saveProject(project: ResourceInput<'projects'>) {

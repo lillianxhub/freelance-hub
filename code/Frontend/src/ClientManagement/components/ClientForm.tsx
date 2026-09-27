@@ -13,6 +13,6 @@ export default function ClientForm({ value, error, saving, onChange, onSubmit, o
       <div className="form-field full"><label htmlFor="client-address">ที่อยู่</label><textarea id="client-address" name="address" value={value.address} onChange={onChange} /></div>
       <div className="form-field full"><label htmlFor="client-notes">หมายเหตุ</label><textarea id="client-notes" name="notes" value={value.notes} onChange={onChange} /></div>
     </div>
-    <div className="form-actions"><button className="button button-secondary" type="button" onClick={onCancel}>ยกเลิก</button><button className="button button-primary" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกลูกค้า'}</button></div>
+    <div className="form-actions"><button className="button button-secondary" type="button" onClick={onCancel}>ยกเลิก</button><button className="button button-primary" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'SaveClients'}</button></div>
   </form>
 }
