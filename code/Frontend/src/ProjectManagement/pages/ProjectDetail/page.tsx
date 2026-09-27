@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
+import { FiArrowLeft, FiArrowRight, FiCheckSquare, FiClock, FiPlus } from "react-icons/fi";
 import Modal from "../../../components/Modal";
 import PageHeader from "../../../components/PageHeader";
 import StatusBadge from "../../../components/StatusBadge";
@@ -98,7 +99,7 @@ function ProjectDetailPage() {
   return (
     <div className="page-view">
       <Link className="back-link" to="/projects">
-        ← กลับไปหน้าโปรเจกต์
+        <FiArrowLeft aria-hidden="true" /> กลับไปหน้าโปรเจกต์
       </Link>
       <PageHeader
         eyebrow="พื้นที่ทำงาน / โปรเจกต์"
@@ -108,17 +109,17 @@ function ProjectDetailPage() {
           <>
             <StatusBadge status={project.status} />
             <Link className="button button-primary" to="/time-tracker">
-              ◷ เริ่มจับเวลา
+              <FiClock aria-hidden="true" /> เริ่มจับเวลา
             </Link>
           </>
         }
       />
 
-      <div className="summary-grid">
+      <div className="summary-grid project-detail-summary-grid">
         <article className="metric-card accent-blue">
           <div className="metric-top">
             <span>เวลาที่ใช้</span>
-            <span className="metric-icon">◷</span>
+            <span className="metric-icon"><FiClock aria-hidden="true" /></span>
           </div>
           <div className="metric-value metric-compact">
             {formatDuration(totalMinutes)}
@@ -149,7 +150,7 @@ function ProjectDetailPage() {
         <article className="metric-card accent-violet">
           <div className="metric-top">
             <span>งาน</span>
-            <span className="metric-icon">✓</span>
+            <span className="metric-icon"><FiCheckSquare aria-hidden="true" /></span>
           </div>
           <div className="metric-value">
             {completed}
@@ -191,7 +192,7 @@ function ProjectDetailPage() {
                 type="button"
                 onClick={() => openTask()}
               >
-                ＋ เพิ่ม งาน
+                <FiPlus aria-hidden="true" /> เพิ่มงาน
               </button>
             </div>
             <TaskList
@@ -215,7 +216,7 @@ function ProjectDetailPage() {
                 <p>เวลาล่าสุดที่บันทึกในโปรเจกต์</p>
               </div>
               <Link className="text-button" to="/time-tracker">
-                ดูทั้งหมด →
+                ดูทั้งหมด <FiArrowRight aria-hidden="true" />
               </Link>
             </div>
             <div className="table-wrap">

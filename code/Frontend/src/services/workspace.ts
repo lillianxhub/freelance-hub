@@ -1,5 +1,5 @@
 import { api } from '../api/apiClient'
-import type { ApiClient, ApiPage, ApiProject, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
+import type { ApiClient, ApiProject, ApiResponse, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
 import type { Client } from '../types/client'
 import type { Profile } from '../types/profile'
 import type { Project } from '../types/project'
@@ -9,10 +9,10 @@ import type { ResourceInput, ResourceName, ResourceRecord, WorkspaceData } from 
 import { getStoredProfileImage } from './profile'
 
 const unsupportedResources = new Set<ResourceName>([
-  'profiles', 'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments',
+  'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments',
 ])
 
-function emptyString(value: string | undefined): string {
+function emptyString(value: string | null | undefined): string {
   return value ?? ''
 }
 
@@ -28,22 +28,40 @@ function toProfile(user: ApiUser): Profile {
     email: user.email,
     phone: emptyString(user.phone),
     address: emptyString(user.address),
-    city: emptyString(user.city),
-    country: emptyString(user.country),
+    city: '',
+    country: '',
     postal_code: emptyString(user.postalCode),
-    province: '',
-    district: '',
-    sub_district: '',
+    province: emptyString(user.province),
+    district: emptyString(user.district),
+    sub_district: emptyString(user.subdistrict),
     tax_id: '',
     logo_url: getStoredProfileImage(user.id),
     bank_name: '',
     bank_account_name: '',
     bank_account_number: '',
-    timezone: user.timezone || 'Asia/Bangkok',
+    timezone: 'Asia/Bangkok',
     currency: 'THB',
     date_format: user.dateFormat || 'DD/MM/YYYY',
     default_tax_rate: 0,
     default_hourly_rate: 0,
+    bio: emptyString(user.bio),
+    created_at: user.createdAt,
+  }
+}
+
+function profilePayload(input: ResourceInput<'profiles'>) {
+  return {
+    displayName: input.display_name || undefined,
+    firstName: input.first_name || undefined,
+    lastName: input.last_name || undefined,
+    phone: input.phone || undefined,
+    address: input.address || undefined,
+    subdistrict: input.sub_district || undefined,
+    district: input.district || undefined,
+    province: input.province || undefined,
+    postalCode: input.postal_code || undefined,
+    dateFormat: input.date_format || undefined,
+    bio: input.bio || undefined,
   }
 }
 
@@ -63,7 +81,7 @@ function toClient(source: ApiClient): Client {
     tax_id: emptyString(source.taxId),
     notes: emptyString(source.notes),
     status: source.status,
-    color: '#3867f4',
+    color: '#4F6BFF',
     created_at: source.createdAt,
     updated_at: source.updatedAt,
   }
@@ -76,7 +94,7 @@ export function toProject(source: ApiProject): Project {
     client_id: source.clientId,
     name: source.name,
     description: emptyString(source.description),
-    color: source.color || '#3867f4',
+    color: source.color || '#4F6BFF',
     status: source.status,
     billing_type: 'HOURLY',
     hourly_rate: null,
@@ -156,23 +174,23 @@ function projectPayload(input: ResourceInput<'projects'>) {
 }
 
 export async function listClients(): Promise<Client[]> {
-  const response = await api.get<ApiPage<ApiClient>>('/clients?size=100&sortBy=name&direction=ASC')
-  return response.content.map(toClient)
+  const response = await api.get<ApiClient[]>('/clients?size=100&sortBy=name&direction=ASC')
+  return response.data.map(toClient)
 }
 
 export async function listProjects(): Promise<Project[]> {
-  const response = await api.get<ApiPage<ApiProject>>('/projects?size=100&sort=name,asc')
-  return response.content.map(toProject)
+  const response = await api.get<ApiProject[]>('/projects?size=100&sort=name,asc')
+  return response.data.map(toProject)
 }
 
 export async function listTasks(projects: readonly Project[]): Promise<Task[]> {
-  const pages = await Promise.all(projects.map((project) => api.get<ApiPage<ApiTask>>(`/projects/${project.id}/tasks?size=100&sort=sortOrder,asc`)))
-  return pages.flatMap((page) => page.content.map(toTask))
+  const pages = await Promise.all(projects.map((project) => api.get<ApiTask[]>(`/projects/${project.id}/tasks?size=100&sort=sortOrder,asc`)))
+  return pages.flatMap((page) => page.data.map(toTask))
 }
 
 export async function listTimeEntries(): Promise<TimeEntry[]> {
-  const response = await api.get<ApiPage<ApiTimeEntry>>('/time-entries?size=100&sortBy=startedAt&direction=DESC')
-  return response.content.map(toTimeEntry)
+  const response = await api.get<ApiTimeEntry[]>('/time-entries?size=100&sortBy=startedAt&direction=DESC')
+  return response.data.map(toTimeEntry)
 }
 
 export function createEmptyWorkspace(): WorkspaceData {
@@ -181,7 +199,7 @@ export function createEmptyWorkspace(): WorkspaceData {
 
 export async function loadAllResources(): Promise<WorkspaceData> {
   const [user, clients, projects, timeEntries] = await Promise.all([
-    api.get<ApiUser>('/users/me'),
+    api.get<ApiUser>('/users/me').then((response) => response.data),
     listClients(),
     listProjects(),
     listTimeEntries(),
@@ -191,42 +209,48 @@ export async function loadAllResources(): Promise<WorkspaceData> {
 }
 
 async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
-  if (!input.id) return toClient(await api.post<ApiClient>('/clients', clientPayload(input)))
+  if (!input.id) return toClient((await api.post<ApiClient>('/clients', clientPayload(input))).data)
   if (input.status === 'ARCHIVED') {
     await api.delete(`/clients/${input.id}`)
     return { ...input, status: 'ARCHIVED' } as Client
   }
-  return toClient(await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input)))
+  return toClient((await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input))).data)
+}
+
+export async function updateProfile(input: ResourceInput<'profiles'>): Promise<ApiResponse<Profile>> {
+  const response = await api.patch<ApiUser>('/users/me', profilePayload(input))
+  return { ...response, data: toProfile(response.data) }
 }
 
 async function saveProject(input: ResourceInput<'projects'>): Promise<Project> {
-  if (!input.id) return toProject(await api.post<ApiProject>('/projects', projectPayload(input)))
+  if (!input.id) return toProject((await api.post<ApiProject>('/projects', projectPayload(input))).data)
   if (input.status === 'ARCHIVED') {
     await api.delete(`/projects/${input.id}`)
     return { ...input, status: 'ARCHIVED' } as Project
   }
-  return toProject(await api.patch<ApiProject>(`/projects/${input.id}`, projectPayload(input)))
+  return toProject((await api.patch<ApiProject>(`/projects/${input.id}`, projectPayload(input))).data)
 }
 
 async function saveTask(input: ResourceInput<'tasks'>): Promise<Task> {
   if (!input.project_id) throw new Error('Task ต้องระบุ project_id')
   if (!input.id) {
-    return toTask(await api.post<ApiTask>(`/projects/${input.project_id}/tasks`, {
+    return toTask((await api.post<ApiTask>(`/projects/${input.project_id}/tasks`, {
       name: input.name,
       description: input.description || undefined,
       sortOrder: input.sort_order ?? 0,
-    }))
+    })).data)
   }
-  const task = await api.patch<ApiTask>(`/projects/${input.project_id}/tasks/${input.id}`, {
+  const task = (await api.patch<ApiTask>(`/projects/${input.project_id}/tasks/${input.id}`, {
     name: input.name,
     description: input.description || undefined,
-  })
-  if (input.status === 'DONE') return toTask(await api.patch<ApiTask>(`/projects/${input.project_id}/tasks/${input.id}/complete`))
-  return toTask(await api.patch<ApiTask>(`/projects/${input.project_id}/tasks/${input.id}/reorder`, { sortOrder: input.sort_order ?? task.sortOrder }))
+  })).data
+  if (input.status === 'DONE') return toTask((await api.patch<ApiTask>(`/projects/${input.project_id}/tasks/${input.id}/complete`)).data)
+  return toTask((await api.patch<ApiTask>(`/projects/${input.project_id}/tasks/${input.id}/reorder`, { sortOrder: input.sort_order ?? task.sortOrder })).data)
 }
 
 export async function saveResource<K extends ResourceName>(resource: K, input: ResourceInput<K>): Promise<ResourceRecord<K>> {
   if (unsupportedResources.has(resource)) throw new Error(`${resource} ยังไม่มี endpoint ใน Swagger ของ backend`)
+  if (resource === 'profiles') return (await updateProfile(input as ResourceInput<'profiles'>)).data as ResourceRecord<K>
   if (resource === 'clients') return await saveClient(input as ResourceInput<'clients'>) as ResourceRecord<K>
   if (resource === 'projects') return await saveProject(input as ResourceInput<'projects'>) as ResourceRecord<K>
   return await saveTask(input as ResourceInput<'tasks'>) as ResourceRecord<K>
@@ -234,8 +258,14 @@ export async function saveResource<K extends ResourceName>(resource: K, input: R
 
 export async function deleteResource(resource: ResourceName, id: string, projectId?: string): Promise<void> {
   if (unsupportedResources.has(resource)) throw new Error(`${resource} ยังไม่มี endpoint ใน Swagger ของ backend`)
-  if (resource === 'clients') return api.delete(`/clients/${id}`)
-  if (resource === 'projects') return api.delete(`/projects/${id}`)
+  if (resource === 'clients') {
+    await api.delete(`/clients/${id}`)
+    return
+  }
+  if (resource === 'projects') {
+    await api.delete(`/projects/${id}`)
+    return
+  }
   if (!projectId) throw new Error('การลบ Task ต้องระบุ projectId')
-  return api.delete(`/projects/${projectId}/tasks/${id}`)
+  await api.delete(`/projects/${projectId}/tasks/${id}`)
 }
