@@ -1,10 +1,12 @@
 import { api } from '../api/apiClient'
-import type { ApiClient, ApiPage, ApiProject, ApiTask, ApiUser } from '../types/api'
+import type { ApiClient, ApiPage, ApiProject, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
 import type { Client } from '../types/client'
 import type { Profile } from '../types/profile'
 import type { Project } from '../types/project'
 import type { Task } from '../types/task'
+import type { TimeEntry } from '../types/timeTracking'
 import type { ResourceInput, ResourceName, ResourceRecord, WorkspaceData } from '../types/workspace'
+import { getStoredProfileImage } from './profile'
 
 const unsupportedResources = new Set<ResourceName>([
   'profiles', 'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments',
@@ -15,15 +17,25 @@ function emptyString(value: string | undefined): string {
 }
 
 function toProfile(user: ApiUser): Profile {
+  const fullName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
   return {
     id: user.id,
     owner_id: user.id,
-    full_name: user.displayName || user.email,
+    full_name: fullName,
+    display_name: emptyString(user.displayName) || fullName,
+    first_name: emptyString(user.firstName),
+    last_name: emptyString(user.lastName),
     email: user.email,
     phone: emptyString(user.phone),
     address: emptyString(user.address),
+    city: emptyString(user.city),
+    country: emptyString(user.country),
+    postal_code: emptyString(user.postalCode),
+    province: '',
+    district: '',
+    sub_district: '',
     tax_id: '',
-    logo_url: '',
+    logo_url: getStoredProfileImage(user.id),
     bank_name: '',
     bank_account_name: '',
     bank_account_number: '',
@@ -44,6 +56,10 @@ function toClient(source: ApiClient): Client {
     email: emptyString(source.email),
     phone: emptyString(source.phone),
     address: emptyString(source.address),
+    province: '',
+    district: '',
+    sub_district: '',
+    postal_code: '',
     tax_id: emptyString(source.taxId),
     notes: emptyString(source.notes),
     status: source.status,
@@ -53,7 +69,7 @@ function toClient(source: ApiClient): Client {
   }
 }
 
-function toProject(source: ApiProject): Project {
+export function toProject(source: ApiProject): Project {
   return {
     id: source.id,
     owner_id: '',
@@ -75,7 +91,7 @@ function toProject(source: ApiProject): Project {
   }
 }
 
-function toTask(source: ApiTask): Task {
+export function toTask(source: ApiTask): Task {
   return {
     id: source.id,
     owner_id: '',
@@ -90,13 +106,38 @@ function toTask(source: ApiTask): Task {
   }
 }
 
+export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
+  return {
+    id: source.id,
+    owner_id: '',
+    project_id: source.projectId,
+    task_id: source.taskId || null,
+    description: emptyString(source.description),
+    started_at: source.startedAt,
+    ended_at: source.endedAt || null,
+    duration_minutes: source.durationMinutes ?? null,
+    billable: true,
+    rate_snapshot: 0,
+    currency: 'THB',
+    invoice_id: null,
+    created_at: source.createdAt,
+    updated_at: source.updatedAt,
+  }
+}
+
 function clientPayload(input: ResourceInput<'clients'>) {
+  const location = [
+    input.sub_district ? `ตำบล/แขวง ${input.sub_district}` : '',
+    input.district ? `อำเภอ/เขต ${input.district}` : '',
+    input.province ? `จังหวัด ${input.province}` : '',
+    input.postal_code ? `รหัสไปรษณีย์ ${input.postal_code}` : '',
+  ].filter(Boolean).join(' ')
   return {
     name: input.name,
     companyName: input.company_name || undefined,
     email: input.email || undefined,
     phone: input.phone || undefined,
-    address: input.address || undefined,
+    address: [input.address, location].filter(Boolean).join(', ') || undefined,
     taxId: input.tax_id || undefined,
     notes: input.notes || undefined,
   }
@@ -129,18 +170,24 @@ export async function listTasks(projects: readonly Project[]): Promise<Task[]> {
   return pages.flatMap((page) => page.content.map(toTask))
 }
 
+export async function listTimeEntries(): Promise<TimeEntry[]> {
+  const response = await api.get<ApiPage<ApiTimeEntry>>('/time-entries?size=100&sortBy=startedAt&direction=DESC')
+  return response.content.map(toTimeEntry)
+}
+
 export function createEmptyWorkspace(): WorkspaceData {
   return { profiles: [], clients: [], projects: [], tasks: [], time_entries: [], finance_entries: [], invoices: [], invoice_items: [], payments: [] }
 }
 
 export async function loadAllResources(): Promise<WorkspaceData> {
-  const [user, clients, projects] = await Promise.all([
+  const [user, clients, projects, timeEntries] = await Promise.all([
     api.get<ApiUser>('/users/me'),
     listClients(),
     listProjects(),
+    listTimeEntries(),
   ])
   const tasks = await listTasks(projects)
-  return { ...createEmptyWorkspace(), profiles: [toProfile(user)], clients, projects, tasks }
+  return { ...createEmptyWorkspace(), profiles: [toProfile(user)], clients, projects, tasks, time_entries: timeEntries }
 }
 
 async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
