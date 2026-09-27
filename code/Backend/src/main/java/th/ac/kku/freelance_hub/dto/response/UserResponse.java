@@ -34,6 +34,7 @@ public class UserResponse {
     private String district;
     private String province;
     private String postalCode;
+    private String taxId;
     private String dateFormat;
     private String bio;
 }
