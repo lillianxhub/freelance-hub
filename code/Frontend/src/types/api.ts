@@ -26,16 +26,20 @@ export interface ApiResponse<T> {
 export interface ApiUser {
   id: string
   email: string
-  displayName?: string
-  firstName?: string
-  lastName?: string
-  phone?: string
-  address?: string
-  city?: string
-  country?: string
-  postalCode?: string
-  timezone?: string
-  dateFormat?: string
+  role?: 'USER' | 'ADMIN'
+  isActive?: boolean
+  createdAt?: string
+  displayName?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  address?: string | null
+  subdistrict?: string | null
+  district?: string | null
+  province?: string | null
+  postalCode?: string | null
+  dateFormat?: string | null
+  bio?: string | null
 }
 
 export interface ApiClient {

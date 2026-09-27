@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -60,7 +61,6 @@ class AuthControllerTest {
                                 .firstName("Test")
                                 .lastName("User")
                                 .phone("0812345678")
-                                .timezone("Asia/Bangkok")
                                 .build();
 
                 loginRequest = LoginRequest.builder()
@@ -78,10 +78,11 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(registerRequest)))
                                 .andExpect(status().isCreated())
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(jsonPath("$.token").exists())
-                                .andExpect(jsonPath("$.expiresIn").exists())
-                                .andExpect(jsonPath("$.user.email").value("test@example.com"))
-                                .andExpect(jsonPath("$.user.displayName").value("Test User"));
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data.token").exists())
+                                .andExpect(jsonPath("$.data.expiresIn").exists())
+                                .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
+                                .andExpect(jsonPath("$.data.user.displayName").value("Test User"));
         }
 
         @Test
@@ -153,9 +154,10 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(jsonPath("$.token").exists())
-                                .andExpect(jsonPath("$.expiresIn").exists())
-                                .andExpect(jsonPath("$.user.email").value("test@example.com"));
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data.token").exists())
+                                .andExpect(jsonPath("$.data.expiresIn").exists())
+                                .andExpect(jsonPath("$.data.user.email").value("test@example.com"));
         }
 
         @Test
@@ -208,8 +210,8 @@ class AuthControllerTest {
 
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(token)))
-                                .andExpect(status().isNoContent())
-                                .andExpect(content().string(""));
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true));
 
                 var revokedToken = revokedTokenRepository.findByJti(jti).orElseThrow();
                 assertThat(revokedToken.getJti()).isNotEqualTo(token);
@@ -230,7 +232,7 @@ class AuthControllerTest {
 
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(token)))
-                                .andExpect(status().isNoContent());
+                                .andExpect(status().isOk());
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(token)))
                                 .andExpect(status().isUnauthorized());
@@ -242,19 +244,56 @@ class AuthControllerTest {
                 String oldToken = registerAndGetToken();
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(oldToken)))
-                                .andExpect(status().isNoContent());
+                                .andExpect(status().isOk());
 
                 String loginBody = mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isOk())
                                 .andReturn().getResponse().getContentAsString();
-                String newToken = objectMapper.readTree(loginBody).path("token").asText();
+                String newToken = objectMapper.readTree(loginBody).path("data").path("token").asText();
 
                 assertThat(newToken).isNotEqualTo(oldToken);
                 mockMvc.perform(get("/api/users/me")
                                 .header("Authorization", bearer(newToken)))
                                 .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("PATCH /api/users/me/password - Should change password with old and new values")
+        void shouldChangePasswordUsingOldAndNewPassword() throws Exception {
+                String token = registerAndGetToken();
+
+                mockMvc.perform(patch("/api/users/me/password")
+                                .header("Authorization", bearer(token))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"oldPassword\":\"password123\",\"newPassword\":\"newPassword123\"}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true));
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"email\":\"test@example.com\",\"password\":\"newPassword123\"}"))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("PATCH /api/users/me - Should update profile and normalized address")
+        void shouldUpdateProfileAddressAsFlatFields() throws Exception {
+                String token = registerAndGetToken();
+
+                mockMvc.perform(patch("/api/users/me")
+                                .header("Authorization", bearer(token))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"address\":\"99 ถนนมิตรภาพ\",\"subdistrict\":\"ในเมือง\","
+                                                + "\"district\":\"เมืองขอนแก่น\",\"province\":\"ขอนแก่น\","
+                                                + "\"postalCode\":\"40000\"}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.address").value("99 ถนนมิตรภาพ"))
+                                .andExpect(jsonPath("$.data.subdistrict").value("ในเมือง"))
+                                .andExpect(jsonPath("$.data.district").value("เมืองขอนแก่น"))
+                                .andExpect(jsonPath("$.data.province").value("ขอนแก่น"))
+                                .andExpect(jsonPath("$.data.postalCode").value("40000"));
         }
 
         @Test
@@ -294,7 +333,7 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(registerRequest)))
                                 .andExpect(status().isCreated())
                                 .andReturn().getResponse().getContentAsString();
-                return objectMapper.readTree(body).path("token").asText();
+                return objectMapper.readTree(body).path("data").path("token").asText();
         }
 
         private static String bearer(String token) {

@@ -79,8 +79,8 @@ public class TimeEntry {
     @Column(name = "ended_at")
     private Instant endedAt;
 
-    @Column(name = "duration_minutes")
-    private Integer durationMinutes;
+    @Column(name = "duration_seconds")
+    private Long durationSeconds;
 
     @Column(name = "locked_at")
     private Instant lockedAt;
@@ -233,7 +233,7 @@ public class TimeEntry {
     public boolean isRunning() {
         return entryType == EntryType.TIMER
                 && endedAt == null
-                && durationMinutes == null;
+                && durationSeconds == null;
     }
 
     public boolean isLocked() {
@@ -250,7 +250,7 @@ public class TimeEntry {
         long roundedMinutes = Math.addExact(elapsedSeconds, 59) / 60;
 
         this.endedAt = requiredEnd;
-        this.durationMinutes = Math.toIntExact(roundedMinutes);
+        this.durationSeconds = Math.multiplyExact(roundedMinutes, 60L);
     }
 
     private void requireUnlocked() {
@@ -350,7 +350,11 @@ public class TimeEntry {
     }
 
     public Integer getDurationMinutes() {
-        return durationMinutes;
+        return durationSeconds == null ? null : Math.toIntExact(durationSeconds / 60L);
+    }
+
+    public Long getDurationSeconds() {
+        return durationSeconds;
     }
 
     public Instant getLockedAt() {

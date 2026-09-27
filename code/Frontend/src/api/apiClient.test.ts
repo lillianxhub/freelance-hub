@@ -119,3 +119,33 @@ test('success false is rejected even when HTTP status is successful', async () =
     globalThis.fetch = originalFetch
   }
 })
+
+test('legacy Spring pages are normalized during API response migration', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    content: [{ id: 'legacy-1' }],
+    totalElements: 21,
+    totalPages: 2,
+    size: 20,
+    number: 0,
+  }), { status: 200 })
+  try {
+    const response = await api.get<Array<{ id: string }>>('/legacy-items')
+    assert.deepEqual(response.data, [{ id: 'legacy-1' }])
+    assert.deepEqual(response.meta, { page: 1, limit: 20, total: 21, totalPages: 2 })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('legacy direct objects are normalized during API response migration', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response(JSON.stringify({ id: 'legacy-user' }), { status: 200 })
+  try {
+    const response = await api.get<{ id: string }>('/legacy-user')
+    assert.deepEqual(response.data, { id: 'legacy-user' })
+    assert.equal(response.meta, null)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})

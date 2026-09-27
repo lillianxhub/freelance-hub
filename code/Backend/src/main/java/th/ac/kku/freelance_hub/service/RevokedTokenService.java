@@ -17,12 +17,12 @@ public class RevokedTokenService {
 
     @Transactional(readOnly = true)
     public boolean isRevoked(String jti) {
-        return revokedTokenRepository.existsByJti(jti);
+        return revokedTokenRepository.existsByJtiAndIsActiveTrue(jti);
     }
 
     @Transactional
     public void revoke(String jti, User user, Instant expiresAt) {
-        if (!revokedTokenRepository.existsByJti(jti)) {
+        if (!revokedTokenRepository.existsByJtiAndIsActiveTrue(jti)) {
             revokedTokenRepository.save(
                     new RevokedToken(jti, user, expiresAt, Instant.now())
             );

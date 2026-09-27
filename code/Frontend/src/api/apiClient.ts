@@ -1,4 +1,4 @@
-import type { ApiOptions, ApiResponse, JsonMethod } from '../types/api'
+import type { ApiMeta, ApiOptions, ApiResponse, JsonMethod } from '../types/api'
 import { ApiError } from './apiError'
 
 const tokenKey = 'freelance-hub-api-token'
@@ -34,6 +34,63 @@ function isApiResponse(value: unknown): value is ApiResponse<unknown> {
     validError
 }
 
+interface LegacyPage {
+  content: unknown[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
+function isLegacyPage(value: unknown): value is LegacyPage {
+  return isRecord(value) &&
+    Array.isArray(value.content) &&
+    typeof value.totalElements === 'number' &&
+    typeof value.totalPages === 'number' &&
+    typeof value.size === 'number' &&
+    typeof value.number === 'number'
+}
+
+function legacyPageMeta(page: LegacyPage): ApiMeta {
+  return {
+    page: page.number + 1,
+    limit: page.size,
+    total: page.totalElements,
+    totalPages: page.totalPages,
+  }
+}
+
+function normalizeResponse<T>(body: unknown): ApiResponse<T> {
+  if (isApiResponse(body)) {
+    if (isLegacyPage(body.data)) {
+      return {
+        ...body,
+        data: body.data.content as T,
+        meta: body.meta || legacyPageMeta(body.data),
+      }
+    }
+    return body as ApiResponse<T>
+  }
+
+  if (isLegacyPage(body)) {
+    return {
+      success: true,
+      message: '',
+      data: body.content as T,
+      meta: legacyPageMeta(body),
+      error: null,
+    }
+  }
+
+  return {
+    success: true,
+    message: '',
+    data: body as T,
+    meta: null,
+    error: null,
+  }
+}
+
 export function getApiToken(): string | null {
   return localStorage.getItem(tokenKey)
 }
@@ -64,9 +121,9 @@ async function request<T>(path: string, init: RequestInit, multipart = false): P
   }
 
   const body: unknown = await response.json()
-  if (!isApiResponse(body)) throw new ApiError('รูปแบบข้อมูลตอบกลับจาก API ไม่ถูกต้อง', response.status)
-  if (!body.success) throw new ApiError(readErrorMessage(body) || 'API ไม่สามารถดำเนินการได้', response.status)
-  return body as ApiResponse<T>
+  const normalized = normalizeResponse<T>(body)
+  if (!normalized.success) throw new ApiError(readErrorMessage(normalized) || 'API ไม่สามารถดำเนินการได้', response.status)
+  return normalized
 }
 
 export function fetchClient<T>(path: string, init: RequestInit = {}): Promise<ApiResponse<T>> {

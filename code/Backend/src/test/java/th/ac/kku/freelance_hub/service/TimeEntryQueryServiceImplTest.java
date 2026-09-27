@@ -80,7 +80,7 @@ class TimeEntryQueryServiceImplTest {
         PageRequest pageable = PageRequest.of(
                 1,
                 5,
-                Sort.by(Sort.Direction.ASC, "durationMinutes")
+                Sort.by(Sort.Direction.ASC, "durationSeconds")
         );
         when(timeEntryRepository.findAll(
                 ArgumentMatchers.<Specification<TimeEntry>>any(),

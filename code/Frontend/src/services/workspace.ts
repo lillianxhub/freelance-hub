@@ -1,5 +1,5 @@
 import { api } from '../api/apiClient'
-import type { ApiClient, ApiProject, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
+import type { ApiClient, ApiProject, ApiResponse, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
 import type { Client } from '../types/client'
 import type { Profile } from '../types/profile'
 import type { Project } from '../types/project'
@@ -9,10 +9,10 @@ import type { ResourceInput, ResourceName, ResourceRecord, WorkspaceData } from 
 import { getStoredProfileImage } from './profile'
 
 const unsupportedResources = new Set<ResourceName>([
-  'profiles', 'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments',
+  'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments',
 ])
 
-function emptyString(value: string | undefined): string {
+function emptyString(value: string | null | undefined): string {
   return value ?? ''
 }
 
@@ -28,22 +28,40 @@ function toProfile(user: ApiUser): Profile {
     email: user.email,
     phone: emptyString(user.phone),
     address: emptyString(user.address),
-    city: emptyString(user.city),
-    country: emptyString(user.country),
+    city: '',
+    country: '',
     postal_code: emptyString(user.postalCode),
-    province: '',
-    district: '',
-    sub_district: '',
+    province: emptyString(user.province),
+    district: emptyString(user.district),
+    sub_district: emptyString(user.subdistrict),
     tax_id: '',
     logo_url: getStoredProfileImage(user.id),
     bank_name: '',
     bank_account_name: '',
     bank_account_number: '',
-    timezone: user.timezone || 'Asia/Bangkok',
+    timezone: 'Asia/Bangkok',
     currency: 'THB',
     date_format: user.dateFormat || 'DD/MM/YYYY',
     default_tax_rate: 0,
     default_hourly_rate: 0,
+    bio: emptyString(user.bio),
+    created_at: user.createdAt,
+  }
+}
+
+function profilePayload(input: ResourceInput<'profiles'>) {
+  return {
+    displayName: input.display_name || undefined,
+    firstName: input.first_name || undefined,
+    lastName: input.last_name || undefined,
+    phone: input.phone || undefined,
+    address: input.address || undefined,
+    subdistrict: input.sub_district || undefined,
+    district: input.district || undefined,
+    province: input.province || undefined,
+    postalCode: input.postal_code || undefined,
+    dateFormat: input.date_format || undefined,
+    bio: input.bio || undefined,
   }
 }
 
@@ -199,6 +217,11 @@ async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
   return toClient((await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input))).data)
 }
 
+export async function updateProfile(input: ResourceInput<'profiles'>): Promise<ApiResponse<Profile>> {
+  const response = await api.patch<ApiUser>('/users/me', profilePayload(input))
+  return { ...response, data: toProfile(response.data) }
+}
+
 async function saveProject(input: ResourceInput<'projects'>): Promise<Project> {
   if (!input.id) return toProject((await api.post<ApiProject>('/projects', projectPayload(input))).data)
   if (input.status === 'ARCHIVED') {
@@ -227,6 +250,7 @@ async function saveTask(input: ResourceInput<'tasks'>): Promise<Task> {
 
 export async function saveResource<K extends ResourceName>(resource: K, input: ResourceInput<K>): Promise<ResourceRecord<K>> {
   if (unsupportedResources.has(resource)) throw new Error(`${resource} ยังไม่มี endpoint ใน Swagger ของ backend`)
+  if (resource === 'profiles') return (await updateProfile(input as ResourceInput<'profiles'>)).data as ResourceRecord<K>
   if (resource === 'clients') return await saveClient(input as ResourceInput<'clients'>) as ResourceRecord<K>
   if (resource === 'projects') return await saveProject(input as ResourceInput<'projects'>) as ResourceRecord<K>
   return await saveTask(input as ResourceInput<'tasks'>) as ResourceRecord<K>

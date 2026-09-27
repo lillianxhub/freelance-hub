@@ -1,7 +1,8 @@
-# Freelance Hub MVP — ER Diagram
+# Freelance Hub MVP - ER Diagram
 
-แผนภาพนี้เป็น logical database schema สำหรับ MVP เท่านั้น โดย Dashboard และ Analytics
-คำนวณจาก `time_entries` จึงไม่ต้องมีตารางสรุปแยกในระยะแรก
+ER Diagram นี้อ้างอิง DBML รุ่นปรับปรุงล่าสุดของ MVP โดยใช้ embedded address fields และ soft delete
+Dashboard และ Productivity Insights คำนวณจาก `time_entries`, `projects` และ `tasks` โดยไม่สร้างตารางสรุปแยก
+ชื่อคอลัมน์ใน diagram ใช้ `deleted_at` ซึ่งเป็นชื่อมาตรฐานแทน typo `deleate_at` จาก DBML ต้นทาง
 
 ```mermaid
 erDiagram
@@ -10,11 +11,11 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar role
-        varchar status
-        boolean enabled
-        timestamp created_at
-        timestamp updated_at
+        boolean is_active
         bigint version
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
     }
     USER_PROFILES {
         uuid user_id PK,FK
@@ -23,14 +24,17 @@ erDiagram
         varchar last_name
         varchar phone
         text address
-        varchar avatar_url
-        varchar timezone
+        varchar subdistrict
+        varchar district
+        varchar province
+        varchar postal_code
         varchar date_format
-        text profile_image_url
         text bio
-        timestamp created_at
-        timestamp updated_at
+        boolean is_active
         bigint version
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
     }
     CLIENTS {
         uuid id PK
@@ -40,11 +44,16 @@ erDiagram
         varchar email
         varchar phone
         text address
+        varchar subdistrict
+        varchar district
+        varchar province
+        varchar postal_code
         varchar tax_id
         text notes
-        varchar status
+        boolean is_active
         timestamptz created_at
         timestamptz updated_at
+        timestamptz deleted_at
         bigint version
     }
     PROJECTS {
@@ -58,8 +67,10 @@ erDiagram
         varchar color
         integer target_minutes
         varchar status
+        boolean is_active
         timestamptz created_at
         timestamptz updated_at
+        timestamptz deleted_at
         bigint version
     }
     TASKS {
@@ -70,8 +81,10 @@ erDiagram
         varchar status
         integer sort_order
         timestamptz completed_at
+        boolean is_active
         timestamptz created_at
         timestamptz updated_at
+        timestamptz deleted_at
         bigint version
     }
     TIME_ENTRIES {
@@ -83,43 +96,55 @@ erDiagram
         varchar entry_type
         timestamptz started_at
         timestamptz ended_at
-        integer duration_minutes
+        bigint duration_seconds
         timestamptz locked_at
+        boolean is_active
         timestamptz created_at
         timestamptz updated_at
+        timestamptz deleted_at
         bigint version
+    }
+    REVOKED_TOKENS {
+        uuid id PK
+        varchar jti UK
+        uuid user_id FK
+        timestamptz expires_at
+        timestamptz revoked_at
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
     }
 
     USERS ||--|| USER_PROFILES : has
     USERS ||--o{ CLIENTS : owns
     USERS ||--o{ PROJECTS : owns
     USERS ||--o{ TIME_ENTRIES : owns
-    CLIENTS ||--o{ PROJECTS : has
+    USERS ||--o{ REVOKED_TOKENS : revokes
+    CLIENTS ||--o{ PROJECTS : serves
     PROJECTS ||--o{ TASKS : contains
     PROJECTS ||--o{ TIME_ENTRIES : records
     TASKS o|--o{ TIME_ENTRIES : categorizes
 ```
 
-## Cardinality และกติกาสำคัญ
+## Cardinality and Constraints
 
-- `users` 1 — 1 `user_profiles`: ใช้ `user_profiles.user_id` เป็นทั้ง PK และ FK เพื่อบังคับ One-to-One จริง
-- `users` 1 — N `clients`, `projects`, `time_entries`: `owner_id` ใช้แยกข้อมูลของผู้ใช้และช่วยให้ query ด้าน security ตรงไปตรงมา
-- `clients` 1 — N `projects`: ทุกโปรเจกต์ต้องมีลูกค้าหนึ่งราย
-- `projects` 1 — N `tasks` และ `time_entries`: time entry ต้องมีโปรเจกต์เสมอ
-- `tasks` 0..1 — N `time_entries`: การเลือก task เป็น optional แต่ถ้าเลือก task ต้องอยู่ใน project เดียวกับ time entry
-- Unique partial index ที่ `time_entries(owner_id) WHERE ended_at IS NULL` บังคับให้ผู้ใช้มี running timer ได้สูงสุดหนึ่งรายการ
-- Composite FK `(client_id, owner_id)` และ `(project_id, owner_id)` ป้องกันการผูกข้อมูลข้ามเจ้าของ ส่วน `(task_id, project_id)` ป้องกันการเลือก task ข้าม project
-- Archive ใช้สถานะ `ARCHIVED` ไม่ลบ `clients` หรือ `projects` ที่มีประวัติ เพื่อรักษา time entries
-- ตาราง auth ปัจจุบันใช้ `timestamp` ตาม migration V1/V2; entity `User` และ `UserProfile` ใช้ `LocalDateTime`
-- เก็บเวลาเป้าหมายและเวลาทำงานเป็นนาทีจำนวนเต็ม ป้องกันความคลาดเคลื่อนจากเลขทศนิยม
+- `users` 1 - 1 `user_profiles`: `user_profiles.user_id` is both PK and FK.
+- `users` 1 - N `clients`, `projects`, `time_entries`, and `revoked_tokens`.
+- `clients` 1 - N `projects`; the actual FK is composite `(projects.client_id, projects.owner_id)` -> `(clients.id, clients.owner_id)`.
+- `projects` 1 - N `tasks` and `time_entries`; the TimeEntry relationship uses `(project_id, owner_id)` to prevent cross-user references.
+- `tasks` 0..1 - N `time_entries`; when selected, `(task_id, project_id)` must match the same Project.
+- `time_entries` allows at most one active running timer per owner through a partial unique index.
+- `time_entries.locked_at` marks an entry as locked and prevents further edits or deletion through the service layer.
+- Soft delete is represented by `is_active = false` and a non-null `deleted_at`.
+- `status` is reserved for Project and Task workflow; account and record activation use `is_active`.
+- There is no `addresses` table in this schema; address fields are stored directly in `user_profiles` and `clients`.
 
-## Enum/check values
+## Enum Values
 
-| Column                    | Allowed values                                          |
-| ------------------------- | ------------------------------------------------------- |
-| `users.role`              | `USER`, `ADMIN` (สงวน `ADMIN` สำหรับการจัดการระบบ)       |
-| `users.status`            | `ACTIVE`, `INACTIVE`, `SUSPENDED`                       |
-| `clients.status`          | `ACTIVE`, `ARCHIVED`                                    |
-| `projects.status`         | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
-| `tasks.status`            | `OPEN`, `IN_PROGRESS`, `COMPLETED`                      |
-| `time_entries.entry_type` | `TIMER`, `MANUAL`                                       |
+| Field | Values |
+|---|---|
+| `users.role` | `USER`, `ADMIN` |
+| `projects.status` | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
+| `tasks.status` | `OPEN`, `IN_PROGRESS`, `COMPLETED` |
+| `time_entries.entry_type` | `TIMER`, `MANUAL` |
