@@ -180,7 +180,7 @@ class ClientIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(body).path("token").asText();
+        return objectMapper.readTree(body).path("data").path("token").asText();
     }
 
     private static String bearer(String token) {
