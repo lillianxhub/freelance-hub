@@ -48,7 +48,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // Swagger/OpenAPI endpoints
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api-docs", "/api-docs/**", "/api-docs.yaml").permitAll()
+                        .requestMatchers("/openapi", "/openapi.yaml", "/api-docs", "/api-docs/**")
+                        .permitAll()
                         // Protected endpoints
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex

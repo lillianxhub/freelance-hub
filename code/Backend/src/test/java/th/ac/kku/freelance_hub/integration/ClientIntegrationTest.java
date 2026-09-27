@@ -50,7 +50,7 @@ class ClientIntegrationTest {
 
     @Test
     void openApiDocumentsClientEndpoints() throws Exception {
-        mockMvc.perform(get("/api-docs"))
+        mockMvc.perform(get("/openapi"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.paths['/api/users/me'].get.tags[0]").value("Authentication"))
             .andExpect(jsonPath("$.paths['/api/users/me'].patch.tags[0]").value("Authentication"))
