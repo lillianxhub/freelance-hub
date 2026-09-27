@@ -16,7 +16,7 @@ function emptyString(value: string | null | undefined): string {
   return value ?? ''
 }
 
-function toProfile(user: ApiUser): Profile {
+export function toProfile(user: ApiUser): Profile {
   const fullName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
   return {
     id: user.id,
