@@ -5,9 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import th.ac.kku.freelance_hub.domain.enums.UserRole;
-import th.ac.kku.freelance_hub.domain.enums.UserStatus;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -22,9 +21,8 @@ public class UserResponse {
     private UUID id;
     private String email;
     private UserRole role;
-    private UserStatus status;
-    private Boolean enabled;
-    private LocalDateTime createdAt;
+    private Boolean isActive;
+    private Instant createdAt;
 
     // Profile fields
     private String displayName;
@@ -36,6 +34,6 @@ public class UserResponse {
     private String district;
     private String province;
     private String postalCode;
-    private String timezone;
     private String dateFormat;
+    private String bio;
 }

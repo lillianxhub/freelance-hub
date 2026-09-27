@@ -8,7 +8,7 @@ import th.ac.kku.freelance_hub.domain.entity.RevokedToken;
 
 public interface RevokedTokenRepository extends JpaRepository<RevokedToken, UUID> {
 
-    boolean existsByJti(String jti);
+    boolean existsByJtiAndIsActiveTrue(String jti);
 
     Optional<RevokedToken> findByJti(String jti);
 }

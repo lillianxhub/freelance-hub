@@ -45,9 +45,6 @@ public class UpdateUserProfileRequest {
     @Size(max = 20, message = "Postal code must not exceed 20 characters")
     private String postalCode;
 
-    @Size(max = 50, message = "Timezone must not exceed 50 characters")
-    private String timezone;
-
     @Size(max = 20, message = "Date format must not exceed 20 characters")
     private String dateFormat;
 

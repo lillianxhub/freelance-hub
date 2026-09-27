@@ -1,7 +1,6 @@
 package th.ac.kku.freelance_hub.mapper;
 
 import org.springframework.stereotype.Component;
-import th.ac.kku.freelance_hub.domain.entity.Address;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
@@ -14,8 +13,6 @@ import th.ac.kku.freelance_hub.dto.response.UserResponse;
 @Component
 public class UserMapper {
 
-    private final AddressMapper addressMapper = new AddressMapper();
-
     /**
      * Convert User entity to UserResponse DTO
      */
@@ -24,8 +21,7 @@ public class UserMapper {
                 .id(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole())
-                .status(user.getStatus())
-                .enabled(user.getEnabled())
+                .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt());
 
         // Add profile information if exists
@@ -35,15 +31,13 @@ public class UserMapper {
                     .firstName(profile.getFirstName())
                     .lastName(profile.getLastName())
                     .phone(profile.getPhone())
-                    .timezone(profile.getTimezone())
-                    .dateFormat(profile.getDateFormat());
-            if (profile.getAddress() != null) {
-                builder.address(profile.getAddress().getAddress())
-                        .subdistrict(profile.getAddress().getSubdistrict())
-                        .district(profile.getAddress().getDistrict())
-                        .province(profile.getAddress().getProvince())
-                        .postalCode(profile.getAddress().getPostalCode());
-            }
+                    .address(profile.getAddress())
+                    .subdistrict(profile.getSubdistrict())
+                    .district(profile.getDistrict())
+                    .province(profile.getProvince())
+                    .postalCode(profile.getPostalCode())
+                    .dateFormat(profile.getDateFormat())
+                    .bio(profile.getBio());
         }
 
         return builder.build();
@@ -58,7 +52,6 @@ public class UserMapper {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .phone(request.getPhone())
-                .timezone(request.getTimezone() != null ? request.getTimezone() : "UTC")
                 .dateFormat("YYYY-MM-DD")
                 .build();
     }
@@ -77,9 +70,6 @@ public class UserMapper {
         if (request.getPhone() != null) {
             profile.setPhone(request.getPhone().trim());
         }
-        if (request.getTimezone() != null) {
-            profile.setTimezone(request.getTimezone().trim());
-        }
         if (request.getDateFormat() != null) {
             profile.setDateFormat(request.getDateFormat().trim());
         }
@@ -87,32 +77,20 @@ public class UserMapper {
             profile.setBio(request.getBio().trim());
         }
 
-        if (addressMapper.hasAnyValue(
-                request.getAddress(),
-                request.getSubdistrict(),
-                request.getDistrict(),
-                request.getProvince(),
-                request.getPostalCode())) {
-            Address current = profile.getAddress();
-            Address replacement = addressMapper.toEntity(
-                    request.getAddress(),
-                    request.getSubdistrict(),
-                    request.getDistrict(),
-                    request.getProvince(),
-                    request.getPostalCode());
-            if (replacement == null) {
-                profile.setAddress(null);
-            } else if (current == null) {
-                profile.setAddress(replacement);
-            } else {
-                addressMapper.update(
-                        current,
-                        request.getAddress(),
-                        request.getSubdistrict(),
-                        request.getDistrict(),
-                        request.getProvince(),
-                        request.getPostalCode());
-            }
+        if (request.getAddress() != null) {
+            profile.setAddress(request.getAddress().trim());
+        }
+        if (request.getSubdistrict() != null) {
+            profile.setSubdistrict(request.getSubdistrict().trim());
+        }
+        if (request.getDistrict() != null) {
+            profile.setDistrict(request.getDistrict().trim());
+        }
+        if (request.getProvince() != null) {
+            profile.setProvince(request.getProvince().trim());
+        }
+        if (request.getPostalCode() != null) {
+            profile.setPostalCode(request.getPostalCode().trim());
         }
     }
 }
