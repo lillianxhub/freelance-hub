@@ -1,5 +1,3 @@
-# UI/UX Improvement Pull Request Template
-
 ## UI/UX Improvement Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงการปรับปรุง UI/UX -->

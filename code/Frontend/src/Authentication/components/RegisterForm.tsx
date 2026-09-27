@@ -36,14 +36,14 @@ function RegisterForm() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-brand"><span>FH</span><strong>freelance hub</strong></div>
         <h1>สมัครสมาชิก</h1>
-        <p className="auth-description">สร้าง workspace สำหรับบริหารงานฟรีแลนซ์ของคุณ</p>
+        <p className="auth-description">สร้าง พื้นที่ทำงานสำหรับจัดการงานฟรีแลนซ์ของคุณ</p>
         {error && <p className="auth-error">{error}</p>}
 
         <AuthInput label="ชื่อ-นามสกุล" type="text" name="fullName" value={form.fullName} onChange={handleChange} />
         <AuthInput label="อีเมล" type="email" name="email" value={form.email} onChange={handleChange} />
         <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} autoComplete="new-password" minLength={8} />
 
-        <button type="submit" disabled={loading}>
+        <button className="button button-primary wide" type="submit" disabled={loading}>
           {loading ? 'กำลังสมัคร...' : 'สมัครสมาชิก'}
         </button>
 
