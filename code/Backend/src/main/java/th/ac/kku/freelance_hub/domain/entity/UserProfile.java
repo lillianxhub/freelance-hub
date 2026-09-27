@@ -56,6 +56,9 @@ public class UserProfile {
     @Column(name = "postal_code", length = 20)
     private String postalCode;
 
+    @Column(name = "tax_id", length = 30)
+    private String taxId;
+
     @Column(length = 20)
     @Builder.Default
     private String dateFormat = "YYYY-MM-DD";

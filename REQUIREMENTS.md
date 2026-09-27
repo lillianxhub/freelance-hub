@@ -83,24 +83,24 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 
 ### 4.1 Authentication และ Profile
 
-| ID         | Requirement                                              | Priority |
-| ---------- | -------------------------------------------------------- | -------- |
-| FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้                 | Must     |
-| FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must     |
-| FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้    | Must     |
+| ID         | Requirement                                                                                                                       | Priority |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้                                                                                          | Must     |
+| FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash                                                                          | Must     |
+| FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้                                                                             | Must     |
 | FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ และที่อยู่ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
-| FR-AUTH-05 | ผู้ใช้กำหนดรูปแบบวันที่ได้                              | Must     |
-| FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้ | Must     |
+| FR-AUTH-05 | ผู้ใช้กำหนดรูปแบบวันที่ได้                                                                                                        | Must     |
+| FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้                                                           | Must     |
 
 ### 4.2 Client Management
 
-| ID        | Requirement                                                                        | Priority |
-| --------- | ---------------------------------------------------------------------------------- | -------- |
-| FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้                                         | Must     |
+| ID        | Requirement                                                                                                                    | Priority |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้                                                                                     | Must     |
 | FR-CLI-02 | ลูกค้าประกอบด้วยชื่อบุคคล/บริษัท อีเมล โทรศัพท์ ที่อยู่ เลขผู้เสียภาษี และหมายเหตุ โดยที่อยู่ใช้โครงสร้างเดียวกับ User Profile | Must     |
-| FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้                           | Must     |
-| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์                         | Must     |
-| FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ              | Must     |
+| FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้                                                                       | Must     |
+| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์                                                                     | Must     |
+| FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ                                                          | Must     |
 
 ### 4.3 Project และ Task Management
 
@@ -201,17 +201,17 @@ erDiagram
     TASK ||--o{ TIME_ENTRY : categorizes
 ```
 
-### 7.1 Entity ที่แนะนำ
+### 7.1 Entity
 
-| Entity        | Field สำคัญ                                                                       |
-| ------------- | --------------------------------------------------------------------------------- |
-| `User`        | id, email, passwordHash, role, isActive, deletedAt                                |
-| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, dateFormat, bio, isActive, deletedAt |
-| `Address`     | id, address, subdistrict, district, province, postalCode                         |
-| `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status             |
-| `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate |
-| `Task`        | id, projectId, name, description, status, sortOrder                               |
-| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes  |
+| Entity        | Field สำคัญ                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `User`        | id, email, passwordHash, role, isActive, deletedAt                                                                            |
+| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, dateFormat, bio, isActive, deletedAt |
+| `Address`     | id, address, subdistrict, district, province, postalCode                                                                      |
+| `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status                                                        |
+| `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate                                             |
+| `Task`        | id, projectId, name, description, status, sortOrder                                                                           |
+| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes                                              |
 
 ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ project
 
@@ -221,11 +221,11 @@ erDiagram
 
 ```json
 {
-  "address": "ที่อยู่",
-  "subdistrict": "ตำบล",
-  "district": "อำเภอ",
-  "province": "จังหวัด",
-  "postalCode": "รหัสไปรษณีย์"
+    "address": "ที่อยู่",
+    "subdistrict": "ตำบล",
+    "district": "อำเภอ",
+    "province": "จังหวัด",
+    "postalCode": "รหัสไปรษณีย์"
 }
 ```
 
@@ -235,26 +235,26 @@ erDiagram
 
 REST API ใช้ prefix `/api` โดยไม่มี version segment และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
 
-| Method           | Endpoint                        | หน้าที่                    |
-| ---------------- | ---------------------------     | -------------------------- |
-| POST             | `/api/auth/register`            | สมัครสมาชิก                |
-| POST             | `/api/auth/login`               | เข้าสู่ระบบ                |
-| POST             | `/api/auth/logout`              | ออกจากระบบและ revoke token |
-| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น |
+| Method           | Endpoint                        | หน้าที่                                             |
+| ---------------- | ------------------------------- | --------------------------------------------------- |
+| POST             | `/api/auth/register`            | สมัครสมาชิก                                         |
+| POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
+| POST             | `/api/auth/logout`              | ออกจากระบบและ revoke token                          |
+| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
 | PATCH            | `/api/users/me/password`        | เปลี่ยนรหัสผ่านด้วย `oldPassword` และ `newPassword` |
-| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า         |
-| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
-| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์       |
-| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
-| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task          |
-| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry     |
-| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry          |
-| POST             | `/api/timer/start`              | เริ่ม timer                |
-| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน        |
-| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน          |
-| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่          |
-| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา              |
-| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
+| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า                                  |
+| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า                               |
+| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์                                |
+| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์                             |
+| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task                                   |
+| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry                              |
+| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry                                   |
+| POST             | `/api/timer/start`              | เริ่ม timer                                         |
+| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน                                 |
+| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน                                   |
+| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่                                   |
+| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา                                       |
+| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV                                  |
 
 ข้อกำหนดร่วมของ API:
 
@@ -273,12 +273,12 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 - `GET/PATCH /api/users/me` แสดงและแก้ไขข้อมูลของผู้ใช้ที่ authenticated เท่านั้น โดยข้อมูลที่อยู่ใช้ flat fields ชุดเดียวกันทั้ง User Profile และ Client: `address`, `subdistrict`, `district`, `province`, `postalCode`
 - `PATCH /api/users/me/password` ต้องมี bearer JWT และรับ body รูปแบบต่อไปนี้:
 
-  ```json
-  {
-    "oldPassword": "รหัสผ่านเดิม",
-    "newPassword": "รหัสผ่านใหม่"
-  }
-  ```
+    ```json
+    {
+        "oldPassword": "รหัสผ่านเดิม",
+        "newPassword": "รหัสผ่านใหม่"
+    }
+    ```
 
 - ระบบต้องตรวจ `oldPassword` ก่อนบันทึก hash ของ `newPassword`; รหัสผ่านเดิมผิดให้ตอบ `401`, ข้อมูลรหัสผ่านใหม่ไม่ผ่าน validation หรือซ้ำกับรหัสผ่านเดิมให้ตอบ `400`
 - ห้ามส่งหรือบันทึก plain-text password และห้ามใช้ email reset flow ใน MVP

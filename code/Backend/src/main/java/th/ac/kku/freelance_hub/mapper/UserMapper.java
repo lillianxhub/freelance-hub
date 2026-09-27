@@ -36,6 +36,7 @@ public class UserMapper {
                     .district(profile.getDistrict())
                     .province(profile.getProvince())
                     .postalCode(profile.getPostalCode())
+                    .taxId(profile.getTaxId())
                     .dateFormat(profile.getDateFormat())
                     .bio(profile.getBio());
         }
@@ -91,6 +92,9 @@ public class UserMapper {
         }
         if (request.getPostalCode() != null) {
             profile.setPostalCode(request.getPostalCode().trim());
+        }
+        if (request.getTaxId() != null) {
+            profile.setTaxId(request.getTaxId().trim());
         }
     }
 }

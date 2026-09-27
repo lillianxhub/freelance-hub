@@ -24,6 +24,7 @@ class UserMapperTest {
             .district("เมืองขอนแก่น")
             .province("ขอนแก่น")
             .postalCode("40000")
+            .taxId("0105559999999")
             .build();
         User user = User.builder()
             .id(UUID.randomUUID())
@@ -38,6 +39,7 @@ class UserMapperTest {
         assertThat(response.getDistrict()).isEqualTo("เมืองขอนแก่น");
         assertThat(response.getProvince()).isEqualTo("ขอนแก่น");
         assertThat(response.getPostalCode()).isEqualTo("40000");
+        assertThat(response.getTaxId()).isEqualTo("0105559999999");
     }
 
     @Test
@@ -49,15 +51,18 @@ class UserMapperTest {
             .district("เดิม")
             .province("เดิม")
             .postalCode("10000")
+            .taxId("เดิม")
             .build();
 
         mapper.updateProfile(UpdateUserProfileRequest.builder()
             .province("ขอนแก่น")
             .postalCode("40000")
+            .taxId("0105559999999")
             .build(), profile);
 
         assertThat(profile.getAddress()).isEqualTo("เดิม");
         assertThat(profile.getProvince()).isEqualTo("ขอนแก่น");
         assertThat(profile.getPostalCode()).isEqualTo("40000");
+        assertThat(profile.getTaxId()).isEqualTo("0105559999999");
     }
 }
