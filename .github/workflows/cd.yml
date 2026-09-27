@@ -1,4 +1,4 @@
-name: CD Backend
+name: Continuous Deployment
 
 on:
   workflow_run:
