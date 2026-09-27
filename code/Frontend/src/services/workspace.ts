@@ -63,7 +63,7 @@ function toClient(source: ApiClient): Client {
     tax_id: emptyString(source.taxId),
     notes: emptyString(source.notes),
     status: source.status,
-    color: '#3867f4',
+    color: '#4F6BFF',
     created_at: source.createdAt,
     updated_at: source.updatedAt,
   }
@@ -76,7 +76,7 @@ export function toProject(source: ApiProject): Project {
     client_id: source.clientId,
     name: source.name,
     description: emptyString(source.description),
-    color: source.color || '#3867f4',
+    color: source.color || '#4F6BFF',
     status: source.status,
     billing_type: 'HOURLY',
     hourly_rate: null,

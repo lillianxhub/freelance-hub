@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useWorkspace } from '../Workspace/useWorkspace'
 import { listTimerProjects, listTimerTasks } from '../services/timerOptions'
+import { cancelTimer as cancelTimerRequest, startTimer as startTimerRequest, stopTimer as stopTimerRequest } from '../services/timeTracking'
 import type { Project } from '../types/project'
 import type { Task } from '../types/task'
 
 export function useTimer() {
-  const { data, save, remove } = useWorkspace()
+  const { data, refresh } = useWorkspace()
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedTask, setSelectedTask] = useState('')
   const [description, setDescription] = useState('')
@@ -80,31 +81,25 @@ export function useTimer() {
 
   async function startTimer() {
     if (!selectedProjectData || runningEntry) return
-    const profile = data.profiles[0]
-    await save('time_entries', {
-      project_id: timerProjectId,
-      task_id: selectedTask || null,
-      description: description.trim(),
-      started_at: new Date().toISOString(),
-      ended_at: null,
-      duration_minutes: null,
-      billable,
-      rate_snapshot: selectedProjectData.billing_type === 'HOURLY' ? (selectedProjectData.hourly_rate || profile?.default_hourly_rate || 0) : 0,
-      currency: selectedProjectData.currency || profile?.currency || 'THB',
-      invoice_id: null,
+    await startTimerRequest({
+      projectId: timerProjectId,
+      taskId: selectedTask || undefined,
+      description: description.trim() || undefined,
     })
+    await refresh()
     setDescription('')
   }
 
   async function stopTimer() {
     if (!runningEntry) return
-    const endedAt = new Date()
-    const duration = Math.max(1, Math.round((endedAt.getTime() - Date.parse(runningEntry.started_at)) / 60000))
-    await save('time_entries', { ...runningEntry, ended_at: endedAt.toISOString(), duration_minutes: duration })
+    await stopTimerRequest()
+    await refresh()
   }
 
   async function cancelTimer() {
-    if (runningEntry) await remove('time_entries', runningEntry.id)
+    if (!runningEntry) return
+    await cancelTimerRequest()
+    await refresh()
   }
 
   return { activeProjects, runningEntry, timerProjectId, selectedTask, setSelectedProject, setSelectedTask, description, setDescription, billable, setBillable, selectedTasks, runningProject, runningTask, elapsedSeconds, startTimer, stopTimer, cancelTimer, optionsError }

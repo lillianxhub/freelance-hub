@@ -1,7 +1,7 @@
 import { api } from '../api/apiClient'
 import type { ApiPage, ApiTimeEntry } from '../types/api'
 import type { ResourceInput } from '../types/workspace'
-import type { ManualTimeEntryPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
+import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
 import { deleteResource, saveResource, toTimeEntry } from './workspace'
 
 export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> {
@@ -25,4 +25,16 @@ export function updateTimeEntry(id: string, payload: UpdateTimeEntryPayload) {
 
 export function deleteTimeEntry(id: string) {
   return deleteResource('time_entries', id)
+}
+
+export async function startTimer(payload: StartTimerPayload): Promise<TimeEntry> {
+  return toTimeEntry(await api.post<ApiTimeEntry>('/timer/start', payload))
+}
+
+export async function stopTimer(): Promise<TimeEntry> {
+  return toTimeEntry(await api.post<ApiTimeEntry>('/timer/stop'))
+}
+
+export function cancelTimer(): Promise<void> {
+  return api.delete<void>('/timer/current')
 }

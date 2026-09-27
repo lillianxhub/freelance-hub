@@ -4,6 +4,7 @@ import { useAuth } from '../Authentication/useAuthentication'
 import { initials } from '../utils/formatters'
 import type { TopbarProps } from '../types/ui'
 import { useWorkspace } from '../Workspace/useWorkspace'
+import { FiChevronDown, FiMenu } from 'react-icons/fi'
 
 const labels: Record<string, string> = {
   dashboard: 'ภาพรวม', clients: 'ลูกค้า', projects: 'โปรเจกต์', 'time-tracker': 'บันทึกเวลา',
@@ -51,7 +52,7 @@ function Topbar({ onMenu }: TopbarProps) {
 
   return (
     <header className="topbar">
-      <button className="mobile-menu" type="button" aria-label="เปิดเมนู" onClick={onMenu}>☰</button>
+      <button className="mobile-menu" type="button" aria-label="เปิดเมนู" onClick={onMenu}><FiMenu aria-hidden="true" /></button>
       <div className="breadcrumbs"><span>พื้นที่ทำงาน</span><span>/</span><strong>{label}</strong></div>
       <div className="topbar-actions">
         {/* <span className="mode-badge connected">
@@ -73,7 +74,7 @@ function Topbar({ onMenu }: TopbarProps) {
               <strong>{displayName}</strong>
               <small>{user?.email}</small>
             </span>
-            <span className="account-chevron" aria-hidden="true">⌄</span>
+            <span className="account-chevron" aria-hidden="true"><FiChevronDown /></span>
           </button>
           {menuOpen && (
             <div className="account-dropdown" role="menu">
