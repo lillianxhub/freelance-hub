@@ -61,7 +61,6 @@ class AuthControllerTest {
                                 .firstName("Test")
                                 .lastName("User")
                                 .phone("0812345678")
-                                .timezone("Asia/Bangkok")
                                 .build();
 
                 loginRequest = LoginRequest.builder()

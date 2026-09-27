@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import th.ac.kku.freelance_hub.domain.entity.Address;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
@@ -20,7 +19,11 @@ class UserMapperTest {
     void mapsNormalizedAddressAsFlatUserResponseFields() {
         UserProfile profile = UserProfile.builder()
             .displayName("Test User")
-            .address(new Address("99 ถนนมิตรภาพ", "ในเมือง", "เมืองขอนแก่น", "ขอนแก่น", "40000"))
+            .address("99 ถนนมิตรภาพ")
+            .subdistrict("ในเมือง")
+            .district("เมืองขอนแก่น")
+            .province("ขอนแก่น")
+            .postalCode("40000")
             .build();
         User user = User.builder()
             .id(UUID.randomUUID())
@@ -41,7 +44,11 @@ class UserMapperTest {
     void updatesProfileAddressWithoutAcceptingAnOwnerId() {
         UserProfile profile = UserProfile.builder()
             .displayName("Test User")
-            .address(new Address("เดิม", "เดิม", "เดิม", "เดิม", "10000"))
+            .address("เดิม")
+            .subdistrict("เดิม")
+            .district("เดิม")
+            .province("เดิม")
+            .postalCode("10000")
             .build();
 
         mapper.updateProfile(UpdateUserProfileRequest.builder()
@@ -49,8 +56,8 @@ class UserMapperTest {
             .postalCode("40000")
             .build(), profile);
 
-        assertThat(profile.getAddress().getAddress()).isEqualTo("เดิม");
-        assertThat(profile.getAddress().getProvince()).isEqualTo("ขอนแก่น");
-        assertThat(profile.getAddress().getPostalCode()).isEqualTo("40000");
+        assertThat(profile.getAddress()).isEqualTo("เดิม");
+        assertThat(profile.getProvince()).isEqualTo("ขอนแก่น");
+        assertThat(profile.getPostalCode()).isEqualTo("40000");
     }
 }
