@@ -243,6 +243,7 @@ freelance-hub/
 │   │   │   │   ├── domain/valueobject/
 │   │   │   │   ├── dto/request/
 │   │   │   │   ├── dto/response/
+│   │   │   │   ├── event
 │   │   │   │   ├── mapper/
 │   │   │   │   ├── exception/
 │   │   │   │   └── security/
