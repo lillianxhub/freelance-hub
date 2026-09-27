@@ -28,6 +28,8 @@ import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -123,6 +125,41 @@ class TaskServiceImplTest {
                 .hasMessageContaining("time entries");
     }
 
+    @Test
+    void canCreateTaskWhileProjectIsOnHold() {
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project.changeStatus(ProjectStatus.ON_HOLD);
+        projectRepository.saveAndFlush(project);
+
+        taskService.create(owner.getId(), project.getId(), request("A", 0));
+
+        assertThat(orderedTasks())
+                .extracting(Task::getName)
+                .containsExactly("A");
+    }
+
+    @Test
+    void cannotCreateTaskWhenProjectIsCompleted() {
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project.changeStatus(ProjectStatus.COMPLETED);
+        projectRepository.saveAndFlush(project);
+
+        assertThatThrownBy(() -> taskService.create(
+                owner.getId(), project.getId(), request("A", 0)
+        )).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void cannotCreateTaskWhenProjectIsArchived() {
+        project.archive();
+        projectRepository.saveAndFlush(project);
+
+        assertThatThrownBy(() -> taskService.create(
+                owner.getId(), project.getId(), request("A", 0)
+        )).isInstanceOf(IllegalStateException.class);
+    }
+    
+
     private CreateTaskRequest request(String name, int sortOrder) {
         return CreateTaskRequest.builder()
                 .name(name)
@@ -138,3 +175,6 @@ class TaskServiceImplTest {
                 );
     }
 }
+
+
+        
