@@ -3,7 +3,7 @@ name: Backend Deploy
 on:
     workflow_run:
         workflows:
-            - CI
+            - Backend CI
         types:
             - completed
         branches:
