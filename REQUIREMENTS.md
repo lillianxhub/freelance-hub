@@ -89,7 +89,7 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 | FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must     |
 | FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้    | Must     |
 | FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ และที่อยู่ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
-| FR-AUTH-05 | ผู้ใช้กำหนด timezone และรูปแบบวันที่ได้                  | Must     |
+| FR-AUTH-05 | ผู้ใช้กำหนดรูปแบบวันที่ได้                              | Must     |
 | FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้ | Must     |
 
 ### 4.2 Client Management
@@ -205,8 +205,8 @@ erDiagram
 
 | Entity        | Field สำคัญ                                                                       |
 | ------------- | --------------------------------------------------------------------------------- |
-| `User`        | id, email, passwordHash, role, enabled                                            |
-| `UserProfile` | id, userId, displayName, phone, addressId, timezone                               |
+| `User`        | id, email, passwordHash, role, isActive, deletedAt                                |
+| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, dateFormat, bio, isActive, deletedAt |
 | `Address`     | id, address, subdistrict, district, province, postalCode                         |
 | `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status             |
 | `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate |
@@ -215,9 +215,9 @@ erDiagram
 
 ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ project
 
-ระบบมีตารางหลัก 7 ตาราง ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` โดยมี `User`–`UserProfile` แบบ One-to-One, `UserProfile`/`Client` อ้างอิง `Address` แบบ One-to-One ที่เป็น optional และ `Client`–`Project`, `Project`–`Task`, `Project`–`TimeEntry` แบบ One-to-Many ต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
+ระบบมีตารางหลัก 7 ตาราง ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` โดยมี `User`–`UserProfile` แบบ One-to-One; `user_profiles` เก็บที่อยู่แบบแยกฟิลด์ตาม Data Dictionary ส่วน `Client` ยังคงอ้างอิง `Address` แบบ One-to-One ที่เป็น optional และมีความสัมพันธ์แบบ One-to-Many ระหว่าง `Client`–`Project`, `Project`–`Task` และ `Project`–`TimeEntry` โดยต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
 
-ที่อยู่เก็บแบบ normalized ในตาราง `addresses` และใช้ `address_id` เป็น foreign key จาก `user_profiles` และ `clients` ส่วน API ยังคงรับและส่งเป็น flat fields เพื่อให้ contract อ่านง่าย:
+สำหรับ Auth/User Profile ที่อยู่เก็บเป็น field ตรงใน `user_profiles` ตาม Data Dictionary และ API รับ/ส่งเป็น flat fields เพื่อให้ contract อ่านง่าย:
 
 ```json
 {
@@ -523,8 +523,8 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ## 18. Database และ Migration Deliverables
 
-- มีอย่างน้อย 7 ตาราง: users, user_profiles, addresses, clients, projects, tasks และ time_entries
-- มี One-to-One ระหว่าง users กับ user_profiles และ optional One-to-One ระหว่าง user_profiles/clients กับ addresses รวมถึง One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
+- มีอย่างน้อย 8 ตาราง: users, user_profiles, revoked_tokens, addresses, clients, projects, tasks และ time_entries
+- มี One-to-One ระหว่าง users กับ user_profiles และ optional One-to-One ระหว่าง clients กับ addresses รวมถึง One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
 - กำหนด Foreign Key Constraint และ index สำหรับ owner, relation, status และ date fields ที่ใช้ค้นหาบ่อย
 - กำหนด Cascade และ Fetch Type อย่างมีเหตุผล หลีกเลี่ยง `CascadeType.ALL` และ `EAGER` โดยไม่มีความจำเป็น
 - ใช้ Flyway migration ใน `code/src/main/resources/db/migration/`

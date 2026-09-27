@@ -68,7 +68,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; `CustomUserDetailsService`
 1. ผู้ใช้เรียก `PATCH /api/users/me` พร้อม bearer JWT
 2. `JwtAuthenticationFilter` ตรวจ token และใส่ authenticated principal ใน SecurityContext
 3. `UserService` อ่าน user จาก principal ไม่รับ `userId` หรือ `ownerId` จาก body
-4. Service แก้ข้อมูล profile และ upsert ข้อมูลใน `addresses` ผ่าน `address_id`
+4. Service แก้ข้อมูล profile และ field ที่อยู่โดยตรงใน `user_profiles`
 5. Controller คืน `200 UserResponse` โดยแสดงข้อมูลที่อยู่เป็น flat fields
 
 **Alternative flow:** ไม่มี/malformed JWT = `401`; validation ไม่ผ่าน = `400`

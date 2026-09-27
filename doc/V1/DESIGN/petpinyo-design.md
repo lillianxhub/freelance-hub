@@ -44,7 +44,11 @@ classDiagram
     }
     class User
     class UserProfile {
-        +Address address
+        +String address
+        +String subdistrict
+        +String district
+        +String province
+        +String postalCode
     }
     class Client {
         +Address address
@@ -65,7 +69,6 @@ classDiagram
     AuthServiceImpl --> RevokedTokenService
     UserController --> UserService
     User "1" o-- "0..1" UserProfile
-    UserProfile "1" --> "0..1" Address : addressId
     Client "1" --> "0..1" Address : addressId
     JwtAuthenticationFilter --> JwtTokenProvider
     JwtAuthenticationFilter --> RevokedTokenService
@@ -76,9 +79,8 @@ classDiagram
 - `PATCH /api/users/me/password` รับ `oldPassword` และ `newPassword`; service ต้องตรวจ
   รหัสผ่านเดิมก่อน hash ค่าใหม่ และไม่รองรับ forgot/reset password ใน MVP
 - User Profile API ไม่รับหรือส่ง `profileImageUrl`/`avatarUrl` และไม่มี use case อัปโหลดรูปโปรไฟล์
-- `UserProfile` และ `Client` อ้างอิง `Address` ด้วย `addressId` ขณะที่ DTO แสดงข้อมูลที่อยู่
-  เป็น flat fields (`address`, `subdistrict`, `district`, `province`, `postalCode`)
-- `Address` เป็น persistence entity กลาง ไม่ควรส่ง JPA entity ออกตรง ๆ จาก controller
+- `UserProfile` เก็บข้อมูลที่อยู่โดยตรงตาม Data Dictionary และ DTO แสดงเป็น flat fields
+  (`address`, `subdistrict`, `district`, `province`, `postalCode`)
 
 ## Pattern boundary
 

@@ -61,7 +61,7 @@ Domain Layer (Entity / Value Object / Enum)
 ความสัมพันธ์หลัก:
 
 - One-to-One: `users` → `user_profiles`
-- One-to-One (optional): `user_profiles` และ `clients` → `addresses` ผ่าน `address_id`
+- `user_profiles` เก็บ field ที่อยู่โดยตรงตาม Data Dictionary; `clients` ยังใช้ `addresses` ในช่วง migration ของ Client
 - One-to-Many: `clients` → `projects`
 - One-to-Many: `projects` → `tasks` และ `time_entries`
 - ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
