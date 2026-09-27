@@ -1,4 +1,5 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { FiArrowLeft, FiArrowRight, FiBriefcase, FiPlus, FiSearch } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import Modal from "../../../components/Modal";
 import PageHeader from "../../../components/PageHeader";
@@ -24,7 +25,7 @@ const emptyForm: ProjectDraft = {
   name: "",
   client_id: "",
   description: "",
-  color: "#3867f4",
+  color: "#4F6BFF",
   status: "PLANNED",
   billing_type: "HOURLY",
   hourly_rate: 850,
@@ -123,14 +124,14 @@ function ProjectsPage() {
       setFormError("กรุณาระบุชื่อโปรเจกต์และลูกค้า");
       return;
     }
-    if (form.billing_type === "HOURLY" && Number(form.hourly_rate) <= 0) {
-      setFormError("โปรเจกต์รายชั่วโมงต้องมีอัตราต่อชั่วโมงมากกว่า 0");
-      return;
-    }
-    if (form.billing_type === "FIXED_PRICE" && Number(form.fixed_price) <= 0) {
-      setFormError("โปรเจกต์เหมาจ่ายต้องมีมูลค่างานมากกว่า 0");
-      return;
-    }
+    // if (form.billing_type === "HOURLY" && Number(form.hourly_rate) <= 0) {
+    //   setFormError("โปรเจกต์รายชั่วโมงต้องมีอัตราต่อชั่วโมงมากกว่า 0");
+    //   return;
+    // }
+    // if (form.billing_type === "FIXED_PRICE" && Number(form.fixed_price) <= 0) {
+    //   setFormError("โปรเจกต์เหมาจ่ายต้องมีมูลค่างานมากกว่า 0");
+    //   return;
+    // }
     if (form.start_date && form.end_date && form.end_date < form.start_date) {
       setFormError("วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่ม");
       return;
@@ -181,14 +182,14 @@ function ProjectsPage() {
             type="button"
             onClick={openCreate}
           >
-            ＋ เพิ่มโปรเจกต์
+            <FiPlus aria-hidden="true" /> เพิ่มโปรเจกต์
           </button>
         }
       />
 
       <div className="filter-row">
         <div className="search-box">
-          <span>⌕</span>
+          <span><FiSearch aria-hidden="true" /></span>
           <input
             value={query}
             onChange={(event) => {
@@ -242,7 +243,7 @@ function ProjectsPage() {
       {projects.length === 0 ? (
         <section className="panel">
           <EmptyState
-            icon="▦"
+            icon={<FiBriefcase aria-hidden="true" />}
             title="ยังไม่พบProjects"
             description="สร้างProjectsแรกหรือปรับตัวกรอง"
             action={
@@ -369,7 +370,7 @@ function ProjectsPage() {
             disabled={safePage === 1}
             onClick={() => setPage((value) => value - 1)}
           >
-            ← ก่อนหน้า
+            <FiArrowLeft aria-hidden="true" /> ก่อนหน้า
           </button>
           <span>
             หน้า {safePage} จาก {totalPages}
@@ -380,7 +381,7 @@ function ProjectsPage() {
             disabled={safePage === totalPages}
             onClick={() => setPage((value) => value + 1)}
           >
-            ถัดไป →
+            ถัดไป <FiArrowRight aria-hidden="true" />
           </button>
         </div>
       )}

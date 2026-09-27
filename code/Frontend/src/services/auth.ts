@@ -1,6 +1,6 @@
 import { api, getApiToken, setApiToken } from '../api/apiClient'
 import { ApiError } from '../api/apiError'
-import type { AuthResponse, AuthSession, AuthUser, BackendUser } from '../types/auth'
+import type { AuthResponse, AuthSession, AuthUser, BackendUser, RegisterInput } from '../types/auth'
 
 function toAuthUser(user: BackendUser): AuthUser {
   return { id: user.id, email: user.email, user_metadata: { full_name: user.displayName || user.email } }
@@ -9,8 +9,8 @@ function toAuthUser(user: BackendUser): AuthUser {
 export async function getCurrentSession(): Promise<AuthSession | null> {
   if (!getApiToken()) return null
   try {
-    const user = await api.get<BackendUser>('/users/me')
-    return { user: toAuthUser(user) }
+    const response = await api.get<BackendUser>('/users/me')
+    return { user: toAuthUser(response.data) }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       setApiToken(null)
@@ -21,13 +21,20 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
 }
 
 export async function signIn(email: string, password: string): Promise<AuthSession> {
-  const result = await api.post<AuthResponse>('/auth/login', { email: email.trim(), password })
-  setApiToken(result.token)
-  return { user: toAuthUser(result.user) }
+  const response = await api.post<AuthResponse>('/auth/login', { email: email.trim(), password })
+  setApiToken(response.data.token)
+  return { user: toAuthUser(response.data.user) }
 }
 
-export async function signUp(fullName: string, email: string, password: string): Promise<void> {
-  await api.post<AuthResponse>('/auth/register', { displayName: fullName.trim(), email: email.trim(), password })
+export async function signUp(input: RegisterInput): Promise<void> {
+  await api.post<AuthResponse>('/auth/register', {
+    displayName: input.displayName.trim(),
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    email: input.email.trim(),
+    phone: input.phone.trim(),
+    password: input.password,
+  })
 }
 
 export async function signOut(): Promise<void> {

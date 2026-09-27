@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
@@ -75,7 +76,8 @@ public class ClientServiceImpl implements ClientService {
         Specification<Client> specification = (root, query, cb) -> {
             Predicate predicate = cb.equal(root.get("owner").get("id"), ownerId);
             if (filter.getStatus() != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("status"), filter.getStatus()));
+                predicate = cb.and(predicate, cb.equal(
+                    root.get("isActive"), filter.getStatus() == ClientStatus.ACTIVE));
             }
             String search = filter.getSearch();
             if (search != null && !search.isBlank()) {
@@ -85,8 +87,14 @@ public class ClientServiceImpl implements ClientService {
                         cb.like(root.get("name"), pattern, '\\'),
                         cb.like(root.get("companyName"), pattern, '\\'),
                         cb.like(root.get("email"), pattern, '\\'),
-                        cb.like(root.get("phone"), pattern, '\\'),
-                        cb.like(root.get("address"), pattern, '\\'));
+                        cb.like(root.get("phone"), pattern, '\\'));
+                match = cb.or(
+                        match,
+                        cb.like(root.get("address"), pattern, '\\'),
+                        cb.like(root.get("subdistrict"), pattern, '\\'),
+                        cb.like(root.get("district"), pattern, '\\'),
+                        cb.like(root.get("province"), pattern, '\\'),
+                        cb.like(root.get("postalCode"), pattern, '\\'));
                 predicate = cb.and(predicate, match);
             }
             return predicate;

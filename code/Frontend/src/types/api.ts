@@ -2,22 +2,44 @@ export type ApiOptions = Omit<RequestInit, 'method' | 'body'>
 
 export type JsonMethod = 'POST' | 'PUT' | 'PATCH'
 
-export interface ApiPage<T> {
-  content: T[]
-  totalElements: number
+export interface ApiMeta {
+  page: number
+  limit: number
+  total: number
   totalPages: number
-  size: number
-  number: number
+}
+
+export interface ApiResponseError {
+  code?: string
+  message?: string
+  details?: unknown
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+  meta: ApiMeta | null
+  error: ApiResponseError | null
 }
 
 export interface ApiUser {
   id: string
   email: string
-  displayName?: string
-  phone?: string
-  address?: string
-  timezone?: string
-  dateFormat?: string
+  role?: 'USER' | 'ADMIN'
+  isActive?: boolean
+  createdAt?: string
+  displayName?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  address?: string | null
+  subdistrict?: string | null
+  district?: string | null
+  province?: string | null
+  postalCode?: string | null
+  dateFormat?: string | null
+  bio?: string | null
 }
 
 export interface ApiClient {
@@ -55,6 +77,26 @@ export interface ApiTask {
   description?: string
   status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
   sortOrder: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ApiTimeEntry {
+  id: string
+  clientId?: string
+  clientName?: string
+  projectId: string
+  projectName?: string
+  taskId?: string
+  taskName?: string
+  description?: string
+  entryType: 'TIMER' | 'MANUAL'
+  startedAt: string
+  endedAt?: string
+  durationMinutes?: number
+  lockedAt?: string
+  running: boolean
+  locked: boolean
   createdAt?: string
   updatedAt?: string
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { FiAlertCircle, FiArrowLeft, FiPlus, FiTrash2 } from 'react-icons/fi'
 import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
 import { useWorkspace } from '../../../Workspace/useWorkspace'
@@ -20,7 +21,7 @@ function NewInvoicePage() {
   if (error) return <ErrorState message={error} onRetry={refresh} />
 
   const existing = invoiceId ? data.invoices.find((invoice) => invoice.id === invoiceId) : null
-  if (invoiceId && (!existing || existing.status !== 'DRAFT')) return <EmptyState icon="!" title="แก้ไข ใบแจ้งหนี้นี้ไม่ได้" description="แก้ไขได้เฉพาะ Invoices Status ฉบับร่างเท่านั้น" action={<Link className="button button-primary" to={existing ? `/invoices/${existing.id}` : '/invoices'}>กลับไป ใบแจ้งหนี้</Link>} />
+  if (invoiceId && (!existing || existing.status !== 'DRAFT')) return <EmptyState icon={<FiAlertCircle aria-hidden="true" />} title="แก้ไข ใบแจ้งหนี้นี้ไม่ได้" description="แก้ไขได้เฉพาะ Invoices Status ฉบับร่างเท่านั้น" action={<Link className="button button-primary" to={existing ? `/invoices/${existing.id}` : '/invoices'}>กลับไป ใบแจ้งหนี้</Link>} />
   return <InvoicesEditor key={existing?.id || 'new-invoice'} workspace={workspace} existing={existing} />
 }
 
@@ -130,7 +131,7 @@ function InvoicesEditor({ workspace, existing = null }: InvoiceEditorProps) {
 
   return (
     <div className="page-view">
-      <Link className="back-link" to="/invoices">← กลับไป ใบแจ้งหนี้</Link>
+      <Link className="back-link" to="/invoices"><FiArrowLeft aria-hidden="true" /> กลับไปใบแจ้งหนี้</Link>
       <PageHeader eyebrow={existing ? 'ใบแจ้งหนี้ / แก้ไขฉบับร่าง' : 'ใบแจ้งหนี้ / สร้างใหม่'} title={existing ? `แก้ไข ${existing.invoice_number}` : 'สร้างใบแจ้งหนี้'} description="รวมเวลาที่ยังไม่วางบิลและรายการกำหนดเองไว้ในเอกสารเดียว" />
       <form className="invoice-editor" onSubmit={handleSubmit}>
         {formError && <p className="form-error">{formError}</p>}
@@ -146,8 +147,8 @@ function InvoicesEditor({ workspace, existing = null }: InvoiceEditorProps) {
               {eligibleTime.length === 0 ? <p className="inline-empty">ไม่มีเวลาที่ยังไม่วางบิลสำหรับตัวเลือกนี้</p> : <div className="invoice-time-list">{eligibleTime.map((entry) => { const project = data.projects.find((item) => item.id === entry.project_id); const hours = Number(entry.duration_minutes) / 60; return <label key={entry.id} className="invoice-time-row"><input type="checkbox" checked={selectedTimeIds.includes(entry.id)} onChange={() => toggleTime(entry.id)} /><span><strong>{entry.description || project?.name}</strong><small>{project?.name} · {formatDate(entry.started_at)}</small></span><strong>{hours.toFixed(2)} ชม.</strong><b>{formatMoney(hours * Number(entry.rate_snapshot), entry.currency)}</b></label> })}</div>}
             </section>
 
-            <section className="panel"><div className="panel-heading"><div><h2>3. รายการเพิ่มเติม</h2><p>เพิ่มค่าบริการแบบเหมาจ่ายหรือค่าใช้จ่ายอื่น</p></div><button className="mini-button" type="button" onClick={() => setManualItems((items) => [...items, { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0 }])}>＋ เพิ่มแถว</button></div>
-              <div className="manual-items"><div className="manual-item header"><span>รายละเอียด</span><span>จำนวน</span><span>ราคาต่อหน่วย</span><span>รวม</span><span /></div>{manualItems.map((item) => <div className="manual-item" key={item.id}><input value={item.description} onChange={(event) => updateManualItem(item.id, 'description', event.target.value)} placeholder="รายละเอียดบริการ" /><input type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => updateManualItem(item.id, 'quantity', event.target.value)} /><input type="number" min="0" step="0.01" value={item.unit_price} onChange={(event) => updateManualItem(item.id, 'unit_price', event.target.value)} /><strong>{formatMoney(Number(item.quantity) * Number(item.unit_price))}</strong><button type="button" aria-label="ลบรายการ" onClick={() => setManualItems((items) => items.filter((candidate) => candidate.id !== item.id))}>×</button></div>)}</div>
+            <section className="panel"><div className="panel-heading"><div><h2>3. รายการเพิ่มเติม</h2><p>เพิ่มค่าบริการแบบเหมาจ่ายหรือค่าใช้จ่ายอื่น</p></div><button className="mini-button" type="button" onClick={() => setManualItems((items) => [...items, { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0 }])}><FiPlus aria-hidden="true" /> เพิ่มแถว</button></div>
+              <div className="manual-items"><div className="manual-item header"><span>รายละเอียด</span><span>จำนวน</span><span>ราคาต่อหน่วย</span><span>รวม</span><span /></div>{manualItems.map((item) => <div className="manual-item" key={item.id}><input value={item.description} onChange={(event) => updateManualItem(item.id, 'description', event.target.value)} placeholder="รายละเอียดบริการ" /><input type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => updateManualItem(item.id, 'quantity', event.target.value)} /><input type="number" min="0" step="0.01" value={item.unit_price} onChange={(event) => updateManualItem(item.id, 'unit_price', event.target.value)} /><strong>{formatMoney(Number(item.quantity) * Number(item.unit_price))}</strong><button type="button" aria-label="ลบรายการ" onClick={() => setManualItems((items) => items.filter((candidate) => candidate.id !== item.id))}><FiTrash2 aria-hidden="true" /></button></div>)}</div>
             </section>
           </div>
 

@@ -39,6 +39,4 @@ public class RegisterRequest {
     @Size(max = 20, message = "Phone must not exceed 20 characters")
     private String phone;
 
-    @Size(max = 50, message = "Timezone must not exceed 50 characters")
-    private String timezone;
 }

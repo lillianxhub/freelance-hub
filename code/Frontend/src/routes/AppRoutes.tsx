@@ -4,10 +4,10 @@ import AppLayout from '../components/AppLayout'
 import ProtectedRoute from '../Authentication/components/ProtectedRoute'
 import { WorkspaceProvider } from '../Workspace/WorkspaceContext'
 import type { AppRouteDefinition } from '../types/routes'
+import ProfilePage from '../Profile/pages/Profile/page'
 
 const LoginPage = lazy(() => import('../Authentication/pages/Login/page'))
 const RegisterPage = lazy(() => import('../Authentication/pages/Register/page'))
-const ForgotPasswordPage = lazy(() => import('../Authentication/pages/ForgotPassword/page'))
 const DashboardPage = lazy(() => import('../Analytics/pages/Dashboard/page'))
 const ClientsPage = lazy(() => import('../ClientManagement/pages/Clients/page'))
 const ClientDetailPage = lazy(() => import('../ClientManagement/pages/ClientDetail/page'))
@@ -19,12 +19,10 @@ const InvoicesPage = lazy(() => import('../Billing/pages/Invoices/page'))
 const NewInvoicePage = lazy(() => import('../Billing/pages/NewInvoice/page'))
 const InvoiceDetailPage = lazy(() => import('../Billing/pages/InvoiceDetail/page'))
 const ReportsPage = lazy(() => import('../Analytics/pages/Reports/page'))
-const SettingsPage = lazy(() => import('../Settings/pages/Settings/page'))
 
 const publicRoutes: AppRouteDefinition[] = [
   { path: '/login', label: 'Login', element: <LoginPage /> },
   { path: '/register', label: 'Register', element: <RegisterPage /> },
-  { path: '/forgot-password', label: 'Forgot password', element: <ForgotPasswordPage /> },
 ]
 
 const protectedRoutes: AppRouteDefinition[] = [
@@ -40,7 +38,9 @@ const protectedRoutes: AppRouteDefinition[] = [
   // { path: '/invoices/:invoiceId/edit', label: 'แก้ไข invoice draft', element: <NewInvoicePage /> },
   // { path: '/invoices/:invoiceId', label: 'Invoices detail', element: <InvoiceDetailPage /> },
   { path: '/reports', label: 'รายงาน', element: <ReportsPage /> },
-  { path: '/settings', label: 'ตั้งค่า', element: <SettingsPage /> },
+  { path: '/profile', label: 'โปรไฟล์', element: <ProfilePage /> },
+  { path: '/setting', label: 'โปรไฟล์', element: <Navigate to="/profile" replace /> },
+  { path: '/settings', label: 'โปรไฟล์', element: <Navigate to="/profile" replace /> },
 ]
 
 function ProtectedWorkspace() {
