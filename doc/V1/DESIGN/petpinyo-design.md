@@ -74,7 +74,8 @@ classDiagram
 ## Password และ address contract
 
 - `PATCH /api/users/me/password` รับ `oldPassword` และ `newPassword`; service ต้องตรวจ
-  รหัสผ่านเดิมก่อน hash ค่าใหม่ และไม่รองรับการ reset ผ่านอีเมลใน MVP
+  รหัสผ่านเดิมก่อน hash ค่าใหม่ และไม่รองรับ forgot/reset password ใน MVP
+- User Profile API ไม่รับหรือส่ง `profileImageUrl`/`avatarUrl` และไม่มี use case อัปโหลดรูปโปรไฟล์
 - `UserProfile` และ `Client` อ้างอิง `Address` ด้วย `addressId` ขณะที่ DTO แสดงข้อมูลที่อยู่
   เป็น flat fields (`address`, `subdistrict`, `district`, `province`, `postalCode`)
 - `Address` เป็น persistence entity กลาง ไม่ควรส่ง JPA entity ออกตรง ๆ จาก controller

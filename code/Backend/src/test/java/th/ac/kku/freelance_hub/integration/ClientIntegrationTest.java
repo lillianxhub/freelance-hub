@@ -55,6 +55,8 @@ class ClientIntegrationTest {
             .andExpect(jsonPath("$.paths['/api/users/me'].get.tags[0]").value("Authentication"))
             .andExpect(jsonPath("$.paths['/api/users/me'].patch.tags[0]").value("Authentication"))
             .andExpect(jsonPath("$.paths['/api/users/me/password'].patch.tags[0]").value("Authentication"))
+            .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.profileImageUrl").doesNotExist())
+            .andExpect(jsonPath("$.components.schemas.UserResponse.properties.avatarUrl").doesNotExist())
             .andExpect(jsonPath("$.paths['/api/clients'].post.responses['201'].description").value("Client created"))
             .andExpect(jsonPath("$.paths['/api/clients'].get.responses['200'].description").value("Page of clients returned"))
             .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description").value("Client not found"))

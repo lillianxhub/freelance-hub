@@ -33,7 +33,6 @@ classDiagram
         +String province
         +String postalCode
         +String dateFormat
-        +String profileImageUrl
         +String bio
         +boolean isActive
         +updateContact(...)

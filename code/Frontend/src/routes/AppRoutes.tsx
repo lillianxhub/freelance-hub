@@ -7,7 +7,6 @@ import type { AppRouteDefinition } from '../types/routes'
 
 const LoginPage = lazy(() => import('../Authentication/pages/Login/page'))
 const RegisterPage = lazy(() => import('../Authentication/pages/Register/page'))
-const ForgotPasswordPage = lazy(() => import('../Authentication/pages/ForgotPassword/page'))
 const DashboardPage = lazy(() => import('../Analytics/pages/Dashboard/page'))
 const ClientsPage = lazy(() => import('../ClientManagement/pages/Clients/page'))
 const ClientDetailPage = lazy(() => import('../ClientManagement/pages/ClientDetail/page'))
@@ -24,7 +23,6 @@ const SettingsPage = lazy(() => import('../Settings/pages/Settings/page'))
 const publicRoutes: AppRouteDefinition[] = [
   { path: '/login', label: 'Login', element: <LoginPage /> },
   { path: '/register', label: 'Register', element: <RegisterPage /> },
-  { path: '/forgot-password', label: 'Forgot password', element: <ForgotPasswordPage /> },
 ]
 
 const protectedRoutes: AppRouteDefinition[] = [

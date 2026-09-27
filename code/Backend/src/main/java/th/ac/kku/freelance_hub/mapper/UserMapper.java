@@ -35,7 +35,6 @@ public class UserMapper {
                     .firstName(profile.getFirstName())
                     .lastName(profile.getLastName())
                     .phone(profile.getPhone())
-                    .avatarUrl(profile.getProfileImageUrl())
                     .timezone(profile.getTimezone())
                     .dateFormat(profile.getDateFormat());
             if (profile.getAddress() != null) {
@@ -83,9 +82,6 @@ public class UserMapper {
         }
         if (request.getDateFormat() != null) {
             profile.setDateFormat(request.getDateFormat().trim());
-        }
-        if (request.getProfileImageUrl() != null) {
-            profile.setProfileImageUrl(request.getProfileImageUrl().trim());
         }
         if (request.getBio() != null) {
             profile.setBio(request.getBio().trim());

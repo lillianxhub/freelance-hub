@@ -51,9 +51,6 @@ public class UpdateUserProfileRequest {
     @Size(max = 20, message = "Date format must not exceed 20 characters")
     private String dateFormat;
 
-    @Size(max = 500, message = "Profile image URL must not exceed 500 characters")
-    private String profileImageUrl;
-
     @Size(max = 1000, message = "Bio must not exceed 1000 characters")
     private String bio;
 }

@@ -89,7 +89,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; `CustomUserDetailsService`
 3. เมื่อถูกต้อง ระบบ hash และบันทึก `newPassword`; ห้ามบันทึกรหัสผ่านแบบ plain text
 4. คืน `204 No Content`; old password ผิด = `401`, validation หรือ new password ซ้ำค่าเดิม = `400`
 
-MVP นี้ไม่มี email reset-password flow
+MVP นี้ไม่มี forgot/reset-password flow และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
 
 ## UC-USER-01 View My Profile
 

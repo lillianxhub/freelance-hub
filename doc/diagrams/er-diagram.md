@@ -29,7 +29,6 @@ erDiagram
         varchar province
         varchar postal_code
         varchar date_format
-        text profile_image_url
         text bio
         boolean is_active
         bigint version

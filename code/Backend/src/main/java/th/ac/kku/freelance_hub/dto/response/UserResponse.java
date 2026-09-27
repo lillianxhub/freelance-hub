@@ -36,7 +36,6 @@ public class UserResponse {
     private String district;
     private String province;
     private String postalCode;
-    private String avatarUrl;
     private String timezone;
     private String dateFormat;
 }

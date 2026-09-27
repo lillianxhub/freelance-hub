@@ -88,7 +88,7 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 | FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้                 | Must     |
 | FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must     |
 | FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้    | Must     |
-| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ ที่อยู่ และรูปโปรไฟล์ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
+| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ และที่อยู่ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
 | FR-AUTH-05 | ผู้ใช้กำหนด timezone และรูปแบบวันที่ได้                  | Must     |
 | FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้ | Must     |
 
@@ -282,6 +282,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 
 - ระบบต้องตรวจ `oldPassword` ก่อนบันทึก hash ของ `newPassword`; รหัสผ่านเดิมผิดให้ตอบ `401`, ข้อมูลรหัสผ่านใหม่ไม่ผ่าน validation หรือซ้ำกับรหัสผ่านเดิมให้ตอบ `400`
 - ห้ามส่งหรือบันทึก plain-text password และห้ามใช้ email reset flow ใน MVP
+- MVP ไม่รองรับ forgot/reset password และไม่รองรับการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์; User Profile API ไม่รับหรือส่ง `profileImageUrl`/`avatarUrl`
 - การ logout หรือการเปลี่ยนรหัสผ่านต้องไม่ทำให้ข้อมูล address ของผู้ใช้อื่นเข้าถึงได้
 
 ---

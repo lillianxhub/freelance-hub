@@ -56,9 +56,6 @@ public class UserProfile {
     @Builder.Default
     private String dateFormat = "dd/MM/yyyy";
 
-    @Column(length = 500)
-    private String profileImageUrl;
-
     @Column(length = 1000)
     private String bio;
 

@@ -202,7 +202,8 @@ Income, Expense, Invoice และ Payment เป็น **Post-MVP** และ�
 ```
 
 การเปลี่ยนรหัสผ่านใช้ `PATCH /api/users/me/password` พร้อม bearer JWT และ body
-`{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ไม่มีการ reset password ผ่านอีเมล
+`{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ยังไม่มี forgot/reset password
+และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
 
