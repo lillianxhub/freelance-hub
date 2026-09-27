@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import { getCurrentSession, signIn, signOut, signUp, subscribeToAuthChanges } from '../services/auth'
-import type { AuthContextValue, AuthSession } from '../types/auth'
+import type { AuthContextValue, AuthSession, RegisterInput } from '../types/auth'
 import { AuthContext } from './useAuthentication'
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -35,8 +35,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const result = await signIn(email, password)
       setSession({ user: result.user })
     },
-    async register(fullName: string, email: string, password: string) {
-      await signUp(fullName, email, password)
+    async register(input: RegisterInput) {
+      await signUp(input)
     },
     async logout() {
       await signOut()
