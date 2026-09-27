@@ -16,6 +16,12 @@ function emptyString(value: string | null | undefined): string {
   return value ?? ''
 }
 
+function normalizePhone(value: string | null | undefined): string {
+  const digits = emptyString(value).replace(/\D/g, '')
+  if (digits.startsWith('66') && digits.length === 11) return `0${digits.slice(2)}`
+  return digits.slice(0, 10)
+}
+
 function toProfile(user: ApiUser): Profile {
   const fullName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
   return {
@@ -26,7 +32,7 @@ function toProfile(user: ApiUser): Profile {
     first_name: emptyString(user.firstName),
     last_name: emptyString(user.lastName),
     email: user.email,
-    phone: emptyString(user.phone),
+    phone: normalizePhone(user.phone),
     address: emptyString(user.address),
     city: '',
     country: '',
