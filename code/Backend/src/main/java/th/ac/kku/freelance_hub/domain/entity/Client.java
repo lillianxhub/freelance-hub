@@ -196,6 +196,11 @@ public class Client {
         return status;
     }
 
+    /** Whether this client is available for active work. */
+    public boolean isActive() {
+        return status == ClientStatus.ACTIVE;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
