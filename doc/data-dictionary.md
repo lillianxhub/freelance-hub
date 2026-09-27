@@ -108,7 +108,7 @@ Indexes: unique `(id, owner_id)`, `(owner_id, status)`, `(client_id, status)`, `
 | `name` | `varchar(180)` | No | | ชื่องาน |
 | `description` | `text` | Yes | | รายละเอียด |
 | `status` | `varchar(20)` | No | `OPEN` | Task lifecycle |
-| `sort_order` | `integer` | No | `>= 0` | ลำดับใน Project |
+| `sort_order` | `integer` | No | `>= 0`; unique ภายใน Project ร่วมกับ `project_id` | ลำดับใน Project |
 | `completed_at` | `timestamptz` | Yes | Required when completed | เวลาที่เสร็จ |
 | `is_active` | `boolean` | No | `true` | สถานะ record |
 | `created_at` | `timestamptz` | No | `now()` | เวลาสร้าง |
@@ -116,7 +116,7 @@ Indexes: unique `(id, owner_id)`, `(owner_id, status)`, `(client_id, status)`, `
 | `deleted_at` | `timestamptz` | Yes | `NULL` | เวลา soft delete |
 | `version` | `bigint` | No | `0` | Optimistic locking |
 
-Indexes: `(project_id, sort_order)`, unique `(id, project_id)`, `(project_id, status)`, `(project_id, is_active)`
+Indexes: unique `(project_id, sort_order)`, unique `(id, project_id)`, `(project_id, status)`, `(project_id, is_active)`
 
 ## `time_entries`
 

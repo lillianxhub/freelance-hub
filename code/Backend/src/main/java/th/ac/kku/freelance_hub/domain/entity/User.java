@@ -15,7 +15,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "users", indexes = {
-    @Index(name = "idx_users_email", columnList = "email")
+    @Index(name = "idx_users_is_active", columnList = "is_active")
 })
 @Getter
 @Setter
@@ -35,7 +35,7 @@ public class User {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 50)
     @Builder.Default
     private UserRole role = UserRole.USER;
 
