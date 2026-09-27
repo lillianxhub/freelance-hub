@@ -30,6 +30,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 
+import th.ac.kku.freelance_hub.domain.state.ProjectState;
+import th.ac.kku.freelance_hub.domain.state.ProjectStates;
+
 @Entity
 @Table(
         name = "projects",
@@ -166,12 +169,10 @@ public class Project {
     }
 
     public void changeStatus(ProjectStatus nextStatus) {
-        Objects.requireNonNull(
-                nextStatus,
-                "nextStatus is required"
-        );
+        Objects.requireNonNull(nextStatus, "nextStatus is required");
 
-        if (!isAllowedTransition(status, nextStatus)) {
+        ProjectState currentState = ProjectStates.from(status);
+        if (!currentState.canTransitionTo(nextStatus)) {
             throw new IllegalStateException(
                     "cannot change project status from "
                             + status
@@ -188,7 +189,11 @@ public class Project {
     }
 
     public boolean canTrackTime() {
-        return status == ProjectStatus.ACTIVE;
+        return ProjectStates.from(status).canTrackTime();
+    }
+
+    public boolean canEditTasks() {
+        return ProjectStates.from(status).canEditTasks();
     }
 
     public BigDecimal progress(int trackedMinutes) {
@@ -220,34 +225,6 @@ public class Project {
         );
     }
 
-    private boolean isAllowedTransition(
-            ProjectStatus currentStatus,
-            ProjectStatus nextStatus
-    ) {
-        if (currentStatus == nextStatus) {
-            return true;
-        }
-
-        return switch (currentStatus) {
-            case PLANNED ->
-                    nextStatus == ProjectStatus.ACTIVE
-                            || nextStatus == ProjectStatus.ARCHIVED;
-
-            case ACTIVE ->
-                    nextStatus == ProjectStatus.ON_HOLD
-                            || nextStatus == ProjectStatus.COMPLETED
-                            || nextStatus == ProjectStatus.ARCHIVED;
-
-            case ON_HOLD ->
-                    nextStatus == ProjectStatus.ACTIVE
-                            || nextStatus == ProjectStatus.ARCHIVED;
-
-            case COMPLETED ->
-                    nextStatus == ProjectStatus.ARCHIVED;
-
-            case ARCHIVED -> false;
-        };
-    }
 
     private static String requireName(String name) {
         if (name == null || name.isBlank()) {
