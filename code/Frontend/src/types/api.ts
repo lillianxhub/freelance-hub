@@ -2,12 +2,25 @@ export type ApiOptions = Omit<RequestInit, 'method' | 'body'>
 
 export type JsonMethod = 'POST' | 'PUT' | 'PATCH'
 
-export interface ApiPage<T> {
-  content: T[]
-  totalElements: number
+export interface ApiMeta {
+  page: number
+  limit: number
+  total: number
   totalPages: number
-  size: number
-  number: number
+}
+
+export interface ApiResponseError {
+  code?: string
+  message?: string
+  details?: unknown
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+  meta: ApiMeta | null
+  error: ApiResponseError | null
 }
 
 export interface ApiUser {

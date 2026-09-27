@@ -1,5 +1,5 @@
 import { api } from '../api/apiClient'
-import type { ApiPage, ApiTimeEntry } from '../types/api'
+import type { ApiTimeEntry } from '../types/api'
 import type { ResourceInput } from '../types/workspace'
 import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
 import { deleteResource, saveResource, toTimeEntry } from './workspace'
@@ -7,20 +7,22 @@ import { deleteResource, saveResource, toTimeEntry } from './workspace'
 export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> {
   const query = new URLSearchParams({ size: '100', sortBy: 'startedAt', direction: 'DESC' })
   if (projectId) query.set('projectId', projectId)
-  const response = await api.get<ApiPage<ApiTimeEntry>>(`/time-entries?${query.toString()}`)
-  return response.content.map(toTimeEntry)
+  const response = await api.get<ApiTimeEntry[]>(`/time-entries?${query.toString()}`)
+  return response.data.map(toTimeEntry)
 }
 
 export function saveTimeEntry(entry: ResourceInput<'time_entries'>) {
   return saveResource('time_entries', entry)
 }
 
-export function createManualTimeEntry(payload: ManualTimeEntryPayload) {
-  return api.post<ApiTimeEntry>('/time-entries', payload)
+export async function createManualTimeEntry(payload: ManualTimeEntryPayload): Promise<TimeEntry> {
+  const response = await api.post<ApiTimeEntry>('/time-entries', payload)
+  return toTimeEntry(response.data)
 }
 
-export function updateTimeEntry(id: string, payload: UpdateTimeEntryPayload) {
-  return api.patch<ApiTimeEntry>(`/time-entries/${encodeURIComponent(id)}`, payload)
+export async function updateTimeEntry(id: string, payload: UpdateTimeEntryPayload): Promise<TimeEntry> {
+  const response = await api.patch<ApiTimeEntry>(`/time-entries/${encodeURIComponent(id)}`, payload)
+  return toTimeEntry(response.data)
 }
 
 export function deleteTimeEntry(id: string) {
@@ -28,13 +30,15 @@ export function deleteTimeEntry(id: string) {
 }
 
 export async function startTimer(payload: StartTimerPayload): Promise<TimeEntry> {
-  return toTimeEntry(await api.post<ApiTimeEntry>('/timer/start', payload))
+  const response = await api.post<ApiTimeEntry>('/timer/start', payload)
+  return toTimeEntry(response.data)
 }
 
 export async function stopTimer(): Promise<TimeEntry> {
-  return toTimeEntry(await api.post<ApiTimeEntry>('/timer/stop'))
+  const response = await api.post<ApiTimeEntry>('/timer/stop')
+  return toTimeEntry(response.data)
 }
 
-export function cancelTimer(): Promise<void> {
-  return api.delete<void>('/timer/current')
+export async function cancelTimer(): Promise<void> {
+  await api.delete<void>('/timer/current')
 }
