@@ -75,7 +75,6 @@ class AuthServiceTest {
                                 .firstName("Test")
                                 .lastName("User")
                                 .phone("0812345678")
-                                .timezone("Asia/Bangkok")
                                 .build();
 
                 loginRequest = LoginRequest.builder()
@@ -88,7 +87,6 @@ class AuthServiceTest {
                                 .firstName("Test")
                                 .lastName("User")
                                 .phone("0812345678")
-                                .timezone("Asia/Bangkok")
                                 .build();
 
                 user = User.builder()

@@ -6,9 +6,10 @@ import { manageLinks, workspaceLinks } from '../constants/navigation'
 import type { SidebarLinkProps, SidebarProps } from '../types/ui'
 
 function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
+  const Icon = icon
   return (
     <NavLink to={to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-      <span className="nav-icon" aria-hidden="true">{icon}</span>
+      <span className="nav-icon" aria-hidden="true"><Icon /></span>
       <span>{label}</span>
       {badge !== undefined && <span className="nav-count">{badge}</span>}
     </NavLink>
@@ -52,7 +53,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
           {manageLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
         </nav>
 
-        <div className="sidebar-bottom">
+        {/* <div className="sidebar-bottom">
           <NavLink className="help-card" to="/reports" onClick={onClose}>
             <span className="help-icon">?</span>
             <span><strong>ต้องการความช่วยเหลือ?</strong><small>ดูรายงานและคู่มือ</small></span>
@@ -62,7 +63,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
             <span className="avatar">{initials(name)}</span>
             <span className="profile-copy"><strong>{name}</strong><small>{profile?.email || user?.email}</small></span>
           </div>
-        </div>
+        </div> */}
       </aside>
     </>
   )

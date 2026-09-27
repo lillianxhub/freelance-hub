@@ -30,7 +30,7 @@ export interface ProjectTimeChartProps {
 
 export interface SummaryCardProps {
   label: string
-  icon: string
+  icon: ReactNode
   value: ReactNode
   unit?: string
   foot: ReactNode

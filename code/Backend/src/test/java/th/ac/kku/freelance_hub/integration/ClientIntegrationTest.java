@@ -52,6 +52,11 @@ class ClientIntegrationTest {
     void openApiDocumentsClientEndpoints() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paths['/api/users/me'].get.tags[0]").value("Authentication"))
+            .andExpect(jsonPath("$.paths['/api/users/me'].patch.tags[0]").value("Authentication"))
+            .andExpect(jsonPath("$.paths['/api/users/me/password'].patch.tags[0]").value("Authentication"))
+            .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.profileImageUrl").doesNotExist())
+            .andExpect(jsonPath("$.components.schemas.UserResponse.properties.avatarUrl").doesNotExist())
             .andExpect(jsonPath("$.paths['/api/clients'].post.responses['201'].description").value("Client created"))
             .andExpect(jsonPath("$.paths['/api/clients'].get.responses['200'].description").value("Page of clients returned"))
             .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description").value("Client not found"))
@@ -175,7 +180,7 @@ class ClientIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(body).path("token").asText();
+        return objectMapper.readTree(body).path("data").path("token").asText();
     }
 
     private static String bearer(String token) {
