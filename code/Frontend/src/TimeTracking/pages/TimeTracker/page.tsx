@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import Modal from '../../../components/Modal'
 import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
@@ -11,16 +11,52 @@ import TimeEntryTable from '../../components/TimeEntryTable'
 import TimeEntryForm from '../../components/TimeEntryForm'
 import { createEmptyManualForm, localDateValue } from '../../../utils/timeTracking'
 import { calculateTimeValue } from '../../../utils/formatters'
+import { listTimerTasks } from '../../../services/timerOptions'
+import { createManualTimeEntry, updateTimeEntry } from '../../../services/timeTracking'
+import { getErrorMessage } from '../../../api/apiError'
+import type { Task } from '../../../types/task'
 
 function TimeTrackerPage() {
   const { data, loading, error, refresh, save, remove } = useWorkspace()
   const [manualOpen, setManualOpen] = useState(false)
   const [manualForm, setManualForm] = useState(createEmptyManualForm())
+  const [manualTasks, setManualTasks] = useState<Task[]>([])
+  const [manualTasksLoaded, setManualTasksLoaded] = useState(false)
   const [formError, setFormError] = useState('')
   const [filters, setFilters] = useState<TimeFilters>({ client: 'ALL', project: 'ALL', task: 'ALL', billable: 'ALL', invoice: 'ALL', from: '', to: '' })
 
-  const activeProjects = useMemo(() => (data?.projects || []).filter((project) => project.status === 'ACTIVE'), [data?.projects])
-  if (loading) return <LoadingState label="กำลังโหลดรายการเวลา..." />
+  const activeProjects = useMemo(
+    () => (data?.projects || []).filter((project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED'),
+    [data?.projects],
+  )
+
+  useEffect(() => {
+    if (!manualOpen || !manualForm.project_id) {
+      setManualTasks([])
+      setManualTasksLoaded(false)
+      return undefined
+    }
+
+    let active = true
+    setManualTasksLoaded(false)
+    listTimerTasks(manualForm.project_id)
+      .then((tasks) => {
+        if (!active) return
+        setManualTasks(tasks)
+        setManualTasksLoaded(true)
+      })
+      .catch(() => {
+        if (!active) return
+        setManualTasks(data.tasks.filter((task) => task.project_id === manualForm.project_id))
+        setManualTasksLoaded(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [data.tasks, manualForm.project_id, manualOpen])
+
+  if (loading) return <LoadingState label="LoadingTime entries..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
 
   const entries = data.time_entries
@@ -88,19 +124,29 @@ function TimeTrackerPage() {
       return
     }
 
-    const profile = data.profiles[0]
-    const { manual_mode: _manualMode, entry_date: _entryDate, start_time: _startTime, end_time: _endTime, ...record } = manualForm
-    await save('time_entries', {
-      ...record,
-      task_id: manualForm.task_id || null,
-      started_at: startedAt.toISOString(),
-      ended_at: endedAt.toISOString(),
-      duration_minutes: duration,
-      rate_snapshot: project.billing_type === 'HOURLY' ? (Number(manualForm.rate_snapshot) || project.hourly_rate || profile?.default_hourly_rate || 0) : 0,
-      currency: project.currency || profile?.currency || 'THB',
-      invoice_id: manualForm.invoice_id || null,
-    })
-    setManualOpen(false)
+    try {
+      if (manualForm.id) {
+        await updateTimeEntry(manualForm.id, {
+          projectId: manualForm.project_id,
+          ...(manualForm.task_id ? { taskId: manualForm.task_id } : { clearTask: true }),
+          description: manualForm.description,
+          startedAt: startedAt.toISOString(),
+          endedAt: endedAt.toISOString(),
+        })
+      } else {
+        await createManualTimeEntry({
+          projectId: manualForm.project_id,
+          taskId: manualForm.task_id || null,
+          description: manualForm.description,
+          startedAt: startedAt.toISOString(),
+          ...(manualForm.manual_mode === 'RANGE' ? { endedAt: endedAt.toISOString() } : { durationMinutes: duration }),
+        })
+      }
+      await refresh()
+      setManualOpen(false)
+    } catch (saveError: unknown) {
+      setFormError(getErrorMessage(saveError, 'บันทึกรายการเวลาไม่สำเร็จ'))
+    }
   }
 
   const duplicateEntry = (entry: TimeEntry) => {
@@ -128,7 +174,7 @@ function TimeTrackerPage() {
 
   return (
     <div className="page-view">
-      <PageHeader eyebrow="Workspace / Time tracker" title="Time tracker" description="เปลี่ยนเวลาทำงานให้เป็นรายการที่แม่นยำและพร้อมเรียกเก็บเงิน" actions={<button className="button button-primary" type="button" onClick={() => openManual()}>＋ เพิ่มเวลาด้วยตนเอง</button>} />
+      <PageHeader eyebrow="พื้นที่ทำงาน / บันทึกเวลา" title="บันทึกเวลา" description="เปลี่ยนเวลาทำTaskให้เป็นรายการที่แม่นยำและพร้อมเรียกเก็บเงิน" actions={<button className="button button-primary" type="button" onClick={() => openManual()}>＋ เพิ่มเวลาด้วยตนเอง</button>} />
 
       <div className="tracker-layout">
         <TimerPanel />
@@ -137,23 +183,23 @@ function TimeTrackerPage() {
       </div>
 
       <section className="panel entries-panel">
-        <div className="panel-heading"><div><h2>Time entries</h2><p>ตรวจสอบ แก้ไข และกรองเวลาทำงาน</p></div><div className="range-buttons"><button type="button" onClick={() => applyRange('DAY')}>วันนี้</button><button type="button" onClick={() => applyRange('WEEK')}>สัปดาห์นี้</button><button type="button" onClick={() => applyRange('ALL')}>ทั้งหมด</button></div></div>
+        <div className="panel-heading"><div><h2>รายการเวลา</h2><p>ตรวจสอบ แก้ไข และกรองเวลาทำงาน</p></div><div className="range-buttons"><button type="button" onClick={() => applyRange('DAY')}>วันนี้</button><button type="button" onClick={() => applyRange('WEEK')}>สัปดาห์นี้</button><button type="button" onClick={() => applyRange('ALL')}>ทั้งหมด</button></div></div>
         <div className="entry-filters">
           <select value={filters.client} onChange={(event) => setFilters((current) => ({ ...current, client: event.target.value, project: 'ALL', task: 'ALL' }))}><option value="ALL">ทุกลูกค้า</option>{data.clients.map((client) => <option key={client.id} value={client.id}>{client.company_name || client.name}</option>)}</select>
           <select value={filters.project} onChange={(event) => setFilters((current) => ({ ...current, project: event.target.value, task: 'ALL' }))}><option value="ALL">ทุกโปรเจกต์</option>{data.projects.filter((project) => filters.client === 'ALL' || project.client_id === filters.client).map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
-          <select value={filters.task} onChange={(event) => setFilters((current) => ({ ...current, task: event.target.value }))}><option value="ALL">ทุก Task</option>{data.tasks.filter((task) => filters.project === 'ALL' || task.project_id === filters.project).map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}</select>
-          <select value={filters.billable} onChange={(event) => setFilters((current) => ({ ...current, billable: event.target.value as TimeFilters['billable'] }))}><option value="ALL">Billable ทั้งหมด</option><option value="true">Billable</option><option value="false">Non-billable</option></select>
-          <select value={filters.invoice} onChange={(event) => setFilters((current) => ({ ...current, invoice: event.target.value as TimeFilters['invoice'] }))}><option value="ALL">Invoice ทั้งหมด</option><option value="UNBILLED">ยังไม่ออก Invoice</option><option value="INVOICED">ออก Invoice แล้ว</option></select>
+          <select value={filters.task} onChange={(event) => setFilters((current) => ({ ...current, task: event.target.value }))}><option value="ALL">ทุกงาน</option>{data.tasks.filter((task) => filters.project === 'ALL' || task.project_id === filters.project).map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}</select>
+          <select value={filters.billable} onChange={(event) => setFilters((current) => ({ ...current, billable: event.target.value as TimeFilters['billable'] }))}><option value="ALL">คิดค่าบริการ ทั้งหมด</option><option value="true">คิดค่าบริการ</option><option value="false">ไม่คิดค่าบริการ</option></select>
+          <select value={filters.invoice} onChange={(event) => setFilters((current) => ({ ...current, invoice: event.target.value as TimeFilters['invoice'] }))}><option value="ALL">ใบแจ้งหนี้ ทั้งหมด</option><option value="UNBILLED">ยังไม่ออก ใบแจ้งหนี้</option><option value="INVOICED">ออก ใบแจ้งหนี้ แล้ว</option></select>
           <input type="date" value={filters.from} onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} aria-label="จากวันที่" />
           <input type="date" value={filters.to} onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} aria-label="ถึงวันที่" />
         </div>
-        {entries.length === 0 ? <EmptyState icon="◷" title="ไม่มีรายการเวลา" description="ลองเปลี่ยนตัวกรองหรือเพิ่มรายการเวลาใหม่" /> : (
+        {entries.length === 0 ? <EmptyState icon="◷" title="ไม่มีTime entries" description="ลองเปลี่ยนตัวกรองหรือเพิ่มTime entriesใหม่" /> : (
           <TimeEntryTable entries={entries} projects={data.projects} tasks={data.tasks} onEdit={openManual} onDelete={(entry) => remove('time_entries', entry.id)} onDuplicate={duplicateEntry} />
         )}
       </section>
 
-      <Modal open={manualOpen} onClose={() => setManualOpen(false)} title={manualForm.id ? 'แก้ไขรายการเวลา' : 'เพิ่มรายการเวลา'} size="large">
-        <TimeEntryForm value={manualForm} projects={data.projects} tasks={data.tasks} error={formError} onChange={handleManualChange} onSubmit={saveManualEntry} onCancel={() => setManualOpen(false)} />
+      <Modal open={manualOpen} onClose={() => setManualOpen(false)} title={manualForm.id ? 'แก้ไขTime entries' : 'เพิ่มTime entries'} size="large">
+        <TimeEntryForm value={manualForm} projects={data.projects} tasks={manualTasksLoaded ? manualTasks : data.tasks.filter((task) => task.project_id === manualForm.project_id)} error={formError} onChange={handleManualChange} onSubmit={saveManualEntry} onCancel={() => setManualOpen(false)} />
       </Modal>
     </div>
   )

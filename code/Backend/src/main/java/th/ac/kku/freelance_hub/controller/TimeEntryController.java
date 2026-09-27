@@ -30,6 +30,7 @@ import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
+import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.UserService;
 
 @Tag(
@@ -43,6 +44,7 @@ import th.ac.kku.freelance_hub.service.UserService;
 public class TimeEntryController {
 
     private final TimeEntryService timeEntryService;
+    private final TimeEntryQueryService timeEntryQueryService;
     private final UserService userService;
 
     @Operation(summary = "Create a manual time entry")
@@ -84,7 +86,7 @@ public class TimeEntryController {
             @Valid @ModelAttribute TimeEntryFilterRequest filter
     ) {
         return ResponseEntity.ok(
-                timeEntryService.list(currentOwnerId(), filter)
+                timeEntryQueryService.list(currentOwnerId(), filter)
         );
     }
 
@@ -97,7 +99,7 @@ public class TimeEntryController {
             @ModelAttribute TimeEntryFilterRequest filter
     ) {
         return ResponseEntity.ok(
-                timeEntryService.summarize(currentOwnerId(), filter)
+                timeEntryQueryService.summarize(currentOwnerId(), filter)
         );
     }
 

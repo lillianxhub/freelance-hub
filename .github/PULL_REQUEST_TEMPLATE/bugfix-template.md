@@ -1,5 +1,3 @@
-# Bug Fix Pull Request Template
-
 ## Bug Fix Title
 
 <!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงปัญหาที่แก้ไข -->
