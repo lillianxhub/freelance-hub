@@ -34,7 +34,7 @@ class OpenApiProductionSecurityTest {
 
     @Test
     void openApiJsonIsNotExposedWhenDisabled() throws Exception {
-        mockMvc.perform(get("/openapi"))
+        mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isNotFound());
     }
 
