@@ -9,8 +9,8 @@ function toAuthUser(user: BackendUser): AuthUser {
 export async function getCurrentSession(): Promise<AuthSession | null> {
   if (!getApiToken()) return null
   try {
-    const user = await api.get<BackendUser>('/users/me')
-    return { user: toAuthUser(user) }
+    const response = await api.get<BackendUser>('/users/me')
+    return { user: toAuthUser(response.data) }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       setApiToken(null)
@@ -21,9 +21,9 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
 }
 
 export async function signIn(email: string, password: string): Promise<AuthSession> {
-  const result = await api.post<AuthResponse>('/auth/login', { email: email.trim(), password })
-  setApiToken(result.token)
-  return { user: toAuthUser(result.user) }
+  const response = await api.post<AuthResponse>('/auth/login', { email: email.trim(), password })
+  setApiToken(response.data.token)
+  return { user: toAuthUser(response.data.user) }
 }
 
 export async function signUp(input: RegisterInput): Promise<void> {
