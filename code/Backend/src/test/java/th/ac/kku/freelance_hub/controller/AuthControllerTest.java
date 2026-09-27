@@ -78,10 +78,11 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(registerRequest)))
                                 .andExpect(status().isCreated())
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(jsonPath("$.token").exists())
-                                .andExpect(jsonPath("$.expiresIn").exists())
-                                .andExpect(jsonPath("$.user.email").value("test@example.com"))
-                                .andExpect(jsonPath("$.user.displayName").value("Test User"));
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data.token").exists())
+                                .andExpect(jsonPath("$.data.expiresIn").exists())
+                                .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
+                                .andExpect(jsonPath("$.data.user.displayName").value("Test User"));
         }
 
         @Test
@@ -153,9 +154,10 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(jsonPath("$.token").exists())
-                                .andExpect(jsonPath("$.expiresIn").exists())
-                                .andExpect(jsonPath("$.user.email").value("test@example.com"));
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data.token").exists())
+                                .andExpect(jsonPath("$.data.expiresIn").exists())
+                                .andExpect(jsonPath("$.data.user.email").value("test@example.com"));
         }
 
         @Test
@@ -208,8 +210,8 @@ class AuthControllerTest {
 
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(token)))
-                                .andExpect(status().isNoContent())
-                                .andExpect(content().string(""));
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true));
 
                 var revokedToken = revokedTokenRepository.findByJti(jti).orElseThrow();
                 assertThat(revokedToken.getJti()).isNotEqualTo(token);
@@ -230,7 +232,7 @@ class AuthControllerTest {
 
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(token)))
-                                .andExpect(status().isNoContent());
+                                .andExpect(status().isOk());
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(token)))
                                 .andExpect(status().isUnauthorized());
@@ -242,14 +244,14 @@ class AuthControllerTest {
                 String oldToken = registerAndGetToken();
                 mockMvc.perform(post("/api/auth/logout")
                                 .header("Authorization", bearer(oldToken)))
-                                .andExpect(status().isNoContent());
+                                .andExpect(status().isOk());
 
                 String loginBody = mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isOk())
                                 .andReturn().getResponse().getContentAsString();
-                String newToken = objectMapper.readTree(loginBody).path("token").asText();
+                String newToken = objectMapper.readTree(loginBody).path("data").path("token").asText();
 
                 assertThat(newToken).isNotEqualTo(oldToken);
                 mockMvc.perform(get("/api/users/me")
@@ -266,7 +268,8 @@ class AuthControllerTest {
                                 .header("Authorization", bearer(token))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"oldPassword\":\"password123\",\"newPassword\":\"newPassword123\"}"))
-                                .andExpect(status().isNoContent());
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true));
 
                 mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -286,11 +289,11 @@ class AuthControllerTest {
                                                 + "\"district\":\"เมืองขอนแก่น\",\"province\":\"ขอนแก่น\","
                                                 + "\"postalCode\":\"40000\"}"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.address").value("99 ถนนมิตรภาพ"))
-                                .andExpect(jsonPath("$.subdistrict").value("ในเมือง"))
-                                .andExpect(jsonPath("$.district").value("เมืองขอนแก่น"))
-                                .andExpect(jsonPath("$.province").value("ขอนแก่น"))
-                                .andExpect(jsonPath("$.postalCode").value("40000"));
+                                .andExpect(jsonPath("$.data.address").value("99 ถนนมิตรภาพ"))
+                                .andExpect(jsonPath("$.data.subdistrict").value("ในเมือง"))
+                                .andExpect(jsonPath("$.data.district").value("เมืองขอนแก่น"))
+                                .andExpect(jsonPath("$.data.province").value("ขอนแก่น"))
+                                .andExpect(jsonPath("$.data.postalCode").value("40000"));
         }
 
         @Test
@@ -330,7 +333,7 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(registerRequest)))
                                 .andExpect(status().isCreated())
                                 .andReturn().getResponse().getContentAsString();
-                return objectMapper.readTree(body).path("token").asText();
+                return objectMapper.readTree(body).path("data").path("token").asText();
         }
 
         private static String bearer(String token) {

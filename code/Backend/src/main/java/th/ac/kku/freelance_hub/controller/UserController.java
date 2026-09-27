@@ -9,8 +9,8 @@ import jakarta.validation.Valid;
 import th.ac.kku.freelance_hub.dto.request.ChangePasswordRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
+import th.ac.kku.freelance_hub.dto.response.ApiResponse;
 import th.ac.kku.freelance_hub.service.UserService;
-import java.util.UUID;
 
 /**
  * REST Controller for user endpoints
@@ -29,9 +29,9 @@ public class UserController {
     @Tag(name = "Authentication")
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserResponse> getCurrentUser() {
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser() {
         UserResponse response = userService.getCurrentUser();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success("User profile retrieved", response));
     }
 
     /**
@@ -41,9 +41,10 @@ public class UserController {
     @Tag(name = "Authentication")
     @PatchMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserResponse> updateCurrentUser(
+    public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(
             @Valid @RequestBody UpdateUserProfileRequest request) {
-        return ResponseEntity.ok(userService.updateCurrentUser(request));
+        return ResponseEntity.ok(ApiResponse.success(
+            "User profile updated", userService.updateCurrentUser(request)));
     }
 
     /**
@@ -53,20 +54,21 @@ public class UserController {
     @Tag(name = "Authentication")
     @PatchMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> changePassword(
+    public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
     }
 
-    /**
-     * Get user by ID (admin only for now)
+    /*
+     * Reserved for a future admin user-management feature.
      * GET /api/users/{id}
+     *
+     * @GetMapping("/{id}")
+     * @PreAuthorize("hasRole('ADMIN')")
+     * public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable UUID id) {
+     *     UserResponse response = userService.getUserById(id);
+     *     return ResponseEntity.ok(ApiResponse.success("User retrieved", response));
+     * }
      */
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
-        UserResponse response = userService.getUserById(id);
-        return ResponseEntity.ok(response);
-    }
 }
