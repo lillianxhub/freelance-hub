@@ -247,7 +247,7 @@ Maven test result อยู่ใน `code/Backend/target/surefire-reports/` แ
 | Backend API (Render) | TODO: `https://your-backend.onrender.com`                | Not deployed |
 | Swagger UI (Staging) | TODO: `https://your-staging-backend.example.com/swagger-ui.html` | Not deployed |
 
-Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อมตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) เพื่อให้ Vercel proxy `/api` ไป Backend ผ่าน `code/Frontend/vercel.mjs`; ไม่ตั้ง `VITE_API_BASE_URL` เป็น URL ข้ามโดเมน
+Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อมตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) ทั้ง Preview และ Production โดยช่วงทดสอบใช้ Render staging เดียวกัน เพื่อให้ Vercel proxy `/api` ไป Backend ผ่าน `code/Frontend/vercel.ts`; ไม่ตั้ง `VITE_API_BASE_URL` เป็น URL ข้ามโดเมน
 
 Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
