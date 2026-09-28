@@ -218,7 +218,7 @@ async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
 }
 
 export async function updateProfile(input: ResourceInput<'profiles'>): Promise<ApiResponse<Profile>> {
-  const response = await api.patch<ApiUser>('/users/me', profilePayload(input))
+  const response = await api.put<ApiUser>('/users/me', profilePayload(input))
   return { ...response, data: toProfile(response.data) }
 }
 

@@ -241,7 +241,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 | POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
 | POST             | `/api/auth/refresh`             | หมุน refresh token และออก access token ใหม่        |
 | POST             | `/api/auth/logout`              | เพิกถอน refresh-token family และล้าง cookie        |
-| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
+| GET/PUT          | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
 | PATCH            | `/api/users/me/password`        | เปลี่ยนรหัสผ่านด้วย `oldPassword` และ `newPassword` |
 | GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า                                  |
 | GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า                               |
@@ -271,7 +271,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 
 ### 8.1 Profile, address และการเปลี่ยนรหัสผ่าน
 
-- `GET/PATCH /api/users/me` แสดงและแก้ไขข้อมูลของผู้ใช้ที่ authenticated เท่านั้น โดยข้อมูลที่อยู่ใช้ flat fields ชุดเดียวกันทั้ง User Profile และ Client: `address`, `subdistrict`, `district`, `province`, `postalCode`
+- `GET/PUT /api/users/me` แสดงและแก้ไขข้อมูลของผู้ใช้ที่ authenticated เท่านั้น โดยข้อมูลที่อยู่ใช้ flat fields ชุดเดียวกันทั้ง User Profile และ Client: `address`, `subdistrict`, `district`, `province`, `postalCode`
 - `PATCH /api/users/me/password` ต้องมี bearer JWT และรับ body รูปแบบต่อไปนี้:
 
     ```json
@@ -526,7 +526,7 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ## 18. Database และ Migration Deliverables
 
-- ตารางหลักหลังย้าย JWT lifecycle: users, user_profiles, refresh_tokens, clients, projects, tasks และ time_entries; `revoked_tokens` เป็นตารางเดิมที่คงไว้จนทดสอบ refresh flow กับ PostgreSQL และ HTTP จริงผ่าน จึงลบด้วย forward migration แยก
+- ตารางหลักหลังย้าย JWT lifecycle: users, user_profiles, refresh_tokens, clients, projects, tasks และ time_entries; `revoked_tokens` ถูกลบด้วย forward migration หลังทดสอบ refresh flow กับ PostgreSQL และ HTTP จริงผ่าน
 - มี One-to-One ระหว่าง users กับ user_profiles และ optional One-to-One ระหว่าง clients กับ addresses รวมถึง One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
 - กำหนด Foreign Key Constraint และ index สำหรับ owner, relation, status และ date fields ที่ใช้ค้นหาบ่อย
 - กำหนด Cascade และ Fetch Type อย่างมีเหตุผล หลีกเลี่ยง `CascadeType.ALL` และ `EAGER` โดยไม่มีความจำเป็น

@@ -157,22 +157,6 @@ Indexes: `(owner_id, started_at)`, `(project_id, started_at)`, `(task_id, starte
 
 Indexes: `user_id`, `family_id`, `expires_at`; unique `token_hash` มี index ของตัวเอง
 
-## `revoked_tokens` (legacy; รอลบหลังทดสอบ refresh flow กับ PostgreSQL จริง)
-
-| Column | Type | Null | Constraint / Default | Description |
-|---|---|---:|---|---|
-| `id` | `uuid` | No | PK, `gen_random_uuid()` | รหัสรายการ revoke |
-| `jti` | `varchar(36)` | No | Unique | JWT ID |
-| `user_id` | `uuid` | No | FK -> `users.id` | เจ้าของ Token |
-| `expires_at` | `timestamptz` | No | | วันหมดอายุ Token |
-| `revoked_at` | `timestamptz` | No | | เวลาที่ revoke |
-| `is_active` | `boolean` | No | `true` | ยังใช้ตรวจสอบการ revoke |
-| `created_at` | `timestamptz` | No | `now()` | เวลาสร้าง record |
-| `updated_at` | `timestamptz` | No | `now()` | เวลาแก้ไขล่าสุด |
-| `deleted_at` | `timestamptz` | Yes | `NULL` | เวลา soft delete |
-
-Indexes: `user_id`, `expires_at`, `is_active`; unique `jti`
-
 ## Enum และ Check Values
 
 | Field | Allowed values |
@@ -190,7 +174,6 @@ Indexes: `user_id`, `expires_at`, `is_active`; unique `jti`
 | `users` -> `clients` | 1:N | ทุก Client ต้องมี Owner |
 | `users` -> `projects` | 1:N | Owner isolation |
 | `users` -> `time_entries` | 1:N | Owner isolation |
-| `users` -> `revoked_tokens` | 1:N | ลบ User แล้ว revoke records cascade |
 | `users` -> `refresh_tokens` | 1:N | ลบ User แล้ว refresh records cascade |
 | `clients` -> `projects` | 1:N | ใช้ composite FK `(client_id, owner_id)` |
 | `projects` -> `tasks` | 1:N | Task ต้องอยู่ใน Project เดียว |

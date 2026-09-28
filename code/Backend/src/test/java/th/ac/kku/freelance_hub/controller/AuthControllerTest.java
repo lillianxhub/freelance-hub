@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.within;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -279,11 +280,11 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("PATCH /api/users/me - Should update profile and normalized address")
+        @DisplayName("PUT /api/users/me - Should update profile and normalized address")
         void shouldUpdateProfileAddressAsFlatFields() throws Exception {
                 String token = registerAndGetToken();
 
-                mockMvc.perform(patch("/api/users/me")
+                mockMvc.perform(put("/api/users/me")
                                 .header("Authorization", bearer(token))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"address\":\"99 ถนนมิตรภาพ\",\"subdistrict\":\"ในเมือง\","

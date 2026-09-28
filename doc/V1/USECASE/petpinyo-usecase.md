@@ -20,7 +20,7 @@
 | UC-AUTH-03 | Logout | User with refresh cookie | `POST /api/auth/logout` | เพิกถอน refresh-token family และคืน `204` |
 | UC-AUTH-04 | Refresh | User with refresh cookie | `POST /api/auth/refresh` | หมุน cookie และคืน access JWT ใหม่ (`200`) |
 | UC-USER-01 | View My Profile | Authenticated User | `GET /api/users/me` | คืนข้อมูล User + Profile ของตนเอง (`200`) |
-| UC-USER-02 | Update My Profile | Authenticated User | `PATCH /api/users/me` | แก้ข้อมูล profile และที่อยู่ (`200`) |
+| UC-USER-02 | Update My Profile | Authenticated User | `PUT /api/users/me` | แก้ข้อมูล profile และที่อยู่ (`200`) |
 | UC-USER-03 | Change Password | Authenticated User | `PATCH /api/users/me/password` | ตรวจ `oldPassword`, บันทึก `newPassword` เป็น hash (`204`) |
 | UC-USER-04 | View User by ID | Admin | `GET /api/users/{id}` | คืน user ที่ร้องขอ หรือ `404`; role อื่นได้ `403` |
 
@@ -70,7 +70,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 
 ## UC-USER-02 Update My Profile
 
-1. ผู้ใช้เรียก `PATCH /api/users/me` พร้อม bearer JWT
+1. ผู้ใช้เรียก `PUT /api/users/me` พร้อม bearer JWT
 2. `JwtAuthenticationFilter` ตรวจ token และใส่ authenticated principal ใน SecurityContext
 3. `UserService` อ่าน user จาก principal ไม่รับ `userId` หรือ `ownerId` จาก body
 4. Service แก้ข้อมูล profile และ field ที่อยู่โดยตรงใน `user_profiles`
