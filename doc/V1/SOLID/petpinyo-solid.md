@@ -15,15 +15,15 @@
 | Open/Closed | `config/SecurityConfig.java:66-80` | ใช้ `AuthenticationProvider` และ `PasswordEncoder` abstraction ทำให้เปลี่ยน provider/encoder ได้จาก configuration |
 | Liskov Substitution | `AuthService.java:8-15`, `AuthServiceImpl.java:24-81` | `AuthServiceImpl` implement operation ครบตาม contract และถูกใช้ผ่าน `AuthService` ได้ |
 | Interface Segregation | `AuthService.java:8-15` | interface มีเฉพาะ register/login/logout ไม่รวม operation ของ Client หรือ Project |
-| Interface Segregation | `repository/UserRepository.java:13-25`, `repository/RevokedTokenRepository.java:9-14` | แยก persistence contract ของ User กับ revoked token ตามหน้าที่ |
-| Dependency Inversion | `service/impl/AuthServiceImpl.java:22-31` | service รับ `UserRepository`, `PasswordEncoder`, `AuthenticationManager`, `JwtTokenProvider`, `UserMapper` และ `RevokedTokenService` ผ่าน constructor |
+| Interface Segregation | `repository/UserRepository`, `repository/RefreshTokenRepository` | แยก persistence contract ของ User กับ refresh token ตามหน้าที่ |
+| Dependency Inversion | `service/impl/AuthServiceImpl` | service รับ `UserRepository`, `PasswordEncoder`, `AuthenticationManager`, `JwtTokenProvider`, `UserMapper` และ `RefreshTokenService` ผ่าน constructor |
 | Dependency Inversion | `config/SecurityConfig.java:31-35,66-80` | configuration เป็นจุดประกอบ concrete bean; business logic ไม่สร้าง dependency เอง |
 
 ## Evidence จาก flow
 
 - Registration ตรวจ email ซ้ำ, hash password, สร้าง profile และบันทึกผ่าน repository: `AuthServiceImpl.java:33-49`
 - Login ใช้ `AuthenticationManager` ตรวจ credentials ก่อนสร้าง token: `AuthServiceImpl.java:51-64`
-- Logout ตรวจ token subject และ revoke JTI: `AuthServiceImpl.java:66-81`
+- Logout เพิกถอน refresh-token family; access JWT คงใช้ได้จนหมดอายุ: `AuthServiceImpl`, `RefreshTokenService`
 - User profile ถูก map โดยไม่ส่ง `passwordHash` ออก API: `UserMapper.java:18-43`, `UserResponse.java:20-40`
 - JWT filter ตรวจ token/revocation แล้วใส่ principal ใน SecurityContext: `JwtAuthenticationFilter.java:30-66`
 

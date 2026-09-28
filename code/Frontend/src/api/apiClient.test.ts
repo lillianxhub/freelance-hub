@@ -13,7 +13,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   },
 })
 
-test('api helpers send JSON and attach the stored token', async () => {
+test('api helpers send JSON and attach the in-memory token', async () => {
   const originalFetch = globalThis.fetch
   setApiToken('test-token')
   globalThis.fetch = async (input, init) => {
@@ -27,6 +27,30 @@ test('api helpers send JSON and attach the stored token', async () => {
   }
   try {
     assert.deepEqual((await api.post<{ id: string }>('/items', { name: 'Acme' })).data, { id: '1' })
+  } finally {
+    globalThis.fetch = originalFetch
+    setApiToken(null)
+  }
+})
+
+test('401 rotates the refresh cookie once and retries with the new access token', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  setApiToken('expired-access')
+  globalThis.fetch = async (input, init) => {
+    calls++
+    if (input === '/api/auth/refresh') {
+      assert.equal(init?.credentials, 'same-origin')
+      return new Response(JSON.stringify({ data: { token: 'renewed-access' } }), { status: 200 })
+    }
+    const authorization = new Headers(init?.headers).get('Authorization')
+    if (authorization === 'Bearer expired-access') return new Response(null, { status: 401 })
+    assert.equal(authorization, 'Bearer renewed-access')
+    return new Response(JSON.stringify({ success: true, message: '', data: { id: '1' }, meta: null, error: null }), { status: 200 })
+  }
+  try {
+    assert.deepEqual((await api.get<{ id: string }>('/items')).data, { id: '1' })
+    assert.equal(calls, 3)
   } finally {
     globalThis.fetch = originalFetch
     setApiToken(null)

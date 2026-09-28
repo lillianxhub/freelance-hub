@@ -1,13 +1,18 @@
 package th.ac.kku.freelance_hub.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
+import th.ac.kku.freelance_hub.security.RefreshTokenCookie;
+import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -17,7 +22,10 @@ import java.util.Map;
  * Global exception handler for REST controllers
  */
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+        private final RefreshTokenCookie refreshTokenCookie;
 
         @ExceptionHandler(EmailAlreadyExistsException.class)
         public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
@@ -69,9 +77,34 @@ public class GlobalExceptionHandler {
                                 .timestamp(LocalDateTime.now())
                                 .status(HttpStatus.UNAUTHORIZED.value())
                                 .error("Unauthorized")
-                                .message("Invalid email or password")
+                                .message(ex.getMessage())
                                 .build();
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
+        @ExceptionHandler(InvalidRefreshTokenException.class)
+        public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
+                ErrorResponse error = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.UNAUTHORIZED.value())
+                                .error("Unauthorized")
+                                .message(ex.getMessage())
+                                .build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.clear())
+                                .body(error);
+        }
+
+        @ExceptionHandler(ResponseStatusException.class)
+        public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException ex) {
+                HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+                ErrorResponse error = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(status.value())
+                                .error(status.getReasonPhrase())
+                                .message(ex.getReason())
+                                .build();
+                return ResponseEntity.status(status).body(error);
         }
 
         @ExceptionHandler(MethodArgumentNotValidException.class)

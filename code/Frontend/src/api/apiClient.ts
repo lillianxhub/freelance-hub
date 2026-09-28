@@ -1,8 +1,9 @@
 import type { ApiMeta, ApiOptions, ApiResponse, JsonMethod } from '../types/api'
 import { ApiError } from './apiError'
 
-const tokenKey = 'freelance-hub-api-token'
 const apiBase = (import.meta.env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
+let accessToken: string | null = null
+let refreshInFlight: Promise<boolean> | null = null
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -92,12 +93,42 @@ function normalizeResponse<T>(body: unknown): ApiResponse<T> {
 }
 
 export function getApiToken(): string | null {
-  return localStorage.getItem(tokenKey)
+  return accessToken
 }
 
 export function setApiToken(token: string | null): void {
-  if (token) localStorage.setItem(tokenKey, token)
-  else localStorage.removeItem(tokenKey)
+  accessToken = token
+}
+
+async function rotateAccessToken(): Promise<boolean> {
+  const response = await fetch(`${apiBase}/auth/refresh`, { method: 'POST', credentials: 'same-origin' })
+  if (!response.ok) {
+    setApiToken(null)
+    return false
+  }
+  const body: unknown = await response.json()
+  if (!isRecord(body) || !isRecord(body.data) || typeof body.data.token !== 'string') {
+    setApiToken(null)
+    return false
+  }
+  setApiToken(body.data.token)
+  return true
+}
+
+export function refreshApiToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    const rotate = async () => {
+      if (typeof navigator !== 'undefined' && navigator.locks) {
+        return navigator.locks.request('freelance-hub-refresh', rotateAccessToken)
+      }
+      return rotateAccessToken()
+    }
+    refreshInFlight = rotate().catch(() => {
+      setApiToken(null)
+      return false
+    }).finally(() => { refreshInFlight = null })
+  }
+  return refreshInFlight
 }
 
 async function request<T>(path: string, init: RequestInit, multipart = false): Promise<ApiResponse<T>> {
@@ -107,7 +138,11 @@ async function request<T>(path: string, init: RequestInit, multipart = false): P
   const token = getApiToken()
   if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(`${apiBase}${path}`, { ...init, headers })
+  let response = await fetch(`${apiBase}${path}`, { ...init, headers, credentials: 'same-origin' })
+  if (response.status === 401 && !path.startsWith('/auth/') && await refreshApiToken()) {
+    headers.set('Authorization', `Bearer ${getApiToken()}`)
+    response = await fetch(`${apiBase}${path}`, { ...init, headers, credentials: 'same-origin' })
+  }
   if (!response.ok) {
     let message = `API error (${response.status})`
     try {

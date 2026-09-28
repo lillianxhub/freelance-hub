@@ -142,7 +142,22 @@ Constraints: completed entry ต้องมี `ended_at` และ `duration_s
 
 Indexes: `(owner_id, started_at)`, `(project_id, started_at)`, `(task_id, started_at)`, `(owner_id, is_active)` และ partial unique index ของ running timer
 
-## `revoked_tokens`
+## `refresh_tokens`
+
+| Column | Type | Null | Constraint / Default | Description |
+|---|---|---:|---|---|
+| `id` | `uuid` | No | PK, `gen_random_uuid()` | รหัสรายการ refresh token |
+| `user_id` | `uuid` | No | FK -> `users.id`, cascade delete | เจ้าของ token |
+| `family_id` | `uuid` | No | | กลุ่ม token จากการ login ครั้งเดียว |
+| `token_hash` | `varchar(64)` | No | Unique | SHA-256 hex ของ token สุ่ม 256 บิต; ไม่เก็บ token จริง |
+| `created_at` | `timestamptz` | No | `now()` | เวลาสร้าง token |
+| `expires_at` | `timestamptz` | No | `> created_at` | อายุสิ้นสุดคงที่ 7 วันจาก login |
+| `used_at` | `timestamptz` | Yes | | เวลาที่หมุน token; ใช้ซ้ำถือเป็น replay |
+| `revoked_at` | `timestamptz` | Yes | | เวลาที่เพิกถอน family |
+
+Indexes: `user_id`, `family_id`, `expires_at`; unique `token_hash` มี index ของตัวเอง
+
+## `revoked_tokens` (legacy; รอลบหลังทดสอบ refresh flow กับ PostgreSQL จริง)
 
 | Column | Type | Null | Constraint / Default | Description |
 |---|---|---:|---|---|
@@ -176,6 +191,7 @@ Indexes: `user_id`, `expires_at`, `is_active`; unique `jti`
 | `users` -> `projects` | 1:N | Owner isolation |
 | `users` -> `time_entries` | 1:N | Owner isolation |
 | `users` -> `revoked_tokens` | 1:N | ลบ User แล้ว revoke records cascade |
+| `users` -> `refresh_tokens` | 1:N | ลบ User แล้ว refresh records cascade |
 | `clients` -> `projects` | 1:N | ใช้ composite FK `(client_id, owner_id)` |
 | `projects` -> `tasks` | 1:N | Task ต้องอยู่ใน Project เดียว |
 | `projects` -> `time_entries` | 1:N | ใช้ composite FK `(project_id, owner_id)` |
