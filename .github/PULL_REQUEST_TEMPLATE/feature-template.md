@@ -1,6 +1,8 @@
+# Feature Pull Request Template
+
 ## Feature Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงฟีเจอร์ใหม่ -->
+<!-- Write a short and descriptive pull request title in English. -->
 
 ## Type of Change
 
@@ -8,34 +10,35 @@
 
 ## Description of the Feature
 
-<!-- อธิบายฟีเจอร์ จุดประสงค์ และปัญหาที่ฟีเจอร์นี้ช่วยแก้ -->
+<!-- Describe the feature, its purpose, and the problem it solves. -->
 
 ## Implementation Details
 
-<!-- อธิบายแนวทางการพัฒนาและเหตุผลของการตัดสินใจที่สำคัญ -->
+<!-- Describe the implementation approach and important design decisions. -->
 
 ## Impact of the Feature
 
-<!-- อธิบายผลกระทบต่อโค้ดเดิม ประสิทธิภาพ และพฤติกรรมของระบบ -->
+<!-- Describe the impact on existing code, performance, and system behavior. -->
 
 ## Testing Conducted
 
-- [ ] ทดสอบฟีเจอร์หลักแล้ว
-- [ ] ทดสอบกรณีผิดพลาดหรือกรณีขอบแล้ว
-- [ ] ทดสอบชุดทดสอบที่เกี่ยวข้องแล้ว
+- [ ] Main feature flow tested
+- [ ] Error and edge cases tested
+- [ ] Related test suite completed
 
 ## Screenshots/Videos (if applicable)
 
-<!-- แนบภาพหรือวิดีโอประกอบ ถ้ามี -->
+<!-- Attach supporting screenshots or videos when available. -->
 
 ## Additional Remarks
 
-<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
+<!-- Add any additional information for reviewers. -->
 
 ## Checklist
 
-- [ ] โค้ดเป็นไปตามมาตรฐานของโปรเจกต์
-- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
-- [ ] เพิ่มการทดสอบที่จำเป็นแล้ว
-- [ ] อัปเดตเอกสารที่เกี่ยวข้องแล้ว
-- [ ] ไม่มี Warning หรือ Error ใหม่
+- [ ] Code follows the project's coding standards
+- [ ] Self-review completed
+- [ ] Necessary tests added
+- [ ] Relevant documentation updated
+- [ ] No new warnings or errors introduced
+
