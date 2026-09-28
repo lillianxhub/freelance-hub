@@ -38,6 +38,7 @@ export interface ApiUser {
   district?: string | null
   province?: string | null
   postalCode?: string | null
+  taxId?: string | null
   dateFormat?: string | null
   bio?: string | null
 }
