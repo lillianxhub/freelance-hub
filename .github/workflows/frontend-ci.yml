@@ -18,10 +18,6 @@ concurrency:
   group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: code/Frontend
-
 jobs:
   changes:
     name: Detect frontend changes
@@ -54,6 +50,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/Frontend
 
     steps:
       - name: Checkout
