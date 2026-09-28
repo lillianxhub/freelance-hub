@@ -48,6 +48,10 @@ import th.ac.kku.freelance_hub.domain.state.ProjectStates;
                 @Index(
                         name = "idx_projects_owner_start_date",
                         columnList = "owner_id,start_date"
+                ),
+                @Index(
+                        name = "idx_projects_owner_is_active",
+                        columnList = "owner_id,is_active"
                 )
         },
         uniqueConstraints = {
@@ -96,6 +100,12 @@ public class Project {
     @Column(nullable = false, length = 20)
     private ProjectStatus status = ProjectStatus.PLANNED;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @OneToMany(
             mappedBy = "project",
             fetch = FetchType.LAZY
@@ -132,10 +142,7 @@ public class Project {
                 "owner is required"
         );
 
-        this.client = Objects.requireNonNull(
-                client,
-                "client is required"
-        );
+        this.client = requireOwnedClient(this.owner, client);
 
         this.name = requireName(name);
 
@@ -162,10 +169,7 @@ public class Project {
     }
 
     public void changeClient(Client client) {
-        this.client = Objects.requireNonNull(
-                client,
-                "client is required"
-        );
+        this.client = requireOwnedClient(owner, client);
     }
 
     public void changeStatus(ProjectStatus nextStatus) {
@@ -186,6 +190,8 @@ public class Project {
 
     public void archive() {
         changeStatus(ProjectStatus.ARCHIVED);
+        isActive = false;
+        deletedAt = Instant.now();
     }
 
     public boolean canTrackTime() {
@@ -234,6 +240,18 @@ public class Project {
         }
 
         return name.trim();
+    }
+
+    private static Client requireOwnedClient(User owner, Client client) {
+        Client requiredClient = Objects.requireNonNull(client, "client is required");
+        User clientOwner = requiredClient.getOwner();
+        boolean sameOwner = clientOwner == owner
+                || (clientOwner != null && owner.getId() != null
+                && owner.getId().equals(clientOwner.getId()));
+        if (!sameOwner) {
+            throw new IllegalArgumentException("client must belong to project owner");
+        }
+        return requiredClient;
     }
 
     private static void validateDates(
@@ -320,6 +338,14 @@ public class Project {
 
     public ProjectStatus getStatus() {
         return status;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     public List<Task> getTasks() {

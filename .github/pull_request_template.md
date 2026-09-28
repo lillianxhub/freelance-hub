@@ -1,45 +1,48 @@
+# Pull Request Template
+
 ## Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้น กระชับ และสื่อความหมาย -->
+<!-- Write a short, clear, and descriptive pull request title in English. -->
 
 ## Type of Change
 
-- [ ] ฟีเจอร์ใหม่
-- [ ] แก้ไขบั๊ก
-- [ ] ปรับปรุงเอกสาร
-- [ ] รีแฟกเตอร์โค้ด
+- [ ] New feature
+- [ ] Bug fix
+- [ ] Documentation update
+- [ ] Refactoring
 - [ ] Hotfix
 - [ ] Security patch
-- [ ] ปรับปรุง UI/UX
+- [ ] UI/UX improvement
 
 ## Description
 
-<!-- อธิบายการเปลี่ยนแปลง เหตุผล และบริบทที่เกี่ยวข้อง -->
+<!-- Describe the changes, motivation, and relevant context. -->
 
-การเปลี่ยนแปลงหลัก:
+### Key Changes
 
 -
 
 ## Testing
 
-- [ ] Compile หรือ Build ผ่านแล้ว
-- [ ] ทดสอบชุดทดสอบทั้งหมดแล้ว
-- [ ] ทดสอบการทำงานด้วยตนเองแล้ว
-- [ ] ทดสอบ Docker หรือ Database Migration แล้ว (ถ้าเกี่ยวข้อง)
+- [ ] Compilation or build completed successfully
+- [ ] Full test suite completed
+- [ ] Manual testing completed
+- [ ] Docker or database migration tested (if applicable)
 
 ## Impact
 
-<!-- อธิบายผลกระทบต่อระบบ ฐานข้อมูล ประสิทธิภาพ หรือพฤติกรรมการทำงาน -->
+<!-- Describe the impact on the system, database, performance, or behavior. -->
 
 ## Additional Information
 
-<!-- ระบุข้อมูลเพิ่มเติมหรือจุดที่อยากให้ Reviewer เน้นตรวจสอบ -->
+<!-- Add information or areas that reviewers should pay special attention to. -->
 
 ## Checklist
 
-- [ ] โค้ดเป็นไปตามมาตรฐานของโปรเจกต์
-- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
-- [ ] เพิ่ม Comment ในจุดที่จำเป็นแล้ว
-- [ ] ปรับปรุงเอกสารที่เกี่ยวข้องแล้ว
-- [ ] ไม่มีข้อมูลลับหรือ Credential ถูก Commit
-- [ ] ไม่มี Warning หรือ Error ใหม่จากการเปลี่ยนแปลงนี้
+- [ ] Code follows the project's coding standards
+- [ ] Self-review completed
+- [ ] Comments added where necessary
+- [ ] Relevant documentation updated
+- [ ] No secrets or credentials were committed
+- [ ] No new warnings or errors introduced
+

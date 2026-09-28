@@ -1,6 +1,8 @@
+# Documentation Update Pull Request Template
+
 ## Documentation Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงเอกสารที่ปรับปรุง -->
+<!-- Write a short and descriptive pull request title in English. -->
 
 ## Type of Change
 
@@ -8,23 +10,24 @@
 
 ## Description of Changes
 
-<!-- อธิบายเอกสารที่เพิ่ม แก้ไข หรือลบ และเหตุผลของการเปลี่ยนแปลง -->
+<!-- Describe the documentation that was added, modified, or removed and explain why. -->
 
 ## Relevant Sections
 
-<!-- ระบุส่วนหรือไฟล์เอกสารที่ได้รับผลกระทบ -->
+<!-- List the documentation sections or files affected by this change. -->
 
 ## Review Considerations
 
-<!-- ระบุจุดที่อยากให้ Reviewer เน้นตรวจสอบ -->
+<!-- Highlight areas that reviewers should focus on. -->
 
 ## Additional Remarks
 
-<!-- ระบุข้อมูลเพิ่มเติมที่เกี่ยวข้องกับเอกสาร -->
+<!-- Add any additional context for the documentation changes. -->
 
 ## Checklist
 
-- [ ] ตรวจสอบความถูกต้องของเอกสารแล้ว
-- [ ] เนื้อหาชัดเจน อ่านเข้าใจง่าย และถูกต้องตามหลักภาษา
-- [ ] อัปเดต README หรือเอกสารที่เกี่ยวข้องแล้ว
-- [ ] เอกสารสอดคล้องกับสถานะปัจจุบันของโปรเจกต์
+- [ ] Documentation reviewed for accuracy
+- [ ] Content is clear, concise, and grammatically correct
+- [ ] Relevant README or documentation was updated
+- [ ] Documentation reflects the current project state
+
