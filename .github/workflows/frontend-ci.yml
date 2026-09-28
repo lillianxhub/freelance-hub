@@ -5,19 +5,14 @@ on:
     branches:
       - dev
       - main
-    paths:
-      - 'code/Frontend/**'
-      - '.github/workflows/frontend-ci.yml'
   push:
     branches:
       - dev
       - main
-    paths:
-      - 'code/Frontend/**'
-      - '.github/workflows/frontend-ci.yml'
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
@@ -28,8 +23,36 @@ defaults:
     working-directory: code/Frontend
 
 jobs:
+  changes:
+    name: Detect frontend changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend || steps.push.outputs.frontend }}
+
+    steps:
+      - name: Checkout
+        if: github.event_name == 'push'
+        uses: actions/checkout@v5
+
+      - name: Filter pull request changes
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'code/Frontend/**'
+              - '.github/workflows/frontend-ci.yml'
+
+      - name: Mark push as frontend change
+        if: github.event_name == 'push'
+        id: push
+        run: echo "frontend=true" >> "$GITHUB_OUTPUT"
+
   test:
     name: Test frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -59,3 +82,29 @@ jobs:
         env:
           VITE_API_BASE_URL: /api
         run: npm run build
+
+  frontend-gate:
+    name: Frontend gate
+    needs:
+      - changes
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check frontend job result
+        env:
+          FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$FRONTEND_CHANGED" != "true" ]; then
+            echo "No Frontend changes detected; Frontend checks are not required."
+            exit 0
+          fi
+
+          if [ "$TEST_RESULT" != "success" ]; then
+            echo "Frontend checks did not succeed: $TEST_RESULT"
+            exit 1
+          fi
+
+          echo "All Frontend checks succeeded."
