@@ -1,10 +1,7 @@
 package th.ac.kku.freelance_hub.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import lombok.RequiredArgsConstructor;
-import th.ac.kku.freelance_hub.security.RefreshTokenCookie;
 import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
@@ -22,10 +19,7 @@ import java.util.Map;
  * Global exception handler for REST controllers
  */
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler {
-
-        private final RefreshTokenCookie refreshTokenCookie;
 
         @ExceptionHandler(EmailAlreadyExistsException.class)
         public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
@@ -90,9 +84,7 @@ public class GlobalExceptionHandler {
                                 .error("Unauthorized")
                                 .message(ex.getMessage())
                                 .build();
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.clear())
-                                .body(error);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
         @ExceptionHandler(ResponseStatusException.class)
