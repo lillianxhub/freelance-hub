@@ -5,7 +5,7 @@ import Modal from "../../../components/Modal";
 import PageHeader from "../../../components/PageHeader";
 import StatusBadge from "../../../components/StatusBadge";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
-import { useWorkspace } from "../../../Workspace/useWorkspace";
+import { useProjects } from "../../useProjects";
 import type { Task } from "../../../types/task";
 import type { TaskDraft } from "../../../types/projectDetailPage";
 import TaskForm from "../../components/TaskForm";
@@ -26,7 +26,7 @@ const emptyTask: TaskDraft = {
 
 function ProjectDetailPage() {
   const { projectId } = useParams();
-  const { data, loading, error, refresh, save, remove } = useWorkspace();
+  const { data, loading, error, refresh, save, remove } = useProjects();
   const [modalOpen, setModalOpen] = useState(false);
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [formError, setFormError] = useState("");

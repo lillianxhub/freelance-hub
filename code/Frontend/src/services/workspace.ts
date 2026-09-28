@@ -22,7 +22,7 @@ function normalizePhone(value: string | null | undefined): string {
   return digits.slice(0, 10)
 }
 
-function toProfile(user: ApiUser): Profile {
+export function toProfile(user: ApiUser): Profile {
   const fullName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
   return {
     id: user.id,
@@ -40,7 +40,7 @@ function toProfile(user: ApiUser): Profile {
     province: emptyString(user.province),
     district: emptyString(user.district),
     sub_district: emptyString(user.subdistrict),
-    tax_id: '',
+    tax_id: emptyString(user.taxId),
     logo_url: getStoredProfileImage(user.id),
     bank_name: '',
     bank_account_name: '',
@@ -66,6 +66,7 @@ function profilePayload(input: ResourceInput<'profiles'>) {
     district: input.district || undefined,
     province: input.province || undefined,
     postalCode: input.postal_code || undefined,
+    taxId: input.tax_id || undefined,
     dateFormat: input.date_format || undefined,
     bio: input.bio || undefined,
   }

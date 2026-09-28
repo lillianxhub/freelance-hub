@@ -45,6 +45,9 @@ public class UpdateUserProfileRequest {
     @Size(max = 20, message = "Postal code must not exceed 20 characters")
     private String postalCode;
 
+    @Size(max = 30, message = "Tax ID must not exceed 30 characters")
+    private String taxId;
+
     @Size(max = 20, message = "Date format must not exceed 20 characters")
     private String dateFormat;
 

@@ -4,7 +4,7 @@ import Input from "../../../components/Input";
 import PageHeader from "../../../components/PageHeader";
 import Toast from "../../../components/Toast";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
-import { useWorkspace } from "../../../Workspace/useWorkspace";
+import { useProfile } from "../../useProfile";
 import type { ChangePasswordInput, Profile } from "../../../types/profile";
 import type { ResourceInput } from "../../../types/workspace";
 import type { ToastMessage } from "../../../types/toast";
@@ -61,7 +61,7 @@ function fieldValue(value: unknown): string {
 }
 
 function ProfilePage() {
-  const { data, loading, error, refresh } = useWorkspace();
+  const { data, loading, error, refresh } = useProfile();
   const [draft, setDraft] = useState<
     Profile | ResourceInput<"profiles"> | null
   >(null);
