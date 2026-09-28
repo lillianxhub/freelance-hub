@@ -102,14 +102,15 @@ classDiagram
         +changeDetails(...)
         +isRunning() boolean
     }
-    class RevokedToken {
+    class RefreshToken {
         +UUID id
-        +String jti
         +UUID userId
+        +UUID familyId
+        +String tokenHash
+        +Instant createdAt
         +Instant expiresAt
+        +Instant usedAt
         +Instant revokedAt
-        +boolean isActive
-        +revoke()
     }
     class UserRole {
         <<enumeration>>
@@ -140,7 +141,7 @@ classDiagram
     User "1" --> "0..*" Client : owns
     User "1" --> "0..*" Project : owns
     User "1" --> "0..*" TimeEntry : owns
-    User "1" --> "0..*" RevokedToken : revokes
+    User "1" --> "0..*" RefreshToken : refreshes
     Client "1" --> "0..*" Project : projects
     Project "1" *-- "0..*" Task : tasks
     Project "1" --> "0..*" TimeEntry : entries

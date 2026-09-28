@@ -184,8 +184,11 @@ jobs:
             - name: Verify migrated tables
               run: |
                   table_count=$(docker exec backend-ci-postgres psql -U ci_user -d freelance_hub -tAc \
-                    "select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('users', 'user_profiles', 'clients', 'projects', 'tasks', 'time_entries', 'revoked_tokens');")
-                  test "$table_count" -ge 7
+                    "select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('users', 'user_profiles', 'clients', 'projects', 'tasks', 'time_entries', 'refresh_tokens');")
+                  test "$table_count" -eq 7
+                  legacy_table_count=$(docker exec backend-ci-postgres psql -U ci_user -d freelance_hub -tAc \
+                    "select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'revoked_tokens';")
+                  test "$legacy_table_count" -eq 0
                   docker exec backend-ci-postgres psql -U ci_user -d freelance_hub -c \
                     "select installed_rank, version, description from flyway_schema_history order by installed_rank;"
 

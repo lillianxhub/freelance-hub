@@ -45,6 +45,10 @@ import jakarta.persistence.Version;
                 @Index(
                         name = "idx_time_entries_task_started_at",
                         columnList = "task_id,started_at"
+                ),
+                @Index(
+                        name = "idx_time_entries_owner_is_active",
+                        columnList = "owner_id,is_active"
                 )
         }
 )
@@ -84,6 +88,12 @@ public class TimeEntry {
 
     @Column(name = "locked_at")
     private Instant lockedAt;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -359,6 +369,14 @@ public class TimeEntry {
 
     public Instant getLockedAt() {
         return lockedAt;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     public Instant getCreatedAt() {

@@ -36,15 +36,15 @@ public class UserController {
 
     /**
      * Update the authenticated user's personal information and address.
-     * PATCH /api/users/me
+     * PUT /api/users/me
      */
     @Tag(name = "Authentication")
-    @PatchMapping("/me")
+    @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(
             @Valid @RequestBody UpdateUserProfileRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
-            "User profile updated", userService.updateCurrentUser(request)));
+                "User profile updated", userService.updateCurrentUser(request)));
     }
 
     /**
@@ -65,10 +65,12 @@ public class UserController {
      * GET /api/users/{id}
      *
      * @GetMapping("/{id}")
+     *
      * @PreAuthorize("hasRole('ADMIN')")
-     * public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable UUID id) {
-     *     UserResponse response = userService.getUserById(id);
-     *     return ResponseEntity.ok(ApiResponse.success("User retrieved", response));
+     * public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable
+     * UUID id) {
+     * UserResponse response = userService.getUserById(id);
+     * return ResponseEntity.ok(ApiResponse.success("User retrieved", response));
      * }
      */
 }

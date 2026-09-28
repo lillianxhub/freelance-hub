@@ -1,6 +1,8 @@
+# Bug Fix Pull Request Template
+
 ## Bug Fix Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงปัญหาที่แก้ไข -->
+<!-- Write a short and descriptive pull request title in English. -->
 
 ## Type of Change
 
@@ -8,41 +10,42 @@
 
 ## Description of the Bug
 
-<!-- อธิบายปัญหา สาเหตุ และสถานการณ์ที่พบปัญหา -->
+<!-- Describe the problem, root cause, and affected scenario. -->
 
 ## Steps to Reproduce
 
-<!-- ระบุขั้นตอนที่ใช้ทำให้เกิดปัญหา -->
+<!-- Describe the steps used to reproduce the issue. -->
 
 1.
 2.
 3.
 
-## Description of the Bug Fix
+## Description of the Fix
 
-<!-- อธิบายวิธีแก้ไขและเหตุผลที่เลือกแนวทางนี้ -->
+<!-- Describe the solution and why this approach was chosen. -->
 
-## Impact of the Bug Fix
+## Impact of the Fix
 
-<!-- อธิบายผลกระทบต่อฟังก์ชันเดิม ประสิทธิภาพ และพฤติกรรมของระบบ -->
+<!-- Describe the impact on existing functionality, performance, and behavior. -->
 
 ## Testing Performed
 
-- [ ] ทดสอบกรณีที่เคยเกิดปัญหาแล้ว
-- [ ] ทดสอบกรณีอื่นที่เกี่ยวข้องแล้ว
-- [ ] ทดสอบชุดทดสอบทั้งหมดแล้ว
+- [ ] Original issue verified as fixed
+- [ ] Related scenarios tested
+- [ ] Full test suite completed
 
 ## Screenshots/Videos (if applicable)
 
-<!-- แนบภาพหรือวิดีโอประกอบ ถ้ามี -->
+<!-- Attach supporting screenshots or videos when available. -->
 
 ## Additional Comments
 
-<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
+<!-- Add any additional information for reviewers. -->
 
 ## Checklist
 
-- [ ] โค้ดเป็นไปตามมาตรฐานของโปรเจกต์
-- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
-- [ ] เพิ่มหรือปรับปรุงการทดสอบที่จำเป็นแล้ว
-- [ ] ไม่มี Warning หรือ Error ใหม่
+- [ ] Code follows the project's coding standards
+- [ ] Self-review completed
+- [ ] Necessary tests added or updated
+- [ ] No new warnings or errors introduced
+
