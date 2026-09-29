@@ -67,6 +67,7 @@ public class ClientController {
             @Valid @ModelAttribute ClientFilterRequest filter) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         Page<ClientResponse> clients = clientService.list(ownerId, filter);
+        // Pagination metadata is one-based even though the query parameter is zero-based.
         PaginationMeta meta = PaginationMeta.builder()
                 .page(clients.getNumber() + 1)
                 .limit(clients.getSize())

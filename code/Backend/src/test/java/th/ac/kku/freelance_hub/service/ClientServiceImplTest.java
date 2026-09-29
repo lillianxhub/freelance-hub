@@ -117,6 +117,18 @@ class ClientServiceImplTest {
     }
 
     @Test
+    void listUsesLimitInsteadOfLegacySizeWhenBothAreProvided() {
+        when(clientRepository.findAll(any(Specification.class), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(java.util.List.of(client)));
+
+        service.list(OWNER_ID, ClientFilterRequest.builder().page(1).size(5).limit(7).build());
+
+        verify(clientRepository).findAll(any(Specification.class),
+            org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
+                pageable.getPageNumber() == 1 && pageable.getPageSize() == 7));
+    }
+
+    @Test
     void invalidSortFieldIsRejected() {
         assertThatThrownBy(() -> service.list(OWNER_ID,
             ClientFilterRequest.builder().sortBy("owner.id").build()))

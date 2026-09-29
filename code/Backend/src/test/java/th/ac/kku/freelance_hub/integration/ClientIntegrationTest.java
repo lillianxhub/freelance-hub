@@ -98,6 +98,16 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.meta.total").value(1))
                 .andExpect(jsonPath("$.data[0].name").value("Phone Match"))
                 .andExpect(jsonPath("$.data[0].phone").value("0812345678"));
+
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .param("page", "0")
+                .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.limit").value(1))
+                .andExpect(jsonPath("$.meta.total").value(2))
+                .andExpect(jsonPath("$.data.length()").value(1));
     }
 
     @Test

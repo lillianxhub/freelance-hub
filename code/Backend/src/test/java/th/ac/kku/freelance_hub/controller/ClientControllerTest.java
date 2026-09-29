@@ -153,6 +153,34 @@ class ClientControllerTest {
     }
 
     @Test
+    void listBindsLimitAlongsideLegacySize() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(1, 7), 0))
+            .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
+
+        mockMvc.perform(get("/api/clients")
+                .param("page", "1")
+                .param("size", "5")
+                .param("limit", "7"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.meta.page").value(2))
+            .andExpect(jsonPath("$.meta.limit").value(7));
+
+        verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
+            filter.getPage() == 1 && filter.getSize() == 5 && filter.getLimit() == 7));
+    }
+
+    @Test
+    void listRejectsInvalidLimitBeforeCallingService() throws Exception {
+        mockMvc.perform(get("/api/clients").param("limit", "0"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/clients").param("limit", "101"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).list(any(), any());
+    }
+
+    @Test
     void getByIdUsesCurrentUserAndReturnsClient() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
         when(clientService.getById(OWNER_ID, clientId))

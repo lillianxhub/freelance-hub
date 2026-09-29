@@ -66,8 +66,10 @@ public class ClientServiceImpl implements ClientService {
     public Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(filter, "filter is required");
-        if (filter.getPage() < 0 || filter.getSize() < 1 || filter.getSize() > 100) {
-            throw new IllegalArgumentException("Invalid client page or size");
+        int pageSize = filter.getLimit() != null ? filter.getLimit() : filter.getSize();
+        if (filter.getPage() < 0 || filter.getSize() < 1 || filter.getSize() > 100
+                || pageSize < 1 || pageSize > 100) {
+            throw new IllegalArgumentException("Invalid client page, size, or limit");
         }
         if (!SORT_FIELDS.contains(filter.getSortBy()) || filter.getDirection() == null) {
             throw new IllegalArgumentException("Invalid client sort field or direction");
@@ -101,7 +103,7 @@ public class ClientServiceImpl implements ClientService {
         };
 
         PageRequest pageable = PageRequest.of(
-                filter.getPage(), filter.getSize(),
+                filter.getPage(), pageSize,
                 Sort.by(filter.getDirection(), filter.getSortBy()));
         return clientRepository.findAll(specification, pageable).map(clientMapper::toResponse);
     }
