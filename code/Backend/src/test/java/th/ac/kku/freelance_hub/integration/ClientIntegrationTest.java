@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ class ClientIntegrationTest {
 
     @Autowired
     private ClientRepository clientRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
@@ -139,6 +143,50 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.meta.total").value(1))
                 .andExpect(jsonPath("$.data[0].name").value("Address Match"))
                 .andExpect(jsonPath("$.data[0].address").value("123 Main Road"));
+    }
+
+    @Test
+    void updatedAddressFieldsAreStoredSeparatelyAndReturnedAfterReload() throws Exception {
+        String ownerToken = registerAndGetToken("client-address-update@example.com");
+        String createdBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Address Client\",\"address\":\"Old road\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
+
+        mockMvc.perform(patch("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"address\":\"271 moo 8\",\"subdistrict\":\"Tha Hin\","
+                        + "\"district\":\"Mueang Lop Buri\",\"province\":\"Lop Buri\","
+                        + "\"postalCode\":\"15000\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.address").value("271 moo 8"))
+                .andExpect(jsonPath("$.data.subdistrict").value("Tha Hin"))
+                .andExpect(jsonPath("$.data.district").value("Mueang Lop Buri"))
+                .andExpect(jsonPath("$.data.province").value("Lop Buri"))
+                .andExpect(jsonPath("$.data.postalCode").value("15000"));
+
+        entityManager.flush();
+        entityManager.clear();
+        var stored = clientRepository.findById(clientId).orElseThrow();
+        assertThat(stored.getAddress()).isEqualTo("271 moo 8");
+        assertThat(stored.getSubdistrict()).isEqualTo("Tha Hin");
+        assertThat(stored.getDistrict()).isEqualTo("Mueang Lop Buri");
+        assertThat(stored.getProvince()).isEqualTo("Lop Buri");
+        assertThat(stored.getPostalCode()).isEqualTo("15000");
+
+        entityManager.clear();
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.address").value("271 moo 8"))
+                .andExpect(jsonPath("$.data.subdistrict").value("Tha Hin"))
+                .andExpect(jsonPath("$.data.district").value("Mueang Lop Buri"))
+                .andExpect(jsonPath("$.data.province").value("Lop Buri"))
+                .andExpect(jsonPath("$.data.postalCode").value("15000"));
     }
 
     @Test
