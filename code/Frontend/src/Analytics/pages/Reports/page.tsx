@@ -31,7 +31,6 @@ const reportFrom = `${reportTo.slice(0, 8)}01`;
 function ReportsPage() {
   const { data, loading, error, refresh } = useAnalytics();
   const [range, setRange] = useState({ from: reportFrom, to: reportTo });
-  const currency = data?.profiles[0]?.currency || "THB";
   const [clientId, setClientId] = useState("ALL");
   const [projectId, setProjectId] = useState("ALL");
 
@@ -42,20 +41,10 @@ function ReportsPage() {
   const filteredTime = useMemo(() => (data?.time_entries || []).filter((entry) => {
     const project = data?.projects.find((item) => item.id === entry.project_id);
     return Boolean(entry.ended_at) &&
-      entry.currency === currency &&
       (clientId === "ALL" || project?.client_id === clientId) &&
       (projectId === "ALL" || entry.project_id === projectId) &&
       inDateRange(entry.started_at, range.from, range.to);
-  }), [clientId, currency, data?.projects, data?.time_entries, projectId, range]);
-  const filteredInvoices = useMemo(
-    () =>
-      (data?.invoices || []).filter(
-        (invoice) =>
-          invoice.currency === currency &&
-          inDateRange(invoice.issue_date, range.from, range.to),
-      ),
-    [currency, data?.invoices, range],
-  );
+  }), [clientId, data?.projects, data?.time_entries, projectId, range]);
 
   if (loading) return <LoadingState label="กำลังประมวลผลReports..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -70,7 +59,6 @@ function ReportsPage() {
       data.projects.find((project) => project.id === group.key)?.name ||
       "ไม่ทราบโปรเจกต์",
     hours: Number((group.minutes / 60).toFixed(2)),
-    billableHours: Number((group.billableMinutes / 60).toFixed(2)),
   }));
   const clientGroups = groupTimeBy(filteredTime, (entry) => {
     const project = data.projects.find((item) => item.id === entry.project_id);
@@ -88,11 +76,9 @@ function ReportsPage() {
         const day = entry.started_at.slice(0, 10);
         const current = map.get(day) || {
           date: day,
-          billable: 0,
-          nonBillable: 0,
+          hours: 0,
         };
-        current[entry.billable ? "billable" : "nonBillable"] +=
-          Number(entry.duration_minutes) / 60;
+        current.hours += Number(entry.duration_minutes) / 60;
         map.set(day, current);
         return map;
       }, new Map())
@@ -117,7 +103,7 @@ function ReportsPage() {
   const dateKey = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const previousEntries = data.time_entries.filter((entry) => {
     const project = data.projects.find((item) => item.id === entry.project_id);
-    return Boolean(entry.ended_at) && entry.currency === currency &&
+    return Boolean(entry.ended_at) &&
       (clientId === "ALL" || project?.client_id === clientId) &&
       (projectId === "ALL" || entry.project_id === projectId) &&
       inDateRange(entry.started_at, dateKey(previousFromDate), dateKey(previousToDate));
@@ -149,11 +135,6 @@ function ReportsPage() {
         "งาน",
         "รายละเอียด",
         "ชั่วโมง",
-        "คิดค่าบริการ",
-        "อัตรา",
-        "สกุลเงิน",
-        "มูลค่า",
-        "สถานะใบแจ้งหนี้",
       ],
       ...filteredTime.map((entry) => {
         const project = data.projects.find(
@@ -170,20 +151,10 @@ function ReportsPage() {
           task?.name,
           entry.description,
           (Number(entry.duration_minutes) / 60).toFixed(2),
-          entry.billable ? "ใช่" : "ไม่ใช่",
-          entry.rate_snapshot,
-          entry.currency,
-          entry.billable
-            ? (
-                (Number(entry.duration_minutes) / 60) *
-                Number(entry.rate_snapshot)
-              ).toFixed(2)
-            : "0.00",
-          entry.invoice_id ? "Invoicesd" : "ยังไม่วางบิล",
         ];
       }),
     ]);
-  const exportRevenue = () =>
+  /* const exportRevenue = () =>
     downloadCsv(`revenue-report-${range.from}-${range.to}.csv`, [
       [
         "เลขที่ใบแจ้งหนี้",
@@ -216,14 +187,14 @@ function ReportsPage() {
           invoice.currency,
         ];
       }),
-    ]);
+    ]); */
 
   return (
     <div className="page-view">
       <PageHeader
         eyebrow="จัดการ / รายงาน"
         title="รายงานและข้อมูลสรุป"
-        description="ดูเวลา รายได้ และประสิทธิภาพจากข้อมูลจริง"
+        description="ดูเวลาและประสิทธิภาพจากข้อมูลจริง"
         actions={
           <>
             <button
@@ -233,13 +204,13 @@ function ReportsPage() {
             >
               <FiDownload aria-hidden="true" /> เวลา CSV
             </button>
-            <button
+            {/* <button
               className="button button-primary"
               type="button"
               onClick={exportRevenue}
             >
               <FiDownload aria-hidden="true" /> ดาวน์โหลดรายรับ CSV
-            </button>
+            </button> */}
           </>
         }
       />
@@ -380,17 +351,9 @@ function ReportsPage() {
                 />
                 <Tooltip />
                 <Bar
-                  dataKey="billable"
-                  name="billable"
-                  stackId="time"
+                  dataKey="hours"
+                  name="ชั่วโมง"
                   fill="#4F6BFF"
-                  radius={[5, 5, 0, 0]}
-                />
-                <Bar
-                  dataKey="nonBillable"
-                  name="ไม่billable"
-                  stackId="time"
-                  fill="#CBD5E1"
                   radius={[5, 5, 0, 0]}
                 />
               </BarChart>

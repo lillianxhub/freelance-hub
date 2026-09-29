@@ -3,7 +3,7 @@ import { FiArrowLeft, FiArrowRight, FiBriefcase, FiPlus, FiSearch } from "react-
 import { Link } from "react-router-dom";
 import Modal from "../../../components/Modal";
 import PageHeader from "../../../components/PageHeader";
-import StatusBadge from "../../../components/StatusBadge";
+import Toast from "../../../components/Toast";
 import {
   EmptyState,
   ErrorState,
@@ -11,15 +11,33 @@ import {
 } from "../../../components/ViewState";
 import { useProjects } from "../../useProjects";
 import type { Project } from "../../../types/project";
+import type { ProjectStatus } from "../../../types/project";
 import type {
-  BillingFilter,
   ProjectDraft,
   ProjectFilter,
   ProjectSort,
 } from "../../../types/projectsPage";
 import ProjectForm from "../../components/ProjectForm";
 import { getErrorMessage } from "../../../api/apiError";
-import { formatDuration, formatMoney } from "../../../utils/formatters";
+import { formatDuration } from "../../../utils/formatters";
+import { changeProjectStatus } from "../../../services/project";
+import type { ToastMessage } from "../../../types/toast";
+
+const projectStatusLabels: Record<ProjectStatus, string> = {
+  PLANNED: "วางแผน",
+  ACTIVE: "กำลังดำเนินการ",
+  ON_HOLD: "พักงาน",
+  COMPLETED: "เสร็จสิ้น",
+  ARCHIVED: "เก็บถาวร",
+};
+
+const allowedStatusTransitions: Record<ProjectStatus, readonly ProjectStatus[]> = {
+  PLANNED: ["PLANNED", "ACTIVE", "ARCHIVED"],
+  ACTIVE: ["ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"],
+  ON_HOLD: ["ON_HOLD", "ACTIVE", "ARCHIVED"],
+  COMPLETED: ["COMPLETED", "ARCHIVED"],
+  ARCHIVED: ["ARCHIVED", "PLANNED", "ACTIVE"],
+};
 
 const emptyForm: ProjectDraft = {
   name: "",
@@ -41,22 +59,19 @@ function ProjectsPage() {
   const { data, loading, error, refresh, save } = useProjects();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<ProjectFilter>("ALL");
-  const [billingType, setBillingType] = useState<BillingFilter>("ALL");
   const [sortBy, setSortBy] = useState<ProjectSort>("UPDATED_DESC");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [changingProjectId, setChangingProjectId] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const projects = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return (data?.projects || [])
       .filter((project) => status === "ALL" || project.status === status)
-      .filter(
-        (project) =>
-          billingType === "ALL" || project.billing_type === billingType,
-      )
       .filter((project) => {
         const client = data.clients.find(
           (item) => item.id === project.client_id,
@@ -77,7 +92,7 @@ function ProjectsPage() {
           return (a.end_date || "9999").localeCompare(b.end_date || "9999");
         return Date.parse(b.updated_at ?? "") - Date.parse(a.updated_at ?? "");
       });
-  }, [billingType, data, query, sortBy, status]);
+  }, [data, query, sortBy, status]);
   const pageSize = 6;
   const totalPages = Math.max(1, Math.ceil(projects.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -160,11 +175,21 @@ function ProjectsPage() {
     }
   };
 
-  const archiveProject = async (project: Project) => {
-    await save("projects", {
-      ...project,
-      status: project.status === "ARCHIVED" ? "PLANNED" : "ARCHIVED",
-    });
+  const updateProjectStatus = async (project: Project, nextStatus: ProjectStatus) => {
+    if (nextStatus === project.status) return;
+    setChangingProjectId(project.id);
+    try {
+      await changeProjectStatus(project.id, nextStatus);
+      await refresh();
+      setToast({ success: true, message: "อัปเดตสถานะโปรเจกต์เรียบร้อยแล้ว" });
+    } catch (statusError) {
+      setToast({
+        success: false,
+        message: getErrorMessage(statusError, "ไม่สามารถอัปเดตสถานะโปรเจกต์ได้"),
+      });
+    } finally {
+      setChangingProjectId(null);
+    }
   };
 
   if (loading) return <LoadingState label="LoadingProjects..." />;
@@ -214,7 +239,7 @@ function ProjectsPage() {
           <option value="COMPLETED">เสร็จสิ้น</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </select>
-        <select
+        {/* <select
           className="select-button"
           value={billingType}
           onChange={(event) => {
@@ -225,7 +250,7 @@ function ProjectsPage() {
           <option value="ALL">ทุกรูปแบบราคา</option>
           <option value="HOURLY">รายชั่วโมง</option>
           <option value="FIXED_PRICE">เหมาจ่าย</option>
-        </select>
+        </select> */}
         <select
           className="select-button"
           value={sortBy}
@@ -302,13 +327,6 @@ function ProjectsPage() {
                     >
                       แก้ไข
                     </button>
-                    <button
-                      className="mini-button"
-                      type="button"
-                      onClick={() => archiveProject(project)}
-                    >
-                      {project.status === "ARCHIVED" ? "นำกลับ" : "เก็บถาวร"}
-                    </button>
                   </div>
                 </div>
                 <h2>{project.name}</h2>
@@ -349,12 +367,29 @@ function ProjectsPage() {
                   </div>
                 )}
                 <div className="card-footer">
-                  <StatusBadge status={project.status} />
-                  <span>
+                  <select
+                    className={`status-badge project-status-select status-${project.status.toLowerCase()}`}
+                    value={project.status}
+                    aria-label={`สถานะของโปรเจกต์ ${project.name}`}
+                    disabled={changingProjectId === project.id}
+                    onChange={(event) => {
+                      void updateProjectStatus(
+                        project,
+                        event.target.value as ProjectStatus,
+                      );
+                    }}
+                  >
+                    {allowedStatusTransitions[project.status].map((projectStatus) => (
+                      <option key={projectStatus} value={projectStatus}>
+                        {projectStatusLabels[projectStatus]}
+                      </option>
+                    ))}
+                  </select>
+                  {/* <span>
                     {project.billing_type === "HOURLY"
                       ? `${formatMoney(project.hourly_rate, project.currency)}/ชม.`
                       : formatMoney(project.fixed_price, project.currency)}
-                  </span>
+                  </span> */}
                 </div>
               </article>
             );
@@ -402,6 +437,13 @@ function ProjectsPage() {
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
+      {toast && (
+        <Toast
+          success={toast.success}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { ProjectFormProps } from "../../types/projectsPage";
+import FormLabel from "../../components/FormLabel";
 
 export default function ProjectForm({
   value,
@@ -14,7 +15,7 @@ export default function ProjectForm({
       {error && <p className="form-error">{error}</p>}
       <div className="form-grid">
         <div className="form-field">
-          <label htmlFor="project-name">ชื่อโปรเจกต์</label>
+          <FormLabel htmlFor="project-name" required>ชื่อโปรเจกต์</FormLabel>
           <input
             id="project-name"
             name="name"
@@ -24,7 +25,7 @@ export default function ProjectForm({
           />
         </div>
         <div className="form-field">
-          <label htmlFor="project-client">ลูกค้า</label>
+          <FormLabel htmlFor="project-client" required>ลูกค้า</FormLabel>
           <select
             id="project-client"
             name="client_id"
@@ -42,21 +43,6 @@ export default function ProjectForm({
                   {client.company_name || client.name}
                 </option>
               ))}
-          </select>
-        </div>
-        <div className="form-field">
-          <label htmlFor="project-status">สถานะ</label>
-          <select
-            id="project-status"
-            name="status"
-            value={value.status}
-            onChange={onChange}
-          >
-            <option value="PLANNED">วางแผน</option>
-            <option value="ACTIVE">กำลังดำเนินการ</option>
-            <option value="ON_HOLD">พักงาน</option>
-            <option value="COMPLETED">เสร็จสิ้น</option>
-            <option value="ARCHIVED">เก็บถาวร</option>
           </select>
         </div>
         {/* <div className="form-field">
@@ -101,7 +87,7 @@ export default function ProjectForm({
           </div>
         )} */}
         <div className="form-field">
-          <label htmlFor="budget-hours">จำนวนชั่วโมง</label>
+          <FormLabel htmlFor="budget-hours" required>จำนวนชั่วโมง</FormLabel>
           <input
             id="budget-hours"
             name="budget_hours"
@@ -110,36 +96,40 @@ export default function ProjectForm({
             step="0.5"
             value={value.budget_hours}
             onChange={onChange}
+            required
           />
         </div>
         <div className="form-field">
-          <label htmlFor="start-date">วันที่เริ่ม</label>
+          <FormLabel htmlFor="start-date" required>วันที่เริ่ม</FormLabel>
           <input
             id="start-date"
             name="start_date"
             type="date"
             value={value.start_date || ""}
             onChange={onChange}
+            required
           />
         </div>
         <div className="form-field">
-          <label htmlFor="end-date">วันที่สิ้นสุด</label>
+          <FormLabel htmlFor="end-date" required>วันที่สิ้นสุด</FormLabel>
           <input
             id="end-date"
             name="end_date"
             type="date"
             value={value.end_date || ""}
             onChange={onChange}
+            required
           />
         </div>
         <div className="form-field">
-          <label htmlFor="project-color">สีโปรเจกต์</label>
+          <FormLabel htmlFor="project-color" required>สีโปรเจกต์</FormLabel>
           <input
             id="project-color"
             name="color"
             type="color"
             value={value.color}
             onChange={onChange}
+            required
           />
         </div>
         {/* <div className="form-field">
@@ -156,7 +146,7 @@ export default function ProjectForm({
           </select>
         </div> */}
         <div className="form-field full">
-          <label htmlFor="project-description">รายละเอียด</label>
+          <FormLabel htmlFor="project-description">รายละเอียด</FormLabel>
           <textarea
             id="project-description"
             name="description"
