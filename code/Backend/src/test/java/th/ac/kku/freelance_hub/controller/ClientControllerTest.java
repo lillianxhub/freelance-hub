@@ -264,7 +264,12 @@ class ClientControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"New Name\",\"ownerId\":999}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("New Name"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Client updated"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("New Name"))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).update(eq(OWNER_ID), eq(clientId),
             org.mockito.ArgumentMatchers.argThat(request ->

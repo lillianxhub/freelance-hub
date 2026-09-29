@@ -249,7 +249,8 @@ class ClientIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Updated Acme\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Acme"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Updated Acme"));
         mockMvc.perform(delete("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
                 .andExpect(status().isNoContent());

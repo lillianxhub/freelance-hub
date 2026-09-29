@@ -108,17 +108,18 @@ public class ClientController {
     }
 
     @Operation(summary = "Update a client", description = "Update fields of a client belonging to the authenticated user")
-    @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = ClientResponse.class)))
+    @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PatchMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClientResponse> update(
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<ClientResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateClientRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
-        return ResponseEntity.ok(clientService.update(ownerId, id, request));
+        return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                "Client updated", clientService.update(ownerId, id, request)));
     }
 
     @Operation(summary = "Change client status", description = "Archive or reactivate a client by updating its is_active flag")
