@@ -30,6 +30,10 @@ import jakarta.persistence.Version;
                 @Index(
                         name = "idx_tasks_project_status",
                         columnList = "project_id,status"
+                ),
+                @Index(
+                        name = "idx_tasks_project_is_active",
+                        columnList = "project_id,is_active"
                 )
         },
         uniqueConstraints = {
@@ -89,6 +93,12 @@ public class Task {
 
     @Column(name = "completed_at")
     private Instant completedAt;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @Column(
             name = "created_at",
@@ -222,6 +232,14 @@ public class Task {
 
     public Instant getCompletedAt() {
         return completedAt;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     public Instant getCreatedAt() {

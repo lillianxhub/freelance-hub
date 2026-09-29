@@ -1,6 +1,8 @@
+# UI/UX Improvement Pull Request Template
+
 ## UI/UX Improvement Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงการปรับปรุง UI/UX -->
+<!-- Write a short and descriptive pull request title in English. -->
 
 ## Type of Change
 
@@ -8,29 +10,30 @@
 
 ## Description of the UI/UX Improvement
 
-<!-- อธิบายสิ่งที่ปรับปรุงและเหตุผลด้านการใช้งาน -->
+<!-- Describe the improvement and its usability goals. -->
 
 ## Impact of the Improvement
 
-<!-- อธิบายผลต่อประสบการณ์ผู้ใช้ การเข้าถึง และการทำงานของระบบ -->
+<!-- Describe the impact on usability, accessibility, and system behavior. -->
 
 ## Testing Conducted
 
-- [ ] ทดสอบบนขนาดหน้าจอที่เกี่ยวข้องแล้ว
-- [ ] ทดสอบการใช้งานด้วยตนเองแล้ว
-- [ ] ตรวจสอบการเข้าถึงเบื้องต้นแล้ว
+- [ ] Relevant screen sizes tested
+- [ ] Manual interaction testing completed
+- [ ] Basic accessibility checks completed
 
 ## Screenshots/Videos (if applicable)
 
-<!-- แนบภาพหรือวิดีโอก่อนและหลังการปรับปรุง ถ้ามี -->
+<!-- Attach before-and-after screenshots or videos when available. -->
 
 ## Additional Remarks
 
-<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
+<!-- Add any additional information for reviewers. -->
 
 ## Checklist
 
-- [ ] ปรับปรุงการใช้งานของผู้ใช้ได้ตามเป้าหมาย
-- [ ] ตรวจสอบ Responsive แล้ว
-- [ ] คำนึงถึง Accessibility แล้ว
-- [ ] อัปเดตเอกสารที่เกี่ยวข้องแล้ว
+- [ ] User experience goals are met
+- [ ] Responsive behavior verified
+- [ ] Accessibility considered
+- [ ] Relevant documentation updated
+

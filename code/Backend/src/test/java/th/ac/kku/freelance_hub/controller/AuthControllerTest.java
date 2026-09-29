@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,10 +11,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
-import th.ac.kku.freelance_hub.repository.RevokedTokenRepository;
+import th.ac.kku.freelance_hub.repository.RefreshTokenRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
 import th.ac.kku.freelance_hub.dto.request.LoginRequest;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.within;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -38,7 +39,7 @@ class AuthControllerTest {
         private WebApplicationContext webApplicationContext;
 
         @Autowired
-        private RevokedTokenRepository revokedTokenRepository;
+        private RefreshTokenRepository refreshTokenRepository;
 
         @Autowired
         private JwtTokenProvider tokenProvider;
@@ -203,48 +204,34 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("POST /api/auth/logout - Should revoke token and return 204")
-        void shouldLogoutAndPersistOnlyTokenIdentifier() throws Exception {
-                String token = registerAndGetToken();
-                String jti = tokenProvider.getJtiFromToken(token);
-
-                mockMvc.perform(post("/api/auth/logout")
-                                .header("Authorization", bearer(token)))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.success").value(true));
-
-                var revokedToken = revokedTokenRepository.findByJti(jti).orElseThrow();
-                assertThat(revokedToken.getJti()).isNotEqualTo(token);
-                assertThat(revokedToken.getUser().getEmail()).isEqualTo(registerRequest.getEmail());
-                assertThat(revokedToken.getExpiresAt())
-                                .isCloseTo(tokenProvider.getExpirationFromToken(token).toInstant(),
-                                                within(1, java.time.temporal.ChronoUnit.SECONDS));
-
-                mockMvc.perform(get("/api/users/me")
-                                .header("Authorization", bearer(token)))
+        @DisplayName("POST /api/auth/logout revokes the refresh family and returns 204")
+        void shouldLogoutAndRevokeRefreshFamily() throws Exception {
+                String accessToken = registerAndGetToken();
+                Cookie cookie = loginAndGetCookie();
+                mockMvc.perform(post("/api/auth/logout").cookie(cookie))
+                                .andExpect(status().isNoContent())
+                                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+                mockMvc.perform(post("/api/auth/refresh").cookie(cookie))
                                 .andExpect(status().isUnauthorized());
+                // Without an access-token denylist, the existing JWT lives until its 15-minute expiry.
+                mockMvc.perform(get("/api/users/me").header("Authorization", bearer(accessToken)))
+                                .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("POST /api/auth/logout - Repeated logout returns 401")
-        void shouldRejectRepeatedLogout() throws Exception {
-                String token = registerAndGetToken();
-
-                mockMvc.perform(post("/api/auth/logout")
-                                .header("Authorization", bearer(token)))
-                                .andExpect(status().isOk());
-                mockMvc.perform(post("/api/auth/logout")
-                                .header("Authorization", bearer(token)))
-                                .andExpect(status().isUnauthorized());
+        @DisplayName("POST /api/auth/logout is idempotent")
+        void shouldAllowRepeatedLogout() throws Exception {
+                mockMvc.perform(post("/api/auth/logout")).andExpect(status().isNoContent());
+                mockMvc.perform(post("/api/auth/logout")).andExpect(status().isNoContent());
         }
 
         @Test
         @DisplayName("Login after logout should issue a new usable token")
         void shouldIssueUsableTokenAfterLoginFollowingLogout() throws Exception {
                 String oldToken = registerAndGetToken();
-                mockMvc.perform(post("/api/auth/logout")
-                                .header("Authorization", bearer(oldToken)))
-                                .andExpect(status().isOk());
+                Cookie cookie = loginAndGetCookie();
+                mockMvc.perform(post("/api/auth/logout").cookie(cookie))
+                                .andExpect(status().isNoContent());
 
                 String loginBody = mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -263,6 +250,7 @@ class AuthControllerTest {
         @DisplayName("PATCH /api/users/me/password - Should change password with old and new values")
         void shouldChangePasswordUsingOldAndNewPassword() throws Exception {
                 String token = registerAndGetToken();
+                Cookie refreshCookie = loginAndGetCookie();
 
                 mockMvc.perform(patch("/api/users/me/password")
                                 .header("Authorization", bearer(token))
@@ -275,14 +263,28 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"email\":\"test@example.com\",\"password\":\"newPassword123\"}"))
                                 .andExpect(status().isOk());
+                mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie))
+                                .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("PATCH /api/users/me - Should update profile and normalized address")
+        @DisplayName("Wrong old password has its own Thai error message")
+        void shouldExplainWrongOldPassword() throws Exception {
+                String token = registerAndGetToken();
+                mockMvc.perform(patch("/api/users/me/password")
+                                .header("Authorization", bearer(token))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"oldPassword\":\"wrong-password\",\"newPassword\":\"newPassword123\"}"))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.message").value("รหัสผ่านไม่ถูกต้อง"));
+        }
+
+        @Test
+        @DisplayName("PUT /api/users/me - Should update profile and normalized address")
         void shouldUpdateProfileAddressAsFlatFields() throws Exception {
                 String token = registerAndGetToken();
 
-                mockMvc.perform(patch("/api/users/me")
+                mockMvc.perform(put("/api/users/me")
                                 .header("Authorization", bearer(token))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"address\":\"99 ถนนมิตรภาพ\",\"subdistrict\":\"ในเมือง\","
@@ -297,34 +299,59 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("POST /api/auth/logout - Missing and malformed tokens return standard 401")
-        void shouldRejectMissingAndMalformedLogoutTokens() throws Exception {
-                mockMvc.perform(post("/api/auth/logout"))
-                                .andExpect(status().isUnauthorized())
-                                .andExpect(jsonPath("$.status").value(401))
-                                .andExpect(jsonPath("$.error").value("Unauthorized"));
-
-                mockMvc.perform(post("/api/auth/logout")
-                                .header("Authorization", "Bearer malformed-token"))
-                                .andExpect(status().isUnauthorized())
-                                .andExpect(jsonPath("$.status").value(401));
+        @DisplayName("POST /api/auth/refresh rejects missing and malformed refresh cookies")
+        void shouldRejectMissingAndMalformedRefreshTokens() throws Exception {
+                mockMvc.perform(post("/api/auth/refresh"))
+                                .andExpect(status().isUnauthorized());
+                mockMvc.perform(post("/api/auth/refresh")
+                                .cookie(new Cookie("fh_refresh", "malformed-token")))
+                                .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("POST /api/auth/logout - Expired token returns 401")
-        void shouldRejectExpiredLogoutToken() throws Exception {
-                ReflectionTestUtils.setField(tokenProvider, "jwtExpiration", -1000L);
-                String expiredToken;
-                try {
-                        expiredToken = tokenProvider.generateToken("expired@example.com");
-                } finally {
-                        ReflectionTestUtils.setField(tokenProvider, "jwtExpiration", 86400000L);
-                }
+        @DisplayName("Refresh and logout reject an unapproved browser origin")
+        void shouldRejectUnapprovedOrigin() throws Exception {
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "https://attacker.example"))
+                                .andExpect(status().isForbidden());
+                mockMvc.perform(post("/api/auth/logout").header("Origin", "https://attacker.example"))
+                                .andExpect(status().isForbidden());
+        }
 
-                mockMvc.perform(post("/api/auth/logout")
-                                .header("Authorization", bearer(expiredToken)))
-                                .andExpect(status().isUnauthorized())
-                                .andExpect(jsonPath("$.status").value(401));
+        @Test
+        @DisplayName("POST /api/auth/refresh rotates cookie and detects replay")
+        void shouldRotateAndRejectReplayedRefreshToken() throws Exception {
+                registerAndGetToken();
+                Cookie first = loginAndGetCookie();
+                var rotated = mockMvc.perform(post("/api/auth/refresh").cookie(first))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.token").exists())
+                                .andReturn();
+                Cookie second = cookieFrom(rotated.getResponse().getHeader("Set-Cookie"));
+                assertThat(second.getValue()).isNotEqualTo(first.getValue());
+                var stored = refreshTokenRepository.findAll();
+                assertThat(stored).hasSize(2);
+                assertThat(stored.get(0).getFamilyId()).isEqualTo(stored.get(1).getFamilyId());
+                assertThat(stored.get(0).getExpiresAt()).isEqualTo(stored.get(1).getExpiresAt());
+                mockMvc.perform(post("/api/auth/refresh").cookie(first))
+                                .andExpect(status().isUnauthorized());
+                mockMvc.perform(post("/api/auth/refresh").cookie(second))
+                                .andExpect(status().isUnauthorized());
+                assertThat(refreshTokenRepository.findAll()).allSatisfy(token ->
+                                assertThat(token.getTokenHash()).isNotEqualTo(first.getValue()));
+        }
+
+        private Cookie loginAndGetCookie() throws Exception {
+                String header = mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(loginRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")))
+                                .andReturn().getResponse().getHeader("Set-Cookie");
+                return cookieFrom(header);
+        }
+
+        private static Cookie cookieFrom(String header) {
+                return new Cookie("fh_refresh", header.split(";", 2)[0].split("=", 2)[1]);
         }
 
         private String registerAndGetToken() throws Exception {

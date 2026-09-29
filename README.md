@@ -177,6 +177,7 @@ OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้
 | ------------ | -------------------- |
 | Register     | `/api/auth/register` |
 | Login        | `/api/auth/login`    |
+| Refresh token | `/api/auth/refresh` |
 | Logout       | `/api/auth/logout`   |
 | My profile   | `/api/users/me`      |
 | Change password | `/api/users/me/password` |
@@ -203,6 +204,12 @@ Income, Expense, Invoice และ Payment เป็น **Post-MVP** และ�
 
 การเปลี่ยนรหัสผ่านใช้ `PATCH /api/users/me/password` พร้อม bearer JWT และ body
 `{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ยังไม่มี forgot/reset password
+หากรหัสผ่านเดิมผิด API ตอบ `401` พร้อมข้อความ `รหัสผ่านไม่ถูกต้อง`
+
+Access JWT มีอายุ 15 นาทีและส่งใน `data.token`; refresh token อยู่ใน cookie
+`fh_refresh` (`HttpOnly`, `SameSite=Lax`, `Secure` บน HTTPS) มีอายุสูงสุด 7 วัน
+`POST /api/auth/refresh` หมุน cookie และคืน access token ใหม่ การ logout เพิกถอน
+refresh-token family และตอบ `204`; access token เดิมอาจใช้ต่อได้จนหมดอายุ (ไม่เกิน 15 นาที)
 และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
@@ -240,12 +247,13 @@ Maven test result อยู่ใน `code/Backend/target/surefire-reports/` แ
 | Backend API (Render) | TODO: `https://your-backend.onrender.com`                | Not deployed |
 | Swagger UI (Staging) | TODO: `https://your-staging-backend.example.com/swagger-ui.html` | Not deployed |
 
-Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อม `VITE_API_URL` ชี้ไปยัง Backend
+Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อมตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) ทั้ง Preview และ Production โดยช่วงทดสอบใช้ Render staging เดียวกัน เพื่อให้ Vercel proxy `/api` ไป Backend ผ่าน `code/Frontend/vercel.ts`; ไม่ตั้ง `VITE_API_BASE_URL` เป็น URL ข้ามโดเมน
 
 Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
 Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
 ตั้ง `OPENAPI_ENABLED=true` เฉพาะ Render staging; production ให้ตั้ง `OPENAPI_ENABLED=false` หรือไม่กำหนด เพื่อปิด `/api-docs` และ Swagger UI
+ตั้ง `REFRESH_COOKIE_SECURE=true` บน Render ที่ใช้ HTTPS และเพิ่ม Vercel origin จริงใน `CORS_ALLOWED_ORIGINS` ก่อน deploy; local Docker ใช้ค่า `false` จาก `.env.example`
 
 > **TODO:** ระบุ Vercel URL, Render URL, Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
 

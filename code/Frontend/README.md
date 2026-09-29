@@ -9,9 +9,9 @@ React + TypeScript frontend สำหรับจัดการลูกค้�
 3. จาก `code/Frontend` รัน `npm install` และ `npm run dev`
 4. เปิด `http://localhost:5173` และสมัครบัญชีใหม่
 
-Vite ส่งคำขอ `/api` ไปที่ backend ในเครื่องโดยอัตโนมัติ หากใช้ reverse proxy หรือ URL อื่นให้ตั้ง `VITE_API_BASE_URL` ตาม `.env.example` และให้ backend อนุญาต origin นั้น
+Vite ส่งคำขอ `/api` ไปที่ backend ในเครื่องโดยอัตโนมัติ บน Vercel ให้ตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render staging ค่าเดียวกันทั้ง Preview และ Production ในช่วงทดสอบ (ไม่มี `/` ปิดท้าย) เพื่อให้ `vercel.ts` proxy `/api` แบบ same-origin ห้ามตั้ง `VITE_API_BASE_URL` เป็น backend URL ข้ามโดเมน เพราะ refresh cookie ใช้ `SameSite=Lax`
 
-การเข้าสู่ระบบใช้ `/api/auth/login`, การสมัครใช้ `/api/auth/register`, และการตรวจ session ใช้ `/api/users/me` หน้าอื่นใช้ `/api/workspace/{resource}` เพื่ออ่าน บันทึก และลบข้อมูลของบัญชีปัจจุบัน backend ใช้ตาราง `workspace_records` จาก Flyway migration V7 และกำหนด `owner_id` จาก JWT เสมอ
+การเข้าสู่ระบบใช้ `/api/auth/login`, การสมัครใช้ `/api/auth/register`, ต่ออายุ access token ผ่าน `/api/auth/refresh` และการตรวจผู้ใช้ใช้ `/api/users/me` Frontend เก็บ access token ในหน่วยความจำ; refresh token อยู่ใน HttpOnly cookie และไม่ได้เก็บใน Local Storage
 
 ข้อมูลตัวอย่างเดิมที่อยู่ใน Local Storage หรือ Supabase จะไม่ถูกย้ายเข้าฐานข้อมูลใหม่นี้โดยอัตโนมัติ
 
