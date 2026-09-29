@@ -1,9 +1,9 @@
-import { useWorkspace } from '../Workspace/useWorkspace'
+import { useContext } from 'react'
+import { TimeEntriesContext } from './TimeEntriesContext'
+import type { WorkspaceContextValue } from '../types/workspaceContext'
 
-export function useTimeEntries(projectId?: string) {
-  const workspace = useWorkspace()
-  return {
-    ...workspace,
-    entries: projectId ? workspace.data.time_entries.filter((entry) => entry.project_id === projectId) : workspace.data.time_entries,
-  }
+export function useTimeEntries(): WorkspaceContextValue {
+  const context = useContext(TimeEntriesContext)
+  if (!context) throw new Error('useTimeEntries must be used inside TimeEntriesProvider')
+  return context
 }

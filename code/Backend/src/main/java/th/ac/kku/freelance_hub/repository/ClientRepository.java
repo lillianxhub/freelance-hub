@@ -5,7 +5,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import th.ac.kku.freelance_hub.domain.entity.Client;
-import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,9 +24,9 @@ public interface ClientRepository
 
     Page<Client> findAllByOwnerId(UUID ownerId, Pageable pageable);
 
-    Page<Client> findAllByOwnerIdAndStatus(
+    Page<Client> findAllByOwnerIdAndIsActive(
         UUID ownerId,
-        ClientStatus status,
+        Boolean isActive,
         Pageable pageable
     );
 }

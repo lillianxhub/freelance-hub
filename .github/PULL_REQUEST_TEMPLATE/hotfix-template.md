@@ -1,6 +1,8 @@
+# Hotfix Pull Request Template
+
 ## Hotfix Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงปัญหาเร่งด่วน -->
+<!-- Write a short and descriptive pull request title in English. -->
 
 ## Type of Change
 
@@ -8,25 +10,26 @@
 
 ## Description of the Hotfix
 
-<!-- อธิบายปัญหา ระดับความเร่งด่วน และเหตุผลที่ต้องแก้ไขทันที -->
+<!-- Describe the issue, urgency, and reason for the immediate fix. -->
 
 ## Impact of the Hotfix
 
-<!-- อธิบายผลกระทบที่คาดว่าจะเกิดขึ้นและความเสี่ยงที่อาจมี -->
+<!-- Describe the expected impact and potential risks. -->
 
 ## Testing Conducted
 
-- [ ] ทดสอบในสภาพแวดล้อมที่ใกล้เคียง Production แล้ว
-- [ ] ตรวจสอบว่าปัญหาได้รับการแก้ไขแล้ว
-- [ ] ตรวจสอบว่าไม่เกิด Regression แล้ว
+- [ ] Tested in a production-like environment
+- [ ] Original issue verified as fixed
+- [ ] Regression checks completed
 
 ## Additional Remarks
 
-<!-- ระบุข้อมูลสำหรับ Reviewer หรือผู้ดูแลการ Deploy -->
+<!-- Add information for reviewers or deployment owners. -->
 
 ## Checklist
 
-- [ ] แก้ไขปัญหาสำคัญได้ตรงจุด
-- [ ] ทดสอบการเปลี่ยนแปลงอย่างเหมาะสมแล้ว
-- [ ] บันทึกปัญหาและความเร่งด่วนไว้แล้ว
-- [ ] พร้อม Deploy หลังได้รับการอนุมัติ
+- [ ] Critical issue addressed correctly
+- [ ] Appropriate testing completed
+- [ ] Issue and urgency documented
+- [ ] Ready for deployment after approval
+

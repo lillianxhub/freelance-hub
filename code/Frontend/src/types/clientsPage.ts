@@ -10,6 +10,7 @@ export interface ClientFormProps {
   error: string
   saving: boolean
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
+  onFieldsChange: (values: Partial<ResourceInput<'clients'>>) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onCancel: () => void
 }

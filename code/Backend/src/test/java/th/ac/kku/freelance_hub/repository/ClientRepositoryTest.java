@@ -67,11 +67,11 @@ class ClientRepositoryTest {
         clientRepository.saveAndFlush(otherArchived);
 
         PageRequest page = PageRequest.of(0, 10);
-        assertThat(clientRepository.findAllByOwnerIdAndStatus(
-            owner.getId(), ClientStatus.ARCHIVED, page
+        assertThat(clientRepository.findAllByOwnerIdAndIsActive(
+            owner.getId(), false, page
         ).getContent()).extracting(Client::getId).containsExactly(archived.getId());
-        assertThat(clientRepository.findAllByOwnerIdAndStatus(
-            owner.getId(), ClientStatus.ACTIVE, page
+        assertThat(clientRepository.findAllByOwnerIdAndIsActive(
+            owner.getId(), true, page
         ).getContent()).extracting(Client::getId).containsExactly(active.getId());
     }
 

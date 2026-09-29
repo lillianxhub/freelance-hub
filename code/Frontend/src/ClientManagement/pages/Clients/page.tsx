@@ -1,4 +1,5 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { FiArrowLeft, FiArrowRight, FiPlus, FiSearch, FiUsers } from 'react-icons/fi'
 import Modal from '../../../components/Modal'
 import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
@@ -12,7 +13,7 @@ import { validateClient } from '../../client.validators'
 import { getErrorMessage } from '../../../api/apiError'
 
 const emptyForm: ResourceInput<'clients'> = {
-  name: '', company_name: '', email: '', phone: '', address: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#3867f4',
+  name: '', company_name: '', email: '', phone: '', address: '', province: '', district: '', sub_district: '', postal_code: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#4F6BFF',
 }
 
 function ClientsPage() {
@@ -61,6 +62,10 @@ function ClientsPage() {
     setForm((current) => ({ ...current, [name]: value }))
   }
 
+  const handleFieldsChange = (values: Partial<ResourceInput<'clients'>>) => {
+    setForm((current) => ({ ...current, ...values }))
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const validationError = validateClient(form)
@@ -94,11 +99,11 @@ function ClientsPage() {
         eyebrow="พื้นที่ทำงาน / ลูกค้า"
         title="ลูกค้า"
         description="เก็บข้อมูลลูกค้า โปรเจกต์ และกิจกรรมทั้งหมดไว้ในที่เดียว"
-        actions={<button className="button button-primary" type="button" onClick={openCreate}>＋ เพิ่มลูกค้า</button>}
+        actions={<button className="button button-primary" type="button" onClick={openCreate}><FiPlus aria-hidden="true" /> เพิ่มลูกค้า</button>}
       />
 
       <div className="filter-row">
-        <div className="search-box"><span>⌕</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร" aria-label="ค้นหาClients" /></div>
+        <div className="search-box"><span><FiSearch aria-hidden="true" /></span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร" aria-label="ค้นหาClients" /></div>
         <select className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองStatusClients">
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งานอยู่</option>
@@ -108,7 +113,7 @@ function ClientsPage() {
       </div>
 
       {visibleClients.length === 0 ? (
-        <section className="panel"><EmptyState icon="♧" title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<button className="button button-primary" type="button" onClick={openCreate}>เพิ่มลูกค้า</button>} /></section>
+        <section className="panel"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<button className="button button-primary" type="button" onClick={openCreate}>เพิ่มลูกค้า</button>} /></section>
       ) : (
         <div className="card-grid">
           {visibleClients.map((client) => {
@@ -123,14 +128,14 @@ function ClientsPage() {
 
       {totalPages > 1 && (
         <div className="pagination">
-          <button className="button button-secondary" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}>← ก่อนหน้า</button>
+          <button className="button button-secondary" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}><FiArrowLeft aria-hidden="true" /> ก่อนหน้า</button>
           <span>หน้า {safePage} จาก {totalPages}</span>
-          <button className="button button-secondary" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป →</button>
+          <button className="button button-secondary" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป <FiArrowRight aria-hidden="true" /></button>
         </div>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'} size="large">
-        <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
+        <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onFieldsChange={handleFieldsChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
       </Modal>
     </div>
   )

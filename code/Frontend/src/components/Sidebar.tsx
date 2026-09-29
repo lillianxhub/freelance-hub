@@ -1,14 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { useAuth } from '../Authentication/useAuthentication'
-import { useWorkspace } from '../Workspace/useWorkspace'
-import { initials } from '../utils/formatters'
 import { manageLinks, workspaceLinks } from '../constants/navigation'
 import type { SidebarLinkProps, SidebarProps } from '../types/ui'
 
 function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
+  const Icon = icon
   return (
     <NavLink to={to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-      <span className="nav-icon" aria-hidden="true">{icon}</span>
+      <span className="nav-icon" aria-hidden="true"><Icon /></span>
       <span>{label}</span>
       {badge !== undefined && <span className="nav-count">{badge}</span>}
     </NavLink>
@@ -16,12 +14,6 @@ function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
 }
 
 function Sidebar({ open, onClose }: SidebarProps) {
-  const { user } = useAuth()
-  const { data } = useWorkspace()
-  const profile = data?.profiles?.[0]
-  const projectCount = data?.projects?.filter((project) => project.status === 'ACTIVE').length || 0
-  const name = profile?.full_name || user?.user_metadata?.full_name || 'ฟรีแลนซ์'
-
   return (
     <>
       <button className={`sidebar-backdrop${open ? ' visible' : ''}`} type="button" aria-label="ปิดเมนู" onClick={onClose} />
@@ -43,7 +35,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
         <div className="sidebar-section-label">งานของคุณ</div>
         <nav className="sidebar-nav" onClick={onClose}>
           {workspaceLinks.map((link) => (
-            <SidebarLink key={link.to} {...link} badge={link.to === '/projects' ? projectCount : undefined} />
+            <SidebarLink key={link.to} {...link} />
           ))}
         </nav>
 
@@ -52,7 +44,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
           {manageLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
         </nav>
 
-        <div className="sidebar-bottom">
+        {/* <div className="sidebar-bottom">
           <NavLink className="help-card" to="/reports" onClick={onClose}>
             <span className="help-icon">?</span>
             <span><strong>ต้องการความช่วยเหลือ?</strong><small>ดูรายงานและคู่มือ</small></span>
@@ -62,7 +54,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
             <span className="avatar">{initials(name)}</span>
             <span className="profile-copy"><strong>{name}</strong><small>{profile?.email || user?.email}</small></span>
           </div>
-        </div>
+        </div> */}
       </aside>
     </>
   )

@@ -3,13 +3,14 @@ import type {
   PropsWithChildren,
   ReactNode,
 } from 'react'
+import type { IconType } from 'react-icons'
 import type { ClientStatus } from './client'
 import type { ProjectStatus } from './project'
 import type { TaskStatus } from './task'
 import type { InvoiceStatus } from './billing'
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'danger'
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'text'
 }
 
 export interface ModalProps extends PropsWithChildren {
@@ -30,7 +31,7 @@ export interface PageHeaderProps {
 export interface SidebarLinkProps {
   to: string
   label: string
-  icon: string
+  icon: IconType
   badge?: number
 }
 
@@ -59,7 +60,7 @@ export interface ErrorStateProps {
 }
 
 export interface EmptyStateProps {
-  icon?: string
+  icon?: ReactNode
   title: string
   description: string
   action?: ReactNode

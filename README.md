@@ -27,7 +27,7 @@ Freelance Hub คือระบบบริหารงานสำหรับ
 | ORM               | Spring Data JPA / Hibernate                                     |
 | Web / API         | Spring MVC, RESTful API                                         |
 | Frontend          | React 19, Vite 8, React Router, Recharts                        |
-| API Documentation | OpenAPI / Swagger UI — TODO: เพิ่ม dependency และ configuration |
+| API Documentation | OpenAPI / Swagger UI เปิดเฉพาะ local, dev และ staging           |
 | Testing           | JUnit 5, Mockito, Spring Boot Test                              |
 | Version Control   | Git + Github                                                    |
 | Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database)      |
@@ -56,11 +56,12 @@ Domain Layer (Entity / Value Object / Enum)
 
 ## Database Design (ER Diagram)
 
-ฐานข้อมูล MVP ประกอบด้วย 6 ตารางหลัก ได้แก่ `users`, `user_profiles`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา
+ฐานข้อมูล MVP ประกอบด้วย 7 ตารางหลัก ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา โดย `addresses` เป็นตารางกลางสำหรับข้อมูลที่อยู่ของ User Profile และ Client
 
 ความสัมพันธ์หลัก:
 
 - One-to-One: `users` → `user_profiles`
+- `user_profiles` เก็บ field ที่อยู่โดยตรงตาม Data Dictionary; `clients` ยังใช้ `addresses` ในช่วง migration ของ Client
 - One-to-Many: `clients` → `projects`
 - One-to-Many: `projects` → `tasks` และ `time_entries`
 - ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
@@ -113,6 +114,7 @@ cp .env.example .env
 | `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ production | Secret ของ deployment |
 | `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ production | Secret ของ deployment |
 | `JWT_SECRET`                 | Secret สำหรับลงนาม JWT              | Secret ของ deployment |
+| `OPENAPI_ENABLED`            | เปิด OpenAPI/Swagger เฉพาะ local, dev หรือ staging; production ให้ใช้ `false` หรือไม่กำหนด | `true` ผ่าน Docker Compose |
 
 ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
 
@@ -164,15 +166,21 @@ docker compose down
 
 ## API Documentation
 
+OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้นใน application configuration เพื่อไม่ให้เปิดบน production
+โดยตั้ง `OPENAPI_ENABLED=true` เฉพาะ local development หรือ staging เท่านั้น
+
 - Base URL: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- OpenAPI JSON: `http://localhost:8080/api-docs`
 
 | Resource     | Endpoint             |
 | ------------ | -------------------- |
 | Register     | `/api/auth/register` |
 | Login        | `/api/auth/login`    |
+| Refresh token | `/api/auth/refresh` |
 | Logout       | `/api/auth/logout`   |
+| My profile   | `/api/users/me`      |
+| Change password | `/api/users/me/password` |
 | Clients      | `/api/clients`       |
 | Projects     | `/api/projects`      |
 | Time entries | `/api/time-entries`  |
@@ -180,6 +188,29 @@ docker compose down
 | Analytics    | `/api/analytics`     |
 
 Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
+
+ข้อมูลที่อยู่ของ User Profile และ Client ใช้ API contract เดียวกันและส่งเป็น flat fields
+แม้ฐานข้อมูลจะ normalize ไว้ใน `addresses`:
+
+```json
+{
+  "address": "ที่อยู่",
+  "subdistrict": "ตำบล",
+  "district": "อำเภอ",
+  "province": "จังหวัด",
+  "postalCode": "รหัสไปรษณีย์"
+}
+```
+
+การเปลี่ยนรหัสผ่านใช้ `PATCH /api/users/me/password` พร้อม bearer JWT และ body
+`{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ยังไม่มี forgot/reset password
+หากรหัสผ่านเดิมผิด API ตอบ `401` พร้อมข้อความ `รหัสผ่านไม่ถูกต้อง`
+
+Access JWT มีอายุ 15 นาทีและส่งใน `data.token`; refresh token อยู่ใน cookie
+`fh_refresh` (`HttpOnly`, `SameSite=Lax`, `Secure` บน HTTPS) มีอายุสูงสุด 7 วัน
+`POST /api/auth/refresh` หมุน cookie และคืน access token ใหม่ การ logout เพิกถอน
+refresh-token family และตอบ `204`; access token เดิมอาจใช้ต่อได้จนหมดอายุ (ไม่เกิน 15 นาที)
+และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
 
@@ -214,13 +245,15 @@ Maven test result อยู่ใน `code/Backend/target/surefire-reports/` แ
 | -------------------- | -------------------------------------------------------- | ------------ |
 | Frontend (Vercel)    | TODO: `https://your-frontend.vercel.app`                 | Not deployed |
 | Backend API (Render) | TODO: `https://your-backend.onrender.com`                | Not deployed |
-| Swagger UI           | TODO: `https://your-backend.example.com/swagger-ui.html` | Not deployed |
+| Swagger UI (Staging) | TODO: `https://your-staging-backend.example.com/swagger-ui.html` | Not deployed |
 
-Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อม `VITE_API_URL` ชี้ไปยัง Backend
+Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อมตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) ทั้ง Preview และ Production โดยช่วงทดสอบใช้ Render staging เดียวกัน เพื่อให้ Vercel proxy `/api` ไป Backend ผ่าน `code/Frontend/vercel.ts`; ไม่ตั้ง `VITE_API_BASE_URL` เป็น URL ข้ามโดเมน
 
 Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
 Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
+ตั้ง `OPENAPI_ENABLED=true` เฉพาะ Render staging; production ให้ตั้ง `OPENAPI_ENABLED=false` หรือไม่กำหนด เพื่อปิด `/api-docs` และ Swagger UI
+ตั้ง `REFRESH_COOKIE_SECURE=true` บน Render ที่ใช้ HTTPS และเพิ่ม Vercel origin จริงใน `CORS_ALLOWED_ORIGINS` ก่อน deploy; local Docker ใช้ค่า `false` จาก `.env.example`
 
 > **TODO:** ระบุ Vercel URL, Render URL, Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
 

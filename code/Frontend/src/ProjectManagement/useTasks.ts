@@ -1,7 +1,7 @@
-import { useWorkspace } from '../Workspace/useWorkspace'
+import { useProjects } from './useProjects'
 
 export function useTasks(projectId?: string) {
-  const workspace = useWorkspace()
+  const workspace = useProjects()
   return {
     ...workspace,
     tasks: projectId ? workspace.data.tasks.filter((task) => task.project_id === projectId) : workspace.data.tasks,

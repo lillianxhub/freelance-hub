@@ -291,7 +291,7 @@ class TimeEntryIntegrationTest {
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn();
-        return responseJson(result).path("token").asText();
+        return responseJson(result).path("data").path("token").asText();
     }
 
     private UUID createActiveProject(String token, String projectName)

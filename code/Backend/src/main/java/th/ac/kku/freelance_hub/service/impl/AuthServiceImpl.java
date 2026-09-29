@@ -17,7 +17,9 @@ import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
 import th.ac.kku.freelance_hub.service.AuthService;
-import th.ac.kku.freelance_hub.service.RevokedTokenService;
+import th.ac.kku.freelance_hub.service.AuthSessionResult;
+import th.ac.kku.freelance_hub.service.RefreshTokenService;
+import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
-    private final RevokedTokenService revokedTokenService;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
@@ -49,8 +51,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public AuthResponse login(LoginRequest request) {
+    @Transactional
+    public AuthSessionResult login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -60,24 +62,23 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found after authentication"));
-        return createAuthResponse(user);
+        RefreshTokenService.IssuedToken refreshToken = refreshTokenService.issue(user);
+        return new AuthSessionResult(createAuthResponse(user), refreshToken.value(), refreshToken.expiresAt());
     }
 
     @Override
-    @Transactional
-    public void logout(String token, String authenticatedEmail) {
-        String tokenEmail = tokenProvider.getEmailFromToken(token);
-        if (!authenticatedEmail.equals(tokenEmail)) {
-            throw new IllegalArgumentException("Token subject does not match authenticated user");
-        }
+    public AuthSessionResult refresh(String refreshToken) {
+        RefreshTokenService.Rotation rotation = refreshTokenService.rotate(refreshToken);
+        if (rotation.token() == null) throw new InvalidRefreshTokenException();
+        User user = userRepository.findWithProfileById(rotation.user().getId())
+                .orElseThrow(InvalidRefreshTokenException::new);
+        return new AuthSessionResult(createAuthResponse(user),
+                rotation.token().value(), rotation.token().expiresAt());
+    }
 
-        User user = userRepository.findByEmail(authenticatedEmail)
-                .orElseThrow(() -> new RuntimeException("User not found after authentication"));
-        revokedTokenService.revoke(
-                tokenProvider.getJtiFromToken(token),
-                user,
-                tokenProvider.getExpirationFromToken(token).toInstant()
-        );
+    @Override
+    public void logout(String refreshToken) {
+        refreshTokenService.revokeFamily(refreshToken);
     }
 
     private AuthResponse createAuthResponse(User user) {
