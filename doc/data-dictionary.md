@@ -16,7 +16,7 @@
 | Column | Type | Null | Constraint / Default | Description |
 |---|---|---:|---|---|
 | `id` | `uuid` | No | PK, `gen_random_uuid()` | รหัสผู้ใช้ |
-| `email` | `varchar(255)` | No | Unique | อีเมลสำหรับเข้าสู่ระบบ |
+| `email` | `varchar(255)` | No | Unique, normalized lowercase/trim | อีเมลสำหรับเข้าสู่ระบบ |
 | `password_hash` | `varchar(255)` | No | | รหัสผ่านที่ hash แล้ว |
 | `role` | `varchar(50)` | No | `USER` | บทบาท `USER` หรือ `ADMIN` |
 | `is_active` | `boolean` | No | `true` | สถานะการใช้งานบัญชี |
@@ -25,7 +25,7 @@
 | `updated_at` | `timestamptz` | No | `now()` | เวลาแก้ไขล่าสุด |
 | `deleted_at` | `timestamptz` | Yes | `NULL` | เวลา soft delete |
 
-Indexes: `idx_users_is_active`; unique index จาก `email`
+Indexes: `idx_users_is_active`; unique index จาก `email`; `idx_users_email_canonical_unique` บน `lower(btrim(email))` เพื่อกัน email ซ้ำต่างตัวพิมพ์หรือช่องว่างหัวท้าย
 
 ## `user_profiles`
 

@@ -16,6 +16,7 @@ import th.ac.kku.freelance_hub.exception.EmailAlreadyExistsException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
+import th.ac.kku.freelance_hub.security.EmailNormalizer;
 import th.ac.kku.freelance_hub.service.AuthService;
 import th.ac.kku.freelance_hub.service.AuthSessionResult;
 import th.ac.kku.freelance_hub.service.RefreshTokenService;
@@ -35,12 +36,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException(request.getEmail());
+        String email = EmailNormalizer.normalize(request.getEmail());
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException(email);
         }
 
         User user = User.builder()
-                .email(request.getEmail())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .build();
         UserProfile profile = userMapper.toProfile(request);
@@ -53,14 +55,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthSessionResult login(LoginRequest request) {
+        String email = EmailNormalizer.normalize(request.getEmail());
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
+                        email,
                         request.getPassword()
                 )
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found after authentication"));
         RefreshTokenService.IssuedToken refreshToken = refreshTokenService.issue(user);
         return new AuthSessionResult(createAuthResponse(user), refreshToken.value(), refreshToken.expiresAt());
