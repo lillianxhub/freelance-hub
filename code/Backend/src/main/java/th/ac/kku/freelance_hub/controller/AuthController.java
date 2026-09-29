@@ -11,14 +11,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.dto.request.LoginRequest;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
 import th.ac.kku.freelance_hub.dto.response.AuthResponse;
-import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.AuthService;
 import th.ac.kku.freelance_hub.service.AuthSessionResult;
 import th.ac.kku.freelance_hub.security.RefreshTokenCookie;
@@ -46,44 +47,54 @@ public class AuthController {
 
         @Operation(summary = "Register new user", description = "Create a new user account with email and password")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-                        @ApiResponse(responseCode = "409", description = "Email already exists", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+                        @ApiResponse(responseCode = "201", description = "User registered successfully", useReturnTypeSchema = true),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content(schema = @Schema(implementation = ApiResult.class))),
+                        @ApiResponse(responseCode = "409", description = "Email already exists", content = @Content(schema = @Schema(implementation = ApiResult.class)))
         })
         @SecurityRequirements
-        @PostMapping("/register")
-        public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<ApiResult<AuthResponse>> register(
+                        @Valid @RequestBody RegisterRequest request) {
                 AuthResponse response = authService.register(request);
                 return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("สมัครสมาชิกสำเร็จ", response));
+                                .body(ApiResult.success("สมัครสมาชิกสำเร็จ",
+                                                response));
         }
 
         @Operation(summary = "Login user", description = "Authenticate user with email and password")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+                        @ApiResponse(responseCode = "200", description = "Login successful", useReturnTypeSchema = true),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content(schema = @Schema(implementation = ApiResult.class))),
+                        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ApiResult.class)))
         })
         @SecurityRequirements
-        @PostMapping("/login")
-        public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<ApiResult<AuthResponse>> login(
+                        @Valid @RequestBody LoginRequest request) {
                 AuthSessionResult result = authService.login(request);
                 return ResponseEntity.ok()
-                        .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.set(result.refreshToken(), result.refreshExpiresAt()))
-                        .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("เข้าสู่ระบบสำเร็จ", result.response()));
+                                .header(HttpHeaders.SET_COOKIE,
+                                                refreshTokenCookie.set(result.refreshToken(),
+                                                                result.refreshExpiresAt()))
+                                .body(ApiResult.success("เข้าสู่ระบบสำเร็จ",
+                                                result.response()));
         }
 
         @Operation(summary = "Rotate refresh token", description = "Issue a new access token and rotate the HttpOnly refresh cookie")
+        @ApiResponse(responseCode = "200", description = "Token refreshed", useReturnTypeSchema = true)
         @SecurityRequirements
-        @PostMapping("/refresh")
-        public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<AuthResponse>> refresh(
+        @PostMapping(value = "/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<ApiResult<AuthResponse>> refresh(
                         @CookieValue(name = RefreshTokenCookie.NAME, required = false) String refreshToken,
                         @RequestHeader(name = "Origin", required = false) String origin) {
                 verifyOrigin(origin);
                 AuthSessionResult result = authService.refresh(refreshToken);
                 return ResponseEntity.ok()
-                        .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.set(result.refreshToken(), result.refreshExpiresAt()))
-                        .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Token refreshed", result.response()));
+                                .header(HttpHeaders.SET_COOKIE,
+                                                refreshTokenCookie.set(result.refreshToken(),
+                                                                result.refreshExpiresAt()))
+                                .body(ApiResult.success("Token refreshed",
+                                                result.response()));
         }
 
         @Operation(summary = "Logout user", description = "Revoke the current refresh-token family and clear its cookie; access tokens remain valid until expiry")
@@ -98,7 +109,7 @@ public class AuthController {
                 verifyOrigin(origin);
                 authService.logout(refreshToken);
                 return ResponseEntity.noContent()
-                        .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.clear())
-                        .build();
+                                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.clear())
+                                .build();
         }
 }
