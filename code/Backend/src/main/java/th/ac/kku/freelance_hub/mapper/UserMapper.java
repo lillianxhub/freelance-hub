@@ -3,6 +3,7 @@ package th.ac.kku.freelance_hub.mapper;
 import org.springframework.stereotype.Component;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
+import th.ac.kku.freelance_hub.domain.valueobject.Address;
 import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
@@ -78,23 +79,22 @@ public class UserMapper {
             profile.setBio(request.getBio().trim());
         }
 
-        if (request.getAddress() != null) {
-            profile.setAddress(request.getAddress().trim());
-        }
-        if (request.getSubdistrict() != null) {
-            profile.setSubdistrict(request.getSubdistrict().trim());
-        }
-        if (request.getDistrict() != null) {
-            profile.setDistrict(request.getDistrict().trim());
-        }
-        if (request.getProvince() != null) {
-            profile.setProvince(request.getProvince().trim());
-        }
-        if (request.getPostalCode() != null) {
-            profile.setPostalCode(request.getPostalCode().trim());
+        if (request.getAddress() != null || request.getSubdistrict() != null
+                || request.getDistrict() != null || request.getProvince() != null
+                || request.getPostalCode() != null) {
+            profile.updateAddress(Address.ofNullable(
+                    keepIfNull(request.getAddress(), profile.getAddress()),
+                    keepIfNull(request.getSubdistrict(), profile.getSubdistrict()),
+                    keepIfNull(request.getDistrict(), profile.getDistrict()),
+                    keepIfNull(request.getProvince(), profile.getProvince()),
+                    keepIfNull(request.getPostalCode(), profile.getPostalCode())));
         }
         if (request.getTaxId() != null) {
             profile.setTaxId(request.getTaxId().trim());
         }
+    }
+
+    private static String keepIfNull(String requested, String current) {
+        return requested == null ? current : requested;
     }
 }

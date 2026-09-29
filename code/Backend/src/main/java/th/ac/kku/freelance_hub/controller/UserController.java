@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 import th.ac.kku.freelance_hub.dto.request.ChangePasswordRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
-import th.ac.kku.freelance_hub.dto.response.ApiResponse;
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.service.UserService;
 
 /**
@@ -29,9 +29,9 @@ public class UserController {
     @Tag(name = "Authentication")
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser() {
+    public ResponseEntity<ApiResult<UserResponse>> getCurrentUser() {
         UserResponse response = userService.getCurrentUser();
-        return ResponseEntity.ok(ApiResponse.success("User profile retrieved", response));
+        return ResponseEntity.ok(ApiResult.success("ดึงข้อมูลผู้ใช้สำเร็จ", response));
     }
 
     /**
@@ -41,10 +41,10 @@ public class UserController {
     @Tag(name = "Authentication")
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(
+    public ResponseEntity<ApiResult<UserResponse>> updateCurrentUser(
             @Valid @RequestBody UpdateUserProfileRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(
-                "User profile updated", userService.updateCurrentUser(request)));
+        return ResponseEntity.ok(ApiResult.success(
+                "อัปเดตข้อมูลผู้ใช้สำเร็จ", userService.updateCurrentUser(request)));
     }
 
     /**
@@ -54,10 +54,10 @@ public class UserController {
     @Tag(name = "Authentication")
     @PatchMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> changePassword(
+    public ResponseEntity<ApiResult<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
-        return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
+        return ResponseEntity.ok(ApiResult.success("เปลี่ยนรหัสผ่านสำเร็จ", null));
     }
 
     /*
@@ -67,10 +67,10 @@ public class UserController {
      * @GetMapping("/{id}")
      *
      * @PreAuthorize("hasRole('ADMIN')")
-     * public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable
+     * public ResponseEntity<ApiResult<UserResponse>> getUserById(@PathVariable
      * UUID id) {
      * UserResponse response = userService.getUserById(id);
-     * return ResponseEntity.ok(ApiResponse.success("User retrieved", response));
+     * return ResponseEntity.ok(ApiResult.success("User retrieved", response));
      * }
      */
 }

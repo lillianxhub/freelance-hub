@@ -14,10 +14,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ChangePasswordRequest {
 
-    @NotBlank(message = "Old password is required")
+    @NotBlank(message = "กรุณาระบุรหัสผ่านเดิม")
     private String oldPassword;
 
-    @NotBlank(message = "New password is required")
-    @Size(min = 8, max = 100, message = "New password must be between 8 and 100 characters")
+    @NotBlank(message = "กรุณาระบุรหัสผ่านใหม่")
+    @Size(min = 8, max = 100, message = "รหัสผ่านใหม่ต้องมี 8–100 ตัวอักษร")
     private String newPassword;
 }

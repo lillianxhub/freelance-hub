@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import th.ac.kku.freelance_hub.domain.valueobject.Address;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -44,20 +45,9 @@ public class UserProfile {
     @Column(length = 20)
     private String phone;
 
-    @Column(columnDefinition = "text")
-    private String address;
-
-    @Column(length = 100)
-    private String subdistrict;
-
-    @Column(length = 100)
-    private String district;
-
-    @Column(length = 100)
-    private String province;
-
-    @Column(name = "postal_code", length = 20)
-    private String postalCode;
+    @Embedded
+    @Setter(AccessLevel.NONE)
+    private Address addressDetails;
 
     @Column(name = "tax_id", length = 30)
     private String taxId;
@@ -86,4 +76,14 @@ public class UserProfile {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    public void updateAddress(Address addressDetails) {
+        this.addressDetails = addressDetails;
+    }
+
+    public String getAddress() { return addressDetails == null ? null : addressDetails.getAddress(); }
+    public String getSubdistrict() { return addressDetails == null ? null : addressDetails.getSubdistrict(); }
+    public String getDistrict() { return addressDetails == null ? null : addressDetails.getDistrict(); }
+    public String getProvince() { return addressDetails == null ? null : addressDetails.getProvince(); }
+    public String getPostalCode() { return addressDetails == null ? null : addressDetails.getPostalCode(); }
 }
