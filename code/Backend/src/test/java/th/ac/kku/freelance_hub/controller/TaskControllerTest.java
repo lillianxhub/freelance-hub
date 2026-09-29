@@ -83,7 +83,7 @@ class TaskControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string(
                         "Location",
-                        "/api/projects/" + PROJECT_ID + "/tasks/" + TASK_ID
+                        "/api/tasks/" + TASK_ID
                 ))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("สร้างงานย่อยสำเร็จ"))
@@ -203,15 +203,11 @@ class TaskControllerTest {
     }
 
     @Test
-    void getByIdReturns404WhenTaskIsNotFound() throws Exception {
-        stubCurrentUser();
-        when(taskService.getById(OWNER_ID, PROJECT_ID, TASK_ID))
-                .thenThrow(new TaskNotFoundException(TASK_ID));
-
+    void legacyNestedGetRouteIsDisabled() throws Exception {
         mockMvc.perform(get(BASE + "/{taskId}", PROJECT_ID, TASK_ID))
-                .andExpect(status().isNotFound());
+                .andExpect(result -> org.junit.jupiter.api.Assertions.assertNull(result.getHandler()));
 
-        verify(taskService).getById(OWNER_ID, PROJECT_ID, TASK_ID);
+        verify(taskService, never()).getById(any(), any(), any());
     }
 
     @Test
@@ -241,18 +237,15 @@ class TaskControllerTest {
     }
 
     @Test
-    void startAndCompletePassTaskToService() throws Exception {
+    void legacyStartRouteIsDisabledButCompleteRemainsAvailable() throws Exception {
         stubCurrentUser();
-        when(taskService.start(OWNER_ID, PROJECT_ID, TASK_ID))
-                .thenReturn(response("Design", TaskStatus.IN_PROGRESS));
         when(taskService.complete(OWNER_ID, PROJECT_ID, TASK_ID))
                 .thenReturn(response("Design", TaskStatus.COMPLETED));
 
         mockMvc.perform(patch(
                         BASE + "/{taskId}/start", PROJECT_ID, TASK_ID
                 ))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+                .andExpect(result -> org.junit.jupiter.api.Assertions.assertNull(result.getHandler()));
 
         mockMvc.perform(patch(
                         BASE + "/{taskId}/complete", PROJECT_ID, TASK_ID
@@ -260,7 +253,7 @@ class TaskControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
 
-        verify(taskService).start(OWNER_ID, PROJECT_ID, TASK_ID);
+        verify(taskService, never()).start(any(), any(), any());
         verify(taskService).complete(OWNER_ID, PROJECT_ID, TASK_ID);
     }
 

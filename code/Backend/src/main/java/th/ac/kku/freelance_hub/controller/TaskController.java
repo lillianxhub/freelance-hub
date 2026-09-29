@@ -91,8 +91,7 @@ public class TaskController {
 
         return ResponseEntity
                 .created(URI.create(
-                        "/api/projects/" + projectId
-                                + "/tasks/" + response.getId()
+                        "/api/tasks/" + response.getId()
                 ))
                 .body(
                         ApiResult.success(
@@ -149,7 +148,8 @@ public class TaskController {
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Task not found",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @GetMapping("/{taskId}")
+    // Legacy route unused by Frontend; use GET /api/tasks/{taskId}.
+    // @GetMapping("/{taskId}")
     public ResponseEntity<TaskResponse> getById(
             @PathVariable("projectId") UUID projectId,
             @PathVariable("taskId") UUID taskId
@@ -195,7 +195,8 @@ public class TaskController {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "409", description = "Task cannot be started in its current state",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @PatchMapping("/{taskId}/start")
+    // Legacy route unused by Frontend; use PATCH /api/tasks/{taskId}/status.
+    // @PatchMapping("/{taskId}/start")
     public ResponseEntity<TaskResponse> start(
             @PathVariable("projectId") UUID projectId,
             @PathVariable("taskId") UUID taskId
