@@ -27,12 +27,12 @@ import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.response.PaginationMeta;
+import th.ac.kku.freelance_hub.common.response.ApiResult;
+import th.ac.kku.freelance_hub.common.response.PaginationMeta;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryDetailResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryListItemResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
-import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -55,9 +55,7 @@ public class TimeEntryController {
     @ApiResponse(
             responseCode = "201",
             description = "Manual time entry created",
-            content = @Content(
-                    schema = @Schema(implementation = TimeEntryDetailResponse.class)
-            )
+            useReturnTypeSchema = true
     )
     @ApiResponse(responseCode = "400", description = "Invalid time entry")
     @ApiResponse(responseCode = "401", description = "Authentication required")
@@ -65,12 +63,12 @@ public class TimeEntryController {
             responseCode = "404",
             description = "Project or task not found",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @PostMapping
     public ResponseEntity<
-            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryDetailResponse>
+            ApiResult<TimeEntryDetailResponse>
     > createManual(
             @Valid @RequestBody ManualTimeEntryRequest request
     ) {
@@ -80,7 +78,7 @@ public class TimeEntryController {
         );
         return ResponseEntity
                 .created(URI.create("/api/time-entries/" + response.getId()))
-                .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                .body(ApiResult.success(
                         "เพิ่มรายการเวลาเรียบร้อยแล้ว",
                         TimeEntryDetailResponse.from(response)
                 ));
@@ -90,15 +88,13 @@ public class TimeEntryController {
     @ApiResponse(
             responseCode = "200",
             description = "Page returned",
-            content = @Content(
-                    schema = @Schema(implementation = TimeEntryListItemResponse.class)
-            )
+            useReturnTypeSchema = true
     )
     @ApiResponse(responseCode = "400", description = "Invalid filters")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping
     public ResponseEntity<
-            th.ac.kku.freelance_hub.dto.response.ApiResponse<
+            ApiResult<
                     List<TimeEntryListItemResponse>
             >
     > list(
@@ -119,7 +115,7 @@ public class TimeEntryController {
                 .build();
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                ApiResult.success(
                         "ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว",
                         data,
                         meta
@@ -131,15 +127,13 @@ public class TimeEntryController {
     @ApiResponse(
             responseCode = "200",
             description = "Time entry returned",
-            content = @Content(
-                    schema = @Schema(implementation = TimeEntryDetailResponse.class)
-            )
+            useReturnTypeSchema = true
     )
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Time entry not found")
     @GetMapping("/{id}")
     public ResponseEntity<
-            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryDetailResponse>
+            ApiResult<TimeEntryDetailResponse>
     > getById(@PathVariable("id") UUID id) {
         TimeEntryResponse response = timeEntryQueryService.getById(
                 currentOwnerId(),
@@ -147,7 +141,7 @@ public class TimeEntryController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                ApiResult.success(
                         "ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว",
                         TimeEntryDetailResponse.from(response)
                 )
@@ -155,15 +149,18 @@ public class TimeEntryController {
     }
 
     @Operation(summary = "Summarize completed time entries")
-    @ApiResponse(responseCode = "200", description = "Summary returned")
+    @ApiResponse(responseCode = "200", description = "Summary returned", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "Invalid filters")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping("/summary")
-    public ResponseEntity<TimeEntrySummaryResponse> summarize(
+    public ResponseEntity<ApiResult<TimeEntrySummaryResponse>> summarize(
             @ModelAttribute TimeEntryFilterRequest filter
     ) {
         return ResponseEntity.ok(
-                timeEntryQueryService.summarize(currentOwnerId(), filter)
+                ApiResult.success(
+                        "สรุปรายการเวลาเรียบร้อยแล้ว",
+                        timeEntryQueryService.summarize(currentOwnerId(), filter)
+                )
         );
     }
 
@@ -171,9 +168,7 @@ public class TimeEntryController {
     @ApiResponse(
             responseCode = "200",
             description = "Time entry updated",
-            content = @Content(
-                    schema = @Schema(implementation = TimeEntryDetailResponse.class)
-            )
+            useReturnTypeSchema = true
     )
     @ApiResponse(responseCode = "400", description = "Invalid update")
     @ApiResponse(responseCode = "401", description = "Authentication required")
@@ -181,7 +176,7 @@ public class TimeEntryController {
     @ApiResponse(responseCode = "409", description = "Time entry is locked")
     @PutMapping("/{id}")
     public ResponseEntity<
-            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryDetailResponse>
+            ApiResult<TimeEntryDetailResponse>
     > update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateTimeEntryRequest request
@@ -192,7 +187,7 @@ public class TimeEntryController {
                 request
         );
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                ApiResult.success(
                         "แก้ไขรายการเวลาเรียบร้อยแล้ว",
                         TimeEntryDetailResponse.from(response)
                 )
@@ -203,11 +198,7 @@ public class TimeEntryController {
     @ApiResponse(
             responseCode = "200",
             description = "Time entry deleted",
-            content = @Content(
-                    schema = @Schema(
-                            implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class
-                    )
-            )
+            useReturnTypeSchema = true
     )
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Time entry not found")
@@ -217,11 +208,11 @@ public class TimeEntryController {
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<
-            th.ac.kku.freelance_hub.dto.response.ApiResponse<Void>
+            ApiResult<Void>
     > delete(@PathVariable("id") UUID id) {
         timeEntryService.delete(currentOwnerId(), id);
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                ApiResult.success(
                         "ลบรายการเวลาเรียบร้อยแล้ว",
                         null
                 )

@@ -135,7 +135,8 @@ class TimeEntryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of("projectId", projectId))))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("TIMER_ALREADY_RUNNING"));
 
         clock.advance(Duration.ofMinutes(2));
 
@@ -272,8 +273,11 @@ class TimeEntryIntegrationTest {
                         .param("from", "2026-09-01T00:00:00Z")
                         .param("to", "2026-09-02T00:00:00Z"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.entryCount").value(1))
-                .andExpect(jsonPath("$.totalSeconds").value(5400));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.entryCount").value(1))
+                .andExpect(jsonPath("$.data.totalSeconds").value(5400))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         mockMvc.perform(delete("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
@@ -362,14 +366,16 @@ class TimeEntryIntegrationTest {
                                 "durationSeconds", 5400
                         ))))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 
         mockMvc.perform(get("/api/time-entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .param("from", "2026-09-02T00:00:00Z")
                         .param("to", "2026-09-01T00:00:00Z"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
     private String registerAndGetToken(String email) throws Exception {

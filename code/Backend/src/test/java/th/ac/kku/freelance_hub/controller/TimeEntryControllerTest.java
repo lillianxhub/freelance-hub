@@ -37,7 +37,8 @@ import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
-import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
+import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
+import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -81,7 +82,7 @@ class TimeEntryControllerTest {
                                 userService
                         )
                 )
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new TimeTrackingExceptionHandler())
                 .setValidator(validator)
                 .build();
     }
@@ -148,7 +149,13 @@ class TimeEntryControllerTest {
         mockMvc.perform(post("/api/time-entries")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details.projectId").exists());
 
         verify(timeEntryService, never()).createManual(any(), any());
     }
@@ -272,13 +279,32 @@ class TimeEntryControllerTest {
                         .param("from", FROM.toString())
                         .param("to", TO.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.entryCount").value(3))
-                .andExpect(jsonPath("$.totalSeconds").value(5400));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("สรุปรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data.entryCount").value(3))
+                .andExpect(jsonPath("$.data.totalSeconds").value(5400))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(timeEntryQueryService).summarize(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         );
+    }
+
+    @Test
+    void returnsSharedErrorWhenEntryIsNotFound() throws Exception {
+        stubCurrentUser();
+        when(timeEntryQueryService.getById(OWNER_ID, ENTRY_ID))
+                .thenThrow(new TimeEntryNotFoundException(ENTRY_ID));
+
+        mockMvc.perform(get("/api/time-entries/{id}", ENTRY_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("ไม่พบรายการเวลา"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("TIME_ENTRY_NOT_FOUND"));
     }
 
     @Test

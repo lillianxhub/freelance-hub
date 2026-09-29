@@ -31,7 +31,7 @@ import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.dto.request.StartTimerRequest;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
+import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TimerAlreadyRunningException;
 import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -61,7 +61,7 @@ class TimerControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new TimerController(timeEntryService, userService)
                 )
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new TimeTrackingExceptionHandler())
                 .setValidator(validator)
                 .build();
     }
@@ -123,7 +123,12 @@ class TimerControllerTest {
         mockMvc.perform(post("/api/timer/start")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"projectId\":\"" + PROJECT_ID + "\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("มีตัวจับเวลาที่กำลังทำงานอยู่แล้ว"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("TIMER_ALREADY_RUNNING"));
     }
 
     @Test
