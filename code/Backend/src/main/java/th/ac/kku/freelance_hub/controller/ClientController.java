@@ -123,7 +123,7 @@ public class ClientController {
                 "อัปเดตข้อมูลลูกค้าสำเร็จ", clientService.update(ownerId, id, request)));
     }
 
-    @Operation(summary = "Change client status", description = "Archive or reactivate a client by updating its is_active flag")
+    @Operation(summary = "Change client status", description = "Activate or deactivate a client by updating only its is_active flag")
     @ApiResponse(responseCode = "200", description = "Client status updated", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
     @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required")
@@ -137,16 +137,16 @@ public class ClientController {
                 "อัปเดตสถานะลูกค้าสำเร็จ", clientService.changeStatus(ownerId, id, request.getIsActive())));
     }
 
-    /** Soft-delete: preserve the client and its history by marking it archived. */
-    @Operation(summary = "Archive a client", description = "Soft-delete a client belonging to the authenticated user while preserving its history")
-    @ApiResponse(responseCode = "204", description = "Client archived", content = @Content)
+    /** Soft-delete: preserve the client and its active status while hiding it from Client APIs. */
+    @Operation(summary = "Soft-delete a client", description = "Set deleted_at without changing is_active, while preserving client history")
+    @ApiResponse(responseCode = "204", description = "Client soft-deleted", content = @Content)
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> archive(@PathVariable UUID id) {
+    public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
-        clientService.archive(ownerId, id);
+        clientService.softDelete(ownerId, id);
         return ResponseEntity.noContent().build();
     }
 }

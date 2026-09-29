@@ -345,23 +345,23 @@ class ClientControllerTest {
     }
 
     @Test
-    void archiveUsesCurrentUserAndReturnsNoContent() throws Exception {
+    void softDeleteUsesCurrentUserAndReturnsNoContent() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNoContent());
 
-        verify(clientService).archive(OWNER_ID, clientId);
+        verify(clientService).softDelete(OWNER_ID, clientId);
     }
 
     @Test
-    void archiveReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+    void softDeleteReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
-        doThrow(new ClientNotFoundException(clientId)).when(clientService).archive(OWNER_ID, clientId);
+        doThrow(new ClientNotFoundException(clientId)).when(clientService).softDelete(OWNER_ID, clientId);
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNotFound());
 
-        verify(clientService).archive(OWNER_ID, clientId);
+        verify(clientService).softDelete(OWNER_ID, clientId);
     }
 }

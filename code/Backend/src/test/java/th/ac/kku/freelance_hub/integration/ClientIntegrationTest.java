@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,6 +25,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
+import th.ac.kku.freelance_hub.repository.ClientRepository;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -32,6 +34,9 @@ class ClientIntegrationTest {
 
     @Autowired
     private WebApplicationContext context;
+
+    @Autowired
+    private ClientRepository clientRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
@@ -68,7 +73,7 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description")
                         .value("Client updated"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].delete.responses['204'].description")
-                        .value("Client archived"));
+                        .value("Client soft-deleted"));
     }
 
     @Test
@@ -196,6 +201,7 @@ class ClientIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("ARCHIVED"))
                 .andExpect(jsonPath("$.data.isActive").value(false));
+        assertThat(clientRepository.findById(clientId).orElseThrow().getDeletedAt()).isNull();
 
         mockMvc.perform(patch("/api/clients/{id}/status", clientId)
                 .header("Authorization", bearer(ownerToken))
@@ -254,11 +260,21 @@ class ClientIntegrationTest {
         mockMvc.perform(delete("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
                 .andExpect(status().isNoContent());
+        var deletedClient = clientRepository.findById(clientId).orElseThrow();
+        assertThat(deletedClient.getIsActive()).isTrue();
+        assertThat(deletedClient.getDeletedAt()).isNotNull();
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(ownerToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("Updated Acme"))
-                .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
+                .andExpect(jsonPath("$.meta.total").value(0));
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+                .andExpect(status().isNotFound());
     }
 
     private String registerAndGetToken(String email) throws Exception {

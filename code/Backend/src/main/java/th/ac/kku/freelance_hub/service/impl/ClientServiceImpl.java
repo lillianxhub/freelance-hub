@@ -77,6 +77,7 @@ public class ClientServiceImpl implements ClientService {
 
         Specification<Client> specification = (root, query, cb) -> {
             Predicate predicate = cb.equal(root.get("owner").get("id"), ownerId);
+            predicate = cb.and(predicate, cb.isNull(root.get("deletedAt")));
             if (filter.getStatus() != null) {
                 predicate = cb.and(predicate, cb.equal(
                     root.get("isActive"), filter.getStatus() == ClientStatus.ACTIVE));
@@ -128,19 +129,15 @@ public class ClientServiceImpl implements ClientService {
     @Transactional
     public ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive) {
         Client client = findOwnedClient(ownerId, clientId);
-        if (isActive) {
-            client.activate();
-        } else {
-            client.archive();
-        }
+        client.setActive(isActive);
         return clientMapper.toResponse(clientRepository.save(client));
     }
 
     @Override
     @Transactional
-    public void archive(UUID ownerId, UUID clientId) {
+    public void softDelete(UUID ownerId, UUID clientId) {
         Client client = findOwnedClient(ownerId, clientId);
-        client.archive();
+        client.softDelete();
         clientRepository.save(client);
     }
 
@@ -148,6 +145,7 @@ public class ClientServiceImpl implements ClientService {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(clientId, "clientId is required");
         return clientRepository.findByIdAndOwnerId(clientId, ownerId)
+                .filter(client -> client.getDeletedAt() == null)
                 .orElseThrow(() -> new ClientNotFoundException(clientId));
     }
 

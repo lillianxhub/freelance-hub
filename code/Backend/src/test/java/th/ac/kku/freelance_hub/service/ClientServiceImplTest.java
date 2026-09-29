@@ -118,29 +118,57 @@ class ClientServiceImplTest {
     }
 
     @Test
-    void archivePreservesClientAndChangesStatus() {
+    void softDeletePreservesClientStatus() {
         when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
 
-        service.archive(OWNER_ID, clientId);
+        service.softDelete(OWNER_ID, clientId);
 
-        assertThat(client.getStatus()).isEqualTo(ClientStatus.ARCHIVED);
+        assertThat(client.getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(client.getIsActive()).isTrue();
+        assertThat(client.getDeletedAt()).isNotNull();
         verify(clientRepository).save(client);
     }
 
     @Test
-    void changeStatusArchivesAndReactivatesClient() {
+    void softDeleteAlsoPreservesInactiveStatus() {
+        client.setActive(false);
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+
+        service.softDelete(OWNER_ID, clientId);
+
+        assertThat(client.getIsActive()).isFalse();
+        assertThat(client.getDeletedAt()).isNotNull();
+        verify(clientRepository).save(client);
+    }
+
+    @Test
+    void changeStatusDoesNotSoftDeleteClient() {
         when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
         when(clientRepository.save(client)).thenReturn(client);
 
         var archived = service.changeStatus(OWNER_ID, clientId, false);
         assertThat(archived.getStatus()).isEqualTo(ClientStatus.ARCHIVED);
         assertThat(client.getIsActive()).isFalse();
-        assertThat(client.getDeletedAt()).isNotNull();
+        assertThat(client.getDeletedAt()).isNull();
 
         var active = service.changeStatus(OWNER_ID, clientId, true);
         assertThat(active.getStatus()).isEqualTo(ClientStatus.ACTIVE);
         assertThat(client.getIsActive()).isTrue();
         assertThat(client.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void deletedClientCannotBeReadOrChanged() {
+        client.softDelete();
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+
+        assertThatThrownBy(() -> service.getById(OWNER_ID, clientId))
+            .isInstanceOf(ClientNotFoundException.class);
+        assertThatThrownBy(() -> service.changeStatus(OWNER_ID, clientId, false))
+            .isInstanceOf(ClientNotFoundException.class);
+        assertThatThrownBy(() -> service.softDelete(OWNER_ID, clientId))
+            .isInstanceOf(ClientNotFoundException.class);
+        verify(clientRepository, never()).save(any(Client.class));
     }
 
     @Test
