@@ -399,7 +399,7 @@ class TimeEntryIntegrationTest {
                         .content(json(Map.of("name", projectName + " client"))))
                 .andExpect(status().isCreated())
                 .andReturn();
-        UUID clientId = responseId(client);
+        UUID clientId = UUID.fromString(responseJson(client).path("data").path("id").asText());
 
         MvcResult project = mockMvc.perform(post("/api/projects")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
