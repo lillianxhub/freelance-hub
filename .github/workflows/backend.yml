@@ -1,3 +1,6 @@
+# Backend CI/CD: pull requests run checks only.
+# Push to dev: run checks, then deploy staging. Push to main: run checks, then deploy production.
+# Keep the Backend gate job name stable because branch protection requires it.
 name: Backend CI
 
 on:
@@ -41,8 +44,7 @@ jobs:
                   filters: |
                       backend:
                         - 'code/Backend/**'
-                        - '.github/workflows/backend-ci.yml'
-                        - '.github/workflows/backend-cd.yml'
+                        - '.github/workflows/backend.yml'
 
             - name: Mark push as backend change
               if: github.event_name == 'push'
@@ -144,6 +146,7 @@ jobs:
     docker:
         name: Build Docker image
         needs:
+            - changes
             - changes
             - test
             - migration
@@ -270,3 +273,33 @@ jobs:
                   fi
 
                   echo "All Backend checks succeeded."
+
+    deploy-staging:
+        name: Deploy backend to staging
+        needs: backend-gate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.backend-gate.result == 'success'
+        runs-on: ubuntu-latest
+        environment: staging
+
+        steps:
+            - name: Trigger Render staging deploy
+              env:
+                  RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
+              run: |
+                  test -n "$RENDER_DEPLOY_HOOK_URL"
+                  curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
+
+    deploy-production:
+        name: Deploy backend to production
+        needs: backend-gate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.backend-gate.result == 'success'
+        runs-on: ubuntu-latest
+        environment: production
+
+        steps:
+            - name: Trigger Render production deploy
+              env:
+                  RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK_URL }}
+              run: |
+                  test -n "$RENDER_DEPLOY_HOOK_URL"
+                  curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
