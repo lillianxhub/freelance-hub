@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -60,10 +59,10 @@ class ClientRepositoryTest {
         User otherOwner = saveUser("other-status-owner@example.com");
         Client active = clientRepository.saveAndFlush(new Client(owner, "Active Client"));
         Client archived = new Client(owner, "Archived Client");
-        archived.archive();
+        archived.setActive(false);
         archived = clientRepository.saveAndFlush(archived);
         Client otherArchived = new Client(otherOwner, "Other Archived Client");
-        otherArchived.archive();
+        otherArchived.setActive(false);
         clientRepository.saveAndFlush(otherArchived);
 
         PageRequest page = PageRequest.of(0, 10);

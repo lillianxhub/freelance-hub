@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,7 +38,7 @@ import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
-import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
+import th.ac.kku.freelance_hub.exception.ClientExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -57,7 +59,7 @@ class ClientControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(new ClientController(clientService, userService))
-            .setControllerAdvice(new GlobalExceptionHandler())
+            .setControllerAdvice(new ClientExceptionHandler())
             .setValidator(validator)
             .build();
         clientId = UUID.randomUUID();
@@ -74,7 +76,12 @@ class ClientControllerTest {
                 .content("{\"name\":\"Acme\",\"ownerId\":999}"))
             .andExpect(status().isCreated())
             .andExpect(header().string("Location", "/api/clients/" + clientId))
-            .andExpect(jsonPath("$.name").value("Acme"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("สร้างลูกค้าสำเร็จ"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("Acme"))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).create(eq(OWNER_ID), any(CreateClientRequest.class));
     }
@@ -84,7 +91,13 @@ class ClientControllerTest {
         mockMvc.perform(post("/api/clients")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+            .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.error.details.name").exists());
 
         verify(clientService, never()).create(any(), any());
     }
@@ -98,7 +111,14 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content[0].name").value("Acme"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("ดึงรายชื่อลูกค้าสำเร็จ"))
+            .andExpect(jsonPath("$.data[0].name").value("Acme"))
+            .andExpect(jsonPath("$.meta.page").value(1))
+            .andExpect(jsonPath("$.meta.limit").value(20))
+            .andExpect(jsonPath("$.meta.total").value(1))
+            .andExpect(jsonPath("$.meta.totalPages").value(1))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getPage() == 0 && filter.getSize() == 20
@@ -118,7 +138,11 @@ class ClientControllerTest {
                 .param("size", "5")
                 .param("sortBy", "createdAt")
                 .param("direction", "DESC"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(0))
+            .andExpect(jsonPath("$.meta.page").value(3))
+            .andExpect(jsonPath("$.meta.limit").value(5))
+            .andExpect(jsonPath("$.meta.total").value(0));
 
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getStatus() == ClientStatus.ARCHIVED
@@ -137,6 +161,34 @@ class ClientControllerTest {
     }
 
     @Test
+    void listBindsLimitAlongsideLegacySize() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(1, 7), 0))
+            .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
+
+        mockMvc.perform(get("/api/clients")
+                .param("page", "1")
+                .param("size", "5")
+                .param("limit", "7"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.meta.page").value(2))
+            .andExpect(jsonPath("$.meta.limit").value(7));
+
+        verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
+            filter.getPage() == 1 && filter.getSize() == 5 && filter.getLimit() == 7));
+    }
+
+    @Test
+    void listRejectsInvalidLimitBeforeCallingService() throws Exception {
+        mockMvc.perform(get("/api/clients").param("limit", "0"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/clients").param("limit", "101"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).list(any(), any());
+    }
+
+    @Test
     void getByIdUsesCurrentUserAndReturnsClient() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
         when(clientService.getById(OWNER_ID, clientId))
@@ -144,8 +196,12 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(clientId.toString()))
-            .andExpect(jsonPath("$.name").value("Acme"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("ดึงข้อมูลลูกค้าสำเร็จ"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("Acme"))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).getById(OWNER_ID, clientId);
     }
@@ -156,9 +212,58 @@ class ClientControllerTest {
         when(clientService.getById(OWNER_ID, clientId)).thenThrow(new ClientNotFoundException(clientId));
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("Client not found with id: " + clientId))
+            .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"))
+            .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).getById(OWNER_ID, clientId);
+    }
+
+    @Test
+    void replaceUsesCurrentUserAndReturnsWrappedClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class)))
+            .thenReturn(ClientResponse.builder().id(clientId).name("New Name").build());
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"New Name\",\"ownerId\":999}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("อัปเดตข้อมูลลูกค้าสำเร็จ"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("New Name"));
+
+        verify(clientService).replace(eq(OWNER_ID), eq(clientId),
+            org.mockito.ArgumentMatchers.argThat(request -> request.getName().equals("New Name")));
+    }
+
+    @Test
+    void replaceRejectsMissingNameBeforeCallingService() throws Exception {
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).replace(any(), any(), any());
+    }
+
+    @Test
+    void replaceReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class)))
+            .thenThrow(new ClientNotFoundException(clientId));
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"New Name\"}"))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class));
     }
 
     @Test
@@ -171,7 +276,12 @@ class ClientControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"New Name\",\"ownerId\":999}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("New Name"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("อัปเดตข้อมูลลูกค้าสำเร็จ"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("New Name"))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).update(eq(OWNER_ID), eq(clientId),
             org.mockito.ArgumentMatchers.argThat(request ->
@@ -203,23 +313,67 @@ class ClientControllerTest {
     }
 
     @Test
-    void archiveUsesCurrentUserAndReturnsNoContent() throws Exception {
+    void changeStatusUsesCurrentUserAndBooleanFlag() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.changeStatus(OWNER_ID, clientId, false))
+            .thenReturn(ClientResponse.builder().id(clientId).status(ClientStatus.ARCHIVED)
+                .isActive(false).build());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("อัปเดตสถานะลูกค้าสำเร็จ"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.status").value("ARCHIVED"))
+            .andExpect(jsonPath("$.data.isActive").value(false));
+
+        verify(clientService).changeStatus(OWNER_ID, clientId, false);
+    }
+
+    @Test
+    void changeStatusRejectsMissingBooleanFlag() throws Exception {
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).changeStatus(any(), any(), anyBoolean());
+    }
+
+    @Test
+    void changeStatusReturnsNotFoundForAnotherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.changeStatus(OWNER_ID, clientId, true))
+            .thenThrow(new ClientNotFoundException(clientId));
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":true}"))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).changeStatus(OWNER_ID, clientId, true);
+    }
+
+    @Test
+    void softDeleteUsesCurrentUserAndReturnsNoContent() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNoContent());
 
-        verify(clientService).archive(OWNER_ID, clientId);
+        verify(clientService).softDelete(OWNER_ID, clientId);
     }
 
     @Test
-    void archiveReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+    void softDeleteReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
-        doThrow(new ClientNotFoundException(clientId)).when(clientService).archive(OWNER_ID, clientId);
+        doThrow(new ClientNotFoundException(clientId)).when(clientService).softDelete(OWNER_ID, clientId);
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNotFound());
 
-        verify(clientService).archive(OWNER_ID, clientId);
+        verify(clientService).softDelete(OWNER_ID, clientId);
     }
 }

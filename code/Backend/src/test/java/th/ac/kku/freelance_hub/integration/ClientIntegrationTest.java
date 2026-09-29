@@ -1,15 +1,18 @@
 package th.ac.kku.freelance_hub.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
+import th.ac.kku.freelance_hub.repository.ClientRepository;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -31,6 +35,12 @@ class ClientIntegrationTest {
 
     @Autowired
     private WebApplicationContext context;
+
+    @Autowired
+    private ClientRepository clientRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
@@ -45,7 +55,11 @@ class ClientIntegrationTest {
     @Test
     void unauthenticatedClientRequestIsRejected() throws Exception {
         mockMvc.perform(get("/api/clients"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"));
     }
 
     @Test
@@ -64,10 +78,12 @@ class ClientIntegrationTest {
                         .value("Page of clients returned"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description")
                         .value("Client not found"))
+                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema['$ref']")
+                        .value(org.hamcrest.Matchers.hasItem("#/components/schemas/ApiResult")))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description")
                         .value("Client updated"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].delete.responses['204'].description")
-                        .value("Client archived"));
+                        .value("Client soft-deleted"));
     }
 
     @Test
@@ -95,9 +111,19 @@ class ClientIntegrationTest {
                 .header("Authorization", bearer(ownerToken))
                 .param("search", "0812"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].name").value("Phone Match"))
-                .andExpect(jsonPath("$.content[0].phone").value("0812345678"));
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("Phone Match"))
+                .andExpect(jsonPath("$.data[0].phone").value("0812345678"));
+
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .param("page", "0")
+                .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.limit").value(1))
+                .andExpect(jsonPath("$.meta.total").value(2))
+                .andExpect(jsonPath("$.data.length()").value(1));
     }
 
     @Test
@@ -120,9 +146,149 @@ class ClientIntegrationTest {
                 .header("Authorization", bearer(ownerToken))
                 .param("search", "123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].name").value("Address Match"))
-                .andExpect(jsonPath("$.content[0].address").value("123 Main Road"));
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("Address Match"))
+                .andExpect(jsonPath("$.data[0].address").value("123 Main Road"));
+    }
+
+    @Test
+    void updatedAddressFieldsAreStoredSeparatelyAndReturnedAfterReload() throws Exception {
+        String ownerToken = registerAndGetToken("client-address-update@example.com");
+        String createdBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Address Client\",\"address\":\"Old road\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
+
+        mockMvc.perform(patch("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"address\":\"271 moo 8\",\"subdistrict\":\"Tha Hin\","
+                        + "\"district\":\"Mueang Lop Buri\",\"province\":\"Lop Buri\","
+                        + "\"postalCode\":\"15000\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.address").value("271 moo 8"))
+                .andExpect(jsonPath("$.data.subdistrict").value("Tha Hin"))
+                .andExpect(jsonPath("$.data.district").value("Mueang Lop Buri"))
+                .andExpect(jsonPath("$.data.province").value("Lop Buri"))
+                .andExpect(jsonPath("$.data.postalCode").value("15000"));
+
+        entityManager.flush();
+        entityManager.clear();
+        var stored = clientRepository.findById(clientId).orElseThrow();
+        assertThat(stored.getAddress()).isEqualTo("271 moo 8");
+        assertThat(stored.getSubdistrict()).isEqualTo("Tha Hin");
+        assertThat(stored.getDistrict()).isEqualTo("Mueang Lop Buri");
+        assertThat(stored.getProvince()).isEqualTo("Lop Buri");
+        assertThat(stored.getPostalCode()).isEqualTo("15000");
+
+        entityManager.clear();
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.address").value("271 moo 8"))
+                .andExpect(jsonPath("$.data.subdistrict").value("Tha Hin"))
+                .andExpect(jsonPath("$.data.district").value("Mueang Lop Buri"))
+                .andExpect(jsonPath("$.data.province").value("Lop Buri"))
+                .andExpect(jsonPath("$.data.postalCode").value("15000"));
+    }
+
+    @Test
+    void clientValidationAndNotFoundErrorsUseApiResult() throws Exception {
+        String token = registerAndGetToken("client-error-envelope@example.com");
+
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details.name").exists());
+
+        mockMvc.perform(get("/api/clients/{id}", UUID.randomUUID())
+                .header("Authorization", bearer(token)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"));
+    }
+
+    @Test
+    void ownerCanReplaceClientWithoutChangingOwnershipOrStatus() throws Exception {
+        String ownerToken = registerAndGetToken("client-replace-owner@example.com");
+        String otherToken = registerAndGetToken("client-replace-other@example.com");
+        String createdBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Original\",\"companyName\":\"Acme\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Stolen\"}"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Replaced\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Replaced"))
+                .andExpect(jsonPath("$.data.companyName").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+    }
+
+    @Test
+    void ownerCanArchiveAndReactivateClientThroughStatusEndpoint() throws Exception {
+        String ownerToken = registerAndGetToken("client-status-owner@example.com");
+        String otherToken = registerAndGetToken("client-status-other@example.com");
+        String createdBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Status Client\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"))
+                .andExpect(jsonPath("$.data.isActive").value(false));
+        assertThat(clientRepository.findById(clientId).orElseThrow().getDeletedAt()).isNull();
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.isActive").value(true));
     }
 
     @Test
@@ -135,20 +301,24 @@ class ClientIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Acme\",\"email\":\"acme@example.com\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Acme"))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Acme"))
                 .andReturn().getResponse().getContentAsString();
-        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("id").asText());
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
 
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+                .andExpect(jsonPath("$.data.name").value("Acme"));
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(otherToken)))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/clients")
                 .header("Authorization", bearer(otherToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(0));
+                .andExpect(jsonPath("$.data.length()").value(0));
 
         mockMvc.perform(patch("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(otherToken))
@@ -164,15 +334,26 @@ class ClientIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Updated Acme\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Acme"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Updated Acme"));
         mockMvc.perform(delete("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
                 .andExpect(status().isNoContent());
+        var deletedClient = clientRepository.findById(clientId).orElseThrow();
+        assertThat(deletedClient.getIsActive()).isTrue();
+        assertThat(deletedClient.getDeletedAt()).isNotNull();
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(ownerToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Acme"))
-                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+                .andExpect(jsonPath("$.meta.total").value(0));
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+                .andExpect(status().isNotFound());
     }
 
     private String registerAndGetToken(String email) throws Exception {
