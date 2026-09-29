@@ -6,7 +6,7 @@ package th.ac.kku.freelance_hub.exception;
 public class InvalidCredentialsException extends RuntimeException {
 
     public InvalidCredentialsException() {
-        super("Invalid email or password");
+        super("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
     }
 
     public InvalidCredentialsException(String message) {

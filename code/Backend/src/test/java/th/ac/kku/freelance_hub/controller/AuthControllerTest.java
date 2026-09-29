@@ -80,6 +80,7 @@ class AuthControllerTest {
                                 .andExpect(status().isCreated())
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.message").value("สมัครสมาชิกสำเร็จ"))
                                 .andExpect(jsonPath("$.data.token").exists())
                                 .andExpect(jsonPath("$.data.expiresIn").exists())
                                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
@@ -96,7 +97,9 @@ class AuthControllerTest {
                 mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(registerRequest)))
-                                .andExpect(status().isBadRequest());
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+                                .andExpect(jsonPath("$.errors.email").value("รูปแบบอีเมลไม่ถูกต้อง"));
         }
 
         @Test
@@ -138,7 +141,8 @@ class AuthControllerTest {
                 mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(registerRequest)))
-                                .andExpect(status().isConflict());
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.message").value("อีเมลนี้ถูกใช้งานแล้ว: test@example.com"));
         }
 
         @Test
@@ -156,6 +160,7 @@ class AuthControllerTest {
                                 .andExpect(status().isOk())
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.message").value("เข้าสู่ระบบสำเร็จ"))
                                 .andExpect(jsonPath("$.data.token").exists())
                                 .andExpect(jsonPath("$.data.expiresIn").exists())
                                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"));
@@ -171,7 +176,9 @@ class AuthControllerTest {
                 mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(loginRequest)))
-                                .andExpect(status().isBadRequest());
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+                                .andExpect(jsonPath("$.errors.email").value("กรุณาระบุอีเมล"));
         }
 
         @Test
@@ -200,7 +207,8 @@ class AuthControllerTest {
                 mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidLogin)))
-                                .andExpect(status().isUnauthorized());
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.message").value("อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
         }
 
         @Test
@@ -212,7 +220,8 @@ class AuthControllerTest {
                                 .andExpect(status().isNoContent())
                                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
                 mockMvc.perform(post("/api/auth/refresh").cookie(cookie))
-                                .andExpect(status().isUnauthorized());
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.message").value("Invalid refresh token"));
                 // Without an access-token denylist, the existing JWT lives until its 15-minute expiry.
                 mockMvc.perform(get("/api/users/me").header("Authorization", bearer(accessToken)))
                                 .andExpect(status().isOk());
@@ -302,7 +311,8 @@ class AuthControllerTest {
         @DisplayName("POST /api/auth/refresh rejects missing and malformed refresh cookies")
         void shouldRejectMissingAndMalformedRefreshTokens() throws Exception {
                 mockMvc.perform(post("/api/auth/refresh"))
-                                .andExpect(status().isUnauthorized());
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.message").value("Invalid refresh token"));
                 mockMvc.perform(post("/api/auth/refresh")
                                 .cookie(new Cookie("fh_refresh", "malformed-token")))
                                 .andExpect(status().isUnauthorized());
@@ -324,6 +334,7 @@ class AuthControllerTest {
                 Cookie first = loginAndGetCookie();
                 var rotated = mockMvc.perform(post("/api/auth/refresh").cookie(first))
                                 .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Token refreshed"))
                                 .andExpect(jsonPath("$.data.token").exists())
                                 .andReturn();
                 Cookie second = cookieFrom(rotated.getResponse().getHeader("Set-Cookie"));

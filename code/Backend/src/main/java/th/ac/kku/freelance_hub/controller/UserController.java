@@ -31,7 +31,7 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser() {
         UserResponse response = userService.getCurrentUser();
-        return ResponseEntity.ok(ApiResponse.success("User profile retrieved", response));
+        return ResponseEntity.ok(ApiResponse.success("ดึงข้อมูลผู้ใช้สำเร็จ", response));
     }
 
     /**
@@ -44,7 +44,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(
             @Valid @RequestBody UpdateUserProfileRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
-                "User profile updated", userService.updateCurrentUser(request)));
+                "อัปเดตข้อมูลผู้ใช้สำเร็จ", userService.updateCurrentUser(request)));
     }
 
     /**
@@ -57,7 +57,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
-        return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
+        return ResponseEntity.ok(ApiResponse.success("เปลี่ยนรหัสผ่านสำเร็จ", null));
     }
 
     /*

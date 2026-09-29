@@ -55,7 +55,7 @@ public class AuthController {
         public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
                 AuthResponse response = authService.register(request);
                 return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Registration successful", response));
+                    .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("สมัครสมาชิกสำเร็จ", response));
         }
 
         @Operation(summary = "Login user", description = "Authenticate user with email and password")
@@ -70,7 +70,7 @@ public class AuthController {
                 AuthSessionResult result = authService.login(request);
                 return ResponseEntity.ok()
                         .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.set(result.refreshToken(), result.refreshExpiresAt()))
-                        .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Login successful", result.response()));
+                        .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("เข้าสู่ระบบสำเร็จ", result.response()));
         }
 
         @Operation(summary = "Rotate refresh token", description = "Issue a new access token and rotate the HttpOnly refresh cookie")
