@@ -20,8 +20,8 @@
 | UC-AUTH-03 | Logout | User with refresh cookie | `POST /api/auth/logout` | เพิกถอน refresh-token family และคืน `204` |
 | UC-AUTH-04 | Refresh | User with refresh cookie | `POST /api/auth/refresh` | หมุน cookie และคืน access JWT ใหม่ (`200`) |
 | UC-USER-01 | View My Profile | Authenticated User | `GET /api/users/me` | คืนข้อมูล User + Profile ของตนเอง (`200`) |
-| UC-USER-02 | Update My Profile | Authenticated User | `PUT /api/users/me` | แก้ข้อมูล profile และที่อยู่ (`200`) |
-| UC-USER-03 | Change Password | Authenticated User | `PATCH /api/users/me/password` | ตรวจ `oldPassword`, บันทึก `newPassword` เป็น hash (`204`) |
+| UC-USER-02 | Update My Profile | Authenticated User | `PATCH /api/users/me` | แก้ข้อมูล profile และที่อยู่ (`200`) |
+| UC-USER-03 | Change Password | Authenticated User | `PATCH /api/users/me/password` | ตรวจ `oldPassword`, บันทึก `newPassword` เป็น hash (`200`) |
 | UC-USER-04 | View User by ID | Admin | `GET /api/users/{id}` | คืน user ที่ร้องขอ หรือ `404`; role อื่นได้ `403` |
 
 ## UC-AUTH-01 Register
@@ -40,7 +40,7 @@
 
 **Alternative flow:** validation ไม่ผ่าน = `400`; email ซ้ำ = `409`; ระบบผิดพลาด = `500`
 
-**Acceptance criteria:** password ห้ามเป็น plain text, email ซ้ำต้องถูกปฏิเสธ,
+**Acceptance criteria:** password ห้ามเป็น plain text, email ถูก trim/lowercase ก่อนบันทึกและ email ซ้ำต่างตัวพิมพ์ต้องถูกปฏิเสธ,
 response ห้ามเผย `passwordHash`, profile ต้องเชื่อมกับ user ถูกคน
 
 ## UC-AUTH-02 Login
@@ -52,7 +52,9 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 และ refresh token สุ่มอายุสูงสุด 7 วัน ส่ง refresh token ใน HttpOnly cookie;
 คืน `200 AuthResponse` โดยไม่ส่ง refresh token ใน JSON
 
-**Alternative flow:** validation ไม่ผ่าน = `400`; email/password ไม่ถูกต้อง = `401`
+**Alternative flow:** validation ไม่ผ่าน = `400`; email/password ไม่ถูกต้อง = `401`;
+login ผิดครบ 10 ครั้งต่อ email ใน 15 นาที หรือครบ 300 ครั้งต่อนาทีต่อ IP = `429`
+พร้อม `Retry-After` และ `LOGIN_RATE_LIMITED`
 
 ## UC-AUTH-03 Logout
 
@@ -61,16 +63,18 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 **Main flow:** Service เพิกถอน refresh-token family จาก cookie, ล้าง cookie และ
 คืน `204 No Content`; access JWT ที่มีอยู่ยังใช้ได้จนหมดอายุ (สูงสุด 15 นาที)
 
-**Alternative flow:** ไม่มี cookie หรือ logout ซ้ำยังคืน `204` แบบ idempotent
+**Alternative flow:** ไม่มี cookie หรือ logout ซ้ำยังคืน `204` แบบ idempotent;
+`Origin`/`Referer` ไม่อยู่ใน allowlist หรือไม่มีทั้งคู่ = `403`
 
 ## UC-AUTH-04 Refresh
 
 `POST /api/auth/refresh` อ่าน HttpOnly cookie, หมุน token ใน transaction โดยคง
 `family_id` และวันหมดอายุเดิม หาก token ถูกใช้แล้วให้เพิกถอนทั้ง family และตอบ `401`
+ต้องตรวจ `Origin` หรือ `Referer` ตามเงื่อนไขเดียวกับ logout ก่อนอ่าน cookie
 
 ## UC-USER-02 Update My Profile
 
-1. ผู้ใช้เรียก `PUT /api/users/me` พร้อม bearer JWT
+1. ผู้ใช้เรียก `PATCH /api/users/me` พร้อม bearer JWT
 2. `JwtAuthenticationFilter` ตรวจ token และใส่ authenticated principal ใน SecurityContext
 3. `UserService` อ่าน user จาก principal ไม่รับ `userId` หรือ `ownerId` จาก body
 4. Service แก้ข้อมูล profile และ field ที่อยู่โดยตรงใน `user_profiles`

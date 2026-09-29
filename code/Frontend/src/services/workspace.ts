@@ -47,7 +47,6 @@ export function toProfile(user: ApiUser): Profile {
     bank_account_number: '',
     timezone: 'Asia/Bangkok',
     currency: 'THB',
-    date_format: user.dateFormat || 'DD/MM/YYYY',
     default_tax_rate: 0,
     default_hourly_rate: 0,
     bio: emptyString(user.bio),
@@ -67,7 +66,6 @@ function profilePayload(input: ResourceInput<'profiles'>) {
     province: input.province || undefined,
     postalCode: input.postal_code || undefined,
     taxId: input.tax_id || undefined,
-    dateFormat: input.date_format || undefined,
     bio: input.bio || undefined,
   }
 }
@@ -225,7 +223,7 @@ async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
 }
 
 export async function updateProfile(input: ResourceInput<'profiles'>): Promise<ApiResponse<Profile>> {
-  const response = await api.put<ApiUser>('/users/me', profilePayload(input))
+  const response = await api.patch<ApiUser>('/users/me', profilePayload(input))
   return { ...response, data: toProfile(response.data) }
 }
 

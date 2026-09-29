@@ -48,9 +48,6 @@ public class UpdateUserProfileRequest {
     @Size(max = 30, message = "เลขประจำตัวผู้เสียภาษีต้องไม่เกิน 30 ตัวอักษร")
     private String taxId;
 
-    @Size(max = 20, message = "รูปแบบวันที่ต้องไม่เกิน 20 ตัวอักษร")
-    private String dateFormat;
-
     @Size(max = 1000, message = "ประวัติย่อต้องไม่เกิน 1000 ตัวอักษร")
     private String bio;
 }

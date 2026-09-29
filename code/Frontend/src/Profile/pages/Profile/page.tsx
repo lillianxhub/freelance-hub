@@ -40,7 +40,6 @@ const emptyProfile: ResourceInput<"profiles"> = {
   bank_account_number: "",
   timezone: "Asia/Bangkok",
   currency: "THB",
-  date_format: "DD/MM/YYYY",
   default_tax_rate: 0,
   default_hourly_rate: 0,
   bio: "",
