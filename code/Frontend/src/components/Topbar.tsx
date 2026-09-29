@@ -4,6 +4,7 @@ import { useAuth } from '../Authentication/useAuthentication'
 import { initials } from '../utils/formatters'
 import type { TopbarProps } from '../types/ui'
 import { FiChevronDown, FiMenu } from 'react-icons/fi'
+import TopbarTimer from '../TimeTracking/components/TopbarTimer'
 
 const labels: Record<string, string> = {
   dashboard: 'ภาพรวม', clients: 'ลูกค้า', projects: 'โปรเจกต์', 'time-tracker': 'บันทึกเวลา',
@@ -52,6 +53,7 @@ function Topbar({ onMenu }: TopbarProps) {
       <button className="mobile-menu" type="button" aria-label="เปิดเมนู" onClick={onMenu}><FiMenu aria-hidden="true" /></button>
       <div className="breadcrumbs"><span>พื้นที่ทำงาน</span><span>/</span><strong>{label}</strong></div>
       <div className="topbar-actions">
+        <TopbarTimer />
         {/* <span className="mode-badge connected">
           <i />Backend API
         </span> */}

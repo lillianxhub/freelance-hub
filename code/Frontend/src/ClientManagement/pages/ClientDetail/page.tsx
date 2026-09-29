@@ -4,7 +4,7 @@ import PageHeader from '../../../components/PageHeader'
 import StatusBadge from '../../../components/StatusBadge'
 import { ErrorState, LoadingState } from '../../../components/ViewState'
 import { useClients } from '../../useClients'
-import { calculateTimeValue, formatDate, formatDuration, formatMoney } from '../../../utils/formatters'
+import { formatDuration } from '../../../utils/formatters'
 
 function ClientDetailPage() {
   const { clientId } = useParams()
@@ -19,9 +19,7 @@ function ClientDetailPage() {
   const projects = data.projects.filter((project) => project.client_id === client.id)
   const projectIds = new Set(projects.map((project) => project.id))
   const entries = data.time_entries.filter((entry) => projectIds.has(entry.project_id))
-  const invoices = data.invoices.filter((invoice) => invoice.client_id === client.id)
   const totalMinutes = entries.reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-  const revenue = entries.reduce((sum, entry) => sum + calculateTimeValue(entry), 0)
   const displayName = client.company_name || client.name
 
   return (
@@ -43,28 +41,28 @@ function ClientDetailPage() {
             <div className="list-stack">
               {projects.map((project) => {
                 const minutes = entries.filter((entry) => entry.project_id === project.id).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-                return <Link className="list-item" key={project.id} to={`/projects/${project.id}`}><span className="color-dot" style={{ '--dot-color': project.color }} /><span><strong>{project.name}</strong><small>{formatDuration(minutes)} · {project.billing_type === 'HOURLY' ? 'รายชั่วโมง' : 'เหมาจ่าย'}</small></span><StatusBadge status={project.status} /><span><FiArrowRight aria-hidden="true" /></span></Link>
+                return <Link className="list-item" key={project.id} to={`/projects/${project.id}`}><span className="color-dot" style={{ '--dot-color': project.color }} /><span><strong>{project.name}</strong><small>{formatDuration(minutes)}</small></span><StatusBadge status={project.status} /><span><FiArrowRight aria-hidden="true" /></span></Link>
               })}
               {projects.length === 0 && <p className="inline-empty">ยังไม่มีโปรเจกต์</p>}
             </div>
           </section>
 
-          <section className="panel">
+          {/* <section className="panel">
             <div className="panel-heading"><div><h2>ใบแจ้งหนี้</h2><p>ประวัติการเรียกเก็บเงิน</p></div></div>
             <div className="table-wrap"><table className="data-table"><thead><tr><th>เลขที่</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>ยอดรวม</th><th>สถานะ</th></tr></thead><tbody>
               {invoices.map((invoice) => <tr key={invoice.id}><td><Link to={`/invoices/${invoice.id}`}><strong>{invoice.invoice_number}</strong></Link></td><td>{formatDate(invoice.issue_date)}</td><td>{formatDate(invoice.due_date)}</td><td>{formatMoney(invoice.total, invoice.currency)}</td><td><StatusBadge status={invoice.status} /></td></tr>)}
               {invoices.length === 0 && <tr><td colSpan={5}>ยังไม่มี ใบแจ้งหนี้</td></tr>}
             </tbody></table></div>
-          </section>
+          </section> */}
         </div>
 
         <aside className="panel">
-          <div className="panel-heading"><div><h2>ข้อมูลลูกค้า</h2><p>ข้อมูลสำหรับติดต่อและออก ใบแจ้งหนี้</p></div></div>
+          <div className="panel-heading"><div><h2>ข้อมูลลูกค้า</h2><p>ข้อมูลสำหรับติดต่อ</p></div></div>
           <div className="detail-list">
             <div className="detail-item"><span>ผู้ติดต่อ</span><strong>{client.name || '—'}</strong></div>
             <div className="detail-item"><span>อีเมล</span><strong>{client.email || '—'}</strong></div>
             <div className="detail-item"><span>โทรศัพท์</span><strong>{client.phone || '—'}</strong></div>
-            <div className="detail-item"><span>เลขผู้เสียภาษี</span><strong>{client.tax_id || '—'}</strong></div>
+            {/* <div className="detail-item"><span>เลขผู้เสียภาษี</span><strong>{client.tax_id || '—'}</strong></div> */}
             <div className="detail-item"><span>ที่อยู่</span><p>{client.address || '—'}</p></div>
             <div className="detail-item"><span>หมายเหตุ</span><p>{client.notes || '—'}</p></div>
           </div>

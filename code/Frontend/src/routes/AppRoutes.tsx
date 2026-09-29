@@ -86,11 +86,7 @@ const protectedRoutes: AppRouteDefinition[] = [
     {
         path: "/time-tracker",
         label: "บันทึกเวลา",
-        element: (
-            <TimeEntriesProvider>
-                <TimeTrackerPage />
-            </TimeEntriesProvider>
-        ),
+        element: <TimeTrackerPage />,
     },
     {
         path: "/reports",
@@ -125,7 +121,9 @@ const protectedRoutes: AppRouteDefinition[] = [
 function ProtectedWorkspace() {
     return (
         <ProtectedRoute>
-            <AppLayout />
+            <TimeEntriesProvider>
+                <AppLayout />
+            </TimeEntriesProvider>
         </ProtectedRoute>
     );
 }

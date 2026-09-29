@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { FiArrowLeft, FiArrowRight, FiCheckSquare, FiClock, FiPlus } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiCheckSquare,
+  FiClock,
+  FiPlus,
+} from "react-icons/fi";
 import Modal from "../../../components/Modal";
 import PageHeader from "../../../components/PageHeader";
 import StatusBadge from "../../../components/StatusBadge";
@@ -10,12 +16,7 @@ import type { Task } from "../../../types/task";
 import type { TaskDraft } from "../../../types/projectDetailPage";
 import TaskForm from "../../components/TaskForm";
 import TaskList from "../../components/TaskList";
-import {
-  calculateTimeValue,
-  formatDate,
-  formatDuration,
-  formatMoney,
-} from "../../../utils/formatters";
+import { formatDate, formatDuration } from "../../../utils/formatters";
 
 const emptyTask: TaskDraft = {
   name: "",
@@ -48,21 +49,10 @@ function ProjectDetailPage() {
     (sum, entry) => sum + (entry.duration_minutes || 0),
     0,
   );
-  const billableValue = entries.reduce(
-    (sum, entry) => sum + calculateTimeValue(entry),
-    0,
-  );
   const completed = tasks.filter((task) => task.status === "DONE").length;
   const taskProgress = tasks.length
     ? Math.round((completed / tasks.length) * 100)
     : 0;
-  const budgetPercent = project.budget_hours
-    ? Math.round((totalMinutes / 60 / project.budget_hours) * 100)
-    : 0;
-  const effectiveRate =
-    project.billing_type === "FIXED_PRICE" && totalMinutes
-      ? (project.fixed_price ?? 0) / (totalMinutes / 60)
-      : null;
 
   const openTask = (task: Task | TaskDraft = emptyTask) => {
     setTaskForm({ ...emptyTask, ...task });
@@ -119,7 +109,9 @@ function ProjectDetailPage() {
         <article className="metric-card accent-blue">
           <div className="metric-top">
             <span>เวลาที่ใช้</span>
-            <span className="metric-icon"><FiClock aria-hidden="true" /></span>
+            <span className="metric-icon">
+              <FiClock aria-hidden="true" />
+            </span>
           </div>
           <div className="metric-value metric-compact">
             {formatDuration(totalMinutes)}
@@ -150,7 +142,9 @@ function ProjectDetailPage() {
         <article className="metric-card accent-violet">
           <div className="metric-top">
             <span>งาน</span>
-            <span className="metric-icon"><FiCheckSquare aria-hidden="true" /></span>
+            <span className="metric-icon">
+              <FiCheckSquare aria-hidden="true" />
+            </span>
           </div>
           <div className="metric-value">
             {completed}
@@ -226,8 +220,7 @@ function ProjectDetailPage() {
                     <th>รายละเอียด</th>
                     <th>วันที่</th>
                     <th>ระยะเวลา</th>
-                    <th>คิดค่าบริการ</th>
-                    <th>มูลค่า</th>
+                    {/* ส่วนคิดค่าบริการและมูลค่าถูกซ่อนไว้ชั่วคราว */}
                   </tr>
                 </thead>
                 <tbody>
@@ -240,15 +233,13 @@ function ProjectDetailPage() {
                       </td>
                       <td>{formatDate(entry.started_at)}</td>
                       <td>{formatDuration(entry.duration_minutes)}</td>
-                      <td>{entry.billable ? "ใช่" : "ไม่"}</td>
-                      <td>
-                        {formatMoney(calculateTimeValue(entry), entry.currency)}
-                      </td>
+                      {/* <td>{entry.billable ? "ใช่" : "ไม่"}</td>
+                      <td>{formatMoney(calculateTimeValue(entry), entry.currency)}</td> */}
                     </tr>
                   ))}
                   {entries.length === 0 && (
                     <tr>
-                      <td colSpan={5}>ยังไม่มีรายการเวลา</td>
+                      <td colSpan={3}>ยังไม่มีรายการเวลา</td>
                     </tr>
                   )}
                 </tbody>
@@ -261,7 +252,7 @@ function ProjectDetailPage() {
           <div className="panel-heading">
             <div>
               <h2>รายละเอียดโปรเจกต์</h2>
-              <p>ขอบเขต ราคา และกำหนดการ</p>
+              <p>ขอบเขตและกำหนดการ</p>
             </div>
           </div>
           <div className="detail-list">
@@ -271,7 +262,7 @@ function ProjectDetailPage() {
                 <strong>{client?.company_name || client?.name}</strong>
               </Link>
             </div>
-            <div className="detail-item">
+            {/* <div className="detail-item">
               <span>รูปแบบราคา</span>
               <strong>
                 {project.billing_type === "HOURLY" ? "รายชั่วโมง" : "เหมาจ่าย"}
@@ -288,7 +279,7 @@ function ProjectDetailPage() {
                 )}
                 {project.billing_type === "HOURLY" && "/ชม."}
               </strong>
-            </div>
+            </div> */}
             <div className="detail-item">
               <span>วันที่เริ่ม</span>
               <strong>{formatDate(project.start_date)}</strong>
@@ -297,14 +288,14 @@ function ProjectDetailPage() {
               <span>วันที่สิ้นสุด</span>
               <strong>{formatDate(project.end_date)}</strong>
             </div>
-            {effectiveRate !== null && (
+            {/* {effectiveRate !== null && (
               <div className="detail-item">
                 <span>อัตราต่อชั่วโมงโดยเฉลี่ย</span>
                 <strong>
                   {formatMoney(effectiveRate, project.currency)}/ชม.
                 </strong>
               </div>
-            )}
+            )} */}
             <div className="detail-item">
               <span>ความคืบหน้างาน</span>
               <div className="progress-label">

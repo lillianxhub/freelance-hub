@@ -23,6 +23,6 @@ public class TimeEntrySummaryResponse {
     /** Number of completed entries included in the total. */
     private long entryCount;
 
-    /** Sum of duration minutes from completed entries only. */
-    private long totalMinutes;
+    /** Sum of duration seconds from completed entries only. */
+    private long totalSeconds;
 }

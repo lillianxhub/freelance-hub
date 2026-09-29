@@ -19,7 +19,7 @@ export interface ManualTimeEntryPayload {
   description: string
   startedAt: string
   endedAt?: string
-  durationMinutes?: number
+  durationSeconds?: number
 }
 
 export interface StartTimerPayload {

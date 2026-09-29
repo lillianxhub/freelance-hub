@@ -10,7 +10,6 @@ export type CsvValue = string | number | boolean | null | undefined
 export interface ProductivityPoint {
   key: string
   day: string
-  billable: number
   total: number
 }
 
