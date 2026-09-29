@@ -29,6 +29,7 @@ public class ClientResponse {
     private String taxId;
     private String notes;
     private ClientStatus status;
+    private Boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;
     private Long version;

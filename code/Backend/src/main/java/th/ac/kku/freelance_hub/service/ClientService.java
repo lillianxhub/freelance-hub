@@ -24,6 +24,9 @@ public interface ClientService {
 
     ClientResponse update(UUID ownerId, UUID clientId, UpdateClientRequest request);
 
+    /** Archive or reactivate a client using its is_active flag. */
+    ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive);
+
     /** Archive a client while preserving its project and time history. */
     void archive(UUID ownerId, UUID clientId);
 }

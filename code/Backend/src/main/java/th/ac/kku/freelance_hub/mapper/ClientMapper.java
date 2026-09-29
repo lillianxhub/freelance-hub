@@ -55,7 +55,8 @@ public class ClientMapper {
             .email(client.getEmail()).phone(client.getPhone()).address(client.getAddress())
             .subdistrict(client.getSubdistrict()).district(client.getDistrict()).province(client.getProvince())
             .postalCode(client.getPostalCode()).taxId(client.getTaxId()).notes(client.getNotes())
-            .status(client.getStatus()).createdAt(client.getCreatedAt()).updatedAt(client.getUpdatedAt())
+            .status(client.getStatus()).isActive(client.getIsActive())
+            .createdAt(client.getCreatedAt()).updatedAt(client.getUpdatedAt())
             .version(client.getVersion()).build();
     }
 

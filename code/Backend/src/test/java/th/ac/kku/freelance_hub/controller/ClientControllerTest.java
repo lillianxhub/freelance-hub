@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -292,6 +293,50 @@ class ClientControllerTest {
             .andExpect(status().isNotFound());
 
         verify(clientService).update(eq(OWNER_ID), eq(clientId), any(UpdateClientRequest.class));
+    }
+
+    @Test
+    void changeStatusUsesCurrentUserAndBooleanFlag() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.changeStatus(OWNER_ID, clientId, false))
+            .thenReturn(ClientResponse.builder().id(clientId).status(ClientStatus.ARCHIVED)
+                .isActive(false).build());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Client status updated"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.status").value("ARCHIVED"))
+            .andExpect(jsonPath("$.data.isActive").value(false));
+
+        verify(clientService).changeStatus(OWNER_ID, clientId, false);
+    }
+
+    @Test
+    void changeStatusRejectsMissingBooleanFlag() throws Exception {
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).changeStatus(any(), any(), anyBoolean());
+    }
+
+    @Test
+    void changeStatusReturnsNotFoundForAnotherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.changeStatus(OWNER_ID, clientId, true))
+            .thenThrow(new ClientNotFoundException(clientId));
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":true}"))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).changeStatus(OWNER_ID, clientId, true);
     }
 
     @Test

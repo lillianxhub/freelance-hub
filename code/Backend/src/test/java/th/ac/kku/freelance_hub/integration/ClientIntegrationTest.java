@@ -166,6 +166,47 @@ class ClientIntegrationTest {
     }
 
     @Test
+    void ownerCanArchiveAndReactivateClientThroughStatusEndpoint() throws Exception {
+        String ownerToken = registerAndGetToken("client-status-owner@example.com");
+        String otherToken = registerAndGetToken("client-status-other@example.com");
+        String createdBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Status Client\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"))
+                .andExpect(jsonPath("$.data.isActive").value(false));
+
+        mockMvc.perform(patch("/api/clients/{id}/status", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"isActive\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.isActive").value(true));
+    }
+
+    @Test
     void ownerCanManageClientWhileAnotherUserCannotReadOrChangeIt() throws Exception {
         String ownerToken = registerAndGetToken("client-integration-owner@example.com");
         String otherToken = registerAndGetToken("client-integration-other@example.com");

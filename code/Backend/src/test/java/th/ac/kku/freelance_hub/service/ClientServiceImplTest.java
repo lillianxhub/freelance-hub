@@ -128,6 +128,31 @@ class ClientServiceImplTest {
     }
 
     @Test
+    void changeStatusArchivesAndReactivatesClient() {
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+        when(clientRepository.save(client)).thenReturn(client);
+
+        var archived = service.changeStatus(OWNER_ID, clientId, false);
+        assertThat(archived.getStatus()).isEqualTo(ClientStatus.ARCHIVED);
+        assertThat(client.getIsActive()).isFalse();
+        assertThat(client.getDeletedAt()).isNotNull();
+
+        var active = service.changeStatus(OWNER_ID, clientId, true);
+        assertThat(active.getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(client.getIsActive()).isTrue();
+        assertThat(client.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void changeStatusCannotModifyAnotherOwnersClient() {
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeStatus(OWNER_ID, clientId, false))
+            .isInstanceOf(ClientNotFoundException.class);
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
     void listUsesSpecificationAndPagination() {
         when(clientRepository.findAll(any(Specification.class), any(Pageable.class)))
             .thenReturn(new PageImpl<>(java.util.List.of(client)));

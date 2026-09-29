@@ -126,6 +126,18 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
+    public ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive) {
+        Client client = findOwnedClient(ownerId, clientId);
+        if (isActive) {
+            client.activate();
+        } else {
+            client.archive();
+        }
+        return clientMapper.toResponse(clientRepository.save(client));
+    }
+
+    @Override
+    @Transactional
     public void archive(UUID ownerId, UUID clientId) {
         Client client = findOwnedClient(ownerId, clientId);
         client.archive();

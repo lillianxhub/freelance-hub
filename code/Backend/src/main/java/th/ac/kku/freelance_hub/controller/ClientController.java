@@ -27,6 +27,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.ChangeClientStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 import th.ac.kku.freelance_hub.dto.response.PaginationMeta;
@@ -118,6 +119,20 @@ public class ClientController {
             @Valid @RequestBody UpdateClientRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(clientService.update(ownerId, id, request));
+    }
+
+    @Operation(summary = "Change client status", description = "Archive or reactivate a client by updating its is_active flag")
+    @ApiResponse(responseCode = "200", description = "Client status updated", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
+    @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<ClientResponse>> changeStatus(
+            @PathVariable UUID id, @Valid @RequestBody ChangeClientStatusRequest request) {
+        UUID ownerId = userService.getCurrentUserEntity().getId();
+        return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                "Client status updated", clientService.changeStatus(ownerId, id, request.getIsActive())));
     }
 
     /** Soft-delete: preserve the client and its history by marking it archived. */
