@@ -38,7 +38,7 @@ public class TimeEntryResponse {
 
     private Instant endedAt;
 
-    private Integer durationMinutes;
+    private Long durationSeconds;
 
     private Instant lockedAt;
 

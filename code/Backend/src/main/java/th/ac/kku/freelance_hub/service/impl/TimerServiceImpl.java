@@ -3,6 +3,7 @@ package th.ac.kku.freelance_hub.service.impl;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -85,7 +86,7 @@ public class TimerServiceImpl implements TimerService {
         );
 
         if (timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         ownerId,
                         EntryType.TIMER
                 )) {
@@ -106,17 +107,15 @@ public class TimerServiceImpl implements TimerService {
 
     @Override
     @Transactional(readOnly = true)
-    public TimeEntryResponse getCurrentTimer(UUID ownerId) {
+    public Optional<TimeEntryResponse> getCurrentTimer(UUID ownerId) {
         Objects.requireNonNull(ownerId, "ownerId is required");
 
-        TimeEntry runningTimer = timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+        return timeEntryRepository
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         ownerId,
                         EntryType.TIMER
                 )
-                .orElseThrow(RunningTimerNotFoundException::new);
-
-        return timeEntryMapper.toResponse(runningTimer);
+                .map(timeEntryMapper::toResponse);
     }
 
     @Override
@@ -134,7 +133,7 @@ public class TimerServiceImpl implements TimerService {
                 runningTimer.getTask() == null
                         ? null
                         : runningTimer.getTask().getId(),
-                runningTimer.getDurationMinutes(),
+                runningTimer.getDurationSeconds(),
                 runningTimer.getStartedAt(),
                 runningTimer.getEndedAt()
         ));
@@ -151,7 +150,7 @@ public class TimerServiceImpl implements TimerService {
 
     private TimeEntry findLockedRunningTimer(UUID ownerId) {
         return timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         ownerId,
                         EntryType.TIMER
                 )
