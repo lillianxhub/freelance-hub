@@ -18,6 +18,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
@@ -27,7 +28,6 @@ import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TaskMapper;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
-import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.service.TaskService;
 
 @Service
@@ -40,20 +40,17 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
-    private final TimeEntryRepository timeEntryRepository;
     private final TaskMapper taskMapper;
     private final EntityManager entityManager;
 
     public TaskServiceImpl(
             TaskRepository taskRepository,
             ProjectRepository projectRepository,
-            TimeEntryRepository timeEntryRepository,
             TaskMapper taskMapper,
             EntityManager entityManager
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
-        this.timeEntryRepository = timeEntryRepository;
         this.taskMapper = taskMapper;
         this.entityManager = entityManager;
     }
@@ -84,15 +81,30 @@ public class TaskServiceImpl implements TaskService {
     public Page<TaskResponse> list(
             UUID ownerId,
             UUID projectId,
+            boolean isActive,
             Pageable pageable
     ) {
         findOwnedProject(ownerId, projectId);
 
-        return taskRepository.findAllByProjectIdAndProjectOwnerId(
+        return taskRepository.findAllByProjectIdAndProjectOwnerIdAndIsActive(
                 projectId,
                 ownerId,
+                isActive,
                 checkPageable(pageable)
         ).map(taskMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TaskResponse getById(UUID ownerId, UUID taskId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(taskId, "taskId is required");
+
+        Task task = taskRepository
+                .findByIdAndProjectOwnerIdAndProjectDeletedAtIsNull(taskId, ownerId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+
+        return taskMapper.toResponse(task);
     }
 
     @Override
@@ -109,6 +121,20 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    public TaskResponse update(UUID ownerId, UUID taskId, UpdateTaskRequest request) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(taskId, "taskId is required");
+        Objects.requireNonNull(request, "request is required");
+
+        Task task = taskRepository
+                .findByIdAndProjectOwnerIdAndProjectDeletedAtIsNull(taskId, ownerId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+
+        return update(ownerId, task.getProject().getId(), taskId, request);
+    }
+
+    @Override
+    @Transactional
     public TaskResponse update(
             UUID ownerId,
             UUID projectId,
@@ -120,6 +146,29 @@ public class TaskServiceImpl implements TaskService {
 
         Task task = findOwnedTask(ownerId, projectId, taskId);
         task.updateDetails(request.getName(), request.getDescription());
+
+        return taskMapper.toResponse(taskRepository.saveAndFlush(task));
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse changeStatus(
+            UUID ownerId,
+            UUID taskId,
+            ChangeTaskStatusRequest request
+    ) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(taskId, "taskId is required");
+        Objects.requireNonNull(request, "request is required");
+        Objects.requireNonNull(request.getStatus(), "status is required");
+
+        Task task = taskRepository
+                .findByIdAndProjectOwnerIdAndProjectDeletedAtIsNull(taskId, ownerId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+
+        findEditableProjectForUpdate(ownerId, task.getProject().getId());
+        entityManager.refresh(task);
+        task.changeStatus(request.getStatus(), Instant.now());
 
         return taskMapper.toResponse(taskRepository.saveAndFlush(task));
     }
@@ -187,6 +236,19 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    public void delete(UUID ownerId, UUID taskId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(taskId, "taskId is required");
+
+        Task task = taskRepository
+                .findByIdAndProjectOwnerIdAndProjectDeletedAtIsNull(taskId, ownerId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+
+        delete(ownerId, task.getProject().getId(), taskId);
+    }
+
+    @Override
+    @Transactional
     public void delete(
             UUID ownerId,
             UUID projectId,
@@ -195,22 +257,8 @@ public class TaskServiceImpl implements TaskService {
         findEditableProjectForUpdate(ownerId, projectId);
         Task task = findOwnedTask(ownerId, projectId, taskId);
 
-        boolean hasTimeEntries = timeEntryRepository
-                .findAllByOwnerIdAndTaskId(
-                        ownerId,
-                        taskId,
-                        PageRequest.of(0, 1)
-                )
-                .hasContent();
-
-        if (hasTimeEntries) {
-            throw new IllegalStateException(
-                    "Cannot delete a task that has time entries"
-            );
-        }
-
-        taskRepository.delete(task);
-        taskRepository.flush();
+        task.softDelete();
+        taskRepository.saveAndFlush(task);
 
         saveOrders(orderedTasks(ownerId, projectId));
     }
@@ -267,6 +315,9 @@ public class TaskServiceImpl implements TaskService {
                                 projectId,
                                 ownerId
                         )
+                        .stream()
+                        .filter(task -> Boolean.TRUE.equals(task.getIsActive()))
+                        .toList()
         );
     }
 
@@ -320,6 +371,17 @@ public class TaskServiceImpl implements TaskService {
             return;
         }
 
+        Project project = tasks.get(0).getProject();
+        tasks = new ArrayList<>(tasks);
+        // เลขลำดับต้องไม่ซ้ำแม้เป็นงานที่ลบแล้ว จึงเก็บงานที่ไม่ใช้งานไว้ท้ายรายการ
+        tasks.addAll(taskRepository
+                .findAllByProjectIdAndProjectOwnerIdOrderBySortOrderAsc(
+                        project.getId(), project.getOwner().getId()
+                )
+                .stream()
+                .filter(task -> !Boolean.TRUE.equals(task.getIsActive()))
+                .toList());
+
         boolean alreadyOrdered = true;
         for (int i = 0; i < tasks.size(); i++) {
             if (tasks.get(i).getSortOrder() != i) {
@@ -334,7 +396,7 @@ public class TaskServiceImpl implements TaskService {
                     .max()
                     .orElse(-1);
 
-            long temporaryStart = maxOrder + 1;
+            long temporaryStart = Math.max(maxOrder, tasks.size() - 1L) + 1;
             if (temporaryStart + tasks.size() - 1 > Integer.MAX_VALUE) {
                 throw new IllegalStateException(
                         "Cannot reorder tasks: sortOrder limit reached"

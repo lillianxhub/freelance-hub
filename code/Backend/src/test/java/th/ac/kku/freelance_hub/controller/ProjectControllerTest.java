@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +35,11 @@ import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.service.UserService;
+
+import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
+import static org.hamcrest.Matchers.nullValue;
+
+import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectControllerTest {
@@ -85,7 +91,7 @@ class ProjectControllerTest {
                 .andExpect(header().string(
                         "Location", "/api/projects/" + PROJECT_ID
                 ))
-                .andExpect(jsonPath("$.name").value("Website"));
+                .andExpect(jsonPath("$.data.name").value("Website"));
 
         verify(projectService).create(
                 eq(OWNER_ID),
@@ -117,7 +123,7 @@ class ProjectControllerTest {
                 eq(CLIENT_ID),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(
-            List.<ProjectResponse>of(),
+            List.<ProjectListItemResponse>of(),
             PageRequest.of(1, 5),
             0
         ));
@@ -126,9 +132,10 @@ class ProjectControllerTest {
                         .param("search", "web")
                         .param("status", "ACTIVE")
                         .param("clientId", CLIENT_ID.toString())
-                        .param("page", "1")
-                        .param("size", "5")
-                        .param("sort", "name,desc"))
+                        .param("page", "2")
+                        .param("limit", "5")
+                        .param("sortBy", "project_name")
+                        .param("direction", "DESC"))
                 .andExpect(status().isOk());
 
         verify(projectService).list(
@@ -178,14 +185,162 @@ class ProjectControllerTest {
     }
 
     @Test
-    void archiveReturns204() throws Exception {
+    void deleteCallsArchiveAndReturnsCommonResponse() throws Exception {
         when(userService.getCurrentUserEntity())
                 .thenReturn(User.builder().id(OWNER_ID).build());
 
         mockMvc.perform(delete("/api/projects/{id}", PROJECT_ID))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ลบโปรเจกต์สำเร็จ"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(projectService).archive(OWNER_ID, PROJECT_ID);
     }
 
+        @Test
+    void updateUsesPutAndReturnsCommonResponse() throws Exception {
+        when(userService.getCurrentUserEntity())
+                .thenReturn(User.builder().id(OWNER_ID).build());
+
+        when(projectService.update(
+                eq(OWNER_ID),
+                eq(PROJECT_ID),
+                any(UpdateProjectRequest.class)
+        )).thenReturn(ProjectResponse.builder()
+                .id(PROJECT_ID)
+                .clientId(CLIENT_ID)
+                .name("Updated Website")
+                .targetMinutes(180)
+                .build());
+
+        mockMvc.perform(put("/api/projects/{id}", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "clientId": "%s",
+                                  "name": "Updated Website",
+                                  "targetMinutes": 180
+                                }
+                                """.formatted(CLIENT_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("แก้ไขโปรเจกต์สำเร็จ"))
+                .andExpect(jsonPath("$.data.id")
+                        .value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.name")
+                        .value("Updated Website"))
+                .andExpect(jsonPath("$.data.targetMinutes").value(180))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
+
+        verify(projectService).update(
+                eq(OWNER_ID),
+                eq(PROJECT_ID),
+                org.mockito.ArgumentMatchers.argThat(request ->
+                        CLIENT_ID.equals(request.getClientId())
+                                && "Updated Website".equals(request.getName())
+                                && Integer.valueOf(180)
+                                        .equals(request.getTargetMinutes())
+                )
+        );
+    }
+
+    @Test
+    void updateRejectsMissingNameBeforeCallingService() throws Exception {
+        mockMvc.perform(put("/api/projects/{id}", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "clientId": "%s"
+                                }
+                                """.formatted(CLIENT_ID)))
+                .andExpect(status().isBadRequest());
+
+        verify(projectService, never()).update(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+        @Test
+    void changeStatusUsesPatchAndReturnsCommonResponse() throws Exception {
+        when(userService.getCurrentUserEntity())
+                .thenReturn(User.builder().id(OWNER_ID).build());
+
+        when(projectService.changeStatus(
+                eq(OWNER_ID),
+                eq(PROJECT_ID),
+                any(ChangeProjectStatusRequest.class)
+        )).thenReturn(ProjectResponse.builder()
+                .id(PROJECT_ID)
+                .status(ProjectStatus.ARCHIVED)
+                .build());
+
+        mockMvc.perform(patch("/api/projects/{id}/status", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "ARCHIVED"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("เปลี่ยนสถานะโปรเจกต์สำเร็จ"))
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
+
+        verify(projectService).changeStatus(
+                eq(OWNER_ID),
+                eq(PROJECT_ID),
+                org.mockito.ArgumentMatchers.argThat(request ->
+                        request.getStatus() == ProjectStatus.ARCHIVED
+                )
+        );
+    }
+
+
+    @Test
+    void getProjectDetailReturnsNestedDataAndCommonResponse() throws Exception {
+        when(userService.getCurrentUserEntity())
+                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(projectService.getById(OWNER_ID, PROJECT_ID))
+                .thenReturn(ProjectListItemResponse.builder()
+                        .id(PROJECT_ID)
+                        .name("Website")
+                        .status(ProjectStatus.ACTIVE)
+                        .targetHours(new BigDecimal("36.00"))
+                        .client(ProjectListItemResponse.ClientSummary.builder()
+                                .id(CLIENT_ID).name("Acme").build())
+                        .taskProgress(ProjectListItemResponse.TaskProgress.builder()
+                                .totalTasks(2).completedTasks(1)
+                                .percent(new BigDecimal("50.00")).build())
+                        .build());
+
+        mockMvc.perform(get("/api/projects/{id}", PROJECT_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("ดึงรายละเอียดโปรเจกต์สำเร็จ"))
+                .andExpect(jsonPath("$.data.id").value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.name").value("Website"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.targetHours").value(36.0))
+                .andExpect(jsonPath("$.data.client.id").value(CLIENT_ID.toString()))
+                .andExpect(jsonPath("$.data.client.name").value("Acme"))
+                .andExpect(jsonPath("$.data.taskProgress.totalTasks").value(2))
+                .andExpect(jsonPath("$.data.taskProgress.completedTasks").value(1))
+                .andExpect(jsonPath("$.data.taskProgress.percent").value(50.0))
+                .andExpect(jsonPath("$.data.timeTracking").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
+
+        verify(projectService).getById(OWNER_ID, PROJECT_ID);
+    }
 }
