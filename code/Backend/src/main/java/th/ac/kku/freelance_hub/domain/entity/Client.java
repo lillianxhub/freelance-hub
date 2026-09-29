@@ -5,8 +5,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
+import th.ac.kku.freelance_hub.domain.valueobject.Address;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
@@ -43,11 +45,7 @@ public class Client {
     @Column(name = "company_name", length = 200) private String companyName;
     @Column(length = 254) private String email;
     @Column(length = 30) private String phone;
-    @Column(columnDefinition = "text") private String address;
-    @Column(length = 100) private String subdistrict;
-    @Column(length = 100) private String district;
-    @Column(length = 100) private String province;
-    @Column(name = "postal_code", length = 20) private String postalCode;
+    @Embedded private Address addressDetails;
     @Column(name = "tax_id", length = 30) private String taxId;
     @Column(columnDefinition = "text") private String notes;
     @Column(name = "is_active", nullable = false) private Boolean isActive = true;
@@ -70,11 +68,7 @@ public class Client {
         this.companyName = trimToNull(companyName);
         this.email = trimToNull(email);
         this.phone = trimToNull(phone);
-        this.address = trimToNull(address);
-        this.subdistrict = trimToNull(subdistrict);
-        this.district = trimToNull(district);
-        this.province = trimToNull(province);
-        this.postalCode = trimToNull(postalCode);
+        this.addressDetails = Address.ofNullable(address, subdistrict, district, province, postalCode);
         this.taxId = trimToNull(taxId);
         this.notes = trimToNull(notes);
     }
@@ -102,11 +96,12 @@ public class Client {
     public String getCompanyName() { return companyName; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
-    public String getAddress() { return address; }
-    public String getSubdistrict() { return subdistrict; }
-    public String getDistrict() { return district; }
-    public String getProvince() { return province; }
-    public String getPostalCode() { return postalCode; }
+    public Address getAddressDetails() { return addressDetails; }
+    public String getAddress() { return addressDetails == null ? null : addressDetails.getAddress(); }
+    public String getSubdistrict() { return addressDetails == null ? null : addressDetails.getSubdistrict(); }
+    public String getDistrict() { return addressDetails == null ? null : addressDetails.getDistrict(); }
+    public String getProvince() { return addressDetails == null ? null : addressDetails.getProvince(); }
+    public String getPostalCode() { return addressDetails == null ? null : addressDetails.getPostalCode(); }
     public String getTaxId() { return taxId; }
     public String getNotes() { return notes; }
     public ClientStatus getStatus() { return Boolean.TRUE.equals(isActive) ? ClientStatus.ACTIVE : ClientStatus.ARCHIVED; }

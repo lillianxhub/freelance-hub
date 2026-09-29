@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
+import th.ac.kku.freelance_hub.domain.valueobject.Address;
 import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
 
@@ -19,11 +20,7 @@ class UserMapperTest {
     void mapsNormalizedAddressAsFlatUserResponseFields() {
         UserProfile profile = UserProfile.builder()
             .displayName("Test User")
-            .address("99 ถนนมิตรภาพ")
-            .subdistrict("ในเมือง")
-            .district("เมืองขอนแก่น")
-            .province("ขอนแก่น")
-            .postalCode("40000")
+            .addressDetails(new Address("99 ถนนมิตรภาพ", "ในเมือง", "เมืองขอนแก่น", "ขอนแก่น", "40000"))
             .taxId("0105559999999")
             .build();
         User user = User.builder()
@@ -46,11 +43,7 @@ class UserMapperTest {
     void updatesProfileAddressWithoutAcceptingAnOwnerId() {
         UserProfile profile = UserProfile.builder()
             .displayName("Test User")
-            .address("เดิม")
-            .subdistrict("เดิม")
-            .district("เดิม")
-            .province("เดิม")
-            .postalCode("10000")
+            .addressDetails(new Address("เดิม", "เดิม", "เดิม", "เดิม", "10000"))
             .taxId("เดิม")
             .build();
 

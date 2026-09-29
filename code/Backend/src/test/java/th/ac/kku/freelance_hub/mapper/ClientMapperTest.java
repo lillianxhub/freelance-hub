@@ -9,6 +9,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
+import th.ac.kku.freelance_hub.domain.valueobject.Address;
 import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
@@ -45,7 +46,7 @@ class ClientMapperTest {
     }
 
     @Test
-    void mapsFlatAddressFieldsDirectly() {
+    void mapsFlatAddressFieldsIntoValueObject() {
         User owner = User.builder().id(OWNER_ID).build();
         CreateClientRequest request = CreateClientRequest.builder()
             .name("Alice")
@@ -58,10 +59,26 @@ class ClientMapperTest {
 
         Client client = mapper.toEntity(request, owner);
 
+        assertThat(client.getAddressDetails()).isEqualTo(new Address(
+            "99 ถนนมิตรภาพ", "ในเมือง", "เมืองขอนแก่น", "ขอนแก่น", "40000"));
         assertThat(client.getAddress()).isEqualTo("99 ถนนมิตรภาพ");
         assertThat(client.getSubdistrict()).isEqualTo("ในเมือง");
         assertThat(client.getDistrict()).isEqualTo("เมืองขอนแก่น");
         assertThat(client.getProvince()).isEqualTo("ขอนแก่น");
+        assertThat(client.getPostalCode()).isEqualTo("40000");
+    }
+
+    @Test
+    void preservesOtherAddressFieldsOnPartialUpdate() {
+        Client client = new Client(User.builder().id(OWNER_ID).build(), "Alice");
+        client.updateDetailsWithAddress("Alice", null, null, null,
+            "99 ถนนมิตรภาพ", "ในเมือง", "เมืองขอนแก่น", "ขอนแก่น", "40000", null, null);
+
+        mapper.updateEntity(UpdateClientRequest.builder().province("เชียงใหม่").build(), client);
+
+        assertThat(client.getAddress()).isEqualTo("99 ถนนมิตรภาพ");
+        assertThat(client.getSubdistrict()).isEqualTo("ในเมือง");
+        assertThat(client.getProvince()).isEqualTo("เชียงใหม่");
         assertThat(client.getPostalCode()).isEqualTo("40000");
     }
 
