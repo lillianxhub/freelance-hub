@@ -1,3 +1,4 @@
+# Frontend: GitHub Actions checks PRs and branch pushes; Vercel Git integration handles deployments.
 name: Frontend CI
 
 on:
