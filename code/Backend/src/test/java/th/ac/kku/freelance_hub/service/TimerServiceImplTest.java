@@ -225,6 +225,21 @@ class TimerServiceImplTest {
     }
 
     @Test
+    void rejectsTimerForArchivedClient() {
+        project.getClient().archive();
+        stubOwnedUserAndProject();
+
+        assertThatThrownBy(() -> timerService.startTimer(
+                OWNER_ID,
+                StartTimerRequest.builder().projectId(PROJECT_ID).build()
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("client must be active to track time");
+
+        verify(timeEntryRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void rejectsTimerWhenOneIsAlreadyRunning() {
         stubOwnedUserAndProject();
         when(timeEntryRepository

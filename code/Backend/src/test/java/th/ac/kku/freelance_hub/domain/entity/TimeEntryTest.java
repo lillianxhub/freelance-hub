@@ -76,6 +76,22 @@ class TimeEntryTest {
     }
 
     @Test
+    @DisplayName("rejects starting a timer for an archived client")
+    void rejectsTimerForArchivedClient() {
+        client.archive();
+
+        assertThatThrownBy(() -> TimeEntry.startTimer(
+                owner,
+                activeProject,
+                null,
+                null,
+                STARTED_AT
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("client must be active to track time");
+    }
+
+    @Test
     @DisplayName("rejects a project owned by another user")
     void rejectsProjectOwnedByAnotherUser() {
         User anotherOwner = User.builder()

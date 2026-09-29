@@ -274,6 +274,9 @@ public class TimeEntry {
         if (!requiredProject.canTrackTime()) {
             throw new IllegalStateException("project must be active to track time");
         }
+        if (!Boolean.TRUE.equals(requiredProject.getClient().getIsActive())) {
+            throw new IllegalStateException("client must be active to track time");
+        }
         return requiredProject;
     }
 
