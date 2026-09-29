@@ -53,7 +53,7 @@ class ClientIntegrationTest {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/users/me'].get.tags[0]").value("Authentication"))
-                .andExpect(jsonPath("$.paths['/api/users/me'].put.tags[0]").value("Authentication"))
+                .andExpect(jsonPath("$.paths['/api/users/me'].patch.tags[0]").value("Authentication"))
                 .andExpect(jsonPath("$.paths['/api/users/me/password'].patch.tags[0]").value("Authentication"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.profileImageUrl")
                         .doesNotExist())

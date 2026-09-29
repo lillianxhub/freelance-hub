@@ -26,7 +26,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,7 +59,7 @@ class UserAuthIntegrationTest {
                 String firstToken = register(firstEmail, "First User");
                 String secondToken = register(secondEmail, "Second User");
 
-                mockMvc.perform(put("/api/users/me")
+                mockMvc.perform(patch("/api/users/me")
                                 .header("Authorization", bearer(firstToken))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"displayName\":\"Changed First\",\"province\":\"ขอนแก่น\"}"))
@@ -85,6 +84,33 @@ class UserAuthIntegrationTest {
         }
 
         @Test
+        void emailIsCanonicalAcrossRegistrationAndLogin() throws Exception {
+                String email = "user-" + uniqueEmail();
+                String mixedCase = "User-" + email.substring(5);
+                assertThat(objectMapper.readValue(objectMapper.writeValueAsString(
+                        new Registration("  " + mixedCase + "  ", PASSWORD, "Canonical User")),
+                        th.ac.kku.freelance_hub.dto.request.RegisterRequest.class).getEmail()).isEqualTo(email);
+                var registration = mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(
+                                                new Registration("  " + mixedCase + "  ", PASSWORD, "Canonical User"))))
+                                .andReturn().getResponse();
+                assertThat(registration.getStatus()).as(registration.getContentAsString()).isEqualTo(201);
+                assertThat(userRepository.findByEmail(email)).isPresent();
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(loginJson(mixedCase, PASSWORD)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.user.email").value(email));
+
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(new Registration(email, PASSWORD, "Duplicate"))))
+                                .andExpect(status().isConflict());
+        }
+
+        @Test
         void protectedUserEndpointsRejectMissingMalformedAndExpiredAccessTokens() throws Exception {
                 String email = uniqueEmail();
                 register(email, "Protected User");
@@ -98,7 +124,7 @@ class UserAuthIntegrationTest {
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"))
                                 .andExpect(jsonPath("$.message").value("Authentication is required"));
-                mockMvc.perform(put("/api/users/me")
+                mockMvc.perform(patch("/api/users/me")
                                 .header("Authorization", "Bearer malformed")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"displayName\":\"Unauthorized\"}"))
@@ -116,7 +142,7 @@ class UserAuthIntegrationTest {
                 String email = uniqueEmail();
                 String accessToken = register(email, "Original Name");
 
-                mockMvc.perform(put("/api/users/me")
+                mockMvc.perform(patch("/api/users/me")
                                 .header("Authorization", bearer(accessToken))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"displayName\":\"   \",\"phone\":\"letters\"}"))
@@ -154,9 +180,9 @@ class UserAuthIntegrationTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.message").value("เปลี่ยนรหัสผ่านสำเร็จ"));
 
-                mockMvc.perform(post("/api/auth/refresh").cookie(firstFamily))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(firstFamily))
                                 .andExpect(status().isUnauthorized());
-                mockMvc.perform(post("/api/auth/refresh").cookie(secondFamily))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(secondFamily))
                                 .andExpect(status().isUnauthorized());
                 mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -183,7 +209,7 @@ class UserAuthIntegrationTest {
 
                 mockMvc.perform(get("/api/users/me").header("Authorization", bearer(accessToken)))
                                 .andExpect(status().isUnauthorized());
-                mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(refreshCookie))
                                 .andExpect(status().isUnauthorized());
         }
 

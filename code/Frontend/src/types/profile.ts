@@ -21,7 +21,6 @@ export interface Profile extends OwnedRecord {
   bank_account_number: string
   timezone: string
   currency: CurrencyCode
-  date_format: string
   default_tax_rate: number
   default_hourly_rate: number
   bio: string

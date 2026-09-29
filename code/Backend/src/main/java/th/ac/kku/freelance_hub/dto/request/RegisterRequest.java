@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import th.ac.kku.freelance_hub.security.EmailNormalizer;
 
 /**
  * DTO for user registration request
@@ -18,9 +19,17 @@ import lombok.NoArgsConstructor;
 public class RegisterRequest {
 
     @NotBlank(message = "กรุณาระบุอีเมล")
+    private String email;
+
     @Email(message = "รูปแบบอีเมลไม่ถูกต้อง")
     @Size(max = 255, message = "อีเมลต้องไม่เกิน 255 ตัวอักษร")
-    private String email;
+    public String getEmail() {
+        return email == null ? null : EmailNormalizer.normalize(email);
+    }
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : EmailNormalizer.normalize(email);
+    }
 
     @NotBlank(message = "กรุณาระบุรหัสผ่าน")
     @Size(min = 8, max = 100, message = "รหัสผ่านต้องมี 8–100 ตัวอักษร")
