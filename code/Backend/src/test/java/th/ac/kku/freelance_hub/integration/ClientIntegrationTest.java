@@ -135,9 +135,10 @@ class ClientIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Acme\",\"email\":\"acme@example.com\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Acme"))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Acme"))
                 .andReturn().getResponse().getContentAsString();
-        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("id").asText());
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
 
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))

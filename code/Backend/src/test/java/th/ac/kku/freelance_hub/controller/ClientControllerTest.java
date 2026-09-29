@@ -74,7 +74,12 @@ class ClientControllerTest {
                 .content("{\"name\":\"Acme\",\"ownerId\":999}"))
             .andExpect(status().isCreated())
             .andExpect(header().string("Location", "/api/clients/" + clientId))
-            .andExpect(jsonPath("$.name").value("Acme"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Client created"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("Acme"))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).create(eq(OWNER_ID), any(CreateClientRequest.class));
     }

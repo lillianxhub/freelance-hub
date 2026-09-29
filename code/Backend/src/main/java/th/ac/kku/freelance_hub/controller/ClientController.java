@@ -42,15 +42,17 @@ public class ClientController {
     private final UserService userService;
 
     @Operation(summary = "Create a client", description = "Create a client for the authenticated user")
-    @ApiResponse(responseCode = "201", description = "Client created", content = @Content(schema = @Schema(implementation = ClientResponse.class)))
+    @ApiResponse(responseCode = "201", description = "Client created", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClientResponse> create(@Valid @RequestBody CreateClientRequest request) {
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<ClientResponse>> create(
+            @Valid @RequestBody CreateClientRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         ClientResponse response = clientService.create(ownerId, request);
-        return ResponseEntity.created(URI.create("/api/clients/" + response.getId())).body(response);
+        return ResponseEntity.created(URI.create("/api/clients/" + response.getId()))
+                .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Client created", response));
     }
 
     @Operation(summary = "List clients", description = "List the authenticated user's clients with optional filters, sorting, and pagination")
