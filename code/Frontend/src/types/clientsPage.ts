@@ -4,6 +4,8 @@ import type { ResourceInput } from './workspace'
 
 export type ClientFilter = 'ALL' | ClientStatus
 export type ClientSort = 'UPDATED_DESC' | 'NAME_ASC' | 'CREATED_ASC'
+export type ClientFieldName = 'name' | 'company_name' | 'email' | 'phone' | 'address' | 'province' | 'district' | 'sub_district' | 'postal_code' | 'tax_id' | 'status'
+export type ClientFieldErrors = Partial<Record<ClientFieldName, string>>
 
 export interface ClientFormProps {
   value: ResourceInput<'clients'>

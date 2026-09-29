@@ -1,13 +1,15 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Button from "../../../components/Button";
+import FormLabel from "../../../components/FormLabel";
 import Input from "../../../components/Input";
 import PageHeader from "../../../components/PageHeader";
 import Toast from "../../../components/Toast";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
 import { useProfile } from "../../useProfile";
-import type { ChangePasswordInput, Profile } from "../../../types/profile";
+import type { ChangePasswordInput, Profile, ProfileFieldErrors } from "../../../types/profile";
 import type { ResourceInput } from "../../../types/workspace";
 import type { ToastMessage } from "../../../types/toast";
+import type { FieldErrorProps } from "../../../types/ui";
 import { getErrorMessage } from "../../../api/apiError";
 import { changePassword } from "../../../services/profile";
 import { updateProfile } from "../../../services/workspace";
@@ -15,6 +17,7 @@ import {
   loadThaiAddressData,
   type ThaiProvince,
 } from "../../../services/thaiAddress";
+import { validateProfileFields } from "../../profile.validators";
 
 const emptyProfile: ResourceInput<"profiles"> = {
   full_name: "",
@@ -60,6 +63,10 @@ function fieldValue(value: unknown): string {
   return value === null || value === undefined ? "" : String(value);
 }
 
+function FieldError({ id, message }: FieldErrorProps) {
+  return message ? <p id={id} className="field-error">{message}</p> : null;
+}
+
 function ProfilePage() {
   const { data, loading, error, refresh } = useProfile();
   const [draft, setDraft] = useState<
@@ -70,6 +77,7 @@ function ProfilePage() {
   const [provinces, setProvinces] = useState<ThaiProvince[]>([]);
   const [addressLoading, setAddressLoading] = useState(true);
   const [addressError, setAddressError] = useState("");
+  const [profileErrors, setProfileErrors] = useState<ProfileFieldErrors>({});
   const [passwordForm, setPasswordForm] = useState<ChangePasswordInput>({
     current_password: "",
     new_password: "",
@@ -181,6 +189,9 @@ function ProfilePage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const validationErrors = validateProfileFields(profile);
+    setProfileErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
     setSaving(true);
     try {
       const response = await updateProfile({
@@ -262,42 +273,51 @@ function ProfilePage() {
         description="ข้อมูลที่ใช้แสดงในบัญชีและเอกสารของคุณ"
       />
 
-      <form className="profile-layout" onSubmit={submit}>
+      <form className="profile-layout" onSubmit={submit} noValidate>
         <section className="panel profile-form-card">
           <div className="form-grid profile-contact-grid">
             <div className="form-field full">
-              <label htmlFor="profile-display-name">ชื่อที่แสดง</label>
+              <FormLabel htmlFor="profile-display-name" required>ชื่อที่แสดง</FormLabel>
               <Input
                 id="profile-display-name"
                 name="display_name"
                 value={profile.display_name || ""}
                 onChange={update}
+                aria-invalid={Boolean(profileErrors.display_name)}
+                aria-describedby={profileErrors.display_name ? "profile-display-name-error" : undefined}
                 required
               />
+              <FieldError id="profile-display-name-error" message={profileErrors.display_name} />
               <small>ชื่อนี้จะแสดงบนหน้าเว็บและเมนูบัญชี</small>
             </div>
             <div className="form-field">
-              <label htmlFor="profile-first-name">ชื่อ</label>
+              <FormLabel htmlFor="profile-first-name" required>ชื่อ</FormLabel>
               <Input
                 id="profile-first-name"
                 name="first_name"
                 value={profile.first_name || ""}
                 onChange={update}
+                aria-invalid={Boolean(profileErrors.first_name)}
+                aria-describedby={profileErrors.first_name ? "profile-first-name-error" : undefined}
                 required
               />
+              <FieldError id="profile-first-name-error" message={profileErrors.first_name} />
             </div>
             <div className="form-field">
-              <label htmlFor="profile-last-name">นามสกุล</label>
+              <FormLabel htmlFor="profile-last-name" required>นามสกุล</FormLabel>
               <Input
                 id="profile-last-name"
                 name="last_name"
                 value={profile.last_name || ""}
                 onChange={update}
+                aria-invalid={Boolean(profileErrors.last_name)}
+                aria-describedby={profileErrors.last_name ? "profile-last-name-error" : undefined}
                 required
               />
+              <FieldError id="profile-last-name-error" message={profileErrors.last_name} />
             </div>
             <div className="form-field">
-              <label htmlFor="profile-email">อีเมลบัญชี</label>
+              <FormLabel htmlFor="profile-email">อีเมลบัญชี</FormLabel>
               <Input
                 id="profile-email"
                 name="email"
@@ -309,7 +329,7 @@ function ProfilePage() {
               <small>อีเมลนี้ใช้สำหรับเข้าสู่ระบบ</small>
             </div>
             <div className="form-field">
-              <label htmlFor="profile-phone">เบอร์โทรศัพท์</label>
+              <FormLabel htmlFor="profile-phone" required>เบอร์โทรศัพท์</FormLabel>
               <Input
                 id="profile-phone"
                 name="phone"
@@ -318,11 +338,14 @@ function ProfilePage() {
                 inputMode="numeric"
                 pattern="[0-9]{0,10}"
                 maxLength={10}
+                aria-invalid={Boolean(profileErrors.phone)}
+                aria-describedby={profileErrors.phone ? "profile-phone-error" : undefined}
               />
+              <FieldError id="profile-phone-error" message={profileErrors.phone} />
               <small>กรอกตัวเลขได้ไม่เกิน 10 หลัก</small>
             </div>
             <div className="form-field">
-              <label htmlFor="profile-tax">เลขประจำตัวผู้เสียภาษี</label>
+              <FormLabel htmlFor="profile-tax">เลขประจำตัวผู้เสียภาษี</FormLabel>
               <Input
                 id="profile-tax"
                 name="tax_id"
@@ -331,7 +354,10 @@ function ProfilePage() {
                 inputMode="numeric"
                 pattern="[0-9]{0,13}"
                 maxLength={13}
+                aria-invalid={Boolean(profileErrors.tax_id)}
+                aria-describedby={profileErrors.tax_id ? "profile-tax-error" : undefined}
               />
+              <FieldError id="profile-tax-error" message={profileErrors.tax_id} />
               <small>กรอกตัวเลขได้ไม่เกิน 13 หลัก</small>
             </div>
             {/* <div className="form-field full">
@@ -353,21 +379,26 @@ function ProfilePage() {
 
           <div className="form-grid profile-address-grid">
             <div className="form-field full">
-              <label htmlFor="profile-address">ที่อยู่</label>
+              <FormLabel htmlFor="profile-address" required>ที่อยู่</FormLabel>
               <Input
                 id="profile-address"
                 name="address"
                 value={profile.address || ""}
                 onChange={update}
+                aria-invalid={Boolean(profileErrors.address)}
+                aria-describedby={profileErrors.address ? "profile-address-error" : undefined}
               />
+              <FieldError id="profile-address-error" message={profileErrors.address} />
             </div>
             <div className="form-field">
-              <label htmlFor="profile-province">จังหวัด</label>
+              <FormLabel htmlFor="profile-province" required>จังหวัด</FormLabel>
               <select
                 id="profile-province"
                 value={profile.province || ""}
                 onChange={updateProvince}
                 disabled={addressLoading || Boolean(addressError)}
+                aria-invalid={Boolean(profileErrors.province)}
+                aria-describedby={profileErrors.province ? "profile-province-error" : undefined}
               >
                 <option value="">
                   {addressLoading ? "กำลังโหลดจังหวัด..." : "เลือกจังหวัด"}
@@ -378,14 +409,17 @@ function ProfilePage() {
                   </option>
                 ))}
               </select>
+              <FieldError id="profile-province-error" message={profileErrors.province} />
             </div>
             <div className="form-field">
-              <label htmlFor="profile-district">อำเภอ / เขต</label>
+              <FormLabel htmlFor="profile-district" required>อำเภอ / เขต</FormLabel>
               <select
                 id="profile-district"
                 value={profile.district || ""}
                 onChange={updateDistrict}
                 disabled={!selectedProvince}
+                aria-invalid={Boolean(profileErrors.district)}
+                aria-describedby={profileErrors.district ? "profile-district-error" : undefined}
               >
                 <option value="">เลือกอำเภอ / เขต</option>
                 {districts.map((district) => (
@@ -394,14 +428,17 @@ function ProfilePage() {
                   </option>
                 ))}
               </select>
+              <FieldError id="profile-district-error" message={profileErrors.district} />
             </div>
             <div className="form-field">
-              <label htmlFor="profile-sub-district">ตำบล / แขวง</label>
+              <FormLabel htmlFor="profile-sub-district" required>ตำบล / แขวง</FormLabel>
               <select
                 id="profile-sub-district"
                 value={profile.sub_district || ""}
                 onChange={updateSubDistrict}
                 disabled={!selectedDistrict}
+                aria-invalid={Boolean(profileErrors.sub_district)}
+                aria-describedby={profileErrors.sub_district ? "profile-sub-district-error" : undefined}
               >
                 <option value="">เลือกตำบล / แขวง</option>
                 {subDistricts.map((subDistrict) => (
@@ -410,15 +447,18 @@ function ProfilePage() {
                   </option>
                 ))}
               </select>
+              <FieldError id="profile-sub-district-error" message={profileErrors.sub_district} />
             </div>
             <div className="form-field">
-              <label htmlFor="profile-postal-code">รหัสไปรษณีย์</label>
+              <FormLabel htmlFor="profile-postal-code" required>รหัสไปรษณีย์</FormLabel>
               <select
                 id="profile-postal-code"
                 name="postal_code"
                 value={profile.postal_code || ""}
                 disabled={!selectedSubDistrict}
                 onChange={update}
+                aria-invalid={Boolean(profileErrors.postal_code)}
+                aria-describedby={profileErrors.postal_code ? "profile-postal-code-error" : undefined}
               >
                 <option value="">เลือกตำบลก่อน</option>
                 {selectedSubDistrict && (
@@ -427,6 +467,7 @@ function ProfilePage() {
                   </option>
                 )}
               </select>
+              <FieldError id="profile-postal-code-error" message={profileErrors.postal_code} />
             </div>
           </div>
 
@@ -458,7 +499,7 @@ function ProfilePage() {
         </div>
         <div className="form-grid password-grid">
           <div className="form-field">
-            <label htmlFor="current-password">รหัสผ่านเดิม</label>
+            <FormLabel htmlFor="current-password" required>รหัสผ่านเดิม</FormLabel>
             <Input
               id="current-password"
               name="current_password"
@@ -470,7 +511,7 @@ function ProfilePage() {
             />
           </div>
           <div className="form-field">
-            <label htmlFor="new-password">รหัสผ่านใหม่</label>
+            <FormLabel htmlFor="new-password" required>รหัสผ่านใหม่</FormLabel>
             <Input
               id="new-password"
               name="new_password"
@@ -492,7 +533,7 @@ function ProfilePage() {
             )}
           </div>
           <div className="form-field">
-            <label htmlFor="confirm-password">ยืนยันรหัสผ่านใหม่</label>
+            <FormLabel htmlFor="confirm-password" required>ยืนยันรหัสผ่านใหม่</FormLabel>
             <Input
               id="confirm-password"
               name="confirm_password"

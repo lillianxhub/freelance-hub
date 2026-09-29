@@ -46,6 +46,17 @@ export interface StatusBadgeProps {
   status: SupportedStatus
 }
 
+export interface FormLabelProps {
+  htmlFor: string
+  children: ReactNode
+  required?: boolean
+}
+
+export interface FieldErrorProps {
+  id: string
+  message?: string
+}
+
 export interface TopbarProps {
   onMenu: () => void
 }
