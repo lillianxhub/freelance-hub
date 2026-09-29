@@ -6,9 +6,10 @@ import { manageLinks, workspaceLinks } from '../constants/navigation'
 import type { SidebarLinkProps, SidebarProps } from '../types/ui'
 
 function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
+  const Icon = icon
   return (
     <NavLink to={to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-      <span className="nav-icon" aria-hidden="true">{icon}</span>
+      <span className="nav-icon" aria-hidden="true"><Icon /></span>
       <span>{label}</span>
       {badge !== undefined && <span className="nav-count">{badge}</span>}
     </NavLink>

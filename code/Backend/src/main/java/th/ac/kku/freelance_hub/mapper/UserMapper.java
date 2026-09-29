@@ -3,6 +3,7 @@ package th.ac.kku.freelance_hub.mapper;
 import org.springframework.stereotype.Component;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
+import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
 import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
 
@@ -20,8 +21,7 @@ public class UserMapper {
                 .id(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole())
-                .status(user.getStatus())
-                .enabled(user.getEnabled())
+                .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt());
 
         // Add profile information if exists
@@ -32,12 +32,13 @@ public class UserMapper {
                     .lastName(profile.getLastName())
                     .phone(profile.getPhone())
                     .address(profile.getAddress())
-                    .city(profile.getCity())
-                    .country(profile.getCountry())
+                    .subdistrict(profile.getSubdistrict())
+                    .district(profile.getDistrict())
+                    .province(profile.getProvince())
                     .postalCode(profile.getPostalCode())
-                    .avatarUrl(profile.getProfileImageUrl())
-                    .timezone(profile.getTimezone())
-                    .dateFormat(profile.getDateFormat());
+                    .taxId(profile.getTaxId())
+                    .dateFormat(profile.getDateFormat())
+                    .bio(profile.getBio());
         }
 
         return builder.build();
@@ -52,8 +53,48 @@ public class UserMapper {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .phone(request.getPhone())
-                .timezone(request.getTimezone() != null ? request.getTimezone() : "UTC")
                 .dateFormat("YYYY-MM-DD")
                 .build();
+    }
+
+    /** Applies non-null profile and flat address fields from a PATCH request. */
+    public void updateProfile(UpdateUserProfileRequest request, UserProfile profile) {
+        if (request.getDisplayName() != null) {
+            profile.setDisplayName(request.getDisplayName().trim());
+        }
+        if (request.getFirstName() != null) {
+            profile.setFirstName(request.getFirstName().trim());
+        }
+        if (request.getLastName() != null) {
+            profile.setLastName(request.getLastName().trim());
+        }
+        if (request.getPhone() != null) {
+            profile.setPhone(request.getPhone().trim());
+        }
+        if (request.getDateFormat() != null) {
+            profile.setDateFormat(request.getDateFormat().trim());
+        }
+        if (request.getBio() != null) {
+            profile.setBio(request.getBio().trim());
+        }
+
+        if (request.getAddress() != null) {
+            profile.setAddress(request.getAddress().trim());
+        }
+        if (request.getSubdistrict() != null) {
+            profile.setSubdistrict(request.getSubdistrict().trim());
+        }
+        if (request.getDistrict() != null) {
+            profile.setDistrict(request.getDistrict().trim());
+        }
+        if (request.getProvince() != null) {
+            profile.setProvince(request.getProvince().trim());
+        }
+        if (request.getPostalCode() != null) {
+            profile.setPostalCode(request.getPostalCode().trim());
+        }
+        if (request.getTaxId() != null) {
+            profile.setTaxId(request.getTaxId().trim());
+        }
     }
 }

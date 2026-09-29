@@ -1,4 +1,5 @@
 import { formatTimer } from "../../utils/formatters";
+import { FiPlay, FiSquare } from "react-icons/fi";
 import { useTimer } from "../useTimer";
 
 export default function TimerPanel() {
@@ -19,12 +20,12 @@ export default function TimerPanel() {
             />
             <span>
               <strong>{timer.runningProject?.name}</strong>
-              <small>
-                {timer.runningTask?.name ||
-                  timer.runningEntry.description ||
-                  "ไม่ระบุงาน"}
-              </small>
+              <small>โปรเจกต์ที่กำลังจับเวลา</small>
             </span>
+          </div>
+          <div className="running-timer-details">
+            <span><small>งาน</small><strong>{timer.runningTask?.name || "ไม่ระบุงาน"}</strong></span>
+            <span><small>รายละเอียด</small><strong>{timer.runningEntry.description || "ไม่มีรายละเอียด"}</strong></span>
           </div>
           <div className="timer-button-row">
             <button
@@ -32,7 +33,7 @@ export default function TimerPanel() {
               type="button"
               onClick={timer.stopTimer}
             >
-              ■ หยุดและบันทึก
+              <FiSquare aria-hidden="true" /> หยุดและบันทึก
             </button>
             <button
               className="button button-secondary"
@@ -105,7 +106,7 @@ export default function TimerPanel() {
             disabled={!timer.timerProjectId}
             onClick={timer.startTimer}
           >
-            ▶ เริ่มจับเวลา
+            <FiPlay aria-hidden="true" /> เริ่มจับเวลา
           </button>
         </>
       )}

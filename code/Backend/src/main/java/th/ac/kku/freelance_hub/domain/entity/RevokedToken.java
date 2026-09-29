@@ -15,6 +15,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 
 /** A JWT identifier that must no longer be accepted. */
 @Entity
@@ -22,7 +24,8 @@ import jakarta.persistence.UniqueConstraint;
         name = "revoked_tokens",
         indexes = {
                 @Index(name = "idx_revoked_tokens_user_id", columnList = "user_id"),
-                @Index(name = "idx_revoked_tokens_expires_at", columnList = "expires_at")
+                @Index(name = "idx_revoked_tokens_expires_at", columnList = "expires_at"),
+                @Index(name = "idx_revoked_tokens_is_active", columnList = "is_active")
         },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_revoked_tokens_jti", columnNames = "jti")
@@ -47,6 +50,18 @@ public class RevokedToken {
     @Column(name = "revoked_at", nullable = false)
     private Instant revokedAt;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     protected RevokedToken() {
     }
 
@@ -55,6 +70,18 @@ public class RevokedToken {
         this.user = Objects.requireNonNull(user, "user is required");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt is required");
         this.revokedAt = Objects.requireNonNull(revokedAt, "revokedAt is required");
+    }
+
+    @PrePersist
+    void onCreate() {
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = Instant.now();
     }
 
     public UUID getId() {

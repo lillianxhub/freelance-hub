@@ -54,10 +54,12 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
         Objects.requireNonNull(filter, "filter is required");
         validateListFilter(filter);
 
+        String sortProperty = "durationMinutes".equals(filter.getSortBy())
+                ? "durationSeconds" : filter.getSortBy();
         PageRequest pageable = PageRequest.of(
                 filter.getPage(),
                 filter.getSize(),
-                Sort.by(filter.getDirection(), filter.getSortBy())
+                Sort.by(filter.getDirection(), sortProperty)
         );
 
         return timeEntryRepository.findAll(
@@ -115,7 +117,7 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
                 predicate = cb.and(
                         predicate,
                         cb.isNotNull(root.get("endedAt")),
-                        cb.isNotNull(root.get("durationMinutes"))
+                        cb.isNotNull(root.get("durationSeconds"))
                 );
             }
             if (filter.getClientId() != null) {
