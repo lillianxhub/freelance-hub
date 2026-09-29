@@ -1,7 +1,7 @@
 # Freelance Hub MVP - Domain Class Diagram
 
 Class Diagram นี้อ้างอิง DBML รุ่นปรับปรุงล่าสุดของ MVP โดยไม่รวม Controller, DTO, Service และ Repository
-ข้อมูล Address ถูกเก็บแบบ embedded fields ใน `UserProfile` และ `Client` ไม่มี `Address` entity แยก
+ข้อมูล Address เป็น value object แบบ `@Embeddable` ใน `UserProfile` และ `Client` โดยยังเก็บคอลัมน์ในตารางเดิม
 ในเอกสารนี้ใช้ชื่อ audit field มาตรฐาน `deletedAt` แทน typo `deleate_at` จาก DBML ต้นทาง
 
 ```mermaid
@@ -27,11 +27,7 @@ classDiagram
         +String firstName
         +String lastName
         +String phone
-        +String address
-        +String subdistrict
-        +String district
-        +String province
-        +String postalCode
+        +Address addressDetails
         +String dateFormat
         +String bio
         +boolean isActive
@@ -45,11 +41,7 @@ classDiagram
         +String companyName
         +String email
         +String phone
-        +String address
-        +String subdistrict
-        +String district
-        +String province
-        +String postalCode
+        +Address addressDetails
         +String taxId
         +String notes
         +boolean isActive
@@ -112,6 +104,14 @@ classDiagram
         +Instant usedAt
         +Instant revokedAt
     }
+    class Address {
+        <<ValueObject>>
+        +String address
+        +String subdistrict
+        +String district
+        +String province
+        +String postalCode
+    }
     class UserRole {
         <<enumeration>>
         USER
@@ -138,7 +138,9 @@ classDiagram
     }
 
     User "1" *-- "1" UserProfile : profile
+    UserProfile "1" *-- "0..1" Address : addressDetails
     User "1" --> "0..*" Client : owns
+    Client "1" *-- "0..1" Address : addressDetails
     User "1" --> "0..*" Project : owns
     User "1" --> "0..*" TimeEntry : owns
     User "1" --> "0..*" RefreshToken : refreshes
@@ -154,7 +156,7 @@ classDiagram
 
 ## Domain Rules
 
-- Address fields are embedded in `UserProfile` and `Client`; there is no `Address` class.
+- `Address` is a value object embedded in `UserProfile` and `Client`; it has no separate database table.
 - Client and Project ownership is enforced by composite `(client_id, owner_id)` relationship.
 - Project and TimeEntry ownership is enforced by composite `(project_id, owner_id)` relationship.
 - A selected Task must belong to the same Project as the TimeEntry.

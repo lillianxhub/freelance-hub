@@ -90,11 +90,11 @@ public class ClientServiceImpl implements ClientService {
                         cb.like(root.get("phone"), pattern, '\\'));
                 match = cb.or(
                         match,
-                        cb.like(root.get("address"), pattern, '\\'),
-                        cb.like(root.get("subdistrict"), pattern, '\\'),
-                        cb.like(root.get("district"), pattern, '\\'),
-                        cb.like(root.get("province"), pattern, '\\'),
-                        cb.like(root.get("postalCode"), pattern, '\\'));
+                        cb.like(root.get("addressDetails").get("address"), pattern, '\\'),
+                        cb.like(root.get("addressDetails").get("subdistrict"), pattern, '\\'),
+                        cb.like(root.get("addressDetails").get("district"), pattern, '\\'),
+                        cb.like(root.get("addressDetails").get("province"), pattern, '\\'),
+                        cb.like(root.get("addressDetails").get("postalCode"), pattern, '\\'));
                 predicate = cb.and(predicate, match);
             }
             return predicate;
