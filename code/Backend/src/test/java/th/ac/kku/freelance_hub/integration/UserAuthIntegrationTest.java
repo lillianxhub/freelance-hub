@@ -95,6 +95,8 @@ class UserAuthIntegrationTest {
 
                 mockMvc.perform(get("/api/users/me"))
                                 .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"))
                                 .andExpect(jsonPath("$.message").value("Authentication is required"));
                 mockMvc.perform(put("/api/users/me")
                                 .header("Authorization", "Bearer malformed")
@@ -120,8 +122,10 @@ class UserAuthIntegrationTest {
                                 .content("{\"displayName\":\"   \",\"phone\":\"letters\"}"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
-                                .andExpect(jsonPath("$.errors.displayName").value("ชื่อที่แสดงต้องไม่เป็นช่องว่าง"))
-                                .andExpect(jsonPath("$.errors.phone").value(
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                                .andExpect(jsonPath("$.error.details.displayName").value("ชื่อที่แสดงต้องไม่เป็นช่องว่าง"))
+                                .andExpect(jsonPath("$.error.details.phone").value(
                                                 "เบอร์โทรศัพท์ต้องมีเฉพาะตัวเลขหรือเครื่องหมายคั่นที่ใช้ทั่วไป"));
 
                 mockMvc.perform(get("/api/users/me").header("Authorization", bearer(accessToken)))
