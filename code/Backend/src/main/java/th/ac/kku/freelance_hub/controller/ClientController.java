@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
+import th.ac.kku.freelance_hub.dto.response.PaginationMeta;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.exception.ValidationErrorResponse;
 import th.ac.kku.freelance_hub.service.ClientService;
@@ -56,14 +58,23 @@ public class ClientController {
     }
 
     @Operation(summary = "List clients", description = "List the authenticated user's clients with optional filters, sorting, and pagination")
-    @ApiResponse(responseCode = "200", description = "Page of clients returned")
+    @ApiResponse(responseCode = "200", description = "Page of clients returned", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid filter, sorting, or pagination options")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Page<ClientResponse>> list(@Valid @ModelAttribute ClientFilterRequest filter) {
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<List<ClientResponse>>> list(
+            @Valid @ModelAttribute ClientFilterRequest filter) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
-        return ResponseEntity.ok(clientService.list(ownerId, filter));
+        Page<ClientResponse> clients = clientService.list(ownerId, filter);
+        PaginationMeta meta = PaginationMeta.builder()
+                .page(clients.getNumber() + 1)
+                .limit(clients.getSize())
+                .total(clients.getTotalElements())
+                .totalPages(clients.getTotalPages())
+                .build();
+        return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                "Clients retrieved", clients.getContent(), meta));
     }
 
     @Operation(summary = "Get a client", description = "Get one client belonging to the authenticated user by ID")

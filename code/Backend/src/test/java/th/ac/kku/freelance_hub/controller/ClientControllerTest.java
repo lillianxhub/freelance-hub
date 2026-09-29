@@ -103,7 +103,14 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content[0].name").value("Acme"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Clients retrieved"))
+            .andExpect(jsonPath("$.data[0].name").value("Acme"))
+            .andExpect(jsonPath("$.meta.page").value(1))
+            .andExpect(jsonPath("$.meta.limit").value(20))
+            .andExpect(jsonPath("$.meta.total").value(1))
+            .andExpect(jsonPath("$.meta.totalPages").value(1))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getPage() == 0 && filter.getSize() == 20
@@ -123,7 +130,11 @@ class ClientControllerTest {
                 .param("size", "5")
                 .param("sortBy", "createdAt")
                 .param("direction", "DESC"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(0))
+            .andExpect(jsonPath("$.meta.page").value(3))
+            .andExpect(jsonPath("$.meta.limit").value(5))
+            .andExpect(jsonPath("$.meta.total").value(0));
 
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getStatus() == ClientStatus.ARCHIVED

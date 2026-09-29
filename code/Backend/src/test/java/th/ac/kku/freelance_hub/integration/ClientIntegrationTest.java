@@ -95,9 +95,9 @@ class ClientIntegrationTest {
                 .header("Authorization", bearer(ownerToken))
                 .param("search", "0812"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].name").value("Phone Match"))
-                .andExpect(jsonPath("$.content[0].phone").value("0812345678"));
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("Phone Match"))
+                .andExpect(jsonPath("$.data[0].phone").value("0812345678"));
     }
 
     @Test
@@ -120,9 +120,9 @@ class ClientIntegrationTest {
                 .header("Authorization", bearer(ownerToken))
                 .param("search", "123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].name").value("Address Match"))
-                .andExpect(jsonPath("$.content[0].address").value("123 Main Road"));
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("Address Match"))
+                .andExpect(jsonPath("$.data[0].address").value("123 Main Road"));
     }
 
     @Test
@@ -152,7 +152,7 @@ class ClientIntegrationTest {
         mockMvc.perform(get("/api/clients")
                 .header("Authorization", bearer(otherToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(0));
+                .andExpect(jsonPath("$.data.length()").value(0));
 
         mockMvc.perform(patch("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(otherToken))
