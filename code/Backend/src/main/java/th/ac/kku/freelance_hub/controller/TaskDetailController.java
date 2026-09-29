@@ -2,6 +2,7 @@ package th.ac.kku.freelance_hub.controller;
 
 import java.util.UUID;
 
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -48,7 +49,7 @@ public class TaskDetailController {
     @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping("/{taskId}")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<TaskResponse>> getById(
+    public ResponseEntity<ApiResult<TaskResponse>> getById(
             @PathVariable("taskId") UUID taskId
     ) {
         TaskResponse task = taskService.getById(
@@ -56,7 +57,7 @@ public class TaskDetailController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "ดึงข้อมูลงานย่อยสำเร็จ", task
                 )
         );
@@ -77,7 +78,7 @@ public class TaskDetailController {
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้แก้ไขงานย่อย",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PutMapping("/{taskId}")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<TaskResponse>> update(
+    public ResponseEntity<ApiResult<TaskResponse>> update(
             @PathVariable("taskId") UUID taskId,
             @Valid @RequestBody UpdateTaskRequest request
     ) {
@@ -86,7 +87,7 @@ public class TaskDetailController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "แก้ไขงานย่อยสำเร็จ", task
                 )
         );
@@ -108,7 +109,7 @@ public class TaskDetailController {
     @ApiResponse(responseCode = "409", description = "ไม่อนุญาตให้เปลี่ยนสถานะงานย่อย",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PatchMapping("/{taskId}/status")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<TaskResponse>> changeStatus(
+    public ResponseEntity<ApiResult<TaskResponse>> changeStatus(
             @PathVariable("taskId") UUID taskId,
             @Valid @RequestBody ChangeTaskStatusRequest request
     ) {
@@ -117,7 +118,7 @@ public class TaskDetailController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "เปลี่ยนสถานะงานย่อยสำเร็จ", task
                 )
         );
@@ -138,12 +139,12 @@ public class TaskDetailController {
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้ลบงานย่อย",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<Void>> delete(
+    public ResponseEntity<ApiResult<Void>> delete(
             @PathVariable("taskId") UUID taskId
     ) {
         taskService.delete(userService.getCurrentUserEntity().getId(), taskId);
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.<Void>success(
+                ApiResult.<Void>success(
                         "ลบงานย่อยสำเร็จ", null
                 )
         );

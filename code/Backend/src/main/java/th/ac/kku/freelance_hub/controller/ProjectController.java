@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.UUID;
 import java.util.List;
 
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -63,11 +64,11 @@ public class ProjectController {
     @ApiResponse(responseCode = "404", description = "Client not found",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
+    public ResponseEntity<ApiResult<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
         ProjectResponse response = projectService.create(currentOwnerId(), request);
 
         return ResponseEntity.created(URI.create("/api/projects/" + response.getId()))
-                .body(th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                .body(ApiResult.success(
                         "สร้างโปรเจกต์สำเร็จ", response));
     }
 
@@ -90,7 +91,7 @@ public class ProjectController {
             description = "ต้องเข้าสู่ระบบ"
     )
     @GetMapping
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<List<ProjectListItemResponse>>> list(
+    public ResponseEntity<ApiResult<List<ProjectListItemResponse>>> list(
             @Valid @ModelAttribute ProjectFilterRequest filter,
             @RequestParam(name = "clientId", required = false) UUID clientId
     ) {
@@ -139,7 +140,7 @@ public class ProjectController {
                 .build();
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "ดึงรายการโปรเจกต์สำเร็จ",
                         projects.getContent(),
                         meta
@@ -158,12 +159,12 @@ public class ProjectController {
     @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping("/{id}")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<ProjectListItemResponse>> getById(
+    public ResponseEntity<ApiResult<ProjectListItemResponse>> getById(
             @PathVariable("id") UUID id
     ) {
         ProjectListItemResponse project = projectService.getById(currentOwnerId(), id);
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "ดึงรายละเอียดโปรเจกต์สำเร็จ", project
                 )
         );
@@ -195,7 +196,7 @@ public class ProjectController {
             )
     )
     @PutMapping("/{id}")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<ProjectResponse>> update(
+    public ResponseEntity<ApiResult<ProjectResponse>> update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateProjectRequest request
     ) {
@@ -206,7 +207,7 @@ public class ProjectController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "แก้ไขโปรเจกต์สำเร็จ",
                         response
                 )
@@ -246,7 +247,7 @@ public class ProjectController {
             )
     )
     @PatchMapping("/{id}/status")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<ProjectResponse>> changeStatus(
+    public ResponseEntity<ApiResult<ProjectResponse>> changeStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody ChangeProjectStatusRequest request
     ) {
@@ -257,7 +258,7 @@ public class ProjectController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "เปลี่ยนสถานะโปรเจกต์สำเร็จ",
                         response
                 )
@@ -286,13 +287,13 @@ public class ProjectController {
             )
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<Void>> delete(
+    public ResponseEntity<ApiResult<Void>> delete(
             @PathVariable("id") UUID id
     ) {
         projectService.archive(currentOwnerId(), id);
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.<Void>success(
+                ApiResult.<Void>success(
                         "ลบโปรเจกต์สำเร็จ",
                         null
                 )

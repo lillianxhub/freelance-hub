@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -78,7 +79,7 @@ public class TaskController {
             )
     )
     @PostMapping
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<TaskResponse>> create(
+    public ResponseEntity<ApiResult<TaskResponse>> create(
             @PathVariable("projectId") UUID projectId,
             @Valid @RequestBody CreateTaskRequest request
     ) {
@@ -94,7 +95,7 @@ public class TaskController {
                                 + "/tasks/" + response.getId()
                 ))
                 .body(
-                        th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                        ApiResult.success(
                                 "สร้างงานย่อยสำเร็จ",
                                 response
                         )
@@ -114,7 +115,7 @@ public class TaskController {
     @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<List<TaskResponse>>> list(
+    public ResponseEntity<ApiResult<List<TaskResponse>>> list(
             @PathVariable("projectId") UUID projectId,
             @RequestParam(name = "is_active", defaultValue = "true") boolean isActive,
             Pageable pageable
@@ -131,7 +132,7 @@ public class TaskController {
                 .build();
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "ดึงรายการงานย่อยสำเร็จ",
                         tasks.getContent(),
                         meta
@@ -283,7 +284,7 @@ public class TaskController {
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้เรียงลำดับงาน",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PatchMapping("/reorder")
-    public ResponseEntity<th.ac.kku.freelance_hub.common.response.ApiResult<TaskResponse>> reorderInProject(
+    public ResponseEntity<ApiResult<TaskResponse>> reorderInProject(
             @PathVariable("projectId") UUID projectId,
             @Valid @RequestBody ProjectTaskReorderRequest request
     ) {
@@ -295,7 +296,7 @@ public class TaskController {
         );
 
         return ResponseEntity.ok(
-                th.ac.kku.freelance_hub.common.response.ApiResult.success(
+                ApiResult.success(
                         "เรียงลำดับงานย่อยสำเร็จ", response
                 )
         );
