@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,13 +20,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.ProjectTaskReorderRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.response.PaginationMeta;
 import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TaskService;
@@ -43,23 +47,45 @@ public class TaskController {
 
     @Operation(
             summary = "Create a task",
-            description = "Create a task at the specified zero-based position in a project"
+            description = "สร้างงานย่อยในโปรเจกต์ตามตำแหน่งที่ระบุ "
+                    + "โดย sortOrder เริ่มจาก 0"
     )
-    @ApiResponse(responseCode = "201", description = "Task created",
-            content = @Content(schema = @Schema(implementation = TaskResponse.class)))
-    @ApiResponse(responseCode = "400", description = "Invalid task data or sort order")
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Project not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @ApiResponse(responseCode = "409", description = "Project is completed or archived",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(
+            responseCode = "201",
+            description = "สร้างงานย่อยสำเร็จ",
+            useReturnTypeSchema = true
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "ข้อมูลงานย่อยหรือลำดับไม่ถูกต้อง"
+    )
+    @ApiResponse(
+            responseCode = "401",
+            description = "ต้องเข้าสู่ระบบ"
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "ไม่พบโปรเจกต์",
+            content = @Content(
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "409",
+            description = "สถานะโปรเจกต์ไม่อนุญาตให้สร้างงานย่อย",
+            content = @Content(
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
     @PostMapping
-    public ResponseEntity<TaskResponse> create(
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<TaskResponse>> create(
             @PathVariable("projectId") UUID projectId,
             @Valid @RequestBody CreateTaskRequest request
     ) {
         TaskResponse response = taskService.create(
-                currentOwnerId(), projectId, request
+                currentOwnerId(),
+                projectId,
+                request
         );
 
         return ResponseEntity
@@ -67,25 +93,49 @@ public class TaskController {
                         "/api/projects/" + projectId
                                 + "/tasks/" + response.getId()
                 ))
-                .body(response);
+                .body(
+                        th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                                "สร้างงานย่อยสำเร็จ",
+                                response
+                        )
+                );
     }
 
     @Operation(
             summary = "List tasks",
-            description = "List tasks in a project with sorting and pagination"
+            description = "ดึงรายการงานย่อยในโปรเจกต์ กรองด้วย is_active "
+                    + "โดยค่าเริ่มต้นเป็น true และรองรับ page, size, sort "
+                    + "โดย page เริ่มจาก 0"
     )
-    @ApiResponse(responseCode = "200", description = "Page of tasks returned")
-    @ApiResponse(responseCode = "400", description = "Invalid sorting or pagination options")
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Project not found",
+    @ApiResponse(responseCode = "200", description = "ดึงรายการงานย่อยสำเร็จ",
+            useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "400", description = "ข้อมูลตัวกรองหรือแบ่งหน้าไม่ถูกต้อง")
+    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
+    @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping
-    public ResponseEntity<Page<TaskResponse>> list(
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<List<TaskResponse>>> list(
             @PathVariable("projectId") UUID projectId,
+            @RequestParam(name = "is_active", defaultValue = "true") boolean isActive,
             Pageable pageable
     ) {
+        Page<TaskResponse> tasks = taskService.list(
+                currentOwnerId(), projectId, isActive, pageable
+        );
+
+        PaginationMeta meta = PaginationMeta.builder()
+                .page(tasks.getNumber() + 1)
+                .limit(tasks.getSize())
+                .total(tasks.getTotalElements())
+                .totalPages(tasks.getTotalPages())
+                .build();
+
         return ResponseEntity.ok(
-                taskService.list(currentOwnerId(), projectId, pageable)
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "ดึงรายการงานย่อยสำเร็จ",
+                        tasks.getContent(),
+                        meta
+                )
         );
     }
 
@@ -202,13 +252,13 @@ public class TaskController {
 
     @Operation(
             summary = "Delete a task",
-            description = "Delete a task and update the order of remaining tasks; tasks with time entries cannot be deleted"
+            description = "ลบงานย่อยแบบ soft delete และปรับลำดับงานที่ยังใช้งาน โดยเก็บข้อมูลเวลาเดิมไว้"
     )
     @ApiResponse(responseCode = "204", description = "Task deleted", content = @Content)
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Project or task not found",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @ApiResponse(responseCode = "409", description = "Project is completed or archived, or the task has time entries",
+    @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้ลบงานย่อย",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> delete(
@@ -219,6 +269,37 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+            summary = "Reorder a task within a project",
+            description = "ส่ง taskId และ sortOrder เพื่อย้ายงานย่อยไปยังตำแหน่งใหม่ "
+                    + "โดยตำแหน่งเริ่มจาก 0 และนับเฉพาะงานที่ยังใช้งาน"
+    )
+    @ApiResponse(responseCode = "200", description = "เรียงลำดับงานย่อยสำเร็จ",
+            useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "400", description = "ข้อมูลงานย่อยหรือลำดับไม่ถูกต้อง")
+    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
+    @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์หรืองานย่อย",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้เรียงลำดับงาน",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @PatchMapping("/reorder")
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<TaskResponse>> reorderInProject(
+            @PathVariable("projectId") UUID projectId,
+            @Valid @RequestBody ProjectTaskReorderRequest request
+    ) {
+        TaskResponse response = taskService.reorder(
+                currentOwnerId(),
+                projectId,
+                request.getTaskId(),
+                ReorderTaskRequest.builder().sortOrder(request.getSortOrder()).build()
+        );
+
+        return ResponseEntity.ok(
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "เรียงลำดับงานย่อยสำเร็จ", response
+                )
+        );
+    }
     private UUID currentOwnerId() {
         return userService.getCurrentUserEntity().getId();
     }

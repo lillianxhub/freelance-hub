@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.util.List;
 import java.util.UUID;
@@ -84,7 +85,15 @@ class TaskControllerTest {
                         "Location",
                         "/api/projects/" + PROJECT_ID + "/tasks/" + TASK_ID
                 ))
-                .andExpect(jsonPath("$.name").value("Design"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("สร้างงานย่อยสำเร็จ"))
+                .andExpect(jsonPath("$.data.id").value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data.projectId")
+                        .value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.name").value("Design"))
+                .andExpect(jsonPath("$.data.status").value("OPEN"))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(taskService).create(
                 eq(OWNER_ID),
@@ -109,25 +118,36 @@ class TaskControllerTest {
     }
 
     @Test
-    void listPassesPaginationToService() throws Exception {
+    void listDefaultsToActiveAndReturnsCommonResponseWithPagination() throws Exception {
         stubCurrentUser();
         when(taskService.list(
-                eq(OWNER_ID), eq(PROJECT_ID), any(Pageable.class)
+                eq(OWNER_ID), eq(PROJECT_ID), eq(true), any(Pageable.class)
         )).thenReturn(new PageImpl<>(
-                List.<TaskResponse>of(),
+                List.of(response("Design", TaskStatus.OPEN)),
                 PageRequest.of(1, 5),
-                0
+                11
         ));
 
         mockMvc.perform(get(BASE, PROJECT_ID)
                         .param("page", "1")
                         .param("size", "5")
                         .param("sort", "sortOrder,desc"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("ดึงรายการงานย่อยสำเร็จ"))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].id").value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data[0].name").value("Design"))
+                .andExpect(jsonPath("$.meta.page").value(2))
+                .andExpect(jsonPath("$.meta.limit").value(5))
+                .andExpect(jsonPath("$.meta.total").value(11))
+                .andExpect(jsonPath("$.meta.totalPages").value(3))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(taskService).list(
                 eq(OWNER_ID),
                 eq(PROJECT_ID),
+                eq(true),
                 org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
                         pageable.getPageNumber() == 1
                                 && pageable.getPageSize() == 5
@@ -135,6 +155,50 @@ class TaskControllerTest {
                                         .getOrderFor("sortOrder")
                                         .isDescending()
                 )
+        );
+    }
+
+    @Test
+    void listAcceptsInactiveFilterAndReturnsEmptyArray() throws Exception {
+        stubCurrentUser();
+        when(taskService.list(
+                eq(OWNER_ID), eq(PROJECT_ID), eq(false), any(Pageable.class)
+        )).thenReturn(new PageImpl<>(
+                List.<TaskResponse>of(), PageRequest.of(0, 20), 0
+        ));
+
+        mockMvc.perform(get(BASE, PROJECT_ID).param("is_active", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("ดึงรายการงานย่อยสำเร็จ"))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.limit").value(20))
+                .andExpect(jsonPath("$.meta.total").value(0))
+                .andExpect(jsonPath("$.meta.totalPages").value(0))
+                .andExpect(jsonPath("$.error").value(nullValue()));
+
+        verify(taskService).list(
+                eq(OWNER_ID), eq(PROJECT_ID), eq(false), any(Pageable.class)
+        );
+    }
+
+    @Test
+    void listAcceptsExplicitActiveFilter() throws Exception {
+        stubCurrentUser();
+        when(taskService.list(
+                eq(OWNER_ID), eq(PROJECT_ID), eq(true), any(Pageable.class)
+        )).thenReturn(new PageImpl<>(
+                List.<TaskResponse>of(), PageRequest.of(0, 20), 0
+        ));
+
+        mockMvc.perform(get(BASE, PROJECT_ID).param("is_active", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+
+        verify(taskService).list(
+                eq(OWNER_ID), eq(PROJECT_ID), eq(true), any(Pageable.class)
         );
     }
 
@@ -244,6 +308,83 @@ class TaskControllerTest {
         verify(taskService).delete(OWNER_ID, PROJECT_ID, TASK_ID);
     }
 
+    @Test
+    void projectReorderReturnsCommonResponseAndPassesTaskAndPosition() throws Exception {
+        stubCurrentUser();
+        when(taskService.reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
+                any(ReorderTaskRequest.class)))
+                .thenReturn(TaskResponse.builder().id(TASK_ID).projectId(PROJECT_ID)
+                        .sortOrder(0).build());
+
+        mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"taskId\":\"" + TASK_ID + "\",\"sortOrder\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("เรียงลำดับงานย่อยสำเร็จ"))
+                .andExpect(jsonPath("$.data.id").value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data.projectId").value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.sortOrder").value(0))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
+
+        verify(taskService).reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
+                org.mockito.ArgumentMatchers.<ReorderTaskRequest>argThat(
+                        request -> Integer.valueOf(0).equals(request.getSortOrder())));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "{\"sortOrder\":0}",
+            "{\"taskId\":\"00000000-0000-0000-0000-000000000001\"}",
+            "{\"taskId\":\"00000000-0000-0000-0000-000000000001\",\"sortOrder\":-1}"
+    })
+    void projectReorderRejectsMissingFieldsAndNegativePosition(String json) throws Exception {
+        mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never()).reorder(any(), any(), any(), any());
+    }
+
+    @Test
+    void projectReorderReturns404ForTaskOutsideProject() throws Exception {
+        stubCurrentUser();
+        when(taskService.reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
+                any(ReorderTaskRequest.class)))
+                .thenThrow(new TaskNotFoundException(TASK_ID));
+
+        mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"taskId\":\"" + TASK_ID + "\",\"sortOrder\":0}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void projectReorderReturns400ForPositionOutsideList() throws Exception {
+        stubCurrentUser();
+        when(taskService.reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
+                any(ReorderTaskRequest.class)))
+                .thenThrow(new IllegalArgumentException("Invalid sort order"));
+
+        mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"taskId\":\"" + TASK_ID + "\",\"sortOrder\":999}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void projectReorderReturns409WhenProjectStateForbidsEditing() throws Exception {
+        stubCurrentUser();
+        when(taskService.reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
+                any(ReorderTaskRequest.class)))
+                .thenThrow(new IllegalStateException("Project cannot edit tasks"));
+
+        mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"taskId\":\"" + TASK_ID + "\",\"sortOrder\":0}"))
+                .andExpect(status().isConflict());
+    }
     private void stubCurrentUser() {
         when(userService.getCurrentUserEntity())
                 .thenReturn(User.builder().id(OWNER_ID).build());
