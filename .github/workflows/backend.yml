@@ -16,6 +16,7 @@ on:
 permissions:
     contents: read
     pull-requests: read
+    pull-requests: read
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -71,6 +72,8 @@ jobs:
         name: Test backend
         needs: changes
         if: needs.changes.outputs.backend == 'true'
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
 
         steps:
@@ -95,6 +98,8 @@ jobs:
 
     migration:
         name: Validate Flyway migrations
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
         needs: changes
         if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
@@ -147,8 +152,10 @@ jobs:
         name: Build Docker image
         needs:
             - changes
+            - changes
             - test
             - migration
+        if: needs.changes.outputs.backend == 'true'
         if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
         timeout-minutes: 15
