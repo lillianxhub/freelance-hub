@@ -142,7 +142,10 @@ class ClientIntegrationTest {
 
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+                .andExpect(jsonPath("$.data.name").value("Acme"));
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(otherToken)))
                 .andExpect(status().isNotFound());
@@ -172,8 +175,8 @@ class ClientIntegrationTest {
         mockMvc.perform(get("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Acme"))
-                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+                .andExpect(jsonPath("$.data.name").value("Updated Acme"))
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
     }
 
     private String registerAndGetToken(String email) throws Exception {

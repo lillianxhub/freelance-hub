@@ -67,14 +67,16 @@ public class ClientController {
     }
 
     @Operation(summary = "Get a client", description = "Get one client belonging to the authenticated user by ID")
-    @ApiResponse(responseCode = "200", description = "Client returned", content = @Content(schema = @Schema(implementation = ClientResponse.class)))
+    @ApiResponse(responseCode = "200", description = "Client returned", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ClientResponse> getById(@PathVariable UUID id) {
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<ClientResponse>> getById(
+            @PathVariable UUID id) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
-        return ResponseEntity.ok(clientService.getById(ownerId, id));
+        return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                "Client retrieved", clientService.getById(ownerId, id)));
     }
 
     @Operation(summary = "Update a client", description = "Update fields of a client belonging to the authenticated user")

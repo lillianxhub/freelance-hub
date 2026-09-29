@@ -149,8 +149,12 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(clientId.toString()))
-            .andExpect(jsonPath("$.name").value("Acme"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Client retrieved"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("Acme"))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).getById(OWNER_ID, clientId);
     }
