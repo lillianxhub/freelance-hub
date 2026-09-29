@@ -17,26 +17,26 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RegisterRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email must be valid")
-    @Size(max = 255, message = "Email must not exceed 255 characters")
+    @NotBlank(message = "กรุณาระบุอีเมล")
+    @Email(message = "รูปแบบอีเมลไม่ถูกต้อง")
+    @Size(max = 255, message = "อีเมลต้องไม่เกิน 255 ตัวอักษร")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
+    @NotBlank(message = "กรุณาระบุรหัสผ่าน")
+    @Size(min = 8, max = 100, message = "รหัสผ่านต้องมี 8–100 ตัวอักษร")
     private String password;
 
-    @NotBlank(message = "Display name is required")
-    @Size(max = 255, message = "Display name must not exceed 255 characters")
+    @NotBlank(message = "กรุณาระบุชื่อที่แสดง")
+    @Size(max = 255, message = "ชื่อที่แสดงต้องไม่เกิน 255 ตัวอักษร")
     private String displayName;
 
-    @Size(max = 100, message = "First name must not exceed 100 characters")
+    @Size(max = 100, message = "ชื่อต้องไม่เกิน 100 ตัวอักษร")
     private String firstName;
 
-    @Size(max = 100, message = "Last name must not exceed 100 characters")
+    @Size(max = 100, message = "นามสกุลต้องไม่เกิน 100 ตัวอักษร")
     private String lastName;
 
-    @Size(max = 20, message = "Phone must not exceed 20 characters")
+    @Size(max = 20, message = "เบอร์โทรศัพท์ต้องไม่เกิน 20 ตัวอักษร")
     private String phone;
 
 }

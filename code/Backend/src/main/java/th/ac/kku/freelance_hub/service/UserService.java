@@ -57,7 +57,7 @@ public class UserService {
         User user = getCurrentUserEntity();
         UserProfile profile = user.getProfile();
         if (profile == null) {
-            throw new IllegalStateException("User profile is not available");
+            throw new IllegalStateException("ไม่พบข้อมูลโปรไฟล์ผู้ใช้");
         }
         userMapper.updateProfile(request, profile);
         return userMapper.toResponse(userRepository.save(user));
@@ -71,7 +71,7 @@ public class UserService {
             throw new InvalidCredentialsException("รหัสผ่านไม่ถูกต้อง");
         }
         if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("New password must differ from old password");
+            throw new IllegalArgumentException("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -84,7 +84,7 @@ public class UserService {
     public String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("No authenticated user found");
+            throw new RuntimeException("ไม่พบผู้ใช้ที่เข้าสู่ระบบ");
         }
         return authentication.getName();
     }

@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
                                 .timestamp(LocalDateTime.now())
                                 .status(HttpStatus.UNAUTHORIZED.value())
                                 .error("Unauthorized")
-                                .message("Invalid email or password")
+                                .message("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
                                 .build();
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
@@ -113,7 +113,7 @@ public class GlobalExceptionHandler {
                                 .timestamp(LocalDateTime.now())
                                 .status(HttpStatus.BAD_REQUEST.value())
                                 .error("Validation Failed")
-                                .message("Invalid input")
+                                .message("ข้อมูลที่ส่งมาไม่ถูกต้อง")
                                 .errors(errors)
                                 .build();
 
@@ -153,7 +153,7 @@ public class GlobalExceptionHandler {
                                 .timestamp(LocalDateTime.now())
                                 .status(HttpStatus.NOT_FOUND.value())
                                 .error("Not Found")
-                                .message("Resource not found")
+                                .message("ไม่พบข้อมูลที่ร้องขอ")
                                 .build();
 
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -165,7 +165,7 @@ public class GlobalExceptionHandler {
                                 .timestamp(LocalDateTime.now())
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                                 .error("Internal Server Error")
-                                .message(ex.getMessage())
+                                .message("เกิดข้อผิดพลาดภายในระบบ")
                                 .build();
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
@@ -260,4 +260,5 @@ public class GlobalExceptionHandler {
                                 .status(HttpStatus.CONFLICT)
                                 .body(error);
         }
+
 }
