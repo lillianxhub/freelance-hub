@@ -103,7 +103,7 @@ class TimerServiceImplTest {
                 TASK_ID, PROJECT_ID, OWNER_ID
         )).thenReturn(Optional.of(task));
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
@@ -138,7 +138,7 @@ class TimerServiceImplTest {
     void startsTimerWithoutOptionalTask() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
@@ -225,10 +225,25 @@ class TimerServiceImplTest {
     }
 
     @Test
+    void rejectsTimerForArchivedClient() {
+        project.getClient().archive();
+        stubOwnedUserAndProject();
+
+        assertThatThrownBy(() -> timerService.startTimer(
+                OWNER_ID,
+                StartTimerRequest.builder().projectId(PROJECT_ID).build()
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("client must be active to track time");
+
+        verify(timeEntryRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void rejectsTimerWhenOneIsAlreadyRunning() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(true);
 
@@ -244,7 +259,7 @@ class TimerServiceImplTest {
     void translatesConcurrentInsertConflictIntoTimerAlreadyRunning() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
@@ -262,7 +277,7 @@ class TimerServiceImplTest {
     void preservesUnrelatedDatabaseIntegrityErrors() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         DataIntegrityViolationException databaseError =
@@ -288,31 +303,31 @@ class TimerServiceImplTest {
                 NOW
         );
         when(timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.of(runningTimer));
 
         var response = timerService.getCurrentTimer(OWNER_ID);
 
-        assertThat(response.getProjectId()).isEqualTo(PROJECT_ID);
-        assertThat(response.getTaskId()).isEqualTo(TASK_ID);
-        assertThat(response.getStartedAt()).isEqualTo(NOW);
-        assertThat(response.isRunning()).isTrue();
+        assertThat(response).isPresent();
+        assertThat(response.orElseThrow().getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(response.orElseThrow().getTaskId()).isEqualTo(TASK_ID);
+        assertThat(response.orElseThrow().getStartedAt()).isEqualTo(NOW);
+        assertThat(response.orElseThrow().isRunning()).isTrue();
         verify(timeEntryRepository, never())
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         any(), any()
                 );
     }
 
     @Test
-    void rejectsCurrentTimerRequestWhenNoneIsRunning() {
+    void returnsEmptyCurrentTimerWhenNoneIsRunning() {
         when(timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> timerService.getCurrentTimer(OWNER_ID))
-                .isInstanceOf(RunningTimerNotFoundException.class);
+        assertThat(timerService.getCurrentTimer(OWNER_ID)).isEmpty();
     }
 
     @Test
@@ -327,7 +342,7 @@ class TimerServiceImplTest {
         );
         ReflectionTestUtils.setField(runningTimer, "id", ENTRY_ID);
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.of(runningTimer));
 
@@ -335,10 +350,10 @@ class TimerServiceImplTest {
 
         assertThat(response.getStartedAt()).isEqualTo(startedAt);
         assertThat(response.getEndedAt()).isEqualTo(NOW);
-        assertThat(response.getDurationMinutes()).isEqualTo(2);
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.isRunning()).isFalse();
         assertThat(runningTimer.getEndedAt()).isEqualTo(NOW);
-        assertThat(runningTimer.getDurationMinutes()).isEqualTo(2);
+        assertThat(runningTimer.getDurationSeconds()).isEqualTo(90L);
         ArgumentCaptor<TimerStoppedEvent> eventCaptor =
                 ArgumentCaptor.forClass(TimerStoppedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -347,17 +362,17 @@ class TimerServiceImplTest {
         assertThat(event.ownerId()).isEqualTo(OWNER_ID);
         assertThat(event.projectId()).isEqualTo(PROJECT_ID);
         assertThat(event.taskId()).isEqualTo(TASK_ID);
-        assertThat(event.durationMinutes()).isEqualTo(2);
+        assertThat(event.durationSeconds()).isEqualTo(90L);
         assertThat(event.startedAt()).isEqualTo(startedAt);
         assertThat(event.endedAt()).isEqualTo(NOW);
         verify(timeEntryRepository, never())
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(any(), any());
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(any(), any());
     }
 
     @Test
     void rejectsStopWhenNoTimerIsRunning() {
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 
@@ -379,7 +394,7 @@ class TimerServiceImplTest {
                 NOW.minusSeconds(60)
         );
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.of(runningTimer));
 
@@ -387,13 +402,13 @@ class TimerServiceImplTest {
 
         verify(timeEntryRepository).delete(runningTimer);
         verify(timeEntryRepository, never())
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(any(), any());
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(any(), any());
     }
 
     @Test
     void rejectsCancelWhenNoTimerIsRunning() {
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 

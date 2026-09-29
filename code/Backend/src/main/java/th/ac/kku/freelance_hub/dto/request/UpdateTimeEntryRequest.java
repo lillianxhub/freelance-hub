@@ -6,17 +6,19 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Fields that may be changed on an unlocked time entry.
+ * Complete replacement data for an unlocked time entry.
  *
- * <p>Null fields are generally left unchanged. If a time range is updated,
- * both its start and end must be supplied; the domain permits this operation
- * only for a completed entry.</p>
+ * <p>The request must supply a project, a start time, and exactly one way to
+ * determine the end of the entry. A null task removes the current task and a
+ * null description clears the current description.</p>
  */
 @Data
 @Builder
@@ -24,40 +26,25 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateTimeEntryRequest {
 
+    @NotNull(message = "Project ID is required")
     private UUID projectId;
 
     private UUID taskId;
 
-    /** True removes the current task association; cannot be used with taskId. */
-    private Boolean clearTask;
-
     private String description;
 
+    @NotNull(message = "Start time is required")
     private Instant startedAt;
 
     private Instant endedAt;
 
-    @AssertTrue(message = "At least one field must be provided")
-    @JsonIgnore
-    public boolean isAnyFieldProvided() {
-        return projectId != null
-                || taskId != null
-                || isClearTask()
-                || description != null
-                || startedAt != null
-                || endedAt != null;
-    }
+    @Positive(message = "Duration seconds must be greater than zero")
+    private Long durationSeconds;
 
-    @AssertTrue(message = "Task ID and clear task cannot be used together")
+    @AssertTrue(message = "Provide either end time or duration seconds, but not both")
     @JsonIgnore
-    public boolean isTaskUpdateValid() {
-        return taskId == null || !isClearTask();
-    }
-
-    @AssertTrue(message = "Start time and end time must be provided together")
-    @JsonIgnore
-    public boolean isTimeRangeComplete() {
-        return (startedAt == null) == (endedAt == null);
+    public boolean isTimeInputExclusive() {
+        return (endedAt == null) != (durationSeconds == null);
     }
 
     @AssertTrue(message = "End time must be after start time")
@@ -68,7 +55,4 @@ public class UpdateTimeEntryRequest {
                 || endedAt.isAfter(startedAt);
     }
 
-    public boolean isClearTask() {
-        return Boolean.TRUE.equals(clearTask);
-    }
 }
