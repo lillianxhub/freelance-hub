@@ -36,10 +36,10 @@ public class UserController {
 
     /**
      * Update the authenticated user's personal information and address.
-     * PUT /api/users/me
+     * PATCH /api/users/me
      */
     @Tag(name = "Authentication")
-    @PutMapping("/me")
+    @PatchMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<UserResponse>> updateCurrentUser(
             @Valid @RequestBody UpdateUserProfileRequest request) {

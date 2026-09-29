@@ -1,0 +1,111 @@
+package th.ac.kku.freelance_hub.seed;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import th.ac.kku.freelance_hub.domain.entity.Client;
+import th.ac.kku.freelance_hub.domain.entity.Project;
+import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.entity.User;
+import th.ac.kku.freelance_hub.domain.entity.UserProfile;
+import th.ac.kku.freelance_hub.repository.UserRepository;
+import th.ac.kku.freelance_hub.security.EmailNormalizer;
+
+/** Creates one owner-owned example chain without changing existing records. */
+@Service
+@Profile("local-seed")
+@RequiredArgsConstructor
+public class LocalSeedService {
+
+    private static final String CLIENT_NAME = "[local-seed] Example Client";
+    private static final String PROJECT_NAME = "[local-seed] Example Project";
+    private static final String TASK_NAME = "[local-seed] Example Task";
+
+    private final EntityManager entityManager;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Transactional
+    public SeedResult seed(String rawEmail, String password) {
+        String email = EmailNormalizer.normalize(rawEmail);
+        if (email == null || email.isBlank() || password == null || password.length() < 8) {
+            throw new IllegalArgumentException("A valid email and password of at least 8 characters are required.");
+        }
+
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User created = User.builder()
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .build();
+            UserProfile profile = UserProfile.builder().displayName("Local Seed User").build();
+            created.setProfile(profile);
+            return userRepository.save(created);
+        });
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new IllegalStateException("Seed user already exists with a different password; choose another LOCAL_SEED_EMAIL.");
+        }
+
+        Client client = oneOrNone(entityManager.createQuery(
+                "select c from Client c where c.owner.id = :ownerId and c.name = :name", Client.class)
+                .setParameter("ownerId", user.getId())
+                .setParameter("name", CLIENT_NAME)
+                .setMaxResults(2)
+                .getResultList(), "client");
+        if (client == null) {
+            client = new Client(user, CLIENT_NAME);
+            client.updateDetailsWithAddress(CLIENT_NAME, "Seed Studio", "client.seed@example.test", null,
+                    null, null, null, null, null, null, "Local development example");
+            entityManager.persist(client);
+        }
+
+        Project project = oneOrNone(entityManager.createQuery(
+                "select p from Project p where p.owner.id = :ownerId and p.client.id = :clientId and p.name = :name",
+                Project.class)
+                .setParameter("ownerId", user.getId())
+                .setParameter("clientId", client.getId())
+                .setParameter("name", PROJECT_NAME)
+                .setMaxResults(2)
+                .getResultList(), "project");
+        if (project == null) {
+            project = new Project(user, client, PROJECT_NAME);
+            project.updateDetails(PROJECT_NAME, "Local development example", null, null, "#2563EB", 600);
+            entityManager.persist(project);
+        }
+
+        Task task = oneOrNone(entityManager.createQuery(
+                "select t from Task t where t.project.id = :projectId and t.name = :name", Task.class)
+                .setParameter("projectId", project.getId())
+                .setParameter("name", TASK_NAME)
+                .setMaxResults(2)
+                .getResultList(), "task");
+        if (task == null) {
+            Integer maxSortOrder = entityManager.createQuery(
+                    "select max(t.sortOrder) from Task t where t.project.id = :projectId", Integer.class)
+                    .setParameter("projectId", project.getId())
+                    .getSingleResult();
+            task = new Task(project, TASK_NAME, maxSortOrder == null ? 0 : maxSortOrder + 1);
+            task.updateDetails(TASK_NAME, "Local development example");
+            entityManager.persist(task);
+        }
+
+        entityManager.flush();
+        return new SeedResult(user.getId(), client.getId(), project.getId(), task.getId());
+    }
+
+    private static <T> T oneOrNone(List<T> matches, String type) {
+        if (matches.size() > 1) {
+            throw new IllegalStateException("Multiple matching seed " + type + " records; resolve duplicates manually.");
+        }
+        return matches.isEmpty() ? null : matches.get(0);
+    }
+
+    public record SeedResult(UUID userId, UUID clientId, UUID projectId, UUID taskId) {
+    }
+}

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import th.ac.kku.freelance_hub.security.EmailNormalizer;
 
 /**
  * DTO for user login request
@@ -17,8 +18,16 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
 
     @NotBlank(message = "กรุณาระบุอีเมล")
-    @Email(message = "รูปแบบอีเมลไม่ถูกต้อง")
     private String email;
+
+    @Email(message = "รูปแบบอีเมลไม่ถูกต้อง")
+    public String getEmail() {
+        return email == null ? null : EmailNormalizer.normalize(email);
+    }
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : EmailNormalizer.normalize(email);
+    }
 
     @NotBlank(message = "กรุณาระบุรหัสผ่าน")
     private String password;
