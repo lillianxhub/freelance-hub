@@ -101,7 +101,7 @@ export function setApiToken(token: string | null): void {
 }
 
 async function rotateAccessToken(): Promise<boolean> {
-  const response = await fetch(`${apiBase}/auth/refresh`, { method: 'POST', credentials: 'same-origin' })
+  const response = await fetch(`${apiBase}/auth/refresh`, { method: 'POST', credentials: 'include' })
   if (!response.ok) {
     setApiToken(null)
     return false
@@ -138,10 +138,10 @@ async function request<T>(path: string, init: RequestInit, multipart = false): P
   const token = getApiToken()
   if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`)
 
-  let response = await fetch(`${apiBase}${path}`, { ...init, headers, credentials: 'same-origin' })
+  let response = await fetch(`${apiBase}${path}`, { ...init, headers, credentials: 'include' })
   if (response.status === 401 && !path.startsWith('/auth/') && await refreshApiToken()) {
     headers.set('Authorization', `Bearer ${getApiToken()}`)
-    response = await fetch(`${apiBase}${path}`, { ...init, headers, credentials: 'same-origin' })
+    response = await fetch(`${apiBase}${path}`, { ...init, headers, credentials: 'include' })
   }
   if (!response.ok) {
     let message = `API error (${response.status})`

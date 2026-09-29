@@ -775,6 +775,21 @@
 .dashboard-lower-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.dashboard-main-grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr);
+}
+.dashboard-work-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dashboard-main-grid .big-timer-card {
+    min-height: 100%;
+}
+.dashboard-project-meta {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex-direction: column;
+}
 .dashboard-range-bar {
     display: flex;
     width: fit-content;
@@ -2920,6 +2935,13 @@
     }
     .task-actions {
         grid-column: 2 / -1;
+    }
+}
+
+@media (min-width: 821px) and (max-width: 1120px) {
+    .dashboard-main-grid,
+    .dashboard-work-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
