@@ -36,4 +36,3 @@
 - [ ] Responsive behavior verified
 - [ ] Accessibility considered
 - [ ] Relevant documentation updated
-
