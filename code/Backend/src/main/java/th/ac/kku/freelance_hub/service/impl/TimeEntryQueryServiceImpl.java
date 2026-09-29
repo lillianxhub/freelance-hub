@@ -29,7 +29,7 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
     private static final Set<String> SORT_FIELDS = Set.of(
             "startedAt",
             "endedAt",
-            "durationMinutes",
+            "durationSeconds",
             "createdAt",
             "updatedAt"
     );
@@ -54,12 +54,10 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
         Objects.requireNonNull(filter, "filter is required");
         validateListFilter(filter);
 
-        String sortProperty = "durationMinutes".equals(filter.getSortBy())
-                ? "durationSeconds" : filter.getSortBy();
         PageRequest pageable = PageRequest.of(
                 filter.getPage(),
                 filter.getSize(),
-                Sort.by(filter.getDirection(), sortProperty)
+                Sort.by(filter.getDirection(), filter.getSortBy())
         );
 
         return timeEntryRepository.findAll(
@@ -84,21 +82,21 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
         long entryCount = completedEntries.stream()
                 .filter(entry -> !entry.isRunning())
                 .filter(entry -> entry.getEndedAt() != null)
-                .filter(entry -> entry.getDurationMinutes() != null)
+                .filter(entry -> entry.getDurationSeconds() != null)
                 .count();
-        long totalMinutes = completedEntries.stream()
+        long totalSeconds = completedEntries.stream()
                 .filter(entry -> !entry.isRunning())
                 .filter(entry -> entry.getEndedAt() != null)
-                .map(TimeEntry::getDurationMinutes)
+                .map(TimeEntry::getDurationSeconds)
                 .filter(Objects::nonNull)
-                .mapToLong(Integer::longValue)
+                .mapToLong(Long::longValue)
                 .sum();
 
         return TimeEntrySummaryResponse.builder()
                 .from(filter.getFrom())
                 .to(filter.getTo())
                 .entryCount(entryCount)
-                .totalMinutes(totalMinutes)
+                .totalSeconds(totalSeconds)
                 .build();
     }
 

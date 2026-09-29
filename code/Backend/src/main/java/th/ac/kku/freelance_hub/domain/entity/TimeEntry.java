@@ -164,34 +164,37 @@ public class TimeEntry {
         return entry;
     }
 
-    /** Creates a completed manual entry with a specified duration. */
-    public static TimeEntry createManualWithDuration(
+    /** Creates a completed manual entry with an exact duration in seconds. */
+    public static TimeEntry createManualWithDurationSeconds(
             User owner,
             Project project,
             Task task,
             String description,
             Instant startedAt,
-            int durationMinutes
+            long durationSeconds
     ) {
-        if (durationMinutes <= 0) {
+        if (durationSeconds <= 0) {
             throw new IllegalArgumentException(
-                    "durationMinutes must be greater than zero"
+                    "durationSeconds must be greater than zero"
             );
         }
 
-        Instant requiredStart = Objects.requireNonNull(startedAt,"startedAt is required");
-        Instant endedAt = requiredStart.plusSeconds(
-                Math.multiplyExact((long) durationMinutes, 60)
+        Instant requiredStart = Objects.requireNonNull(
+                startedAt,
+                "startedAt is required"
         );
-
-        return createManual(
+        TimeEntry entry = new TimeEntry(
                 owner,
                 project,
                 task,
                 description,
-                requiredStart,
-                endedAt
+                EntryType.MANUAL,
+                requiredStart
         );
+        entry.endedAt = requiredStart.plusSeconds(durationSeconds);
+        entry.durationSeconds = durationSeconds;
+
+        return entry;
     }
 
 
@@ -360,10 +363,6 @@ public class TimeEntry {
 
     public Instant getEndedAt() {
         return endedAt;
-    }
-
-    public Integer getDurationMinutes() {
-        return durationSeconds == null ? null : Math.toIntExact(durationSeconds / 60L);
     }
 
     public Long getDurationSeconds() {

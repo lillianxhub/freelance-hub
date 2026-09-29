@@ -53,7 +53,7 @@ public class TimeEntryFilterRequest {
     @Builder.Default
     @NotBlank(message = "Sort field is required")
     @Pattern(
-            regexp = "startedAt|endedAt|durationMinutes|createdAt|updatedAt",
+            regexp = "startedAt|endedAt|durationSeconds|createdAt|updatedAt",
             message = "Sort field is not supported"
     )
     private String sortBy = "startedAt";

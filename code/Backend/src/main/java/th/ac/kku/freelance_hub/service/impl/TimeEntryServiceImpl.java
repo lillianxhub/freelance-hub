@@ -74,13 +74,13 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                     request.getEndedAt()
             );
         } else {
-            entry = TimeEntry.createManualWithDuration(
+            entry = TimeEntry.createManualWithDurationSeconds(
                     owner,
                     project,
                     task,
                     request.getDescription(),
                     request.getStartedAt(),
-                    request.getDurationMinutes()
+                    request.getDurationSeconds()
             );
         }
 
@@ -204,10 +204,10 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             ManualTimeEntryRequest request
     ) {
         boolean hasEndTime = request.getEndedAt() != null;
-        boolean hasDuration = request.getDurationMinutes() != null;
+        boolean hasDuration = request.getDurationSeconds() != null;
         if (hasEndTime == hasDuration) {
             throw new IllegalArgumentException(
-                    "Provide either end time or duration minutes, but not both"
+                    "Provide either end time or duration seconds, but not both"
             );
         }
     }

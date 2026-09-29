@@ -10,7 +10,7 @@ public record TimerStoppedEvent(
         UUID ownerId,
         UUID projectId,
         UUID taskId,
-        int durationMinutes,
+        long durationSeconds,
         Instant startedAt,
         Instant endedAt
 ) {
@@ -21,9 +21,9 @@ public record TimerStoppedEvent(
         Objects.requireNonNull(projectId, "projectId is required");
         Objects.requireNonNull(startedAt, "startedAt is required");
         Objects.requireNonNull(endedAt, "endedAt is required");
-        if (durationMinutes <= 0) {
+        if (durationSeconds <= 0) {
             throw new IllegalArgumentException(
-                    "durationMinutes must be greater than zero"
+                    "durationSeconds must be greater than zero"
             );
         }
         if (!endedAt.isAfter(startedAt)) {

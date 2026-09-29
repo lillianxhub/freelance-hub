@@ -133,7 +133,7 @@ public class TimerServiceImpl implements TimerService {
                 runningTimer.getTask() == null
                         ? null
                         : runningTimer.getTask().getId(),
-                runningTimer.getDurationMinutes(),
+                runningTimer.getDurationSeconds(),
                 runningTimer.getStartedAt(),
                 runningTimer.getEndedAt()
         ));
