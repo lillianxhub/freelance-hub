@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +50,32 @@ class AuthControllerTest {
         private RegisterRequest registerRequest;
         private LoginRequest loginRequest;
 
+        @Test
+        @DisplayName("OpenAPI documents Auth success responses with the common envelope")
+        void shouldDocumentAuthResponseEnvelope() throws Exception {
+                String document = mockMvc.perform(get("/v3/api-docs"))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                JsonNode root = objectMapper.readTree(document);
+
+                for (String path : new String[] { "/api/auth/register", "/api/auth/login", "/api/auth/refresh" }) {
+                        String statusCode = path.endsWith("register") ? "201" : "200";
+                        JsonNode schema = root.path("paths").path(path).path("post")
+                                        .path("responses").path(statusCode).path("content")
+                                        .path("application/json").path("schema");
+                        String reference = schema.path("$ref").asText();
+                        assertThat(reference).as(path + " response: " + root.path("paths").path(path).path("post").path("responses")).startsWith("#/components/schemas/");
+                        JsonNode envelope = root.path("components").path("schemas")
+                                        .path(reference.substring(reference.lastIndexOf('/') + 1));
+                        assertThat(envelope.path("properties").has("success")).as(path).isTrue();
+                        assertThat(envelope.path("properties").has("message")).as(path).isTrue();
+                        assertThat(envelope.path("properties").has("data")).as(path).isTrue();
+                        assertThat(envelope.path("properties").path("data").path("$ref").asText())
+                                        .as(path + " data schema")
+                                        .isEqualTo("#/components/schemas/AuthResponse");
+                }
+        }
+
         @BeforeEach
         void setUp() {
                 mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
@@ -81,6 +108,8 @@ class AuthControllerTest {
                                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(jsonPath("$.success").value(true))
                                 .andExpect(jsonPath("$.message").value("สมัครสมาชิกสำเร็จ"))
+                                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()))
                                 .andExpect(jsonPath("$.data.token").exists())
                                 .andExpect(jsonPath("$.data.expiresIn").exists())
                                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
@@ -98,8 +127,12 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(registerRequest)))
                                 .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
-                                .andExpect(jsonPath("$.errors.email").value("รูปแบบอีเมลไม่ถูกต้อง"));
+                                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                                .andExpect(jsonPath("$.error.details.email").value("รูปแบบอีเมลไม่ถูกต้อง"));
         }
 
         @Test
@@ -142,6 +175,8 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(registerRequest)))
                                 .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.error.code").value("EMAIL_ALREADY_EXISTS"))
                                 .andExpect(jsonPath("$.message").value("อีเมลนี้ถูกใช้งานแล้ว: test@example.com"));
         }
 
@@ -178,7 +213,7 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
-                                .andExpect(jsonPath("$.errors.email").value("กรุณาระบุอีเมล"));
+                                .andExpect(jsonPath("$.error.details.email").value("กรุณาระบุอีเมล"));
         }
 
         @Test
@@ -208,6 +243,8 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidLogin)))
                                 .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"))
                                 .andExpect(jsonPath("$.message").value("อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
         }
 
