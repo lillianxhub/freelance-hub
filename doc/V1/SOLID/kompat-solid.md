@@ -3,36 +3,36 @@
 **เจ้าของ feature:** `kompat_673380262-4_02`  
 **ขอบเขต:** Timer, Manual Time Entry, Time Entry Query และ TimerStoppedEvent
 
-เอกสารนี้อ้างอิง implementation ปัจจุบันภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/` โดยระบุเฉพาะหลักฐานที่พบในโค้ดจริง เลขบรรทัดควรตรวจซ้ำหลัง code freeze
+เอกสารนี้อ้างอิง implementation ปัจจุบันภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/` โดยอ้างชื่อคลาสและเมธอดแทนเลขบรรทัดที่เปลี่ยนได้เมื่อแก้โค้ด
 
-| Principle | ไฟล์/คลาสและบรรทัด | เหตุผลที่ใช้ |
+| Principle | หลักฐานในโค้ด | เหตุผลที่ใช้ |
 |---|---|---|
-| Single Responsibility | `service/impl/TimerServiceImpl.java:35-195` | รับผิดชอบวงจรชีวิตของ timer ได้แก่ start, current, stop และ cancel รวมถึงเผยแพร่ event เมื่อหยุด timer |
-| Single Responsibility | `service/impl/TimeEntryServiceImpl.java:30-237` | รับผิดชอบคำสั่งของ completed entry ได้แก่ create manual, update และ delete |
-| Single Responsibility | `service/impl/TimeEntryQueryServiceImpl.java:27-206` | รับผิดชอบงานอ่าน ได้แก่ list, filtering, pagination และ summary โดยใช้ transaction แบบ read-only |
-| Single Responsibility | `controller/TimerController.java:33-112`, `controller/TimeEntryController.java:44-149` | Controller รับ HTTP request, ดึง owner จากผู้ใช้ที่ยืนยันตัวตนแล้ว เรียก service และสร้าง HTTP response โดยไม่ใส่ business logic |
-| Single Responsibility | `mapper/TimeEntryMapper.java:15-45`, `repository/TimeEntryRepository.java:24-53` | Mapper ดูแลการแปลง DTO ส่วน Repository ดูแล data-access contract |
-| Open/Closed | `service/impl/TimerServiceImpl.java:123-142`, `event/TimerStoppedEvent.java:8-35` | เมื่อหยุด timer ระบบเผยแพร่ event ทำให้เพิ่ม listener สำหรับ analytics, notification หรือ logging ได้โดยไม่แก้ `stopTimer()` |
-| Liskov Substitution | `service/TimerService.java:9-18`, `service/impl/TimerServiceImpl.java:35-195` | `TimerServiceImpl` ทำตาม contract และถูกใช้งานผ่าน `TimerService` |
-| Liskov Substitution | `service/TimeEntryService.java:15-33`, `service/TimeEntryQueryService.java:12-23` | Implementation คืนชนิดข้อมูลและรักษาพฤติกรรมตาม service contract |
-| Interface Segregation | `service/TimerService.java:9-18` | มีเฉพาะ operation ของ timer ที่ `TimerController` ใช้จริง |
-| Interface Segregation | `service/TimeEntryService.java:15-33` | มีเฉพาะคำสั่ง create manual, update และ delete ไม่บังคับให้ผู้ใช้พึ่ง query methods |
-| Interface Segregation | `service/TimeEntryQueryService.java:12-23` | แยก list และ summary ออกจาก mutation methods ทำให้ผู้ใช้งานฝั่ง query พึ่งเฉพาะสิ่งที่จำเป็น |
-| Dependency Inversion | `controller/TimerController.java:35`, `controller/TimeEntryController.java:46-47` | Controller พึ่ง service interfaces แทน implementation classes |
-| Dependency Inversion | `service/impl/TimerServiceImpl.java:39-64`, `service/impl/TimeEntryServiceImpl.java:32-50`, `service/impl/TimeEntryQueryServiceImpl.java:36-46` | Service implementations รับ dependencies ผ่าน constructor และพึ่ง repository interfaces แทนการสร้าง dependencies เอง |
-| Dependency Inversion | `config/TimeConfiguration.java:10-15`, `service/impl/TimerServiceImpl.java:45-55` | `TimerServiceImpl` รับ `Clock` จากภายนอกแทนการอ่านเวลาระบบโดยตรง ทำให้ระบบจริงใช้เวลาปัจจุบันจาก `Clock.systemUTC()` ส่วน test สามารถกำหนดเวลาตายตัวด้วย `Clock.fixed()` ได้ |
+| Single Responsibility | `TimerServiceImpl.startTimer/getCurrentTimer/stopTimer/cancelTimer` | รับผิดชอบวงจรชีวิตของ timer รวมถึงเผยแพร่ event เมื่อหยุด timer |
+| Single Responsibility | `TimeEntryServiceImpl.createManual/update/delete` | รับผิดชอบคำสั่งของ completed entry; `delete` ทำ soft delete |
+| Single Responsibility | `TimeEntryQueryServiceImpl.getById/list/summarize` | รับผิดชอบงานอ่าน การกรอง และ pagination โดยใช้ transaction แบบ read-only |
+| Single Responsibility | `TimerController`, `TimeEntryController`, `TimeTrackingExceptionHandler` | Controller รับ request และสร้าง `ApiResult`; handler แปลง exception ของ Time Tracking เป็น HTTP error โดยไม่ใส่กฎธุรกิจใน controller |
+| Single Responsibility | `TimeEntryMapper`, `TimeEntryRepository` | Mapper แปลง entity เป็น response DTO ส่วน Repository กำหนด data-access contract |
+| Open/Closed | `TimerServiceImpl.stopTimer`, `TimerStoppedEvent` | `stopTimer()` เผยแพร่ event เป็นจุดต่อขยายสำหรับ listener ในอนาคต โดยไม่ต้องเพิ่มงาน analytics หรือ notification ในเมธอดนี้; ยังไม่มี listener ในขอบเขต Time Tracking นี้ |
+| Liskov Substitution | `TimerService`/`TimerServiceImpl`, `TimeEntryService`/`TimeEntryServiceImpl`, `TimeEntryQueryService`/`TimeEntryQueryServiceImpl` | Controller รับ dependency เป็น service interface และเรียกเมธอดตาม contract โดยไม่อ้างถึง implementation โดยตรง จึงสามารถใช้ implementation ที่รักษา contract เดียวกันแทนได้ในเชิงโครงสร้าง; ยังไม่ได้พิสูจน์พฤติกรรมของ implementation หลายตัว |
+| Interface Segregation | `TimerService` | มีเฉพาะ operation ของ timer ที่ `TimerController` ใช้ |
+| Interface Segregation | `TimeEntryService` | มีเฉพาะคำสั่ง create manual, update และ delete ไม่บังคับให้ controller พึ่ง query methods |
+| Interface Segregation | `TimeEntryQueryService` | แยก getById, list และ summary ออกจาก mutation methods |
+| Dependency Inversion | `TimerController`, `TimeEntryController` | Controller พึ่ง service interfaces แทน implementation classes |
+| Dependency Inversion | `TimerServiceImpl`, `TimeEntryServiceImpl`, `TimeEntryQueryServiceImpl` | Service implementations รับ repository interfaces และ dependencies ผ่าน constructor |
+| Dependency Inversion | `TimeConfiguration.clock`, `TimerServiceImpl`, `TimeEntryServiceImpl` | Service รับ `Clock` จากภายนอกสำหรับเวลาเริ่ม/หยุด timer และเวลา soft delete; production ใช้ `Clock.systemUTC()` ส่วน test ใช้ `Clock.fixed()` ได้ |
 
 ## Evidence จาก Time Tracking flow
 
-- Owner ID มาจาก authenticated user ใน controller ไม่ได้รับจาก request body: `TimerController.java:57-63,80-83,91-94,106-112`, `TimeEntryController.java:68-75,85-102,119-148`
-- การอ่าน แก้ไข และลบ Time Entry ใช้ owner-scoped query: `TimeEntryServiceImpl.java:163-180`, `TimeEntryRepository.java:28`
-- การหยุดและยกเลิก timer ใช้ pessimistic lock ภายใน transaction: `TimerServiceImpl.java:123-157`, `TimeEntryRepository.java:39-53`
-- Entity รักษากฎการเริ่มและหยุด timer รวมถึงคำนวณ duration: `TimeEntry.java:118-199,243-253`
-- เวลาเริ่มและเวลาหยุดมาจาก server ผ่าน `Instant.now(clock)`: `TimerServiceImpl.java:84,128`
-- Query service ใช้ `@Transactional(readOnly = true)`: `TimeEntryQueryServiceImpl.java:26-27`
+- Owner ID มาจาก authenticated user ผ่าน `currentOwnerId()` ใน controller ไม่ได้รับจาก request body
+- การอ่าน แก้ไข และลบใช้ `findByIdAndOwnerIdAndIsActiveTrue` หรือ owner-scoped specification เพื่อไม่ให้เข้าถึงรายการของผู้ใช้อื่นหรือรายการที่ soft delete
+- การหยุดและยกเลิก timer ใช้ locked query แบบ pessimistic write ภายใน transaction; การยกเลิกลบ running timer จริง ส่วนการลบ completed entry ใช้ `TimeEntry.softDelete()`
+- Entity ตรวจ Project/Client สำหรับการเริ่ม timer และคำนวณ `durationSeconds` เป็นวินาทีเต็ม โดยไม่ปัดขึ้นเป็นนาที
+- เวลาเริ่ม/หยุด timer และเวลา soft delete มาจาก `Instant.now(clock)` ใน service
+- Query service ใช้ `@Transactional(readOnly = true)` และกรองเฉพาะ `isActive = true`; summary ไม่นับ running timer
+- HTTP success ใช้ `ApiResult` ส่วนกลาง ส่วน `TimeTrackingExceptionHandler` แปลง error เฉพาะ Timer และ Time Entry เป็น envelope เดียวกัน
 
 ## ข้อจำกัดและข้อสังเกต
 
-1. หลักฐาน OCP ชัดเจนเฉพาะ event extension; การเพิ่มเงื่อนไข filter ใหม่ยังต้องแก้ `buildSpecification()` ใน `TimeEntryQueryServiceImpl.java:103-171`
-2. แต่ละ service interface มี production implementation เพียงตัวเดียว จึงยังไม่สามารถพิสูจน์ LSP ด้วยการสลับหลาย implementation ได้
-3. ต้องตรวจเลขบรรทัดอีกครั้งหลัง code freeze ก่อนรวมเนื้อหาเข้า `doc/solid-analysis.md`
+1. หลักฐาน OCP เป็นจุดต่อขยายผ่าน event เท่านั้น; การเพิ่มเงื่อนไข filter ใหม่ยังต้องแก้ `buildSpecification()` ใน `TimeEntryQueryServiceImpl`
+2. หลักฐาน LSP ข้างต้นแสดงเพียงการเรียกผ่าน interface และการ implement contract ปัจจุบัน; แต่ละ service มี production implementation เพียงตัวเดียว จึงยังยืนยันไม่ได้ว่า implementation ใหม่จะทดแทนกันได้โดยไม่เปลี่ยนพฤติกรรม เช่น การตรวจ owner, ข้อผิดพลาด และผลลัพธ์ที่คืน
+3. `TimeTrackingExceptionHandler` ครอบคลุมเฉพาะ Timer และ Time Entry; authentication error และ URL ที่ไม่ตรง endpoint ยังผ่านกลไกส่วนกลางของ Backend
