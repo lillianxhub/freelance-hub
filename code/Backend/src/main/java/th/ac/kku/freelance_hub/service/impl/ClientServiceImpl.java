@@ -66,8 +66,10 @@ public class ClientServiceImpl implements ClientService {
     public Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(filter, "filter is required");
-        if (filter.getPage() < 0 || filter.getSize() < 1 || filter.getSize() > 100) {
-            throw new IllegalArgumentException("Invalid client page or size");
+        int pageSize = filter.getLimit() != null ? filter.getLimit() : filter.getSize();
+        if (filter.getPage() < 0 || filter.getSize() < 1 || filter.getSize() > 100
+                || pageSize < 1 || pageSize > 100) {
+            throw new IllegalArgumentException("Invalid client page, size, or limit");
         }
         if (!SORT_FIELDS.contains(filter.getSortBy()) || filter.getDirection() == null) {
             throw new IllegalArgumentException("Invalid client sort field or direction");
@@ -75,6 +77,7 @@ public class ClientServiceImpl implements ClientService {
 
         Specification<Client> specification = (root, query, cb) -> {
             Predicate predicate = cb.equal(root.get("owner").get("id"), ownerId);
+            predicate = cb.and(predicate, cb.isNull(root.get("deletedAt")));
             if (filter.getStatus() != null) {
                 predicate = cb.and(predicate, cb.equal(
                     root.get("isActive"), filter.getStatus() == ClientStatus.ACTIVE));
@@ -101,9 +104,17 @@ public class ClientServiceImpl implements ClientService {
         };
 
         PageRequest pageable = PageRequest.of(
-                filter.getPage(), filter.getSize(),
+                filter.getPage(), pageSize,
                 Sort.by(filter.getDirection(), filter.getSortBy()));
         return clientRepository.findAll(specification, pageable).map(clientMapper::toResponse);
+    }
+
+    @Override
+    @Transactional
+    public ClientResponse replace(UUID ownerId, UUID clientId, CreateClientRequest request) {
+        Client client = findOwnedClient(ownerId, clientId);
+        clientMapper.replaceEntity(request, client);
+        return clientMapper.toResponse(clientRepository.save(client));
     }
 
     @Override
@@ -116,9 +127,17 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
-    public void archive(UUID ownerId, UUID clientId) {
+    public ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive) {
         Client client = findOwnedClient(ownerId, clientId);
-        client.archive();
+        client.setActive(isActive);
+        return clientMapper.toResponse(clientRepository.save(client));
+    }
+
+    @Override
+    @Transactional
+    public void softDelete(UUID ownerId, UUID clientId) {
+        Client client = findOwnedClient(ownerId, clientId);
+        client.softDelete();
         clientRepository.save(client);
     }
 
@@ -126,6 +145,7 @@ public class ClientServiceImpl implements ClientService {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Objects.requireNonNull(clientId, "clientId is required");
         return clientRepository.findByIdAndOwnerId(clientId, ownerId)
+                .filter(client -> client.getDeletedAt() == null)
                 .orElseThrow(() -> new ClientNotFoundException(clientId));
     }
 
