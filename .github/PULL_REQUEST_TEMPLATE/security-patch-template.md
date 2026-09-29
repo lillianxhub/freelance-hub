@@ -1,6 +1,8 @@
+# Security Patch Pull Request Template
+
 ## Security Patch Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษโดยไม่เปิดเผยรายละเอียดช่องโหว่เกินความจำเป็น -->
+<!-- Write a short English title without exposing unnecessary vulnerability details. -->
 
 ## Type of Change
 
@@ -8,25 +10,26 @@
 
 ## Description of the Security Patch
 
-<!-- อธิบายช่องโหว่และแนวทางแก้ไขโดยไม่ใส่ข้อมูลละเอียดอ่อน -->
+<!-- Describe the vulnerability and remediation without including sensitive details. -->
 
 ## Impact of the Patch
 
-<!-- อธิบายผลกระทบต่อความปลอดภัยและข้อมูลของผู้ใช้ -->
+<!-- Describe the impact on security and user data protection. -->
 
 ## Testing Conducted
 
-- [ ] ทดสอบว่าแนวทางแก้ไขปิดช่องโหว่แล้ว
-- [ ] ทดสอบว่าไม่เกิด Regression แล้ว
-- [ ] ตรวจสอบผลกระทบด้านความปลอดภัยเพิ่มเติมแล้ว
+- [ ] Remediation verified
+- [ ] Regression checks completed
+- [ ] Additional security impact reviewed
 
 ## Additional Remarks
 
-<!-- ระบุข้อควรระวังหรือข้อมูลด้านความปลอดภัยเพิ่มเติม -->
+<!-- Add security considerations or deployment notes. -->
 
 ## Checklist
 
-- [ ] แก้ไขช่องโหว่ที่ระบุได้ครบถ้วน
-- [ ] ไม่มีช่องโหว่หรือบั๊กใหม่จากการเปลี่ยนแปลง
-- [ ] ปฏิบัติตามแนวทางด้านความปลอดภัยของโปรเจกต์
-- [ ] หลีกเลี่ยงการใส่ข้อมูลลับใน PR
+- [ ] Identified vulnerability fully addressed
+- [ ] No new vulnerability or bug introduced
+- [ ] Project security practices followed
+- [ ] No sensitive information included in the pull request
+

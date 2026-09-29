@@ -1,6 +1,11 @@
 package th.ac.kku.freelance_hub.security;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Date;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +21,7 @@ class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
     private final String jwtSecret = "your-very-secure-secret-key-for-testing-must-be-at-least-256-bits-long-freelance-hub";
-    private final Long jwtExpiration = 86400000L; // 24 hours
+    private final Long jwtExpiration = 900000L; // 15 minutes
 
     @BeforeEach
     void setUp() {
@@ -64,6 +69,8 @@ class JwtTokenProviderTest {
                 .doesNotThrowAnyException();
         assertThat(jwtTokenProvider.getExpirationFromToken(token).toInstant())
                 .isAfter(beforeGeneration);
+        assertThat(jwtTokenProvider.getExpirationFromToken(token).toInstant())
+                .isBefore(beforeGeneration.plusSeconds(901));
     }
 
     @Test
@@ -162,5 +169,36 @@ class JwtTokenProviderTest {
                 .isNotEqualTo(jwtTokenProvider.getJtiFromToken(token2));
         assertThat(jwtTokenProvider.getEmailFromToken(token1)).isEqualTo(email);
         assertThat(jwtTokenProvider.getEmailFromToken(token2)).isEqualTo(email);
+    }
+
+    @Test
+    void shouldRejectExpiredToken() {
+        ReflectionTestUtils.setField(jwtTokenProvider, "jwtExpiration", -1000L);
+
+        assertThat(jwtTokenProvider.validateToken(jwtTokenProvider.generateToken("test@example.com")))
+                .isFalse();
+    }
+
+    @Test
+    void shouldRejectTokenSignedWithAnotherSecret() {
+        JwtTokenProvider anotherProvider = new JwtTokenProvider();
+        ReflectionTestUtils.setField(anotherProvider, "jwtSecret",
+                "different-secret-key-for-testing-must-also-be-at-least-256-bits-long");
+        ReflectionTestUtils.setField(anotherProvider, "jwtExpiration", jwtExpiration);
+
+        assertThat(jwtTokenProvider.validateToken(anotherProvider.generateToken("test@example.com")))
+                .isFalse();
+    }
+
+    @Test
+    void shouldRejectTokenWithoutAccessType() {
+        String token = Jwts.builder()
+                .subject("test@example.com")
+                .issuedAt(new Date())
+                .expiration(Date.from(Instant.now().plusSeconds(900)))
+                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        assertThat(jwtTokenProvider.validateToken(token)).isFalse();
     }
 }

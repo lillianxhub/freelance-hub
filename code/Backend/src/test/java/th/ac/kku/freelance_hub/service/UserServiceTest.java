@@ -1,6 +1,12 @@
 package th.ac.kku.freelance_hub.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -19,30 +25,42 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
+import th.ac.kku.freelance_hub.domain.entity.UserProfile;
+import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.exception.InvalidCredentialsException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.dto.request.ChangePasswordRequest;
+import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.UserResponse;
+import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.UserResponse;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock UserRepository userRepository;
-    @Mock UserMapper userMapper;
-    @Mock PasswordEncoder passwordEncoder;
+    @Mock
+    UserRepository userRepository;
+    @Mock
+    UserMapper userMapper;
+    @Mock
+    PasswordEncoder passwordEncoder;
+    @Mock
+    RefreshTokenService refreshTokenService;
 
     private UserService userService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, userMapper, passwordEncoder);
+        userService = new UserService(userRepository, userMapper, passwordEncoder, refreshTokenService);
         user = User.builder()
-            .email("user@example.com")
-            .passwordHash("old-hash")
-            .build();
+                .id(java.util.UUID.randomUUID())
+                .email("user@example.com")
+                .passwordHash("old-hash")
+                .build();
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(user.getEmail(), null, List.of()));
+                new UsernamePasswordAuthenticationToken(user.getEmail(), null, List.of()));
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
     }
 
@@ -58,12 +76,55 @@ class UserServiceTest {
         when(passwordEncoder.encode("new-password")).thenReturn("new-hash");
 
         userService.changePassword(ChangePasswordRequest.builder()
-            .oldPassword("old-password")
-            .newPassword("new-password")
-            .build());
+                .oldPassword("old-password")
+                .newPassword("new-password")
+                .build());
 
         verify(passwordEncoder).encode("new-password");
         verify(userRepository).save(user);
+        verify(refreshTokenService).revokeAllForUser(user.getId());
+    }
+
+    @Test
+    void readsOnlyTheAuthenticatedUser() {
+        UserResponse response = UserResponse.builder().id(user.getId()).email(user.getEmail()).build();
+        when(userMapper.toResponse(user)).thenReturn(response);
+
+        assertThat(userService.getCurrentUser()).isSameAs(response);
+
+        verify(userRepository).findByEmail("user@example.com");
+        verify(userMapper).toResponse(user);
+    }
+
+    @Test
+    void updatesTheAuthenticatedUsersProfile() {
+        UserProfile profile = UserProfile.builder().displayName("Old name").build();
+        user.setProfile(profile);
+        UpdateUserProfileRequest request = UpdateUserProfileRequest.builder()
+                .displayName("New name")
+                .province("ขอนแก่น")
+                .build();
+        UserResponse response = UserResponse.builder().id(user.getId()).displayName("New name").build();
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user)).thenReturn(response);
+
+        assertThat(userService.updateCurrentUser(request)).isSameAs(response);
+
+        verify(userMapper).updateProfile(request, profile);
+        verify(userRepository).save(user);
+        verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    void rejectsProfileUpdateWhenProfileIsMissing() {
+        UpdateUserProfileRequest request = UpdateUserProfileRequest.builder().displayName("New name").build();
+
+        assertThatThrownBy(() -> userService.updateCurrentUser(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("ไม่พบข้อมูลโปรไฟล์ผู้ใช้");
+
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(userMapper);
     }
 
     @Test
@@ -71,11 +132,16 @@ class UserServiceTest {
         when(passwordEncoder.matches("wrong-password", "old-hash")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.changePassword(ChangePasswordRequest.builder()
-            .oldPassword("wrong-password")
-            .newPassword("new-password")
-            .build()))
-            .isInstanceOf(InvalidCredentialsException.class);
+                .oldPassword("wrong-password")
+                .newPassword("new-password")
+                .build()))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("รหัสผ่านไม่ถูกต้อง");
 
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(refreshTokenService);
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(refreshTokenService);
         verifyNoInteractions(userMapper);
     }
 
@@ -84,10 +150,13 @@ class UserServiceTest {
         when(passwordEncoder.matches("same-password", "old-hash")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.changePassword(ChangePasswordRequest.builder()
-            .oldPassword("same-password")
-            .newPassword("same-password")
-            .build()))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("differ");
+                .oldPassword("same-password")
+                .newPassword("same-password")
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
+
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(refreshTokenService);
     }
 }

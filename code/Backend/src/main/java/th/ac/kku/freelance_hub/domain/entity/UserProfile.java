@@ -13,7 +13,10 @@ import java.util.UUID;
  * Has One-to-One relationship with User.
  */
 @Entity
-@Table(name = "user_profiles")
+@Table(name = "user_profiles", indexes = {
+    @Index(name = "idx_user_profiles_province", columnList = "province"),
+    @Index(name = "idx_user_profiles_postal_code", columnList = "postal_code")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,10 +35,10 @@ public class UserProfile {
     @Column(length = 255)
     private String displayName;
 
-    @Column(length = 255)
+    @Column(length = 100)
     private String firstName;
 
-    @Column(length = 255)
+    @Column(length = 100)
     private String lastName;
 
     @Column(length = 20)
@@ -63,7 +66,7 @@ public class UserProfile {
     @Builder.Default
     private String dateFormat = "YYYY-MM-DD";
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "text")
     private String bio;
 
     @Column(name = "is_active", nullable = false)

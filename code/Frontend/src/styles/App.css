@@ -875,6 +875,28 @@
     color: #14764e;
     background: var(--green-soft);
 }
+.form-field input:disabled, .form-field select:disabled, .form-field textarea:disabled, .field-input:disabled {
+  border-color: #cbd5e1;
+  color: #64748b;
+  background: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 1;
+}
+.input-control { position: relative; display: block; }
+.input-control > input { width: 100%; }
+.input-control-password > input { padding-right: 42px; }
+.input-visibility-button { position: absolute; top: 50%; right: 8px; display: grid; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 7px; color: var(--muted); background: transparent; cursor: pointer; transform: translateY(-50%); place-items: center; }
+.input-visibility-button:hover, .input-visibility-button:focus-visible { color: var(--primary); background: var(--primary-soft); outline: none; }
+.input-visibility-button svg { width: 16px; height: 16px; }
+.form-field textarea { min-height: 84px; resize: vertical; }
+.form-field small { color: var(--muted); font-size: 9px; }
+.form-field .field-error { color: #c72f48; font-weight: 600; }
+.check-field { display: flex; align-items: center; gap: 8px; }
+.check-field input { width: 16px; height: 16px; accent-color: var(--primary); }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--border); }
+.form-error, .form-message { padding: 9px 11px; border-radius: 8px; font-size: 10px; }
+.form-error, .form-message.error { color: #a92e43; background: var(--red-soft); }
+.form-message.success { color: #14764e; background: var(--green-soft); }
 
 .modal-backdrop {
     position: fixed;

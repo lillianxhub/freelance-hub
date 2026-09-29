@@ -1,3 +1,6 @@
+# Backend CI/CD: pull requests run checks only.
+# Push to dev: run checks, then deploy staging. Push to main: run checks, then deploy production.
+# Keep the Backend gate job name stable because branch protection requires it.
 name: Backend CI
 
 on:
@@ -5,21 +8,14 @@ on:
         branches:
             - dev
             - main
-        paths:
-            - "code/Backend/**"
-            - ".github/workflows/backend-ci.yml"
-            - ".github/workflows/backend-cd.yml"
     push:
         branches:
             - dev
             - main
-        paths:
-            - "code/Backend/**"
-            - ".github/workflows/backend-ci.yml"
-            - ".github/workflows/backend-cd.yml"
 
 permissions:
     contents: read
+    pull-requests: read
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -29,6 +25,32 @@ env:
     BACKEND_DIR: code/Backend
 
 jobs:
+    changes:
+        name: Detect backend changes
+        runs-on: ubuntu-latest
+        outputs:
+            backend: ${{ steps.filter.outputs.backend || steps.push.outputs.backend }}
+
+        steps:
+            - name: Checkout
+              if: github.event_name == 'push'
+              uses: actions/checkout@v5
+
+            - name: Filter pull request changes
+              if: github.event_name == 'pull_request'
+              id: filter
+              uses: dorny/paths-filter@v3
+              with:
+                  filters: |
+                      backend:
+                        - 'code/Backend/**'
+                        - '.github/workflows/backend.yml'
+
+            - name: Mark push as backend change
+              if: github.event_name == 'push'
+              id: push
+              run: echo "backend=true" >> "$GITHUB_OUTPUT"
+
     main-pr-source:
         name: Main PR must come from dev
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
@@ -47,6 +69,8 @@ jobs:
 
     test:
         name: Test backend
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
 
         steps:
@@ -71,6 +95,8 @@ jobs:
 
     migration:
         name: Validate Flyway migrations
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
 
         services:
@@ -120,8 +146,11 @@ jobs:
     docker:
         name: Build Docker image
         needs:
+            - changes
+            - changes
             - test
             - migration
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
         timeout-minutes: 15
 
@@ -184,8 +213,11 @@ jobs:
             - name: Verify migrated tables
               run: |
                   table_count=$(docker exec backend-ci-postgres psql -U ci_user -d freelance_hub -tAc \
-                    "select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('users', 'user_profiles', 'clients', 'projects', 'tasks', 'time_entries', 'revoked_tokens');")
-                  test "$table_count" -ge 7
+                    "select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('users', 'user_profiles', 'clients', 'projects', 'tasks', 'time_entries', 'refresh_tokens');")
+                  test "$table_count" -eq 7
+                  legacy_table_count=$(docker exec backend-ci-postgres psql -U ci_user -d freelance_hub -tAc \
+                    "select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'revoked_tokens';")
+                  test "$legacy_table_count" -eq 0
                   docker exec backend-ci-postgres psql -U ci_user -d freelance_hub -c \
                     "select installed_rank, version, description from flyway_schema_history order by installed_rank;"
 
@@ -206,3 +238,68 @@ jobs:
               run: |
                   docker rm --force backend-ci-app backend-ci-postgres || true
                   docker network rm backend-ci || true
+
+    backend-gate:
+        name: Backend gate
+        needs:
+            - changes
+            - test
+            - migration
+            - docker
+        if: always()
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Check backend job results
+              env:
+                  BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+                  TEST_RESULT: ${{ needs.test.result }}
+                  MIGRATION_RESULT: ${{ needs.migration.result }}
+                  DOCKER_RESULT: ${{ needs.docker.result }}
+              run: |
+                  if [ "$BACKEND_CHANGED" != "true" ]; then
+                    echo "No Backend changes detected; Backend checks are not required."
+                    exit 0
+                  fi
+
+                  if [ "$TEST_RESULT" != "success" ] || \
+                     [ "$MIGRATION_RESULT" != "success" ] || \
+                     [ "$DOCKER_RESULT" != "success" ]; then
+                    echo "Backend checks did not all succeed."
+                    echo "Test backend: $TEST_RESULT"
+                    echo "Validate Flyway migrations: $MIGRATION_RESULT"
+                    echo "Build Docker image: $DOCKER_RESULT"
+                    exit 1
+                  fi
+
+                  echo "All Backend checks succeeded."
+
+    deploy-staging:
+        name: Deploy backend to staging
+        needs: backend-gate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.backend-gate.result == 'success'
+        runs-on: ubuntu-latest
+        environment: staging
+
+        steps:
+            - name: Trigger Render staging deploy
+              env:
+                  RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
+              run: |
+                  test -n "$RENDER_DEPLOY_HOOK_URL"
+                  curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
+
+    deploy-production:
+        name: Deploy backend to production
+        needs: backend-gate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.backend-gate.result == 'success'
+        runs-on: ubuntu-latest
+        environment: production
+
+        steps:
+            - name: Trigger Render production deploy
+              env:
+                  RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK_URL }}
+              run: |
+                  test -n "$RENDER_DEPLOY_HOOK_URL"
+                  curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
