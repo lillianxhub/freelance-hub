@@ -89,8 +89,7 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 | FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash                                                                          | Must     |
 | FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้                                                                             | Must     |
 | FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ และที่อยู่ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
-| FR-AUTH-05 | ผู้ใช้กำหนดรูปแบบวันที่ได้                                                                                                        | Must     |
-| FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้                                                           | Must     |
+| FR-AUTH-05 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้                                                           | Must     |
 
 ### 4.2 Client Management
 
@@ -206,7 +205,7 @@ erDiagram
 | Entity        | Field สำคัญ                                                                                                                   |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `User`        | id, email, passwordHash, role, isActive, deletedAt                                                                            |
-| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, dateFormat, bio, isActive, deletedAt |
+| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, bio, isActive, deletedAt |
 | `Address`     | id, address, subdistrict, district, province, postalCode                                                                      |
 | `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status                                                        |
 | `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate                                             |
@@ -241,7 +240,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 | POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
 | POST             | `/api/auth/refresh`             | หมุน refresh token และออก access token ใหม่        |
 | POST             | `/api/auth/logout`              | เพิกถอน refresh-token family และล้าง cookie        |
-| GET/PUT          | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
+| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
 | PATCH            | `/api/users/me/password`        | เปลี่ยนรหัสผ่านด้วย `oldPassword` และ `newPassword` |
 | GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า                                  |
 | GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า                               |
@@ -271,7 +270,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 
 ### 8.1 Profile, address และการเปลี่ยนรหัสผ่าน
 
-- `GET/PUT /api/users/me` แสดงและแก้ไขข้อมูลของผู้ใช้ที่ authenticated เท่านั้น โดยข้อมูลที่อยู่ใช้ flat fields ชุดเดียวกันทั้ง User Profile และ Client: `address`, `subdistrict`, `district`, `province`, `postalCode`
+- `GET/PATCH /api/users/me` แสดงและแก้ไขข้อมูลของผู้ใช้ที่ authenticated เท่านั้น โดย PATCH เปลี่ยนเฉพาะฟิลด์ที่ส่งมา และข้อมูลที่อยู่ใช้ flat fields ชุดเดียวกันทั้ง User Profile และ Client: `address`, `subdistrict`, `district`, `province`, `postalCode`
 - `PATCH /api/users/me/password` ต้องมี bearer JWT และรับ body รูปแบบต่อไปนี้:
 
     ```json

@@ -2,6 +2,7 @@ package th.ac.kku.freelance_hub.dto.request;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,31 +34,39 @@ class UpdateTimeEntryRequestTest {
     }
 
     @Test
-    @DisplayName("accepts clearTask as an update by itself")
-    void acceptsClearTaskByItself() {
+    @DisplayName("accepts a complete replacement using end time")
+    void acceptsCompleteReplacementUsingEndTime() {
+        Instant startedAt = Instant.parse("2026-09-27T09:00:00Z");
         UpdateTimeEntryRequest request = UpdateTimeEntryRequest.builder()
-                .clearTask(true)
+                .projectId(UUID.randomUUID())
+                .startedAt(startedAt)
+                .endedAt(startedAt.plusSeconds(90))
                 .build();
 
         assertThat(validator.validate(request)).isEmpty();
     }
 
     @Test
-    @DisplayName("accepts taskId as an update by itself")
-    void acceptsTaskIdByItself() {
+    @DisplayName("accepts a complete replacement using duration seconds")
+    void acceptsCompleteReplacementUsingDurationSeconds() {
         UpdateTimeEntryRequest request = UpdateTimeEntryRequest.builder()
-                .taskId(UUID.randomUUID())
+                .projectId(UUID.randomUUID())
+                .startedAt(Instant.parse("2026-09-27T09:00:00Z"))
+                .durationSeconds(90L)
                 .build();
 
         assertThat(validator.validate(request)).isEmpty();
     }
 
     @Test
-    @DisplayName("rejects taskId together with clearTask")
-    void rejectsTaskIdTogetherWithClearTask() {
+    @DisplayName("rejects both end time and duration seconds")
+    void rejectsBothEndTimeAndDurationSeconds() {
+        Instant startedAt = Instant.parse("2026-09-27T09:00:00Z");
         UpdateTimeEntryRequest request = UpdateTimeEntryRequest.builder()
-                .taskId(UUID.randomUUID())
-                .clearTask(true)
+                .projectId(UUID.randomUUID())
+                .startedAt(startedAt)
+                .endedAt(startedAt.plusSeconds(90))
+                .durationSeconds(90L)
                 .build();
 
         Set<ConstraintViolation<UpdateTimeEntryRequest>> violations =
@@ -65,12 +74,12 @@ class UpdateTimeEntryRequestTest {
 
         assertThat(violations)
                 .extracting(ConstraintViolation::getMessage)
-                .containsExactly("Task ID and clear task cannot be used together");
+                .contains("Provide either end time or duration seconds, but not both");
     }
 
     @Test
-    @DisplayName("rejects an update with no supplied fields")
-    void rejectsEmptyUpdate() {
+    @DisplayName("requires project, start time, and a time input")
+    void rejectsIncompleteReplacement() {
         UpdateTimeEntryRequest request = UpdateTimeEntryRequest.builder().build();
 
         Set<ConstraintViolation<UpdateTimeEntryRequest>> violations =
@@ -78,6 +87,10 @@ class UpdateTimeEntryRequestTest {
 
         assertThat(violations)
                 .extracting(ConstraintViolation::getMessage)
-                .containsExactly("At least one field must be provided");
+                .containsExactlyInAnyOrder(
+                        "Project ID is required",
+                        "Start time is required",
+                        "Provide either end time or duration seconds, but not both"
+                );
     }
 }

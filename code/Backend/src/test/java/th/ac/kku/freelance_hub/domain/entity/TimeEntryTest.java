@@ -54,7 +54,7 @@ class TimeEntryTest {
         assertThat(entry.getEntryType()).isEqualTo(EntryType.TIMER);
         assertThat(entry.getStartedAt()).isEqualTo(STARTED_AT);
         assertThat(entry.getEndedAt()).isNull();
-        assertThat(entry.getDurationMinutes()).isNull();
+        assertThat(entry.getDurationSeconds()).isNull();
         assertThat(entry.isRunning()).isTrue();
         assertThat(entry.isLocked()).isFalse();
     }
@@ -73,6 +73,22 @@ class TimeEntryTest {
         ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("project must be active to track time");
+    }
+
+    @Test
+    @DisplayName("rejects starting a timer for an archived client")
+    void rejectsTimerForArchivedClient() {
+        client.archive();
+
+        assertThatThrownBy(() -> TimeEntry.startTimer(
+                owner,
+                activeProject,
+                null,
+                null,
+                STARTED_AT
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("client must be active to track time");
     }
 
     @Test
@@ -113,7 +129,7 @@ class TimeEntryTest {
     }
 
     @Test
-    @DisplayName("stops a running timer and rounds partial minutes up")
+    @DisplayName("stops a running timer and stores exact elapsed seconds")
     void stopsTimerAndCalculatesDuration() {
         TimeEntry entry = TimeEntry.startTimer(
                 owner,
@@ -127,7 +143,7 @@ class TimeEntryTest {
         entry.stop(endedAt);
 
         assertThat(entry.getEndedAt()).isEqualTo(endedAt);
-        assertThat(entry.getDurationMinutes()).isEqualTo(2);
+        assertThat(entry.getDurationSeconds()).isEqualTo(61L);
         assertThat(entry.isRunning()).isFalse();
     }
 
@@ -167,33 +183,33 @@ class TimeEntryTest {
 
         assertThat(entry.getEntryType()).isEqualTo(EntryType.MANUAL);
         assertThat(entry.getEndedAt()).isEqualTo(endedAt);
-        assertThat(entry.getDurationMinutes()).isEqualTo(30);
+        assertThat(entry.getDurationSeconds()).isEqualTo(1800L);
         assertThat(entry.isRunning()).isFalse();
     }
 
     @Test
-    @DisplayName("creates a manual entry from a positive duration")
+    @DisplayName("stores an exact manual duration in seconds")
     void createsManualEntryFromDuration() {
-        TimeEntry entry = TimeEntry.createManualWithDuration(
+        TimeEntry entry = TimeEntry.createManualWithDurationSeconds(
                 owner,
                 activeProject,
                 null,
                 "Timed manually",
                 STARTED_AT,
-                45
+                90
         );
 
         assertThat(entry.getEntryType()).isEqualTo(EntryType.MANUAL);
         assertThat(entry.getStartedAt()).isEqualTo(STARTED_AT);
-        assertThat(entry.getEndedAt()).isEqualTo(STARTED_AT.plusSeconds(45 * 60));
-        assertThat(entry.getDurationMinutes()).isEqualTo(45);
+        assertThat(entry.getEndedAt()).isEqualTo(STARTED_AT.plusSeconds(90));
+        assertThat(entry.getDurationSeconds()).isEqualTo(90L);
         assertThat(entry.isRunning()).isFalse();
     }
 
     @Test
     @DisplayName("rejects a zero manual duration")
     void rejectsZeroManualDuration() {
-        assertThatThrownBy(() -> TimeEntry.createManualWithDuration(
+        assertThatThrownBy(() -> TimeEntry.createManualWithDurationSeconds(
                 owner,
                 activeProject,
                 null,
@@ -202,13 +218,13 @@ class TimeEntryTest {
                 0
         ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("durationMinutes must be greater than zero");
+                .hasMessage("durationSeconds must be greater than zero");
     }
 
     @Test
     @DisplayName("rejects a negative manual duration")
     void rejectsNegativeManualDuration() {
-        assertThatThrownBy(() -> TimeEntry.createManualWithDuration(
+        assertThatThrownBy(() -> TimeEntry.createManualWithDurationSeconds(
                 owner,
                 activeProject,
                 null,
@@ -217,13 +233,13 @@ class TimeEntryTest {
                 -1
         ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("durationMinutes must be greater than zero");
+                .hasMessage("durationSeconds must be greater than zero");
     }
 
     @Test
     @DisplayName("rejects a null start time for a manual duration")
     void rejectsNullStartTimeForManualDuration() {
-        assertThatThrownBy(() -> TimeEntry.createManualWithDuration(
+        assertThatThrownBy(() -> TimeEntry.createManualWithDurationSeconds(
                 owner,
                 activeProject,
                 null,
@@ -284,7 +300,7 @@ class TimeEntryTest {
 
         assertThat(entry.getStartedAt()).isEqualTo(STARTED_AT.plusSeconds(120));
         assertThat(entry.getEndedAt()).isEqualTo(STARTED_AT.plusSeconds(301));
-        assertThat(entry.getDurationMinutes()).isEqualTo(4);
+        assertThat(entry.getDurationSeconds()).isEqualTo(181L);
     }
 
     @Test

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
  * Data submitted when creating a manual time entry.
  *
  * <p>The request must supply a start time and exactly one way to determine the
- * end of the entry: either {@code endedAt} or {@code durationMinutes}.</p>
+ * end of the entry: either {@code endedAt} or {@code durationSeconds}.</p>
  */
 @Data
 @Builder
@@ -37,13 +37,13 @@ public class ManualTimeEntryRequest {
 
     private Instant endedAt;
 
-    @Positive(message = "Duration minutes must be greater than zero")
-    private Integer durationMinutes;
+    @Positive(message = "Duration seconds must be greater than zero")
+    private Long durationSeconds;
 
-    @AssertTrue(message = "Provide either end time or duration minutes, but not both")
+    @AssertTrue(message = "Provide either end time or duration seconds, but not both")
     @JsonIgnore
     public boolean isTimeInputExclusive() {
-        return (endedAt == null) != (durationMinutes == null);
+        return (endedAt == null) != (durationSeconds == null);
     }
 
     @AssertTrue(message = "End time must be after start time")

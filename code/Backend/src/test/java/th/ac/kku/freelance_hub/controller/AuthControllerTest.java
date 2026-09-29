@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.within;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -253,10 +252,10 @@ class AuthControllerTest {
         void shouldLogoutAndRevokeRefreshFamily() throws Exception {
                 String accessToken = registerAndGetToken();
                 Cookie cookie = loginAndGetCookie();
-                mockMvc.perform(post("/api/auth/logout").cookie(cookie))
+                mockMvc.perform(post("/api/auth/logout").header("Origin", "http://localhost:5173").cookie(cookie))
                                 .andExpect(status().isNoContent())
                                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
-                mockMvc.perform(post("/api/auth/refresh").cookie(cookie))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(cookie))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.message").value("Invalid refresh token"));
                 // Without an access-token denylist, the existing JWT lives until its 15-minute expiry.
@@ -267,8 +266,8 @@ class AuthControllerTest {
         @Test
         @DisplayName("POST /api/auth/logout is idempotent")
         void shouldAllowRepeatedLogout() throws Exception {
-                mockMvc.perform(post("/api/auth/logout")).andExpect(status().isNoContent());
-                mockMvc.perform(post("/api/auth/logout")).andExpect(status().isNoContent());
+                mockMvc.perform(post("/api/auth/logout").header("Origin", "http://localhost:5173")).andExpect(status().isNoContent());
+                mockMvc.perform(post("/api/auth/logout").header("Origin", "http://localhost:5173")).andExpect(status().isNoContent());
         }
 
         @Test
@@ -276,7 +275,7 @@ class AuthControllerTest {
         void shouldIssueUsableTokenAfterLoginFollowingLogout() throws Exception {
                 String oldToken = registerAndGetToken();
                 Cookie cookie = loginAndGetCookie();
-                mockMvc.perform(post("/api/auth/logout").cookie(cookie))
+                mockMvc.perform(post("/api/auth/logout").header("Origin", "http://localhost:5173").cookie(cookie))
                                 .andExpect(status().isNoContent());
 
                 String loginBody = mockMvc.perform(post("/api/auth/login")
@@ -309,7 +308,7 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"email\":\"test@example.com\",\"password\":\"newPassword123\"}"))
                                 .andExpect(status().isOk());
-                mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(refreshCookie))
                                 .andExpect(status().isUnauthorized());
         }
 
@@ -326,11 +325,11 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("PUT /api/users/me - Should update profile and normalized address")
+        @DisplayName("PATCH /api/users/me - Should update profile and normalized address")
         void shouldUpdateProfileAddressAsFlatFields() throws Exception {
                 String token = registerAndGetToken();
 
-                mockMvc.perform(put("/api/users/me")
+                mockMvc.perform(patch("/api/users/me")
                                 .header("Authorization", bearer(token))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"address\":\"99 ถนนมิตรภาพ\",\"subdistrict\":\"ในเมือง\","
@@ -347,10 +346,10 @@ class AuthControllerTest {
         @Test
         @DisplayName("POST /api/auth/refresh rejects missing and malformed refresh cookies")
         void shouldRejectMissingAndMalformedRefreshTokens() throws Exception {
-                mockMvc.perform(post("/api/auth/refresh"))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173"))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.message").value("Invalid refresh token"));
-                mockMvc.perform(post("/api/auth/refresh")
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173")
                                 .cookie(new Cookie("fh_refresh", "malformed-token")))
                                 .andExpect(status().isUnauthorized());
         }
@@ -365,11 +364,59 @@ class AuthControllerTest {
         }
 
         @Test
+        @DisplayName("Too many bad logins return 429 with Retry-After")
+        void shouldThrottleBadLogins() throws Exception {
+                String email = "throttle-" + java.util.UUID.randomUUID() + "@example.com";
+                registerRequest.setEmail(email);
+                registerAndGetToken();
+                String badLogin = "{\"email\":\"" + email + "\",\"password\":\"wrong-password\"}";
+                for (int i = 0; i < 10; i++) {
+                        mockMvc.perform(post("/api/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON).content(badLogin))
+                                        .andExpect(status().isUnauthorized());
+                }
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON).content(badLogin))
+                                .andExpect(status().isTooManyRequests())
+                                .andExpect(header().exists("Retry-After"))
+                                .andExpect(jsonPath("$.error.code").value("LOGIN_RATE_LIMITED"));
+        }
+
+        @Test
+        @DisplayName("Refresh and logout reject requests without Origin or Referer")
+        void shouldRejectMissingOriginAndReferer() throws Exception {
+                mockMvc.perform(post("/api/auth/refresh"))
+                                .andExpect(status().isForbidden());
+                mockMvc.perform(post("/api/auth/logout"))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Refresh and logout accept a trusted Referer when Origin is absent")
+        void shouldAcceptTrustedReferer() throws Exception {
+                mockMvc.perform(post("/api/auth/logout")
+                                .header("Referer", "http://localhost:5173/dashboard"))
+                                .andExpect(status().isNoContent());
+                mockMvc.perform(post("/api/auth/refresh")
+                                .header("Referer", "http://localhost:5173/dashboard"))
+                                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Untrusted Origin takes precedence over trusted Referer")
+        void shouldNotTrustRefererIfOriginIsUntrusted() throws Exception {
+                mockMvc.perform(post("/api/auth/logout")
+                                .header("Origin", "https://attacker.example")
+                                .header("Referer", "http://localhost:5173/dashboard"))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
         @DisplayName("POST /api/auth/refresh rotates cookie and detects replay")
         void shouldRotateAndRejectReplayedRefreshToken() throws Exception {
                 registerAndGetToken();
                 Cookie first = loginAndGetCookie();
-                var rotated = mockMvc.perform(post("/api/auth/refresh").cookie(first))
+                var rotated = mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(first))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.message").value("Token refreshed"))
                                 .andExpect(jsonPath("$.data.token").exists())
@@ -380,9 +427,9 @@ class AuthControllerTest {
                 assertThat(stored).hasSize(2);
                 assertThat(stored.get(0).getFamilyId()).isEqualTo(stored.get(1).getFamilyId());
                 assertThat(stored.get(0).getExpiresAt()).isEqualTo(stored.get(1).getExpiresAt());
-                mockMvc.perform(post("/api/auth/refresh").cookie(first))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(first))
                                 .andExpect(status().isUnauthorized());
-                mockMvc.perform(post("/api/auth/refresh").cookie(second))
+                mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(second))
                                 .andExpect(status().isUnauthorized());
                 assertThat(refreshTokenRepository.findAll()).allSatisfy(token ->
                                 assertThat(token.getTokenHash()).isNotEqualTo(first.getValue()));

@@ -33,7 +33,7 @@ public class TimeEntryMapper {
                 .entryType(entry.getEntryType())
                 .startedAt(entry.getStartedAt())
                 .endedAt(entry.getEndedAt())
-                .durationMinutes(entry.getDurationMinutes())
+                .durationSeconds(entry.getDurationSeconds())
                 .lockedAt(entry.getLockedAt())
                 .running(entry.isRunning())
                 .locked(entry.isLocked())
