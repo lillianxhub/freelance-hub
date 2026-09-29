@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.service.impl.TimeEntryQueryServiceImpl;
@@ -75,6 +77,33 @@ class TimeEntryQueryServiceImplTest {
     }
 
     @Test
+    void getsOwnedEntryById() {
+        TimeEntry entry = manualEntry(project, task);
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
+                .thenReturn(Optional.of(entry));
+
+        var response = queryService.getById(OWNER_ID, ENTRY_ID);
+
+        assertThat(response.getId()).isEqualTo(ENTRY_ID);
+        assertThat(response.getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(response.getTaskId()).isEqualTo(TASK_ID);
+        verify(timeEntryRepository)
+                .findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID);
+    }
+
+    @Test
+    void rejectsMissingOrOtherOwnersEntryById() {
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> queryService.getById(OWNER_ID, ENTRY_ID))
+                .isInstanceOf(TimeEntryNotFoundException.class);
+
+        verify(timeEntryRepository)
+                .findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID);
+    }
+
+    @Test
     void listsEntriesWithCombinedFiltersPaginationAndSorting() {
         TimeEntry entry = manualEntry(project, task);
         PageRequest pageable = PageRequest.of(
@@ -93,8 +122,8 @@ class TimeEntryQueryServiceImplTest {
                 .entryType(EntryType.MANUAL)
                 .from(NOW.minusSeconds(60 * 60))
                 .to(NOW.plusSeconds(60 * 60))
-                .page(1)
-                .size(5)
+                .page(2)
+                .limit(5)
                 .sortBy("durationSeconds")
                 .direction(Sort.Direction.ASC)
                 .build();
@@ -136,14 +165,16 @@ class TimeEntryQueryServiceImplTest {
     }
 
     @Test
-    void rejectsListWithInvalidPageOrSize() {
+    void rejectsListWithInvalidPageOrLimit() {
         TimeEntryFilterRequest filter = TimeEntryFilterRequest.builder()
-                .page(-1)
+                .page(0)
                 .build();
 
         assertThatThrownBy(() -> queryService.list(OWNER_ID, filter))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Time entry page size must be between 1 and 100");
+                .hasMessage(
+                        "Time entry page must be at least 1 and limit must be between 1 and 100"
+                );
 
         verify(timeEntryRepository, never()).findAll(
                 ArgumentMatchers.<Specification<TimeEntry>>any(),
@@ -252,8 +283,8 @@ class TimeEntryQueryServiceImplTest {
                 ArgumentMatchers.<Specification<TimeEntry>>any()
         )).thenReturn(List.of());
         TimeEntryFilterRequest filter = TimeEntryFilterRequest.builder()
-                .page(-1)
-                .size(0)
+                .page(0)
+                .limit(0)
                 .sortBy(null)
                 .direction(null)
                 .build();

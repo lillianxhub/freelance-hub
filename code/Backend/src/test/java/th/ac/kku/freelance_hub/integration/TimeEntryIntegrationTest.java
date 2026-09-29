@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -220,16 +221,22 @@ class TimeEntryIntegrationTest {
                 responseJson(created).path("data").path("id").asText()
         );
 
-        mockMvc.perform(patch("/api/time-entries/{id}", entryId)
+        mockMvc.perform(put("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of(
+                                "projectId", projectId,
                                 "description", "Updated design",
-                                "clearTask", true
+                                "startedAt", STARTED_AT,
+                                "endedAt", ENDED_AT
                         ))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Updated design"))
-                .andExpect(jsonPath("$.taskId").doesNotExist());
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.description")
+                        .value("Updated design"))
+                .andExpect(jsonPath("$.data.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.updatedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.task").doesNotExist());
 
         mockMvc.perform(get("/api/time-entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
@@ -239,10 +246,25 @@ class TimeEntryIntegrationTest {
                         .param("sortBy", "startedAt")
                         .param("direction", "ASC"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].id").value(entryId.toString()))
-                .andExpect(jsonPath("$.content[0].description")
-                        .value("Updated design"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value(entryId.toString()))
+                .andExpect(jsonPath("$.data[0].project.id")
+                        .value(projectId.toString()))
+                .andExpect(jsonPath("$.data[0].project.name")
+                        .value("Manual project"))
+                .andExpect(jsonPath("$.data[0].task").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].startedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data[0].endedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data[0].durationSeconds")
+                        .value(5400))
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.limit").value(20))
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.meta.totalPages").value(1))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         mockMvc.perform(get("/api/time-entries/summary")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
@@ -255,12 +277,23 @@ class TimeEntryIntegrationTest {
 
         mockMvc.perform(delete("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ลบรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         mockMvc.perform(get("/api/time-entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.limit").value(20))
+                .andExpect(jsonPath("$.meta.total").value(0))
+                .andExpect(jsonPath("$.meta.totalPages").value(0));
     }
 
     @Test
@@ -285,10 +318,15 @@ class TimeEntryIntegrationTest {
                         .content(manualEntryJson(ownerProjectId, "Stolen work")))
                 .andExpect(status().isNotFound());
 
-        mockMvc.perform(patch("/api/time-entries/{id}", entryId)
+        mockMvc.perform(put("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(otherToken))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(Map.of("description", "Changed"))))
+                        .content(json(Map.of(
+                                "projectId", ownerProjectId,
+                                "description", "Changed",
+                                "startedAt", STARTED_AT,
+                                "endedAt", ENDED_AT
+                        ))))
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(delete("/api/time-entries/{id}", entryId)
@@ -298,14 +336,15 @@ class TimeEntryIntegrationTest {
         mockMvc.perform(get("/api/time-entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.meta.total").value(0));
 
         mockMvc.perform(get("/api/time-entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].description")
-                        .value("Private work"));
+                .andExpect(jsonPath("$.data[0].id")
+                        .value(entryId.toString()))
+                .andExpect(jsonPath("$.meta.total").value(1));
     }
 
     @Test

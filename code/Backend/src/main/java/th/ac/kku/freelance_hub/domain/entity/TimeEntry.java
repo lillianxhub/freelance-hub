@@ -191,8 +191,7 @@ public class TimeEntry {
                 EntryType.MANUAL,
                 requiredStart
         );
-        entry.endedAt = requiredStart.plusSeconds(durationSeconds);
-        entry.durationSeconds = durationSeconds;
+        entry.completeWithDurationSeconds(durationSeconds);
 
         return entry;
     }
@@ -232,6 +231,19 @@ public class TimeEntry {
         completeAt(endedAt);
     }
 
+    /** Updates a completed entry using an exact duration in seconds. */
+    public void updateTimeRangeWithDurationSeconds(
+            Instant startedAt,
+            long durationSeconds
+    ) {
+        requireUnlocked();
+        if (isRunning()) {
+            throw new IllegalStateException("a running timer cannot be edited");
+        }
+        this.startedAt = Objects.requireNonNull(startedAt, "startedAt is required");
+        completeWithDurationSeconds(durationSeconds);
+    }
+
     /** Locks a completed entry so it can no longer be edited. */
     public void lock(Instant lockedAt) {
         if (isRunning()) {
@@ -253,6 +265,21 @@ public class TimeEntry {
         return lockedAt != null;
     }
 
+    /** Marks a completed entry as deleted without removing its database row. */
+    public void softDelete(Instant deletedAt) {
+        requireUnlocked();
+        if (isRunning()) {
+            throw new IllegalStateException(
+                    "a running timer must be cancelled"
+            );
+        }
+        this.isActive = false;
+        this.deletedAt = Objects.requireNonNull(
+                deletedAt,
+                "deletedAt is required"
+        );
+    }
+
     private void completeAt(Instant endedAt) {
         Instant requiredEnd = Objects.requireNonNull(endedAt, "endedAt is required");
         if (!requiredEnd.isAfter(startedAt)) {
@@ -260,10 +287,24 @@ public class TimeEntry {
         }
 
         long elapsedSeconds = Duration.between(startedAt, requiredEnd).getSeconds();
-        long roundedMinutes = Math.addExact(elapsedSeconds, 59) / 60;
+        if (elapsedSeconds <= 0) {
+            throw new IllegalArgumentException(
+                    "durationSeconds must be greater than zero"
+            );
+        }
 
         this.endedAt = requiredEnd;
-        this.durationSeconds = Math.multiplyExact(roundedMinutes, 60L);
+        this.durationSeconds = elapsedSeconds;
+    }
+
+    private void completeWithDurationSeconds(long durationSeconds) {
+        if (durationSeconds <= 0) {
+            throw new IllegalArgumentException(
+                    "durationSeconds must be greater than zero"
+            );
+        }
+        this.endedAt = startedAt.plusSeconds(durationSeconds);
+        this.durationSeconds = durationSeconds;
     }
 
     private void requireUnlocked() {

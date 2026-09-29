@@ -86,7 +86,7 @@ public class TimerServiceImpl implements TimerService {
         );
 
         if (timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         ownerId,
                         EntryType.TIMER
                 )) {
@@ -111,7 +111,7 @@ public class TimerServiceImpl implements TimerService {
         Objects.requireNonNull(ownerId, "ownerId is required");
 
         return timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         ownerId,
                         EntryType.TIMER
                 )
@@ -150,7 +150,7 @@ public class TimerServiceImpl implements TimerService {
 
     private TimeEntry findLockedRunningTimer(UUID ownerId) {
         return timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         ownerId,
                         EntryType.TIMER
                 )

@@ -17,6 +17,7 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
+import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
@@ -46,6 +47,17 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
     }
 
     @Override
+    public TimeEntryResponse getById(UUID ownerId, UUID entryId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(entryId, "entryId is required");
+
+        return timeEntryRepository
+                .findByIdAndOwnerIdAndIsActiveTrue(entryId, ownerId)
+                .map(timeEntryMapper::toResponse)
+                .orElseThrow(() -> new TimeEntryNotFoundException(entryId));
+    }
+
+    @Override
     public Page<TimeEntryResponse> list(
             UUID ownerId,
             TimeEntryFilterRequest filter
@@ -55,8 +67,8 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
         validateListFilter(filter);
 
         PageRequest pageable = PageRequest.of(
-                filter.getPage(),
-                filter.getSize(),
+                filter.getPage() - 1,
+                filter.getLimit(),
                 Sort.by(filter.getDirection(), filter.getSortBy())
         );
 
@@ -109,6 +121,10 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
             Predicate predicate = cb.equal(
                     root.get("owner").get("id"),
                     ownerId
+            );
+            predicate = cb.and(
+                    predicate,
+                    cb.isTrue(root.get("isActive"))
             );
 
             if (completedOnly) {
@@ -174,11 +190,11 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
     }
 
     private static void validateListFilter(TimeEntryFilterRequest filter) {
-        if (filter.getPage() < 0
-                || filter.getSize() < 1
-                || filter.getSize() > 100) {
+        if (filter.getPage() < 1
+                || filter.getLimit() < 1
+                || filter.getLimit() > 100) {
             throw new IllegalArgumentException(
-                    "Time entry page size must be between 1 and 100"
+                    "Time entry page must be at least 1 and limit must be between 1 and 100"
             );
         }
         if (filter.getSortBy() == null

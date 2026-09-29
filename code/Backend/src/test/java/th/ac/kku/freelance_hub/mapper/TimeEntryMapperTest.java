@@ -78,7 +78,7 @@ class TimeEntryMapperTest {
         assertThat(response.getEntryType()).isEqualTo(EntryType.MANUAL);
         assertThat(response.getStartedAt()).isEqualTo(STARTED_AT);
         assertThat(response.getEndedAt()).isEqualTo(STARTED_AT.plusSeconds(90));
-        assertThat(response.getDurationSeconds()).isEqualTo(120L);
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.isRunning()).isFalse();
         assertThat(response.isLocked()).isFalse();
         assertThat(response.getCreatedAt()).isEqualTo(createdAt);

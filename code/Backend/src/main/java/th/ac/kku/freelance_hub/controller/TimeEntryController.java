@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -9,9 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,7 +27,9 @@ import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.response.PaginationMeta;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryDetailResponse;
+import th.ac.kku.freelance_hub.dto.response.TimeEntryListItemResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
@@ -84,15 +87,70 @@ public class TimeEntryController {
     }
 
     @Operation(summary = "List time entries")
-    @ApiResponse(responseCode = "200", description = "Page returned")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Page returned",
+            content = @Content(
+                    schema = @Schema(implementation = TimeEntryListItemResponse.class)
+            )
+    )
     @ApiResponse(responseCode = "400", description = "Invalid filters")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping
-    public ResponseEntity<Page<TimeEntryResponse>> list(
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<
+                    List<TimeEntryListItemResponse>
+            >
+    > list(
             @Valid @ModelAttribute TimeEntryFilterRequest filter
     ) {
+        Page<TimeEntryResponse> page = timeEntryQueryService.list(
+                currentOwnerId(),
+                filter
+        );
+        List<TimeEntryListItemResponse> data = page.getContent().stream()
+                .map(TimeEntryListItemResponse::from)
+                .toList();
+        PaginationMeta meta = PaginationMeta.builder()
+                .page(page.getNumber() + 1)
+                .limit(page.getSize())
+                .total(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .build();
+
         return ResponseEntity.ok(
-                timeEntryQueryService.list(currentOwnerId(), filter)
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว",
+                        data,
+                        meta
+                )
+        );
+    }
+
+    @Operation(summary = "Get time entry details")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Time entry returned",
+            content = @Content(
+                    schema = @Schema(implementation = TimeEntryDetailResponse.class)
+            )
+    )
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Time entry not found")
+    @GetMapping("/{id}")
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryDetailResponse>
+    > getById(@PathVariable("id") UUID id) {
+        TimeEntryResponse response = timeEntryQueryService.getById(
+                currentOwnerId(),
+                id
+        );
+
+        return ResponseEntity.ok(
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว",
+                        TimeEntryDetailResponse.from(response)
+                )
         );
     }
 
@@ -114,28 +172,42 @@ public class TimeEntryController {
             responseCode = "200",
             description = "Time entry updated",
             content = @Content(
-                    schema = @Schema(implementation = TimeEntryResponse.class)
+                    schema = @Schema(implementation = TimeEntryDetailResponse.class)
             )
     )
     @ApiResponse(responseCode = "400", description = "Invalid update")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Time entry not found")
     @ApiResponse(responseCode = "409", description = "Time entry is locked")
-    @PatchMapping("/{id}")
-    public ResponseEntity<TimeEntryResponse> update(
+    @PutMapping("/{id}")
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryDetailResponse>
+    > update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateTimeEntryRequest request
     ) {
+        TimeEntryResponse response = timeEntryService.update(
+                currentOwnerId(),
+                id,
+                request
+        );
         return ResponseEntity.ok(
-                timeEntryService.update(currentOwnerId(), id, request)
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "แก้ไขรายการเวลาเรียบร้อยแล้ว",
+                        TimeEntryDetailResponse.from(response)
+                )
         );
     }
 
     @Operation(summary = "Delete an unlocked completed time entry")
     @ApiResponse(
-            responseCode = "204",
+            responseCode = "200",
             description = "Time entry deleted",
-            content = @Content
+            content = @Content(
+                    schema = @Schema(
+                            implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class
+                    )
+            )
     )
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Time entry not found")
@@ -144,9 +216,16 @@ public class TimeEntryController {
             description = "Time entry is locked or still running"
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<Void>
+    > delete(@PathVariable("id") UUID id) {
         timeEntryService.delete(currentOwnerId(), id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "ลบรายการเวลาเรียบร้อยแล้ว",
+                        null
+                )
+        );
     }
 
     private UUID currentOwnerId() {

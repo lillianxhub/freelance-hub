@@ -11,6 +11,8 @@ import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 /** Read operations for time entries owned by the authenticated user. */
 public interface TimeEntryQueryService {
 
+    TimeEntryResponse getById(UUID ownerId, UUID entryId);
+
     Page<TimeEntryResponse> list(
             UUID ownerId,
             TimeEntryFilterRequest filter

@@ -60,16 +60,16 @@ class TimeEntryRepositoryTest {
                 Instant.parse("2026-09-25T08:00:00Z")
         );
 
-        assertThat(timeEntryRepository.findByIdAndOwnerId(
+        assertThat(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(
                 entry.getId(), owner.getId()
         )).contains(entry);
-        assertThat(timeEntryRepository.findByIdAndOwnerId(
+        assertThat(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(
                 entry.getId(), otherOwner.getId()
         )).isEmpty();
-        assertThat(timeEntryRepository.existsByIdAndOwnerId(
+        assertThat(timeEntryRepository.existsByIdAndOwnerIdAndIsActiveTrue(
                 entry.getId(), owner.getId()
         )).isTrue();
-        assertThat(timeEntryRepository.existsByIdAndOwnerId(
+        assertThat(timeEntryRepository.existsByIdAndOwnerIdAndIsActiveTrue(
                 entry.getId(), otherOwner.getId()
         )).isFalse();
     }
@@ -100,18 +100,18 @@ class TimeEntryRepositoryTest {
         ));
 
         assertThat(timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         owner.getId(), EntryType.TIMER
                 )).contains(running);
         assertThat(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         owner.getId(), EntryType.TIMER
                 )).isTrue();
 
         entityManager.clear();
 
         TimeEntry locked = timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         owner.getId(), EntryType.TIMER
                 )
                 .orElseThrow();
@@ -119,6 +119,30 @@ class TimeEntryRepositoryTest {
         assertThat(locked.getId()).isEqualTo(running.getId());
         assertThat(entityManager.getLockMode(locked))
                 .isEqualTo(LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Test
+    void excludesSoftDeletedEntryFromActiveLookup() {
+        User owner = saveUser("deleted-entry-owner@example.com");
+        Project project = saveActiveProject(owner, "Deleted Entry Project");
+        TimeEntry entry = saveManualEntry(
+                owner,
+                project,
+                null,
+                "Deleted entry",
+                Instant.parse("2026-09-25T08:00:00Z")
+        );
+
+        entry.softDelete(Instant.parse("2026-09-26T08:00:00Z"));
+        timeEntryRepository.flush();
+        entityManager.clear();
+
+        assertThat(timeEntryRepository.findById(entry.getId()))
+                .isPresent();
+        assertThat(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(
+                entry.getId(),
+                owner.getId()
+        )).isEmpty();
     }
 
     @Test

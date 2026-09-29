@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,6 +53,10 @@ class TimeEntryControllerTest {
             Instant.parse("2026-09-01T00:00:00Z");
     private static final Instant TO =
             Instant.parse("2026-10-01T00:00:00Z");
+    private static final Instant CREATED_AT =
+            Instant.parse("2026-08-31T23:59:00Z");
+    private static final Instant UPDATED_AT =
+            Instant.parse("2026-10-01T00:01:00Z");
 
     @Mock
     private TimeEntryService timeEntryService;
@@ -126,6 +130,10 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.data.durationSeconds").value(1800))
                 .andExpect(jsonPath("$.data.description")
                         .value("Manual work"))
+                .andExpect(jsonPath("$.data.createdAt")
+                        .value(CREATED_AT.toString()))
+                .andExpect(jsonPath("$.data.updatedAt")
+                        .value(UPDATED_AT.toString()))
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error").value(nullValue()));
 
@@ -148,7 +156,7 @@ class TimeEntryControllerTest {
     @Test
     void listsEntriesUsingBoundFiltersAndCurrentUser() throws Exception {
         stubCurrentUser();
-        PageRequest pageable = PageRequest.of(1, 5);
+        PageRequest pageable = PageRequest.of(0, 5);
         when(timeEntryQueryService.list(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
@@ -165,10 +173,34 @@ class TimeEntryControllerTest {
                         .param("from", FROM.toString())
                         .param("to", TO.toString())
                         .param("page", "1")
-                        .param("size", "5"))
+                        .param("limit", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].description")
-                        .value("Listed work"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data[0].id")
+                        .value(ENTRY_ID.toString()))
+                .andExpect(jsonPath("$.data[0].project.id")
+                        .value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data[0].project.name")
+                        .value("Project name"))
+                .andExpect(jsonPath("$.data[0].task.id")
+                        .value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data[0].task.title")
+                        .value("Task name"))
+                .andExpect(jsonPath("$.data[0].startedAt")
+                        .value(FROM.toString()))
+                .andExpect(jsonPath("$.data[0].endedAt")
+                        .value(TO.toString()))
+                .andExpect(jsonPath("$.data[0].durationSeconds")
+                        .value(1800))
+                .andExpect(jsonPath("$.data[0].description")
+                        .doesNotExist())
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.limit").value(5))
+                .andExpect(jsonPath("$.meta.total").value(6))
+                .andExpect(jsonPath("$.meta.totalPages").value(2))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(timeEntryQueryService).list(
                 eq(OWNER_ID),
@@ -179,9 +211,48 @@ class TimeEntryControllerTest {
                                 && FROM.equals(filter.getFrom())
                                 && TO.equals(filter.getTo())
                                 && filter.getPage() == 1
-                                && filter.getSize() == 5
+                                && filter.getLimit() == 5
                 )
         );
+    }
+
+    @Test
+    void getsEntryDetailsForCurrentUser() throws Exception {
+        stubCurrentUser();
+        when(timeEntryQueryService.getById(OWNER_ID, ENTRY_ID))
+                .thenReturn(response("Detailed work"));
+
+        mockMvc.perform(get("/api/time-entries/{id}", ENTRY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ดึงข้อมูลรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data.id")
+                        .value(ENTRY_ID.toString()))
+                .andExpect(jsonPath("$.data.project.id")
+                        .value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.project.name")
+                        .value("Project name"))
+                .andExpect(jsonPath("$.data.task.id")
+                        .value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data.task.title")
+                        .value("Task name"))
+                .andExpect(jsonPath("$.data.startedAt")
+                        .value(FROM.toString()))
+                .andExpect(jsonPath("$.data.endedAt")
+                        .value(TO.toString()))
+                .andExpect(jsonPath("$.data.durationSeconds")
+                        .value(1800))
+                .andExpect(jsonPath("$.data.description")
+                        .value("Detailed work"))
+                .andExpect(jsonPath("$.data.createdAt")
+                        .value(CREATED_AT.toString()))
+                .andExpect(jsonPath("$.data.updatedAt")
+                        .value(UPDATED_AT.toString()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
+
+        verify(timeEntryQueryService).getById(OWNER_ID, ENTRY_ID);
     }
 
     @Test
@@ -219,12 +290,25 @@ class TimeEntryControllerTest {
                 any(UpdateTimeEntryRequest.class)
         )).thenReturn(response("Updated work"));
 
-        mockMvc.perform(patch("/api/time-entries/{id}", ENTRY_ID)
+        mockMvc.perform(put("/api/time-entries/{id}", ENTRY_ID)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"description\":\"Updated work\"}"))
+                        .content("""
+                                {
+                                  "projectId": "%s",
+                                  "taskId": null,
+                                  "description": "Updated work",
+                                  "startedAt": "2026-09-01T00:00:00Z",
+                                  "durationSeconds": 1800
+                                }
+                                """.formatted(PROJECT_ID)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description")
-                        .value("Updated work"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("แก้ไขรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data.description")
+                        .value("Updated work"))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(timeEntryService).update(
                 eq(OWNER_ID),
@@ -235,7 +319,7 @@ class TimeEntryControllerTest {
 
     @Test
     void rejectsEmptyUpdateBeforeCallingService() throws Exception {
-        mockMvc.perform(patch("/api/time-entries/{id}", ENTRY_ID)
+        mockMvc.perform(put("/api/time-entries/{id}", ENTRY_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
@@ -248,7 +332,13 @@ class TimeEntryControllerTest {
         stubCurrentUser();
 
         mockMvc.perform(delete("/api/time-entries/{id}", ENTRY_ID))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ลบรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(timeEntryService).delete(OWNER_ID, ENTRY_ID);
     }
@@ -271,6 +361,8 @@ class TimeEntryControllerTest {
                 .startedAt(FROM)
                 .endedAt(TO)
                 .durationSeconds(1800L)
+                .createdAt(CREATED_AT)
+                .updatedAt(UPDATED_AT)
                 .build();
     }
 }

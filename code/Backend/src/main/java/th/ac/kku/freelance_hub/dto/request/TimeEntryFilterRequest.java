@@ -41,13 +41,13 @@ public class TimeEntryFilterRequest {
     private Instant to;
 
     @Builder.Default
-    @Min(value = 0, message = "Page must be zero or greater")
-    private int page = 0;
+    @Min(value = 1, message = "Page must be at least 1")
+    private int page = 1;
 
     @Builder.Default
-    @Min(value = 1, message = "Page size must be at least 1")
-    @Max(value = 100, message = "Page size must not exceed 100")
-    private int size = 20;
+    @Min(value = 1, message = "Limit must be at least 1")
+    @Max(value = 100, message = "Limit must not exceed 100")
+    private int limit = 20;
 
     /** Allow only known TimeEntry properties as sort keys. */
     @Builder.Default

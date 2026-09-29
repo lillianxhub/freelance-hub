@@ -8,7 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -80,7 +82,8 @@ class TimeEntryServiceImplTest {
                 projectRepository,
                 taskRepository,
                 userRepository,
-                new TimeEntryMapper()
+                new TimeEntryMapper(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 
@@ -108,7 +111,7 @@ class TimeEntryServiceImplTest {
         assertThat(response.getEntryType()).isEqualTo(EntryType.MANUAL);
         assertThat(response.getStartedAt()).isEqualTo(startedAt);
         assertThat(response.getEndedAt()).isEqualTo(NOW);
-        assertThat(response.getDurationSeconds()).isEqualTo(120L);
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.getTaskId()).isEqualTo(TASK_ID);
         assertThat(response.isRunning()).isFalse();
         verify(timeEntryRepository).save(any(TimeEntry.class));
@@ -183,27 +186,36 @@ class TimeEntryServiceImplTest {
     }
 
     @Test
-    void updatesDescriptionWithoutChangingProjectTaskOrTime() {
+    void replacesAllFieldsUsingEndTime() {
         TimeEntry entry = manualEntry(project, task);
-        Instant originalStartedAt = entry.getStartedAt();
-        Instant originalEndedAt = entry.getEndedAt();
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        Instant newStartedAt = NOW.minusSeconds(90);
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
 
         var response = service.update(
                 OWNER_ID,
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder()
+                        .projectId(PROJECT_ID)
+                        .taskId(TASK_ID)
                         .description("  Updated work  ")
+                        .startedAt(newStartedAt)
+                        .endedAt(NOW)
                         .build()
         );
 
         assertThat(response.getDescription()).isEqualTo("Updated work");
         assertThat(response.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(response.getTaskId()).isEqualTo(TASK_ID);
-        assertThat(response.getStartedAt()).isEqualTo(originalStartedAt);
-        assertThat(response.getEndedAt()).isEqualTo(originalEndedAt);
-        verifyNoInteractions(projectRepository, taskRepository);
+        assertThat(response.getStartedAt()).isEqualTo(newStartedAt);
+        assertThat(response.getEndedAt()).isEqualTo(NOW);
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
+        verify(timeEntryRepository).flush();
     }
 
     @Test
@@ -216,7 +228,7 @@ class TimeEntryServiceImplTest {
                 "New Project"
         );
         ReflectionTestUtils.setField(newProject, "id", newProjectId);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
         when(projectRepository.findByIdAndOwnerId(newProjectId, OWNER_ID))
                 .thenReturn(Optional.of(newProject));
@@ -226,6 +238,9 @@ class TimeEntryServiceImplTest {
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder()
                         .projectId(newProjectId)
+                        .description("Moved work")
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
                         .build()
         );
 
@@ -247,7 +262,7 @@ class TimeEntryServiceImplTest {
         ReflectionTestUtils.setField(newProject, "id", newProjectId);
         Task newTask = new Task(newProject, "New Task", 0);
         ReflectionTestUtils.setField(newTask, "id", newTaskId);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
         when(projectRepository.findByIdAndOwnerId(newProjectId, OWNER_ID))
                 .thenReturn(Optional.of(newProject));
@@ -261,6 +276,9 @@ class TimeEntryServiceImplTest {
                 UpdateTimeEntryRequest.builder()
                         .projectId(newProjectId)
                         .taskId(newTaskId)
+                        .description("Moved task")
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
                         .build()
         );
 
@@ -269,34 +287,44 @@ class TimeEntryServiceImplTest {
     }
 
     @Test
-    void clearsTaskWhenExplicitlyRequested() {
+    void clearsTaskAndDescriptionWhenTheyAreNull() {
         TimeEntry entry = manualEntry(project, task);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
 
         var response = service.update(
                 OWNER_ID,
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder()
-                        .clearTask(true)
+                        .projectId(PROJECT_ID)
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
                         .build()
         );
 
         assertThat(response.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(response.getTaskId()).isNull();
+        assertThat(response.getDescription()).isNull();
+        assertThat(response.getEndedAt()).isEqualTo(NOW.plusSeconds(90));
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
     }
 
     @Test
     void updatesCompletedEntryTimeRangeAndRecalculatesDuration() {
         TimeEntry entry = manualEntry(project, task);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
         Instant newStart = NOW.minusSeconds(5 * 60);
 
         var response = service.update(
                 OWNER_ID,
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder()
+                        .projectId(PROJECT_ID)
                         .startedAt(newStart)
                         .endedAt(NOW)
                         .build()
@@ -311,14 +339,17 @@ class TimeEntryServiceImplTest {
     void rejectsUpdateOfLockedEntry() {
         TimeEntry entry = manualEntry(project, task);
         entry.lock(NOW);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
 
         assertThatThrownBy(() -> service.update(
                 OWNER_ID,
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder()
+                        .projectId(PROJECT_ID)
                         .description("Must not change")
+                        .startedAt(NOW)
+                        .durationSeconds(60L)
                         .build()
         )).isInstanceOf(TimeEntryLockedException.class);
 
@@ -327,48 +358,54 @@ class TimeEntryServiceImplTest {
 
     @Test
     void rejectsUpdateOfEntryNotOwnedByUser() {
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(
                 OWNER_ID,
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder()
+                        .projectId(PROJECT_ID)
                         .description("Must not change")
+                        .startedAt(NOW)
+                        .durationSeconds(60L)
                         .build()
         )).isInstanceOf(TimeEntryNotFoundException.class);
     }
 
     @Test
-    void rejectsUpdateWithoutAnyFields() {
+    void rejectsUpdateWithoutRequiredFields() {
         assertThatThrownBy(() -> service.update(
                 OWNER_ID,
                 ENTRY_ID,
                 UpdateTimeEntryRequest.builder().build()
         ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("At least one field must be provided");
+                .hasMessage("Project ID is required");
 
         verify(timeEntryRepository, never())
-                .findByIdAndOwnerId(any(), any());
+                .findByIdAndOwnerIdAndIsActiveTrue(any(), any());
     }
 
     @Test
     void deletesOwnedUnlockedCompletedEntry() {
         TimeEntry entry = manualEntry(project, task);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
 
         service.delete(OWNER_ID, ENTRY_ID);
 
-        verify(timeEntryRepository).delete(entry);
+        assertThat(entry.getIsActive()).isFalse();
+        assertThat(entry.getDeletedAt()).isEqualTo(NOW);
+        verify(timeEntryRepository).flush();
+        verify(timeEntryRepository, never()).delete(any(TimeEntry.class));
     }
 
     @Test
     void rejectsDeleteOfLockedEntry() {
         TimeEntry entry = manualEntry(project, task);
         entry.lock(NOW);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
 
         assertThatThrownBy(() -> service.delete(OWNER_ID, ENTRY_ID))
@@ -387,7 +424,7 @@ class TimeEntryServiceImplTest {
                 NOW
         );
         ReflectionTestUtils.setField(runningTimer, "id", ENTRY_ID);
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(runningTimer));
 
         assertThatThrownBy(() -> service.delete(OWNER_ID, ENTRY_ID))
@@ -399,7 +436,7 @@ class TimeEntryServiceImplTest {
 
     @Test
     void rejectsDeleteOfEntryNotOwnedByUser() {
-        when(timeEntryRepository.findByIdAndOwnerId(ENTRY_ID, OWNER_ID))
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.delete(OWNER_ID, ENTRY_ID))

@@ -103,7 +103,7 @@ class TimerServiceImplTest {
                 TASK_ID, PROJECT_ID, OWNER_ID
         )).thenReturn(Optional.of(task));
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
@@ -138,7 +138,7 @@ class TimerServiceImplTest {
     void startsTimerWithoutOptionalTask() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
@@ -243,7 +243,7 @@ class TimerServiceImplTest {
     void rejectsTimerWhenOneIsAlreadyRunning() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(true);
 
@@ -259,7 +259,7 @@ class TimerServiceImplTest {
     void translatesConcurrentInsertConflictIntoTimerAlreadyRunning() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
@@ -277,7 +277,7 @@ class TimerServiceImplTest {
     void preservesUnrelatedDatabaseIntegrityErrors() {
         stubOwnedUserAndProject();
         when(timeEntryRepository
-                .existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(false);
         DataIntegrityViolationException databaseError =
@@ -303,7 +303,7 @@ class TimerServiceImplTest {
                 NOW
         );
         when(timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.of(runningTimer));
 
@@ -315,7 +315,7 @@ class TimerServiceImplTest {
         assertThat(response.orElseThrow().getStartedAt()).isEqualTo(NOW);
         assertThat(response.orElseThrow().isRunning()).isTrue();
         verify(timeEntryRepository, never())
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         any(), any()
                 );
     }
@@ -323,7 +323,7 @@ class TimerServiceImplTest {
     @Test
     void returnsEmptyCurrentTimerWhenNoneIsRunning() {
         when(timeEntryRepository
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 
@@ -342,7 +342,7 @@ class TimerServiceImplTest {
         );
         ReflectionTestUtils.setField(runningTimer, "id", ENTRY_ID);
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.of(runningTimer));
 
@@ -350,10 +350,10 @@ class TimerServiceImplTest {
 
         assertThat(response.getStartedAt()).isEqualTo(startedAt);
         assertThat(response.getEndedAt()).isEqualTo(NOW);
-        assertThat(response.getDurationSeconds()).isEqualTo(120L);
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.isRunning()).isFalse();
         assertThat(runningTimer.getEndedAt()).isEqualTo(NOW);
-        assertThat(runningTimer.getDurationSeconds()).isEqualTo(120L);
+        assertThat(runningTimer.getDurationSeconds()).isEqualTo(90L);
         ArgumentCaptor<TimerStoppedEvent> eventCaptor =
                 ArgumentCaptor.forClass(TimerStoppedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -362,17 +362,17 @@ class TimerServiceImplTest {
         assertThat(event.ownerId()).isEqualTo(OWNER_ID);
         assertThat(event.projectId()).isEqualTo(PROJECT_ID);
         assertThat(event.taskId()).isEqualTo(TASK_ID);
-        assertThat(event.durationSeconds()).isEqualTo(120L);
+        assertThat(event.durationSeconds()).isEqualTo(90L);
         assertThat(event.startedAt()).isEqualTo(startedAt);
         assertThat(event.endedAt()).isEqualTo(NOW);
         verify(timeEntryRepository, never())
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(any(), any());
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(any(), any());
     }
 
     @Test
     void rejectsStopWhenNoTimerIsRunning() {
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 
@@ -394,7 +394,7 @@ class TimerServiceImplTest {
                 NOW.minusSeconds(60)
         );
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.of(runningTimer));
 
@@ -402,13 +402,13 @@ class TimerServiceImplTest {
 
         verify(timeEntryRepository).delete(runningTimer);
         verify(timeEntryRepository, never())
-                .findByOwnerIdAndEntryTypeAndEndedAtIsNull(any(), any());
+                .findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(any(), any());
     }
 
     @Test
     void rejectsCancelWhenNoTimerIsRunning() {
         when(timeEntryRepository
-                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+                .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 

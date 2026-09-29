@@ -129,7 +129,7 @@ class TimeEntryTest {
     }
 
     @Test
-    @DisplayName("stops a running timer and rounds partial minutes up")
+    @DisplayName("stops a running timer and stores exact elapsed seconds")
     void stopsTimerAndCalculatesDuration() {
         TimeEntry entry = TimeEntry.startTimer(
                 owner,
@@ -143,7 +143,7 @@ class TimeEntryTest {
         entry.stop(endedAt);
 
         assertThat(entry.getEndedAt()).isEqualTo(endedAt);
-        assertThat(entry.getDurationSeconds()).isEqualTo(120L);
+        assertThat(entry.getDurationSeconds()).isEqualTo(61L);
         assertThat(entry.isRunning()).isFalse();
     }
 
@@ -300,7 +300,7 @@ class TimeEntryTest {
 
         assertThat(entry.getStartedAt()).isEqualTo(STARTED_AT.plusSeconds(120));
         assertThat(entry.getEndedAt()).isEqualTo(STARTED_AT.plusSeconds(301));
-        assertThat(entry.getDurationSeconds()).isEqualTo(240L);
+        assertThat(entry.getDurationSeconds()).isEqualTo(181L);
     }
 
     @Test

@@ -25,16 +25,22 @@ public interface TimeEntryRepository
         extends JpaRepository<TimeEntry, UUID>,
         JpaSpecificationExecutor<TimeEntry> {
 
-    Optional<TimeEntry> findByIdAndOwnerId(UUID id, UUID ownerId);
+    Optional<TimeEntry> findByIdAndOwnerIdAndIsActiveTrue(
+            UUID id,
+            UUID ownerId
+    );
 
-    boolean existsByIdAndOwnerId(UUID id, UUID ownerId);
+    boolean existsByIdAndOwnerIdAndIsActiveTrue(
+            UUID id,
+            UUID ownerId
+    );
 
-    Optional<TimeEntry> findByOwnerIdAndEntryTypeAndEndedAtIsNull(
+    boolean existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
             UUID ownerId,
             EntryType entryType
     );
 
-    boolean existsByOwnerIdAndEntryTypeAndEndedAtIsNull(
+    Optional<TimeEntry> findByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
             UUID ownerId,
             EntryType entryType
     );
@@ -46,7 +52,7 @@ public interface TimeEntryRepository
      * cancelling a timer.</p>
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<TimeEntry> findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
+    Optional<TimeEntry> findLockedByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
             UUID ownerId,
             EntryType entryType
     );
