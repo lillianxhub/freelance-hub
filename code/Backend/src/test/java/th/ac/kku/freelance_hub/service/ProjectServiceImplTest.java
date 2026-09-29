@@ -32,12 +32,29 @@ import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.impl.ProjectServiceImpl;
 
+import th.ac.kku.freelance_hub.repository.TaskRepository;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import java.util.List;
+
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceImplTest {
 
     private static final UUID OWNER_ID = UUID.randomUUID();
     private static final UUID CLIENT_ID = UUID.randomUUID();
     private static final UUID PROJECT_ID = UUID.randomUUID();
+
+    @Mock
+    private TaskRepository taskRepository;
 
     @Mock
     private ProjectRepository projectRepository;
@@ -58,7 +75,8 @@ class ProjectServiceImplTest {
                 projectRepository,
                 clientRepository,
                 userRepository,
-                new ProjectMapper()
+                new ProjectMapper(),
+                taskRepository
         );
 
         owner = User.builder().id(OWNER_ID).build();
@@ -141,6 +159,227 @@ class ProjectServiceImplTest {
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.PLANNED);
         verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void listsProjectsWithClientTargetHoursAndMatchingTaskProgress() {
+        Project projectWithoutTasks = new Project(
+                owner,
+                client,
+                "No tasks"
+        );
+        ReflectionTestUtils.setField(
+                projectWithoutTasks,
+                "id",
+                PROJECT_ID
+        );
+
+        UUID secondProjectId = UUID.randomUUID();
+
+        Project projectWithTasks = new Project(
+                owner,
+                client,
+                "Website"
+        );
+        projectWithTasks.updateDetails(
+                "Website",
+                null,
+                null,
+                null,
+                null,
+                120
+        );
+        ReflectionTestUtils.setField(
+                projectWithTasks,
+                "id",
+                secondProjectId
+        );
+
+        PageRequest pageable = PageRequest.of(
+                1,
+                5,
+                Sort.by("name")
+        );
+
+        when(projectRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<Project>>any(),
+                eq(pageable)
+        )).thenReturn(new PageImpl<>(
+                List.of(projectWithoutTasks, projectWithTasks),
+                pageable,
+                12
+        ));
+
+        TaskRepository.TaskProgressSummary summary =
+                mock(TaskRepository.TaskProgressSummary.class);
+
+        when(summary.getProjectId()).thenReturn(secondProjectId);
+        when(summary.getTotalTasks()).thenReturn(3L);
+        when(summary.getCompletedTasks()).thenReturn(1L);
+
+        when(taskRepository.summarizeProgressByProjectIds(
+                OWNER_ID,
+                List.of(PROJECT_ID, secondProjectId),
+                TaskStatus.COMPLETED
+        )).thenReturn(List.of(summary));
+
+        var result = service.list(
+                OWNER_ID,
+                null,
+                null,
+                null,
+                pageable
+        );
+
+        assertThat(result.getTotalElements()).isEqualTo(12);
+        assertThat(result.getNumber()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(5);
+        assertThat(result.getContent()).hasSize(2);
+
+        var withoutTasks = result.getContent().get(0);
+
+        assertThat(withoutTasks.getId()).isEqualTo(PROJECT_ID);
+        assertThat(withoutTasks.getTargetHours()).isNull();
+        assertThat(withoutTasks.getTaskProgress().getTotalTasks())
+                .isZero();
+        assertThat(withoutTasks.getTaskProgress().getCompletedTasks())
+                .isZero();
+        assertThat(withoutTasks.getTaskProgress().getPercent())
+                .isEqualByComparingTo("0");
+
+        var withTasks = result.getContent().get(1);
+
+        assertThat(withTasks.getId()).isEqualTo(secondProjectId);
+        assertThat(withTasks.getClient().getId())
+                .isEqualTo(CLIENT_ID);
+        assertThat(withTasks.getClient().getName())
+                .isEqualTo("Acme");
+        assertThat(withTasks.getTargetHours())
+                .isEqualByComparingTo("2.00");
+        assertThat(withTasks.getTaskProgress().getTotalTasks())
+                .isEqualTo(3);
+        assertThat(withTasks.getTaskProgress().getCompletedTasks())
+                .isEqualTo(1);
+        assertThat(withTasks.getTaskProgress().getPercent())
+                .isEqualByComparingTo("33.33");
+
+        verify(taskRepository).summarizeProgressByProjectIds(
+                OWNER_ID,
+                List.of(PROJECT_ID, secondProjectId),
+                TaskStatus.COMPLETED
+        );
+    }
+
+    @Test
+    void emptyProjectPagePreservesPaginationWithoutQueryingTaskProgress() {
+        PageRequest pageable = PageRequest.of(
+                3,
+                5,
+                Sort.by("name")
+        );
+
+        when(projectRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<Project>>any(),
+                eq(pageable)
+        )).thenReturn(new PageImpl<Project>(
+                List.of(),
+                pageable,
+                12
+        ));
+
+        var result = service.list(
+                OWNER_ID,
+                null,
+                null,
+                null,
+                pageable
+        );
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(12);
+        assertThat(result.getNumber()).isEqualTo(3);
+        assertThat(result.getSize()).isEqualTo(5);
+
+        verifyNoInteractions(taskRepository);
+    }
+
+        @Test
+    void changingStatusToArchivedSavesProjectAsInactive() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+
+        when(projectRepository.save(project))
+                .thenReturn(project);
+
+        ChangeProjectStatusRequest request =
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.ARCHIVED)
+                        .build();
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                request
+        );
+
+        assertThat(response.getStatus())
+                .isEqualTo(ProjectStatus.ARCHIVED);
+        assertThat(project.getIsActive()).isFalse();
+
+        verify(projectRepository).save(project);
+    }
+
+    @Test
+    void getsProjectDetailWithClientHoursAndTaskProgress() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.updateDetails("Website", "Description", null, null, null, 2160);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        TaskRepository.TaskProgressSummary summary = mock(TaskRepository.TaskProgressSummary.class);
+        when(summary.getTotalTasks()).thenReturn(3L);
+        when(summary.getCompletedTasks()).thenReturn(1L);
+        when(taskRepository.summarizeProgressByProjectIds(
+                OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
+                .thenReturn(List.of(summary));
+
+        var result = service.getById(OWNER_ID, PROJECT_ID);
+
+        assertThat(result.getId()).isEqualTo(PROJECT_ID);
+        assertThat(result.getName()).isEqualTo("Website");
+        assertThat(result.getDescription()).isEqualTo("Description");
+        assertThat(result.getClient().getId()).isEqualTo(CLIENT_ID);
+        assertThat(result.getClient().getName()).isEqualTo("Acme");
+        assertThat(result.getTargetHours()).isEqualByComparingTo("36");
+        assertThat(result.getTaskProgress().getTotalTasks()).isEqualTo(3);
+        assertThat(result.getTaskProgress().getCompletedTasks()).isEqualTo(1);
+        assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("33.33");
+        assertThat(result.getTimeTracking()).isNull();
+        verify(taskRepository).summarizeProgressByProjectIds(
+                OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED);
+    }
+
+    @Test
+    void projectDetailWithoutTasksOrTargetReturnsZeroProgressAndNullTarget() {
+        Project project = new Project(owner, client, "Empty Project");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(taskRepository.summarizeProgressByProjectIds(
+                OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
+                .thenReturn(List.of());
+
+        var result = service.getById(OWNER_ID, PROJECT_ID);
+
+        assertThat(result.getTargetHours()).isNull();
+        assertThat(result.getTaskProgress().getTotalTasks()).isZero();
+        assertThat(result.getTaskProgress().getCompletedTasks()).isZero();
+        assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("0");
+        assertThat(result.getTimeTracking()).isNull();
     }
 }
 
