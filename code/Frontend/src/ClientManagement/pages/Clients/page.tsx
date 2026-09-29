@@ -9,7 +9,7 @@ import type { ResourceInput } from '../../../types/workspace'
 import type { ClientFilter, ClientSort } from '../../../types/clientsPage'
 import ClientCard from '../../components/ClientCard'
 import ClientForm from '../../components/ClientForm'
-import { validateClient } from '../../client.validators'
+import { normalizeDigits, validateClient } from '../../client.validators'
 import { getErrorMessage } from '../../../api/apiError'
 
 const emptyForm: ResourceInput<'clients'> = {
@@ -59,7 +59,12 @@ function ClientsPage() {
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
+    const normalizedValue = name === 'phone'
+      ? normalizeDigits(value, 10)
+      : name === 'tax_id'
+        ? normalizeDigits(value, 13)
+        : value
+    setForm((current) => ({ ...current, [name]: normalizedValue }))
   }
 
   const handleFieldsChange = (values: Partial<ResourceInput<'clients'>>) => {
