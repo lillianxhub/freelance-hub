@@ -3,18 +3,21 @@ package th.ac.kku.freelance_hub.security;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 
 /**
  * Entry point for handling authentication errors
  */
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public void commence(
@@ -24,10 +27,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write(String.format(
-                                "{\"timestamp\":\"%s\",\"status\":401,"
-                                                + "\"error\":\"Unauthorized\","
-                                                + "\"message\":\"Authentication is required\"}",
-                                LocalDateTime.now()));
+                objectMapper.writeValue(response.getWriter(),
+                                ApiResult.error("Authentication is required", "AUTHENTICATION_REQUIRED", null));
         }
 }
