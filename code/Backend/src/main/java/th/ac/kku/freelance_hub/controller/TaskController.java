@@ -139,25 +139,25 @@ public class TaskController {
         );
     }
 
-    @Operation(
-            summary = "Get a task",
-            description = "Get one task from a project belonging to the authenticated user"
-    )
-    @ApiResponse(responseCode = "200", description = "Task returned",
-            content = @Content(schema = @Schema(implementation = TaskResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Task not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    // Legacy route unused by Frontend; use GET /api/tasks/{taskId}.
-    // @GetMapping("/{taskId}")
-    public ResponseEntity<TaskResponse> getById(
-            @PathVariable("projectId") UUID projectId,
-            @PathVariable("taskId") UUID taskId
-    ) {
-        return ResponseEntity.ok(
-                taskService.getById(currentOwnerId(), projectId, taskId)
-        );
-    }
+    // @Operation(
+    //         summary = "Get a task",
+    //         description = "Get one task from a project belonging to the authenticated user"
+    // )
+    // @ApiResponse(responseCode = "200", description = "Task returned",
+    //         content = @Content(schema = @Schema(implementation = TaskResponse.class)))
+    // @ApiResponse(responseCode = "401", description = "Authentication required")
+    // @ApiResponse(responseCode = "404", description = "Task not found",
+    //         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    // // Legacy route unused by Frontend; use GET /api/tasks/{taskId}.
+    // // @GetMapping("/{taskId}")
+    // public ResponseEntity<TaskResponse> getById(
+    //         @PathVariable("projectId") UUID projectId,
+    //         @PathVariable("taskId") UUID taskId
+    // ) {
+    //     return ResponseEntity.ok(
+    //             taskService.getById(currentOwnerId(), projectId, taskId)
+    //     );
+    // }
 
     @Operation(
             summary = "Update a task",
@@ -184,27 +184,27 @@ public class TaskController {
         );
     }
 
-    @Operation(
-            summary = "Start a task",
-            description = "Change a task from OPEN to IN_PROGRESS"
-    )
-    @ApiResponse(responseCode = "200", description = "Task started",
-            content = @Content(schema = @Schema(implementation = TaskResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Project or task not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @ApiResponse(responseCode = "409", description = "Task cannot be started in its current state",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    // Legacy route unused by Frontend; use PATCH /api/tasks/{taskId}/status.
-    // @PatchMapping("/{taskId}/start")
-    public ResponseEntity<TaskResponse> start(
-            @PathVariable("projectId") UUID projectId,
-            @PathVariable("taskId") UUID taskId
-    ) {
-        return ResponseEntity.ok(
-                taskService.start(currentOwnerId(), projectId, taskId)
-        );
-    }
+    // @Operation(
+    //         summary = "Start a task",
+    //         description = "Change a task from OPEN to IN_PROGRESS"
+    // )
+    // @ApiResponse(responseCode = "200", description = "Task started",
+    //         content = @Content(schema = @Schema(implementation = TaskResponse.class)))
+    // @ApiResponse(responseCode = "401", description = "Authentication required")
+    // @ApiResponse(responseCode = "404", description = "Project or task not found",
+    //         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    // @ApiResponse(responseCode = "409", description = "Task cannot be started in its current state",
+    //         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    // // Legacy route unused by Frontend; use PATCH /api/tasks/{taskId}/status.
+    // // @PatchMapping("/{taskId}/start")
+    // public ResponseEntity<TaskResponse> start(
+    //         @PathVariable("projectId") UUID projectId,
+    //         @PathVariable("taskId") UUID taskId
+    // ) {
+    //     return ResponseEntity.ok(
+    //             taskService.start(currentOwnerId(), projectId, taskId)
+    //     );
+    // }
 
     @Operation(
             summary = "Complete a task",
