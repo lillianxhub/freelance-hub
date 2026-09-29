@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.response.TimeEntryDetailResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
@@ -52,7 +53,7 @@ public class TimeEntryController {
             responseCode = "201",
             description = "Manual time entry created",
             content = @Content(
-                    schema = @Schema(implementation = TimeEntryResponse.class)
+                    schema = @Schema(implementation = TimeEntryDetailResponse.class)
             )
     )
     @ApiResponse(responseCode = "400", description = "Invalid time entry")
@@ -65,7 +66,9 @@ public class TimeEntryController {
             )
     )
     @PostMapping
-    public ResponseEntity<TimeEntryResponse> createManual(
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryDetailResponse>
+    > createManual(
             @Valid @RequestBody ManualTimeEntryRequest request
     ) {
         TimeEntryResponse response = timeEntryService.createManual(
@@ -74,7 +77,10 @@ public class TimeEntryController {
         );
         return ResponseEntity
                 .created(URI.create("/api/time-entries/" + response.getId()))
-                .body(response);
+                .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "เพิ่มรายการเวลาเรียบร้อยแล้ว",
+                        TimeEntryDetailResponse.from(response)
+                ));
     }
 
     @Operation(summary = "List time entries")
