@@ -166,6 +166,38 @@ docker compose logs -f app
 docker compose down
 ```
 
+### Seed ข้อมูลตัวอย่างสำหรับ Local
+
+Java seeder สร้างข้อมูลตัวอย่าง User → Client → Project → Task ใน PostgreSQL ของ Docker สำหรับทดลองใช้งานเท่านั้น ไม่ทำงานตอนเปิด Backend ตามปกติ และรันซ้ำได้โดยไม่สร้างข้อมูลซ้ำ Seeder ยอมต่อฐานข้อมูลเฉพาะ `localhost`, `127.0.0.1` หรือ service `postgres` ใน Docker Compose และไม่ทำงานใน CI/Render
+
+จากโฟลเดอร์ `code/Backend/` ให้ build และเปิด app เวอร์ชันล่าสุดก่อน เพื่อให้โค้ดตรงกับ Flyway migration ที่รันแล้ว:
+
+```bash
+docker compose up -d postgres
+docker compose build app
+docker compose up -d --no-deps app
+```
+
+ตั้งรหัสผ่านสำหรับบัญชีทดสอบอย่างน้อย 8 ตัวอักษร (ใช้เฉพาะ local):
+
+```powershell
+# Windows PowerShell
+$env:LOCAL_SEED_PASSWORD = 'your-local-test-password'
+```
+
+```bash
+# macOS / Linux
+export LOCAL_SEED_PASSWORD='your-local-test-password'
+```
+
+จากนั้นใช้คำสั่งเดียวกันทุกระบบ:
+
+```bash
+docker compose run --rm --no-deps -e LOCAL_SEED_RUN=true -e LOCAL_SEED_PASSWORD app
+```
+
+บัญชีตัวอย่างใช้ email `seed.local@example.test` หากต้องการ email อื่น ให้ตั้ง `LOCAL_SEED_EMAIL` ใน shell และเพิ่ม `-e LOCAL_SEED_EMAIL` ก่อน `app` หาก email เดิมมีอยู่แล้วแต่รหัสผ่านไม่ตรง Seeder จะหยุดโดยไม่เปลี่ยนรหัสผ่านเดิม ห้ามใช้ข้อมูลรับรอง production
+
 ## API Documentation
 
 OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้นใน application configuration เพื่อไม่ให้เปิดบน production
