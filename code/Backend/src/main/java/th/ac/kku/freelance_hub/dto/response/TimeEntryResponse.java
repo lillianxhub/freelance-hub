@@ -40,6 +40,8 @@ public class TimeEntryResponse {
 
     private Integer durationMinutes;
 
+    private Long durationSeconds;
+
     private Instant lockedAt;
 
     private boolean running;

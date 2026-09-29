@@ -3,6 +3,7 @@ package th.ac.kku.freelance_hub.service.impl;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -106,17 +107,15 @@ public class TimerServiceImpl implements TimerService {
 
     @Override
     @Transactional(readOnly = true)
-    public TimeEntryResponse getCurrentTimer(UUID ownerId) {
+    public Optional<TimeEntryResponse> getCurrentTimer(UUID ownerId) {
         Objects.requireNonNull(ownerId, "ownerId is required");
 
-        TimeEntry runningTimer = timeEntryRepository
+        return timeEntryRepository
                 .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
                         ownerId,
                         EntryType.TIMER
                 )
-                .orElseThrow(RunningTimerNotFoundException::new);
-
-        return timeEntryMapper.toResponse(runningTimer);
+                .map(timeEntryMapper::toResponse);
     }
 
     @Override

@@ -20,6 +20,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.dto.request.StartTimerRequest;
+import th.ac.kku.freelance_hub.dto.response.CurrentTimerResponse;
+import th.ac.kku.freelance_hub.dto.response.StoppedTimerResponse;
 import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TimerService;
@@ -54,7 +56,9 @@ public class TimerController {
             )
     )
     @PostMapping("/start")
-    public ResponseEntity<TimeEntryResponse> start(
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<TimeEntryResponse>
+    > start(
             @Valid @RequestBody StartTimerRequest request
     ) {
         TimeEntryResponse response = timerService.startTimer(
@@ -63,49 +67,84 @@ public class TimerController {
         );
         return ResponseEntity
                 .created(URI.create("/api/time-entries/" + response.getId()))
-                .body(response);
+                .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "เริ่มจับเวลาเรียบร้อยแล้ว",
+                        response
+                ));
     }
 
     @Operation(summary = "Get the current running timer")
     @ApiResponse(responseCode = "200", description = "Current timer returned")
     @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(
-            responseCode = "404",
-            description = "No timer is running",
-            content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
-            )
-    )
     @GetMapping("/current")
-    public ResponseEntity<TimeEntryResponse> current() {
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<CurrentTimerResponse>
+    > current() {
+        var currentTimer = timerService.getCurrentTimer(currentOwnerId());
+        CurrentTimerResponse data = currentTimer
+                .map(CurrentTimerResponse::active)
+                .orElseGet(CurrentTimerResponse::inactive);
+        String message = currentTimer.isPresent()
+                ? "ดึงข้อมูลตัวจับเวลาที่กำลังทำงานเรียบร้อยแล้ว"
+                : "ไม่มีตัวจับเวลาที่กำลังทำงาน";
+
         return ResponseEntity.ok(
-                timerService.getCurrentTimer(currentOwnerId())
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        message,
+                        data
+                )
         );
     }
 
     @Operation(summary = "Stop the current timer")
-    @ApiResponse(responseCode = "200", description = "Timer stopped")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Timer stopped",
+            content = @Content(
+                    schema = @Schema(implementation = StoppedTimerResponse.class)
+            )
+    )
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "No timer is running")
     @PostMapping("/stop")
-    public ResponseEntity<TimeEntryResponse> stop() {
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<StoppedTimerResponse>
+    > stop() {
+        TimeEntryResponse stoppedTimer = timerService.stopTimer(
+                currentOwnerId()
+        );
         return ResponseEntity.ok(
-                timerService.stopTimer(currentOwnerId())
+                th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                        "หยุดจับเวลาเรียบร้อยแล้ว",
+                        StoppedTimerResponse.from(stoppedTimer)
+                )
         );
     }
 
     @Operation(summary = "Cancel the current timer")
     @ApiResponse(
-            responseCode = "204",
+            responseCode = "200",
             description = "Timer cancelled",
-            content = @Content
+            content = @Content(
+                    schema = @Schema(
+                            implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class
+                    )
+            )
     )
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "No timer is running")
     @DeleteMapping("/current")
-    public ResponseEntity<Void> cancel() {
+    public ResponseEntity<
+            th.ac.kku.freelance_hub.dto.response.ApiResponse<Void>
+    > cancel() {
         timerService.cancelTimer(currentOwnerId());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(
+                th.ac.kku.freelance_hub.dto.response.ApiResponse
+                        .<Void>success(
+                                "ยกเลิกการจับเวลาเรียบร้อยแล้ว",
+                                null
+                        )
+        );
     }
 
     private UUID currentOwnerId() {

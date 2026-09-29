@@ -309,10 +309,11 @@ class TimerServiceImplTest {
 
         var response = timerService.getCurrentTimer(OWNER_ID);
 
-        assertThat(response.getProjectId()).isEqualTo(PROJECT_ID);
-        assertThat(response.getTaskId()).isEqualTo(TASK_ID);
-        assertThat(response.getStartedAt()).isEqualTo(NOW);
-        assertThat(response.isRunning()).isTrue();
+        assertThat(response).isPresent();
+        assertThat(response.orElseThrow().getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(response.orElseThrow().getTaskId()).isEqualTo(TASK_ID);
+        assertThat(response.orElseThrow().getStartedAt()).isEqualTo(NOW);
+        assertThat(response.orElseThrow().isRunning()).isTrue();
         verify(timeEntryRepository, never())
                 .findLockedByOwnerIdAndEntryTypeAndEndedAtIsNull(
                         any(), any()
@@ -320,14 +321,13 @@ class TimerServiceImplTest {
     }
 
     @Test
-    void rejectsCurrentTimerRequestWhenNoneIsRunning() {
+    void returnsEmptyCurrentTimerWhenNoneIsRunning() {
         when(timeEntryRepository
                 .findByOwnerIdAndEntryTypeAndEndedAtIsNull(
                         OWNER_ID, EntryType.TIMER
                 )).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> timerService.getCurrentTimer(OWNER_ID))
-                .isInstanceOf(RunningTimerNotFoundException.class);
+        assertThat(timerService.getCurrentTimer(OWNER_ID)).isEmpty();
     }
 
     @Test
