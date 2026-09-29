@@ -109,17 +109,6 @@ function DashboardPage() {
             day: new Intl.DateTimeFormat("th-TH", { weekday: "short" }).format(
                 date,
             ),
-            billable: Number(
-                (
-                    entries
-                        .filter((entry) => entry.billable)
-                        .reduce(
-                            (sum, entry) =>
-                                sum + Number(entry.duration_minutes),
-                            0,
-                        ) / 60
-                ).toFixed(2),
-            ),
             total: Number(
                 (
                     entries.reduce(
@@ -318,7 +307,7 @@ function DashboardPage() {
                     <div className="panel-heading">
                         <div>
                             <h2>ชั่วโมงทำงานรายสัปดาห์</h2>
-                            <p>เวลารวมและเวลาที่คิดค่าบริการใน 7 วันล่าสุด</p>
+                            <p>เวลาทำงานรวมใน 7 วันล่าสุด</p>
                         </div>
                         <Link className="mini-button text-link" to="/reports">
                             ดูทั้งหมด

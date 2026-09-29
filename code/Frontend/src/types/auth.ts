@@ -1,14 +1,15 @@
-import type { ChangeEventHandler, HTMLInputTypeAttribute } from 'react'
+import type { ChangeEventHandler, HTMLInputTypeAttribute, InputHTMLAttributes } from 'react'
 
-export interface AuthInputProps {
+export interface AuthInputProps extends Pick<
+  InputHTMLAttributes<HTMLInputElement>,
+  'autoComplete' | 'inputMode' | 'maxLength' | 'minLength' | 'onBlur' | 'pattern' | 'required'
+> {
   label: string
   type: HTMLInputTypeAttribute
   name: string
   value: string
   onChange: ChangeEventHandler<HTMLInputElement>
-  autoComplete?: string
-  minLength?: number
-  required?: boolean
+  error?: string
 }
 
 export interface BackendUser {
@@ -34,6 +35,8 @@ export interface RegisterInput {
 export interface RegisterFormValues extends RegisterInput {
   confirmPassword: string
 }
+
+export type RegisterFieldErrors = Partial<Record<keyof RegisterFormValues, string>>
 
 export interface AuthUser {
   id: string
