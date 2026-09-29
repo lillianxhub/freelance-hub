@@ -1,6 +1,9 @@
 package th.ac.kku.freelance_hub.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -19,10 +22,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
+import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.exception.InvalidCredentialsException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.dto.request.ChangePasswordRequest;
+import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.UserResponse;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -70,6 +76,48 @@ class UserServiceTest {
     }
 
     @Test
+    void readsOnlyTheAuthenticatedUser() {
+        UserResponse response = UserResponse.builder().id(user.getId()).email(user.getEmail()).build();
+        when(userMapper.toResponse(user)).thenReturn(response);
+
+        assertThat(userService.getCurrentUser()).isSameAs(response);
+
+        verify(userRepository).findByEmail("user@example.com");
+        verify(userMapper).toResponse(user);
+    }
+
+    @Test
+    void updatesTheAuthenticatedUsersProfile() {
+        UserProfile profile = UserProfile.builder().displayName("Old name").build();
+        user.setProfile(profile);
+        UpdateUserProfileRequest request = UpdateUserProfileRequest.builder()
+            .displayName("New name")
+            .province("ขอนแก่น")
+            .build();
+        UserResponse response = UserResponse.builder().id(user.getId()).displayName("New name").build();
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user)).thenReturn(response);
+
+        assertThat(userService.updateCurrentUser(request)).isSameAs(response);
+
+        verify(userMapper).updateProfile(request, profile);
+        verify(userRepository).save(user);
+        verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    void rejectsProfileUpdateWhenProfileIsMissing() {
+        UpdateUserProfileRequest request = UpdateUserProfileRequest.builder().displayName("New name").build();
+
+        assertThatThrownBy(() -> userService.updateCurrentUser(request))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("User profile is not available");
+
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(userMapper);
+    }
+
+    @Test
     void rejectsWrongOldPasswordWithoutSaving() {
         when(passwordEncoder.matches("wrong-password", "old-hash")).thenReturn(false);
 
@@ -80,6 +128,8 @@ class UserServiceTest {
             .isInstanceOf(InvalidCredentialsException.class)
             .hasMessage("รหัสผ่านไม่ถูกต้อง");
 
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(refreshTokenService);
         verifyNoInteractions(userMapper);
     }
 
@@ -93,5 +143,8 @@ class UserServiceTest {
             .build()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("differ");
+
+        verify(userRepository, never()).save(any());
+        verifyNoInteractions(refreshTokenService);
     }
 }
