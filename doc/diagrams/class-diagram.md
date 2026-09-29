@@ -28,7 +28,6 @@ classDiagram
         +String lastName
         +String phone
         +Address addressDetails
-        +String dateFormat
         +String bio
         +boolean isActive
         +updateContact(...)

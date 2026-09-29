@@ -52,10 +52,6 @@ public class UserProfile {
     @Column(name = "tax_id", length = 30)
     private String taxId;
 
-    @Column(length = 20)
-    @Builder.Default
-    private String dateFormat = "YYYY-MM-DD";
-
     @Column(columnDefinition = "text")
     private String bio;
 

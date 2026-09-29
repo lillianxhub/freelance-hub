@@ -38,7 +38,6 @@ public class UserMapper {
                     .province(profile.getProvince())
                     .postalCode(profile.getPostalCode())
                     .taxId(profile.getTaxId())
-                    .dateFormat(profile.getDateFormat())
                     .bio(profile.getBio());
         }
 
@@ -54,7 +53,6 @@ public class UserMapper {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .phone(request.getPhone())
-                .dateFormat("YYYY-MM-DD")
                 .build();
     }
 
@@ -71,9 +69,6 @@ public class UserMapper {
         }
         if (request.getPhone() != null) {
             profile.setPhone(request.getPhone().trim());
-        }
-        if (request.getDateFormat() != null) {
-            profile.setDateFormat(request.getDateFormat().trim());
         }
         if (request.getBio() != null) {
             profile.setBio(request.getBio().trim());
