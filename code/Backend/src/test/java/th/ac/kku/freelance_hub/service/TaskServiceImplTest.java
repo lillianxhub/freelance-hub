@@ -108,13 +108,13 @@ class TaskServiceImplTest {
         Task task = taskRepository.findById(response.getId()).orElseThrow();
 
         timeEntryRepository.saveAndFlush(
-                TimeEntry.createManualWithDuration(
+                TimeEntry.createManualWithDurationSeconds(
                         owner,
                         project,
                         task,
                         "Work",
                         Instant.parse("2026-01-01T10:00:00Z"),
-                        30
+                        1800
                 )
         );
 
@@ -175,6 +175,3 @@ class TaskServiceImplTest {
                 );
     }
 }
-
-
-        

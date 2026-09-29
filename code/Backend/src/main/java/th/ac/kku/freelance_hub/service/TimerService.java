@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import th.ac.kku.freelance_hub.dto.request.StartTimerRequest;
@@ -10,7 +11,7 @@ public interface TimerService {
 
     TimeEntryResponse startTimer(UUID ownerId, StartTimerRequest request);
 
-    TimeEntryResponse getCurrentTimer(UUID ownerId);
+    Optional<TimeEntryResponse> getCurrentTimer(UUID ownerId);
 
     TimeEntryResponse stopTimer(UUID ownerId);
 

@@ -28,7 +28,6 @@ erDiagram
         varchar district
         varchar province
         varchar postal_code
-        varchar date_format
         text bio
         boolean is_active
         bigint version

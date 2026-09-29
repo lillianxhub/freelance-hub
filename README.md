@@ -114,6 +114,8 @@ cp .env.example .env
 | `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ production | Secret ของ deployment |
 | `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ production | Secret ของ deployment |
 | `JWT_SECRET`                 | Secret สำหรับลงนาม JWT              | Secret ของ deployment |
+| `CORS_ALLOWED_ORIGINS`       | Origin ที่อนุญาตสำหรับ CORS และ refresh/logout คั่นด้วย comma | `http://localhost:5173,http://localhost:8080` |
+| `REFRESH_COOKIE_SECURE`      | เปิด Secure cookie เมื่อใช้ HTTPS | `false` ใน Docker local; `true` บน Render |
 | `OPENAPI_ENABLED`            | เปิด OpenAPI/Swagger เฉพาะ local, dev หรือ staging; production ให้ใช้ `false` หรือไม่กำหนด | `true` ผ่าน Docker Compose |
 
 ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
@@ -164,6 +166,38 @@ docker compose logs -f app
 docker compose down
 ```
 
+### Seed ข้อมูลตัวอย่างสำหรับ Local
+
+Java seeder สร้างข้อมูลตัวอย่าง User → Client → Project → Task ใน PostgreSQL ของ Docker สำหรับทดลองใช้งานเท่านั้น ไม่ทำงานตอนเปิด Backend ตามปกติ และรันซ้ำได้โดยไม่สร้างข้อมูลซ้ำ Seeder ยอมต่อฐานข้อมูลเฉพาะ `localhost`, `127.0.0.1` หรือ service `postgres` ใน Docker Compose และไม่ทำงานใน CI/Render
+
+จากโฟลเดอร์ `code/Backend/` ให้ build และเปิด app เวอร์ชันล่าสุดก่อน เพื่อให้โค้ดตรงกับ Flyway migration ที่รันแล้ว:
+
+```bash
+docker compose up -d postgres
+docker compose build app
+docker compose up -d --no-deps app
+```
+
+ตั้งรหัสผ่านสำหรับบัญชีทดสอบอย่างน้อย 8 ตัวอักษร (ใช้เฉพาะ local):
+
+```powershell
+# Windows PowerShell
+$env:LOCAL_SEED_PASSWORD = 'your-local-test-password'
+```
+
+```bash
+# macOS / Linux
+export LOCAL_SEED_PASSWORD='your-local-test-password'
+```
+
+จากนั้นใช้คำสั่งเดียวกันทุกระบบ:
+
+```bash
+docker compose run --rm --no-deps -e LOCAL_SEED_RUN=true -e LOCAL_SEED_PASSWORD app
+```
+
+บัญชีตัวอย่างใช้ email `seed.local@example.test` หากต้องการ email อื่น ให้ตั้ง `LOCAL_SEED_EMAIL` ใน shell และเพิ่ม `-e LOCAL_SEED_EMAIL` ก่อน `app` หาก email เดิมมีอยู่แล้วแต่รหัสผ่านไม่ตรง Seeder จะหยุดโดยไม่เปลี่ยนรหัสผ่านเดิม ห้ามใช้ข้อมูลรับรอง production
+
 ## API Documentation
 
 OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้นใน application configuration เพื่อไม่ให้เปิดบน production
@@ -171,7 +205,7 @@ OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้
 
 - Base URL: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/api-docs`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
 | Resource     | Endpoint             |
 | ------------ | -------------------- |
@@ -179,7 +213,7 @@ OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้
 | Login        | `/api/auth/login`    |
 | Refresh token | `/api/auth/refresh` |
 | Logout       | `/api/auth/logout`   |
-| My profile   | `/api/users/me`      |
+| My profile   | `GET/PATCH /api/users/me` |
 | Change password | `/api/users/me/password` |
 | Clients      | `/api/clients`       |
 | Projects     | `/api/projects`      |
@@ -190,7 +224,7 @@ OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้
 Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
 
 ข้อมูลที่อยู่ของ User Profile และ Client ใช้ API contract เดียวกันและส่งเป็น flat fields
-แม้ฐานข้อมูลจะ normalize ไว้ใน `addresses`:
+โดยเก็บฟิลด์ที่อยู่ไว้ใน `user_profiles` และ `clients`:
 
 ```json
 {
@@ -206,11 +240,19 @@ Income, Expense, Invoice และ Payment เป็น **Post-MVP** และ�
 `{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ยังไม่มี forgot/reset password
 หากรหัสผ่านเดิมผิด API ตอบ `401` พร้อมข้อความ `รหัสผ่านไม่ถูกต้อง`
 
+การสมัครและ login จะตัดช่องว่างหัวท้ายและแปลง email เป็นตัวพิมพ์เล็กก่อนค้นหา/บันทึก
+`PATCH /api/users/me` เปลี่ยนเฉพาะฟิลด์ที่ส่งมา (ไม่ใช้ `PUT`)
+หาก login ผิดเกิน 10 ครั้งต่อ email ภายใน 15 นาที หรือเกิน 300 ครั้งต่อนาทีต่อ IP
+API ตอบ `429` พร้อม `Retry-After` และ `LOGIN_RATE_LIMITED`; ตัวนับอยู่ในหน่วยความจำ
+ของ Backend instance เดียวและจะเริ่มใหม่เมื่อ restart
+
 Access JWT มีอายุ 15 นาทีและส่งใน `data.token`; refresh token อยู่ใน cookie
 `fh_refresh` (`HttpOnly`, `SameSite=Lax`, `Secure` บน HTTPS) มีอายุสูงสุด 7 วัน
 `POST /api/auth/refresh` หมุน cookie และคืน access token ใหม่ การ logout เพิกถอน
 refresh-token family และตอบ `204`; access token เดิมอาจใช้ต่อได้จนหมดอายุ (ไม่เกิน 15 นาที)
 และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
+Refresh/logout ต้องมี `Origin` ที่อนุญาต หรือ `Referer` ที่อนุญาตเมื่อไม่มี `Origin`;
+หากไม่มีทั้งคู่หรือไม่ตรง API ตอบ `403`
 
 รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
 
@@ -243,19 +285,37 @@ Maven test result อยู่ใน `code/Backend/target/surefire-reports/` แ
 
 | Environment          | URL                                                      | Status       |
 | -------------------- | -------------------------------------------------------- | ------------ |
-| Frontend (Vercel)    | TODO: `https://your-frontend.vercel.app`                 | Not deployed |
-| Backend API (Render) | TODO: `https://your-backend.onrender.com`                | Not deployed |
-| Swagger UI (Staging) | TODO: `https://your-staging-backend.example.com/swagger-ui.html` | Not deployed |
+| Frontend (Vercel)    | `https://freelance-hub-self.vercel.app/`                  | HTTP 200 checked 2026-09-29 |
+| Backend staging (Render) | `https://freelance-hub-backend-staging.onrender.com`  | `/actuator/health` returned `UP` 2026-09-29 |
+| Backend production (Render) | `https://freelance-hub-g8y5.onrender.com` | URL confirmed by owner; health check timed out 2026-09-29 |
+| Swagger UI (Staging) | `https://freelance-hub-backend-staging.onrender.com/swagger-ui.html` | HTTP 200 checked 2026-09-29 |
 
 Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อมตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) ทั้ง Preview และ Production โดยช่วงทดสอบใช้ Render staging เดียวกัน เพื่อให้ Vercel proxy `/api` ไป Backend ผ่าน `code/Frontend/vercel.ts`; ไม่ตั้ง `VITE_API_BASE_URL` เป็น URL ข้ามโดเมน
+สำหรับการทดสอบ staging ให้ตั้ง `BACKEND_ORIGIN=https://freelance-hub-backend-staging.onrender.com`;
+เมื่อจะใช้ Backend production ให้เปลี่ยนเป็น `https://freelance-hub-g8y5.onrender.com` และ redeploy Vercel
 
 Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
 
 Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
-ตั้ง `OPENAPI_ENABLED=true` เฉพาะ Render staging; production ให้ตั้ง `OPENAPI_ENABLED=false` หรือไม่กำหนด เพื่อปิด `/api-docs` และ Swagger UI
-ตั้ง `REFRESH_COOKIE_SECURE=true` บน Render ที่ใช้ HTTPS และเพิ่ม Vercel origin จริงใน `CORS_ALLOWED_ORIGINS` ก่อน deploy; local Docker ใช้ค่า `false` จาก `.env.example`
+ตั้ง `OPENAPI_ENABLED=true` เฉพาะ Render staging; production ให้ตั้ง `OPENAPI_ENABLED=false` หรือไม่กำหนด เพื่อปิด `/v3/api-docs` และ Swagger UI
+ตั้ง `REFRESH_COOKIE_SECURE=true` บน Render ที่ใช้ HTTPS และกำหนด `CORS_ALLOWED_ORIGINS`
+เป็น origin แบบเต็มที่คั่นด้วย comma สำหรับ staging เช่น
+`https://freelance-hub-self.vercel.app,https://freelance-hub-backend-staging.onrender.com`
+(ส่วน Backend production ใช้ `https://freelance-hub-self.vercel.app,https://freelance-hub-g8y5.onrender.com`)
+(รวม Vercel Preview origins ที่ใช้จริง) เพื่อให้ refresh/logout และ Swagger staging ทำงาน;
+local ใช้ `http://localhost:5173,http://localhost:8080` และ Docker ใช้ค่า cookie `false` จาก `.env.example`
+ก่อน deploy migration V19 ให้สำรองฐานข้อมูลและตรวจ email ที่ซ้ำกันหลัง `lower(btrim(email))`;
+หากพบต้องแก้เป็นรายบัญชีก่อน เพราะ migration จะหยุดโดยไม่รวมบัญชีอัตโนมัติ
 
-> **TODO:** ระบุ Vercel URL, Render URL, Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
+```sql
+SELECT lower(btrim(email)) AS canonical_email, count(*) AS account_count
+FROM users
+GROUP BY lower(btrim(email))
+HAVING count(*) > 1;
+```
+
+> **TODO:** ตรวจ end-to-end login/refresh/logout บน staging หลัง deploy โค้ดล่าสุด,
+> ตรวจ production health อีกครั้ง, ระบุ Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
 
 ## Project Structure
 
