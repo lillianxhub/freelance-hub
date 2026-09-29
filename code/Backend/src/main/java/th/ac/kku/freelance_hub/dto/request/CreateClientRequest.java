@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Data submitted when creating a client. Ownership is taken from the logged-in user. */
+/** Data submitted when creating or replacing a client. Ownership comes from authentication. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

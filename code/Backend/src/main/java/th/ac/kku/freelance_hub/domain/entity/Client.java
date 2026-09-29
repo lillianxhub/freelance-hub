@@ -78,8 +78,8 @@ public class Client {
         updateDetailsWithAddress(name, companyName, email, phone, address, null, null, null, null, taxId, notes);
     }
 
-    public void archive() { isActive = false; deletedAt = Instant.now(); }
-    public void activate() { isActive = true; deletedAt = null; }
+    public void setActive(boolean active) { isActive = active; }
+    public void softDelete() { deletedAt = Instant.now(); }
 
     @PrePersist void onCreate() { Instant now = Instant.now(); createdAt = now; updatedAt = now; }
     @PreUpdate void onUpdate() { updatedAt = Instant.now(); }

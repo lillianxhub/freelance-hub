@@ -78,7 +78,7 @@ class TimeEntryTest {
     @Test
     @DisplayName("rejects starting a timer for an archived client")
     void rejectsTimerForArchivedClient() {
-        client.archive();
+        client.setActive(false);
 
         assertThatThrownBy(() -> TimeEntry.startTimer(
                 owner,
