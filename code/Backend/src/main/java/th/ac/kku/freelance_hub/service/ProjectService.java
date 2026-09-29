@@ -11,14 +11,16 @@ import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
 import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
 
+import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
+
 /** Operations on projects owned by the authenticated user. */
 public interface ProjectService {
 
     ProjectResponse create(UUID ownerId, CreateProjectRequest request);
 
-    ProjectResponse getById(UUID ownerId, UUID projectId);
+    ProjectListItemResponse getById(UUID ownerId, UUID projectId);
 
-    Page<ProjectResponse> list(
+    Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
             ProjectStatus status,
