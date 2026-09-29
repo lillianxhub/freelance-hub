@@ -89,8 +89,7 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 | FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash                                                                          | Must     |
 | FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้                                                                             | Must     |
 | FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ และที่อยู่ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
-| FR-AUTH-05 | ผู้ใช้กำหนดรูปแบบวันที่ได้                                                                                                        | Must     |
-| FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้                                                           | Must     |
+| FR-AUTH-05 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้                                                           | Must     |
 
 ### 4.2 Client Management
 
@@ -206,7 +205,7 @@ erDiagram
 | Entity        | Field สำคัญ                                                                                                                   |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `User`        | id, email, passwordHash, role, isActive, deletedAt                                                                            |
-| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, dateFormat, bio, isActive, deletedAt |
+| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, bio, isActive, deletedAt |
 | `Address`     | id, address, subdistrict, district, province, postalCode                                                                      |
 | `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status                                                        |
 | `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate                                             |

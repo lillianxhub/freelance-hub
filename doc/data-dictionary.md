@@ -42,7 +42,6 @@ Indexes: `idx_users_is_active`; unique index จาก `email`; `idx_users_email
 | `province` | `varchar(100)` | Yes | | จังหวัด |
 | `postal_code` | `varchar(20)` | Yes | | รหัสไปรษณีย์ |
 | `tax_id` | `varchar(30)` | Yes | | เลขประจำตัวผู้เสียภาษี |
-| `date_format` | `varchar(20)` | Yes | `YYYY-MM-DD` | รูปแบบวันที่ |
 | `bio` | `text` | Yes | | ประวัติย่อ |
 | `is_active` | `boolean` | No | `true` | สถานะ Profile |
 | `version` | `bigint` | No | `0` | Optimistic locking |
