@@ -20,7 +20,7 @@ public class JwtTokenProvider {
     @Value("${jwt.secret:your-256-bit-secret-key-change-this-in-production-environment}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
+    @Value("${jwt.expiration:900000}") // 15 minutes in milliseconds
     private Long jwtExpiration;
 
     /**
@@ -33,6 +33,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
+                .claim("token_type", "access")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -61,11 +62,11 @@ public class JwtTokenProvider {
      */
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
+            Claims claims = Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()
-                    .parseSignedClaims(token);
-            return true;
+                    .parseSignedClaims(token).getPayload();
+            return "access".equals(claims.get("token_type", String.class));
         } catch (Exception e) {
             return false;
         }

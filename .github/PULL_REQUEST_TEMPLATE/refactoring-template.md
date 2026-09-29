@@ -1,6 +1,8 @@
+# Refactoring Pull Request Template
+
 ## Refactoring Title
 
-<!-- เขียนชื่อ PR เป็นภาษาอังกฤษให้สั้นและสื่อถึงส่วนที่รีแฟกเตอร์ -->
+<!-- Write a short and descriptive pull request title in English. -->
 
 ## Type of Change
 
@@ -8,25 +10,26 @@
 
 ## Description of Refactoring
 
-<!-- อธิบายสิ่งที่รีแฟกเตอร์และเหตุผลของการเปลี่ยนแปลง -->
+<!-- Describe what was refactored and why the change was needed. -->
 
 ## Impact of Refactoring
 
-<!-- อธิบายผลกระทบต่อความอ่านง่าย การดูแลรักษา ประสิทธิภาพ และพฤติกรรมเดิม -->
+<!-- Describe the impact on readability, maintainability, performance, and existing behavior. -->
 
 ## Testing Conducted
 
-- [ ] ทดสอบฟังก์ชันที่เกี่ยวข้องแล้ว
-- [ ] ทดสอบชุดทดสอบทั้งหมดแล้ว
-- [ ] ยืนยันว่าไม่มีการเปลี่ยนแปลงพฤติกรรมโดยไม่ตั้งใจแล้ว
+- [ ] Related functionality tested
+- [ ] Full test suite completed
+- [ ] No unintended behavior changes identified
 
 ## Additional Remarks
 
-<!-- ระบุข้อมูลเพิ่มเติมสำหรับ Reviewer -->
+<!-- Add any additional information for reviewers. -->
 
 ## Checklist
 
-- [ ] โค้ดหลังรีแฟกเตอร์ยังอ่านง่ายและดูแลรักษาได้
-- [ ] ตรวจสอบโค้ดด้วยตนเองแล้ว
-- [ ] เพิ่มหรือปรับปรุงการทดสอบที่จำเป็นแล้ว
-- [ ] ไม่มี Warning หรือ Error ใหม่
+- [ ] Refactored code remains readable and maintainable
+- [ ] Self-review completed
+- [ ] Necessary tests added or updated
+- [ ] No new warnings or errors introduced
+

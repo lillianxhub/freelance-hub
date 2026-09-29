@@ -1,13 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
+import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock } from 'react-icons/fi'
 import PageHeader from '../../../components/PageHeader'
 import StatusBadge from '../../../components/StatusBadge'
 import { ErrorState, LoadingState } from '../../../components/ViewState'
-import { useWorkspace } from '../../../Workspace/useWorkspace'
+import { useClients } from '../../useClients'
 import { calculateTimeValue, formatDate, formatDuration, formatMoney } from '../../../utils/formatters'
 
 function ClientDetailPage() {
   const { clientId } = useParams()
-  const { data, loading, error, refresh } = useWorkspace()
+  const { data, loading, error, refresh } = useClients()
 
   if (loading) return <LoadingState label="กำลังโหลดข้อมูลลูกค้า..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
@@ -25,14 +26,14 @@ function ClientDetailPage() {
 
   return (
     <div className="page-view">
-      <Link className="back-link" to="/clients">← กลับไปหน้าลูกค้า</Link>
+      <Link className="back-link" to="/clients"><FiArrowLeft aria-hidden="true" /> กลับไปหน้าลูกค้า</Link>
       <PageHeader eyebrow="พื้นที่ทำงาน / ลูกค้า" title={displayName} description={`${client.name || 'ไม่ระบุผู้ติดต่อ'} · ${client.email || 'ไม่มีอีเมล'}`} actions={<StatusBadge status={client.status} />} />
 
       <div className="summary-grid">
-        <article className="metric-card accent-blue"><div className="metric-top"><span>โปรเจกต์</span><span className="metric-icon">▦</span></div><div className="metric-value">{projects.length}</div><div className="metric-foot">ทั้งหมดของลูกค้ารายนี้</div></article>
-        <article className="metric-card accent-green"><div className="metric-top"><span>เวลาที่บันทึก</span><span className="metric-icon">◷</span></div><div className="metric-value metric-compact">{formatDuration(totalMinutes)}</div><div className="metric-foot">รวมทุกโปรเจกต์</div></article>
-        <article className="metric-card accent-violet"><div className="metric-top"><span>รายได้เกิดขึ้น</span><span className="metric-icon">฿</span></div><div className="metric-value metric-compact">{formatMoney(revenue)}</div><div className="metric-foot">จากเวลา คิดค่าบริการ</div></article>
-        <article className="metric-card accent-orange"><div className="metric-top"><span>ใบแจ้งหนี้</span><span className="metric-icon">▤</span></div><div className="metric-value">{invoices.length}</div><div className="metric-foot">ยอดรวม {formatMoney(invoices.reduce((sum, invoice) => sum + invoice.total, 0))}</div></article>
+        <article className="metric-card accent-blue"><div className="metric-top"><span>โปรเจกต์</span><span className="metric-icon"><FiBriefcase aria-hidden="true" /></span></div><div className="metric-value">{projects.length}</div><div className="metric-foot">ทั้งหมดของลูกค้ารายนี้</div></article>
+        <article className="metric-card accent-green"><div className="metric-top"><span>เวลาที่บันทึก</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatDuration(totalMinutes)}</div><div className="metric-foot">รวมทุกโปรเจกต์</div></article>
+        {/* <article className="metric-card accent-violet"><div className="metric-top"><span>รายได้เกิดขึ้น</span><span className="metric-icon">฿</span></div><div className="metric-value metric-compact">{formatMoney(revenue)}</div><div className="metric-foot">จากเวลา คิดค่าบริการ</div></article>
+        <article className="metric-card accent-orange"><div className="metric-top"><span>ใบแจ้งหนี้</span><span className="metric-icon">▤</span></div><div className="metric-value">{invoices.length}</div><div className="metric-foot">ยอดรวม {formatMoney(invoices.reduce((sum, invoice) => sum + invoice.total, 0))}</div></article> */}
       </div>
 
       <div className="detail-grid">
@@ -42,7 +43,7 @@ function ClientDetailPage() {
             <div className="list-stack">
               {projects.map((project) => {
                 const minutes = entries.filter((entry) => entry.project_id === project.id).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-                return <Link className="list-item" key={project.id} to={`/projects/${project.id}`}><span className="color-dot" style={{ '--dot-color': project.color }} /><span><strong>{project.name}</strong><small>{formatDuration(minutes)} · {project.billing_type === 'HOURLY' ? 'รายชั่วโมง' : 'เหมาจ่าย'}</small></span><StatusBadge status={project.status} /><span>→</span></Link>
+                return <Link className="list-item" key={project.id} to={`/projects/${project.id}`}><span className="color-dot" style={{ '--dot-color': project.color }} /><span><strong>{project.name}</strong><small>{formatDuration(minutes)} · {project.billing_type === 'HOURLY' ? 'รายชั่วโมง' : 'เหมาจ่าย'}</small></span><StatusBadge status={project.status} /><span><FiArrowRight aria-hidden="true" /></span></Link>
               })}
               {projects.length === 0 && <p className="inline-empty">ยังไม่มีโปรเจกต์</p>}
             </div>

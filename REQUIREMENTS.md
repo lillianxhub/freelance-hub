@@ -83,24 +83,24 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 
 ### 4.1 Authentication และ Profile
 
-| ID         | Requirement                                              | Priority |
-| ---------- | -------------------------------------------------------- | -------- |
-| FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้                 | Must     |
-| FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash | Must     |
-| FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้    | Must     |
-| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ ที่อยู่ และรูปโปรไฟล์ได้    | Must     |
-| FR-AUTH-05 | ผู้ใช้กำหนด timezone และรูปแบบวันที่ได้                  | Must     |
-| FR-AUTH-06 | ผู้ใช้ขอ reset password ผ่านอีเมลได้                     | Should   |
+| ID         | Requirement                                                                                                                       | Priority |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| FR-AUTH-01 | ผู้ใช้สมัครด้วยชื่อ อีเมล และรหัสผ่านได้                                                                                          | Must     |
+| FR-AUTH-02 | ระบบต้องไม่อนุญาตให้อีเมลซ้ำ และต้องเก็บรหัสผ่านแบบ hash                                                                          | Must     |
+| FR-AUTH-03 | ผู้ใช้เข้าสู่ระบบ ออกจากระบบ และเรียกดูข้อมูลตนเองได้                                                                             | Must     |
+| FR-AUTH-04 | ผู้ใช้แก้ไขชื่อ ข้อมูลติดต่อ และที่อยู่ได้ โดยที่อยู่ประกอบด้วย `address`, `subdistrict`, `district`, `province` และ `postalCode` | Must     |
+| FR-AUTH-05 | ผู้ใช้กำหนดรูปแบบวันที่ได้                                                                                                        | Must     |
+| FR-AUTH-06 | ผู้ใช้เปลี่ยนรหัสผ่านโดยยืนยัน `oldPassword` และกำหนด `newPassword` ได้                                                           | Must     |
 
 ### 4.2 Client Management
 
-| ID        | Requirement                                                                        | Priority |
-| --------- | ---------------------------------------------------------------------------------- | -------- |
-| FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้                                         | Must     |
-| FR-CLI-02 | ลูกค้าประกอบด้วยชื่อบุคคล/บริษัท อีเมล โทรศัพท์ ที่อยู่ เลขผู้เสียภาษี และหมายเหตุ | Must     |
-| FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้                           | Must     |
-| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์                         | Must     |
-| FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ              | Must     |
+| ID        | Requirement                                                                                                                    | Priority |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| FR-CLI-01 | ผู้ใช้สร้าง ดู แก้ไข และ archive ลูกค้าได้                                                                                     | Must     |
+| FR-CLI-02 | ลูกค้าประกอบด้วยชื่อบุคคล/บริษัท อีเมล โทรศัพท์ ที่อยู่ เลขผู้เสียภาษี และหมายเหตุ โดยที่อยู่ใช้โครงสร้างเดียวกับ User Profile | Must     |
+| FR-CLI-03 | ผู้ใช้ค้นหาและกรองลูกค้าตามชื่อ สถานะ และข้อมูลติดต่อได้                                                                       | Must     |
+| FR-CLI-04 | หน้ารายละเอียดลูกค้าต้องแสดงโปรเจกต์และเวลาในแต่ละโปรเจกต์                                                                     | Must     |
+| FR-CLI-05 | ระบบไม่อนุญาตให้ลบลูกค้าที่มีธุรกรรม แต่ให้ archive เพื่อรักษาประวัติ                                                          | Must     |
 
 ### 4.3 Project และ Task Management
 
@@ -191,6 +191,8 @@ Acceptance criteria:
 ```mermaid
 erDiagram
     USER ||--|| USER_PROFILE : has
+    USER_PROFILE ||--o| ADDRESS : uses
+    CLIENT ||--o| ADDRESS : uses
     USER ||--o{ CLIENT : owns
     USER ||--o{ PROJECT : owns
     CLIENT ||--o{ PROJECT : has
@@ -199,20 +201,33 @@ erDiagram
     TASK ||--o{ TIME_ENTRY : categorizes
 ```
 
-### 7.1 Entity ที่แนะนำ
+### 7.1 Entity
 
-| Entity        | Field สำคัญ                                                                       |
-| ------------- | --------------------------------------------------------------------------------- |
-| `User`        | id, email, passwordHash, role, enabled                                            |
-| `UserProfile` | id, userId, displayName, phone, address, timezone                                 |
-| `Client`      | id, ownerId, name, companyName, email, phone, address, taxId, status              |
-| `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate |
-| `Task`        | id, projectId, name, description, status, sortOrder                               |
-| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes  |
+| Entity        | Field สำคัญ                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `User`        | id, email, passwordHash, role, isActive, deletedAt                                                                            |
+| `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, dateFormat, bio, isActive, deletedAt |
+| `Address`     | id, address, subdistrict, district, province, postalCode                                                                      |
+| `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status                                                        |
+| `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate                                             |
+| `Task`        | id, projectId, name, description, status, sortOrder                                                                           |
+| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes                                              |
 
 ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ project
 
-ระบบมี 6 ตาราง และแสดงความสัมพันธ์ที่ใบงานกำหนดครบ ได้แก่ `User`–`UserProfile` แบบ One-to-One และ `Client`–`Project`, `Project`–`Task`, `Project`–`TimeEntry` แบบ One-to-Many ต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
+ระบบมีตารางหลัก 7 ตาราง ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` โดยมี `User`–`UserProfile` แบบ One-to-One; `user_profiles` เก็บที่อยู่แบบแยกฟิลด์ตาม Data Dictionary ส่วน `Client` ยังคงอ้างอิง `Address` แบบ One-to-One ที่เป็น optional และมีความสัมพันธ์แบบ One-to-Many ระหว่าง `Client`–`Project`, `Project`–`Task` และ `Project`–`TimeEntry` โดยต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
+
+สำหรับ Auth/User Profile ที่อยู่เก็บเป็น field ตรงใน `user_profiles` ตาม Data Dictionary และ API รับ/ส่งเป็น flat fields เพื่อให้ contract อ่านง่าย:
+
+```json
+{
+    "address": "ที่อยู่",
+    "subdistrict": "ตำบล",
+    "district": "อำเภอ",
+    "province": "จังหวัด",
+    "postalCode": "รหัสไปรษณีย์"
+}
+```
 
 ---
 
@@ -220,43 +235,27 @@ erDiagram
 
 REST API ใช้ prefix `/api` โดยไม่มี version segment และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
 
-| Method           | Endpoint                        | หน้าที่                    |
-| ---------------- | ------------------------------- | -------------------------- |
-| POST             | `/auth/register`                | สมัครสมาชิก                |
-| POST             | `/auth/login`                   | เข้าสู่ระบบ                |
-| GET/PATCH        | `/me`                           | ดู/แก้โปรไฟล์และค่าตั้งต้น |
-| GET/POST         | `/clients`                      | รายการ/สร้างลูกค้า         |
-| GET/PATCH/DELETE | `/clients/{id}`                 | ดู/แก้/archive ลูกค้า      |
-| GET/POST         | `/projects`                     | รายการ/สร้างโปรเจกต์       |
-| GET/PATCH/DELETE | `/projects/{id}`                | ดู/แก้/archive โปรเจกต์    |
-| GET/POST         | `/projects/{id}/tasks`          | รายการ/สร้าง task          |
-| GET/POST         | `/time-entries`                 | ค้นหา/เพิ่ม time entry     |
-| PATCH/DELETE     | `/time-entries/{id}`            | แก้/ลบ time entry          |
-| POST             | `/timer/start`                  | เริ่ม timer                |
-| POST             | `/timer/stop`                   | หยุด timer ปัจจุบัน        |
-| GET              | `/timer/current`                | ดู timer ปัจจุบัน          |
-| GET              | `/analytics/summary`            | KPI ตามช่วงวันที่          |
-| GET              | `/analytics/time-breakdown`     | วิเคราะห์เวลา              |
-| GET              | `/reports/time-entries.csv`     | ส่งออกเวลาเป็น CSV         |
-| Method           | Endpoint                        | หน้าที่                    |
-| ---------------- | ---------------------------     | -------------------------- |
-| POST             | `/api/auth/register`            | สมัครสมาชิก                |
-| POST             | `/api/auth/login`               | เข้าสู่ระบบ                |
-| POST             | `/api/auth/logout`              | ออกจากระบบและ revoke token |
-| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น |
-| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า         |
-| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า      |
-| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์       |
-| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์    |
-| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task          |
-| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry     |
-| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry          |
-| POST             | `/api/timer/start`              | เริ่ม timer                |
-| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน        |
-| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน          |
-| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่          |
-| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา              |
-| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV         |
+| Method           | Endpoint                        | หน้าที่                                             |
+| ---------------- | ------------------------------- | --------------------------------------------------- |
+| POST             | `/api/auth/register`            | สมัครสมาชิก                                         |
+| POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
+| POST             | `/api/auth/refresh`             | หมุน refresh token และออก access token ใหม่        |
+| POST             | `/api/auth/logout`              | เพิกถอน refresh-token family และล้าง cookie        |
+| GET/PUT          | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
+| PATCH            | `/api/users/me/password`        | เปลี่ยนรหัสผ่านด้วย `oldPassword` และ `newPassword` |
+| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า                                  |
+| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า                               |
+| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์                                |
+| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์                             |
+| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task                                   |
+| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry                              |
+| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry                                   |
+| POST             | `/api/timer/start`              | เริ่ม timer                                         |
+| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน                                 |
+| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน                                   |
+| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่                                   |
+| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา                                       |
+| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV                                  |
 
 ข้อกำหนดร่วมของ API:
 
@@ -268,7 +267,25 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 - endpoint ที่สร้างข้อมูลสำเร็จใช้ 201, อ่าน/แก้ไขสำเร็จใช้ 200, ลบหรือ archive ที่ไม่ส่ง body ใช้ 204 และข้อผิดพลาดใช้ 400/404/409/500 ตามกรณี
 - ใช้ `@Valid` และ Bean Validation กับ request DTO ทุก endpoint ที่รับข้อมูล
 - มี `@RestControllerAdvice` และ error response รูปแบบกลาง
-- ต้องเปิด OpenAPI และ Swagger UI ให้เข้าถึงได้ที่ `/swagger-ui.html` หรือ URL ที่ redirect ไปยัง Swagger UI ได้จริง
+- ต้องเปิด OpenAPI ที่ `/api-docs` และ Swagger UI ที่ `/swagger-ui.html` เฉพาะ local, dev และ staging; production ต้องปิดทั้งสอง endpoint
+
+### 8.1 Profile, address และการเปลี่ยนรหัสผ่าน
+
+- `GET/PUT /api/users/me` แสดงและแก้ไขข้อมูลของผู้ใช้ที่ authenticated เท่านั้น โดยข้อมูลที่อยู่ใช้ flat fields ชุดเดียวกันทั้ง User Profile และ Client: `address`, `subdistrict`, `district`, `province`, `postalCode`
+- `PATCH /api/users/me/password` ต้องมี bearer JWT และรับ body รูปแบบต่อไปนี้:
+
+    ```json
+    {
+        "oldPassword": "รหัสผ่านเดิม",
+        "newPassword": "รหัสผ่านใหม่"
+    }
+    ```
+
+- ระบบต้องตรวจ `oldPassword` ก่อนบันทึก hash ของ `newPassword`; รหัสผ่านเดิมผิดให้ตอบ `401` พร้อม `message: "รหัสผ่านไม่ถูกต้อง"`, ข้อมูลรหัสผ่านใหม่ไม่ผ่าน validation หรือซ้ำกับรหัสผ่านเดิมให้ตอบ `400`
+- เมื่อเปลี่ยนรหัสผ่านสำเร็จ ต้องเพิกถอน refresh-token families ทั้งหมดของผู้ใช้
+- ห้ามส่งหรือบันทึก plain-text password และห้ามใช้ email reset flow ใน MVP
+- MVP ไม่รองรับ forgot/reset password และไม่รองรับการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์; User Profile API ไม่รับหรือส่ง `profileImageUrl`/`avatarUrl`
+- การ logout หรือการเปลี่ยนรหัสผ่านต้องไม่ทำให้ข้อมูล address ของผู้ใช้อื่นเข้าถึงได้
 
 ---
 
@@ -277,7 +294,8 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 ### 9.1 Security
 
 - ใช้ Spring Security และ password hashing แบบ BCrypt หรือ Argon2
-- session/cookie ต้องเป็น `HttpOnly`, `Secure` ใน production และกำหนด `SameSite` ที่เหมาะสม หรือใช้ access token อายุสั้นร่วมกับ refresh token rotation
+- access JWT อายุ 15 นาที; refresh token แบบสุ่มอายุสูงสุด 7 วัน เก็บเฉพาะ hash ในฐานข้อมูล หมุนทุกครั้งที่ใช้ และตรวจการใช้ token เก่าซ้ำ
+- refresh cookie ต้องเป็น `HttpOnly`, `SameSite=Lax`, `Secure` ใน production และเรียกผ่าน `/api` proxy แบบ same-origin; logout ไม่เพิกถอน access JWT ก่อนหมดอายุ
 - ตรวจสอบ authorization ระดับ service ทุกครั้ง ไม่อาศัย ID จาก client เพียงอย่างเดียว
 - validate และ sanitize input; ป้องกัน SQL injection, XSS, CSRF และ brute-force login
 - ไม่บันทึกรหัสผ่าน token หรือข้อมูลธนาคารเต็มรูปแบบลง log
@@ -508,8 +526,8 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ## 18. Database และ Migration Deliverables
 
-- มีอย่างน้อย 6 ตาราง: users, user_profiles, clients, projects, tasks และ time_entries
-- มี One-to-One ระหว่าง users กับ user_profiles และ One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
+- ตารางหลักหลังย้าย JWT lifecycle: users, user_profiles, refresh_tokens, clients, projects, tasks และ time_entries; `revoked_tokens` ถูกลบด้วย forward migration หลังทดสอบ refresh flow กับ PostgreSQL และ HTTP จริงผ่าน
+- มี One-to-One ระหว่าง users กับ user_profiles และ optional One-to-One ระหว่าง clients กับ addresses รวมถึง One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
 - กำหนด Foreign Key Constraint และ index สำหรับ owner, relation, status และ date fields ที่ใช้ค้นหาบ่อย
 - กำหนด Cascade และ Fetch Type อย่างมีเหตุผล หลีกเลี่ยง `CascadeType.ALL` และ `EAGER` โดยไม่มีความจำเป็น
 - ใช้ Flyway migration ใน `code/src/main/resources/db/migration/`
@@ -587,7 +605,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - deploy Frontend และ Backend บน Cloud พร้อม environment variables สำหรับ secrets; ใช้ Supabase เป็น PostgreSQL production database
 - มี `code/Backend/Dockerfile` และ `code/Backend/docker-compose.yml` สำหรับ Backend/local database โดย deploy Backend ด้วย Root Directory `code/Backend`
 - มี React Frontend ใน `code/Frontend` และ deploy ด้วย Root Directory `code/Frontend`
-- Swagger UI ต้องเปิดใช้งานได้บน deployment
+- Swagger UI ต้องเปิดใช้งานได้บน staging deployment และต้องปิดบน production
 - test ทั้งหมดต้องผ่านและมี test report
 - frontend ต้องเชื่อม backend และสาธิต flow หลักในหัวข้อ 14 ได้จริง
 - เอกสารและ diagrams ในหัวข้อ 19 ต้องครบ
@@ -602,7 +620,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - [ ] branch ส่วนตัวทุกคนตั้งชื่อตามรูปแบบและมี commit อย่างน้อย 15 ครั้ง
 - [ ] version ส่งมอบถูก merge เข้า `main` ผ่าน Pull Request และผ่าน review
 - [ ] public Deployment URL เปิดใช้งานได้ในวันนำเสนอ
-- [ ] Swagger UI บนระบบที่ deploy เข้าถึงได้
+- [ ] Swagger UI บน staging เข้าถึงได้ และ production ไม่เปิด `/api-docs` หรือ Swagger UI
 - [ ] automated tests ผ่านและมี Test Report
 - [ ] diagrams และเอกสาร SOLID/Design Patterns/Data Dictionary ครบ
 - [ ] slide นำเสนออยู่ใน `doc/slide/`

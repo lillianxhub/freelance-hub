@@ -1,7 +1,8 @@
-# Freelance Hub MVP — Domain Class Diagram
+# Freelance Hub MVP - Domain Class Diagram
 
-Class Diagram นี้เน้น JPA Entity และพฤติกรรมของ domain ไม่รวม Controller, DTO,
-Service และ Repository เพื่อให้เห็นโครงสร้างข้อมูลหลักชัดเจน
+Class Diagram นี้อ้างอิง DBML รุ่นปรับปรุงล่าสุดของ MVP โดยไม่รวม Controller, DTO, Service และ Repository
+ข้อมูล Address ถูกเก็บแบบ embedded fields ใน `UserProfile` และ `Client` ไม่มี `Address` entity แยก
+ในเอกสารนี้ใช้ชื่อ audit field มาตรฐาน `deletedAt` แทน typo `deleate_at` จาก DBML ต้นทาง
 
 ```mermaid
 classDiagram
@@ -12,22 +13,28 @@ classDiagram
         +String email
         -String passwordHash
         +UserRole role
-        +UserStatus status
-        +boolean enabled
+        +boolean isActive
+        +Long version
+        +Instant createdAt
+        +Instant updatedAt
+        +Instant deletedAt
         +changePassword(passwordHash)
-        +disable()
+        +deactivate()
     }
     class UserProfile {
         +UUID userId
         +String displayName
-        +String phone
-        +String address
         +String firstName
         +String lastName
-        +String profileImageUrl
-        +String bio
-        +String timezone
+        +String phone
+        +String address
+        +String subdistrict
+        +String district
+        +String province
+        +String postalCode
         +String dateFormat
+        +String bio
+        +boolean isActive
         +updateContact(...)
         +changePreferences(...)
     }
@@ -39,9 +46,13 @@ classDiagram
         +String email
         +String phone
         +String address
+        +String subdistrict
+        +String district
+        +String province
+        +String postalCode
         +String taxId
         +String notes
-        +ClientStatus status
+        +boolean isActive
         +updateDetails(...)
         +archive()
     }
@@ -54,9 +65,9 @@ classDiagram
         +LocalDate startDate
         +LocalDate endDate
         +String color
-        +Currency currency
         +Integer targetMinutes
         +ProjectStatus status
+        +boolean isActive
         +changeStatus(nextStatus)
         +canTrackTime() boolean
         +progress(trackedMinutes) decimal
@@ -70,6 +81,7 @@ classDiagram
         +TaskStatus status
         +int sortOrder
         +Instant completedAt
+        +boolean isActive
         +start()
         +complete(at)
         +reorder(position)
@@ -83,28 +95,27 @@ classDiagram
         +EntryType entryType
         +Instant startedAt
         +Instant endedAt
-        +Integer durationMinutes
+        +Long durationSeconds
         +Instant lockedAt
+        +boolean isActive
         +stop(at)
         +changeDetails(...)
-        +lock(at)
         +isRunning() boolean
+    }
+    class RefreshToken {
+        +UUID id
+        +UUID userId
+        +UUID familyId
+        +String tokenHash
+        +Instant createdAt
+        +Instant expiresAt
+        +Instant usedAt
+        +Instant revokedAt
     }
     class UserRole {
         <<enumeration>>
         USER
         ADMIN
-    }
-    class UserStatus {
-        <<enumeration>>
-        ACTIVE
-        INACTIVE
-        SUSPENDED
-    }
-    class ClientStatus {
-        <<enumeration>>
-        ACTIVE
-        ARCHIVED
     }
     class ProjectStatus {
         <<enumeration>>
@@ -130,23 +141,23 @@ classDiagram
     User "1" --> "0..*" Client : owns
     User "1" --> "0..*" Project : owns
     User "1" --> "0..*" TimeEntry : owns
+    User "1" --> "0..*" RefreshToken : refreshes
     Client "1" --> "0..*" Project : projects
     Project "1" *-- "0..*" Task : tasks
     Project "1" --> "0..*" TimeEntry : entries
     Task "0..1" --> "0..*" TimeEntry : entries
     User --> UserRole
-    User --> UserStatus
-    Client --> ClientStatus
     Project --> ProjectStatus
     Task --> TaskStatus
     TimeEntry --> EntryType
 ```
 
-## แนวทาง JPA
+## Domain Rules
 
-- Association ทุกตัวใช้ `FetchType.LAZY`; โหลด graph หรือ projection เฉพาะหน้าที่ต้องใช้
-- ไม่ใช้ `CascadeType.ALL` กับข้อมูลประวัติ: อนุญาต `PERSIST/MERGE` ระหว่าง `User` กับ `UserProfile` ได้ แต่ไม่ cascade remove จาก Client/Project ไปยังประวัติ
-- ใส่ `@Version` ใน mutable entities เพื่อป้องกัน lost update โดยเฉพาะ `Project` และ `TimeEntry`
-- Service ต้องตรวจ ownership ทุกครั้ง แม้ฐานข้อมูลจะมี composite FK ช่วยรักษาความสอดคล้องอยู่แล้ว
-- Domain method เป็นผู้ควบคุม transition และ invariant; setter ของ status/time ไม่ควรเปิดเป็น public
-
+- Address fields are embedded in `UserProfile` and `Client`; there is no `Address` class.
+- Client and Project ownership is enforced by composite `(client_id, owner_id)` relationship.
+- Project and TimeEntry ownership is enforced by composite `(project_id, owner_id)` relationship.
+- A selected Task must belong to the same Project as the TimeEntry.
+- `isActive` and `deletedAt` implement soft delete; `status` remains only for Project and Task workflow.
+- `durationSeconds` is used for accurate time tracking; `lockedAt` marks an entry as immutable when set.
+- Service layer must verify ownership before every read or mutation.

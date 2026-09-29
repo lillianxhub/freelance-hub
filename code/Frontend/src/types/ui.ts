@@ -3,6 +3,7 @@ import type {
   PropsWithChildren,
   ReactNode,
 } from 'react'
+import type { IconType } from 'react-icons'
 import type { ClientStatus } from './client'
 import type { ProjectStatus } from './project'
 import type { TaskStatus } from './task'
@@ -30,7 +31,7 @@ export interface PageHeaderProps {
 export interface SidebarLinkProps {
   to: string
   label: string
-  icon: string
+  icon: IconType
   badge?: number
 }
 
@@ -59,7 +60,7 @@ export interface ErrorStateProps {
 }
 
 export interface EmptyStateProps {
-  icon?: string
+  icon?: ReactNode
   title: string
   description: string
   action?: ReactNode

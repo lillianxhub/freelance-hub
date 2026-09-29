@@ -22,6 +22,12 @@ export interface ManualTimeEntryPayload {
   durationMinutes?: number
 }
 
+export interface StartTimerPayload {
+  projectId: string
+  taskId?: string
+  description?: string
+}
+
 export interface UpdateTimeEntryPayload {
   projectId?: string
   taskId?: string

@@ -2,21 +2,21 @@
 
 :root {
   font-family: "DM Sans", "Prompt", system-ui, sans-serif;
-  color: #172033;
-  background: #f6f7fb;
+  color: #0F172A;
+  background: #FFFFFF;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; min-height: 100%; background: #f6f7fb; }
-body { min-width: 320px; min-height: 100vh; margin: 0; }
+html { min-width: 320px; min-height: 100%; background: #FFFFFF; }
+body { min-width: 320px; min-height: 100vh; margin: 0; font-size: var(--font-size-base, 14px); }
 body.modal-open { overflow: hidden; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 3px solid rgba(56, 103, 244, 0.24);
+  outline: 3px solid rgba(79, 107, 255, 0.24);
   outline-offset: 2px;
 }
 a { color: inherit; }

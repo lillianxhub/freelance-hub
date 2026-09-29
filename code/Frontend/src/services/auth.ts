@@ -1,4 +1,4 @@
-import { api, getApiToken, setApiToken } from '../api/apiClient'
+import { api, refreshApiToken, setApiToken } from '../api/apiClient'
 import { ApiError } from '../api/apiError'
 import type { AuthResponse, AuthSession, AuthUser, BackendUser, RegisterInput } from '../types/auth'
 
@@ -7,10 +7,10 @@ function toAuthUser(user: BackendUser): AuthUser {
 }
 
 export async function getCurrentSession(): Promise<AuthSession | null> {
-  if (!getApiToken()) return null
+  if (!await refreshApiToken()) return null
   try {
-    const user = await api.get<BackendUser>('/users/me')
-    return { user: toAuthUser(user) }
+    const response = await api.get<BackendUser>('/users/me')
+    return { user: toAuthUser(response.data) }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       setApiToken(null)
@@ -21,9 +21,14 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
 }
 
 export async function signIn(email: string, password: string): Promise<AuthSession> {
-  const result = await api.post<AuthResponse>('/auth/login', { email: email.trim(), password })
-  setApiToken(result.token)
-  return { user: toAuthUser(result.user) }
+  const response = await api.post<AuthResponse>('/auth/login', { email: email.trim(), password })
+  setApiToken(response.data.token)
+  if (typeof BroadcastChannel !== 'undefined') {
+    const channel = new BroadcastChannel('freelance-hub-auth')
+    channel.postMessage('login')
+    channel.close()
+  }
+  return { user: toAuthUser(response.data.user) }
 }
 
 export async function signUp(input: RegisterInput): Promise<void> {
@@ -39,16 +44,27 @@ export async function signUp(input: RegisterInput): Promise<void> {
 
 export async function signOut(): Promise<void> {
   try {
-    if (getApiToken()) await api.post<void>('/auth/logout')
+    await api.post<void>('/auth/logout')
   } finally {
     setApiToken(null)
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('freelance-hub-auth')
+      channel.postMessage('logout')
+      channel.close()
+    }
   }
 }
 
 export function subscribeToAuthChanges(callback: (session: AuthSession | null) => void): () => void {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === 'freelance-hub-api-token') getCurrentSession().then(callback)
+  if (typeof BroadcastChannel === 'undefined') return () => {}
+  const channel = new BroadcastChannel('freelance-hub-auth')
+  channel.onmessage = (event: MessageEvent) => {
+    if (event.data === 'logout') {
+      setApiToken(null)
+      callback(null)
+    } else if (event.data === 'login') {
+      getCurrentSession().then(callback).catch(() => callback(null))
+    }
   }
-  window.addEventListener('storage', onStorage)
-  return () => window.removeEventListener('storage', onStorage)
+  return () => channel.close()
 }

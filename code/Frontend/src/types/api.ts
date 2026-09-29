@@ -2,27 +2,45 @@ export type ApiOptions = Omit<RequestInit, 'method' | 'body'>
 
 export type JsonMethod = 'POST' | 'PUT' | 'PATCH'
 
-export interface ApiPage<T> {
-  content: T[]
-  totalElements: number
+export interface ApiMeta {
+  page: number
+  limit: number
+  total: number
   totalPages: number
-  size: number
-  number: number
+}
+
+export interface ApiResponseError {
+  code?: string
+  message?: string
+  details?: unknown
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+  meta: ApiMeta | null
+  error: ApiResponseError | null
 }
 
 export interface ApiUser {
   id: string
   email: string
-  displayName?: string
-  firstName?: string
-  lastName?: string
-  phone?: string
-  address?: string
-  city?: string
-  country?: string
-  postalCode?: string
-  timezone?: string
-  dateFormat?: string
+  role?: 'USER' | 'ADMIN'
+  isActive?: boolean
+  createdAt?: string
+  displayName?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  address?: string | null
+  subdistrict?: string | null
+  district?: string | null
+  province?: string | null
+  postalCode?: string | null
+  taxId?: string | null
+  dateFormat?: string | null
+  bio?: string | null
 }
 
 export interface ApiClient {
