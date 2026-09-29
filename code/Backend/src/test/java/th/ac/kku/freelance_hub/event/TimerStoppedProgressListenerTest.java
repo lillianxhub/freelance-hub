@@ -55,7 +55,7 @@ class TimerStoppedProgressListenerTest {
                 any(TimeEntryFilterRequest.class)
         )).thenReturn(
                 TimeEntrySummaryResponse.builder()
-                        .totalMinutes(110)
+                        .totalSeconds(110 * 60)
                         .build()
         );
 
@@ -102,7 +102,7 @@ class TimerStoppedProgressListenerTest {
                 OWNER_ID,
                 PROJECT_ID,
                 null,
-                durationMinutes,
+                durationMinutes * 60L,
                 startedAt,
                 startedAt.plusSeconds(durationMinutes * 60L)
         );

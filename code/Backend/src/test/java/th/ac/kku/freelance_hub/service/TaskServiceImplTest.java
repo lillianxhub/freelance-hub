@@ -118,9 +118,13 @@ class TaskServiceImplTest {
         );
         Task task = taskRepository.findById(response.getId()).orElseThrow();
         TimeEntry entry = timeEntryRepository.saveAndFlush(
-                TimeEntry.createManualWithDuration(
-                        owner, project, task, "Work",
-                        Instant.parse("2026-01-01T10:00:00Z"), 30
+                TimeEntry.createManualWithDurationSeconds(
+                        owner,
+                        project,
+                        task,
+                        "Work",
+                        Instant.parse("2026-01-01T10:00:00Z"),
+                        1800
                 )
         );
         UUID ownerId = owner.getId();
@@ -627,6 +631,3 @@ class TaskServiceImplTest {
                         .boxed().toList());
     }
 }
-
-
-        

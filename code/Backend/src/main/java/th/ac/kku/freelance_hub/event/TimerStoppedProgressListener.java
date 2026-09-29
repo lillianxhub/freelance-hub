@@ -41,22 +41,22 @@ public class TimerStoppedProgressListener {
             return;
         }
 
-        long currentMinutes = timeEntryQueryService.summarize(
+        long currentSeconds = timeEntryQueryService.summarize(
                 event.ownerId(),
                 TimeEntryFilterRequest.builder()
                         .projectId(event.projectId())
                         .build()
-        ).getTotalMinutes();
+        ).getTotalSeconds();
 
-        long previousMinutes = Math.max(
+        long previousSeconds = Math.max(
                 0L,
-                currentMinutes - event.durationMinutes()
+                currentSeconds - event.durationSeconds()
         );
 
         for (int threshold : ProjectProgressThresholds.newlyReached(
-                previousMinutes,
+                previousSeconds / 60,
                 project.getTargetMinutes(),
-                currentMinutes,
+                currentSeconds / 60,
                 project.getTargetMinutes()
         )) {
             eventPublisher.publishEvent(

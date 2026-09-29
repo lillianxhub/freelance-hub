@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -34,19 +36,22 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final TimeEntryMapper timeEntryMapper;
+    private final Clock clock;
 
     public TimeEntryServiceImpl(
             TimeEntryRepository timeEntryRepository,
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             UserRepository userRepository,
-            TimeEntryMapper timeEntryMapper
+            TimeEntryMapper timeEntryMapper,
+            Clock clock
     ) {
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.timeEntryMapper = timeEntryMapper;
+        this.clock = clock;
     }
 
     @Override
@@ -74,13 +79,13 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                     request.getEndedAt()
             );
         } else {
-            entry = TimeEntry.createManualWithDuration(
+            entry = TimeEntry.createManualWithDurationSeconds(
                     owner,
                     project,
                     task,
                     request.getDescription(),
                     request.getStartedAt(),
-                    request.getDurationMinutes()
+                    request.getDurationSeconds()
             );
         }
 
@@ -104,33 +109,31 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             throw new TimeEntryLockedException(entryId);
         }
 
-        boolean projectChanged = request.getProjectId() != null;
-        boolean detailsChanged = projectChanged
-                || request.getTaskId() != null
-                || request.isClearTask()
-                || request.getDescription() != null;
-
-        Project targetProject = projectChanged
-                ? findOwnedProject(ownerId, request.getProjectId())
-                : entry.getProject();
-        Task targetTask = resolveUpdatedTask(
-                request,
-                entry,
-                targetProject,
+        Project targetProject = findOwnedProject(
                 ownerId,
-                projectChanged
+                request.getProjectId()
         );
-        String targetDescription = request.getDescription() != null
-                ? request.getDescription()
-                : entry.getDescription();
+        Task targetTask = findTask(
+                request.getTaskId(),
+                targetProject.getId(),
+                ownerId
+        );
 
-        if (request.getStartedAt() != null) {
+        if (request.getEndedAt() != null) {
             entry.updateTimeRange(request.getStartedAt(), request.getEndedAt());
+        } else {
+            entry.updateTimeRangeWithDurationSeconds(
+                    request.getStartedAt(),
+                    request.getDurationSeconds()
+            );
         }
-        if (detailsChanged) {
-            entry.updateDetails(targetProject, targetTask, targetDescription);
-        }
+        entry.updateDetails(
+                targetProject,
+                targetTask,
+                request.getDescription()
+        );
 
+        timeEntryRepository.flush();
         return timeEntryMapper.toResponse(entry);
     }
 
@@ -150,7 +153,8 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             );
         }
 
-        timeEntryRepository.delete(entry);
+        entry.softDelete(Instant.now(clock));
+        timeEntryRepository.flush();
     }
 
     private User findOwner(UUID ownerId) {
@@ -176,56 +180,40 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     private TimeEntry findOwnedEntry(UUID ownerId, UUID entryId) {
-        return timeEntryRepository.findByIdAndOwnerId(entryId, ownerId)
+        return timeEntryRepository
+                .findByIdAndOwnerIdAndIsActiveTrue(entryId, ownerId)
                 .orElseThrow(() -> new TimeEntryNotFoundException(entryId));
-    }
-
-    private Task resolveUpdatedTask(
-            UpdateTimeEntryRequest request,
-            TimeEntry entry,
-            Project targetProject,
-            UUID ownerId,
-            boolean projectChanged
-    ) {
-        if (request.isClearTask()) {
-            return null;
-        }
-        if (request.getTaskId() != null) {
-            return findTask(
-                    request.getTaskId(),
-                    targetProject.getId(),
-                    ownerId
-            );
-        }
-        return projectChanged ? null : entry.getTask();
     }
 
     private static void validateManualTimeInput(
             ManualTimeEntryRequest request
     ) {
         boolean hasEndTime = request.getEndedAt() != null;
-        boolean hasDuration = request.getDurationMinutes() != null;
+        boolean hasDuration = request.getDurationSeconds() != null;
         if (hasEndTime == hasDuration) {
             throw new IllegalArgumentException(
-                    "Provide either end time or duration minutes, but not both"
+                    "Provide either end time or duration seconds, but not both"
             );
         }
     }
 
     private static void validateUpdateRequest(UpdateTimeEntryRequest request) {
-        if (!request.isAnyFieldProvided()) {
+        if (request.getProjectId() == null) {
+            throw new IllegalArgumentException("Project ID is required");
+        }
+        if (request.getStartedAt() == null) {
+            throw new IllegalArgumentException("Start time is required");
+        }
+        boolean hasEndTime = request.getEndedAt() != null;
+        boolean hasDuration = request.getDurationSeconds() != null;
+        if (hasEndTime == hasDuration) {
             throw new IllegalArgumentException(
-                    "At least one field must be provided"
+                    "Provide either end time or duration seconds, but not both"
             );
         }
-        if (!request.isTaskUpdateValid()) {
+        if (hasDuration && request.getDurationSeconds() <= 0) {
             throw new IllegalArgumentException(
-                    "Task ID and clear task cannot be used together"
-            );
-        }
-        if (!request.isTimeRangeComplete()) {
-            throw new IllegalArgumentException(
-                    "Start time and end time must be provided together"
+                    "Duration seconds must be greater than zero"
             );
         }
         if (!request.isTimeRangeValid()) {
