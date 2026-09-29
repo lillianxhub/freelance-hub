@@ -38,7 +38,7 @@ import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
-import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
+import th.ac.kku.freelance_hub.exception.ClientExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -59,7 +59,7 @@ class ClientControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(new ClientController(clientService, userService))
-            .setControllerAdvice(new GlobalExceptionHandler())
+            .setControllerAdvice(new ClientExceptionHandler())
             .setValidator(validator)
             .build();
         clientId = UUID.randomUUID();
@@ -91,7 +91,13 @@ class ClientControllerTest {
         mockMvc.perform(post("/api/clients")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+            .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.error.details.name").exists());
 
         verify(clientService, never()).create(any(), any());
     }
@@ -206,7 +212,13 @@ class ClientControllerTest {
         when(clientService.getById(OWNER_ID, clientId)).thenThrow(new ClientNotFoundException(clientId));
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("Client not found with id: " + clientId))
+            .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"))
+            .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).getById(OWNER_ID, clientId);
     }

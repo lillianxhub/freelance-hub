@@ -55,7 +55,11 @@ class ClientIntegrationTest {
     @Test
     void unauthenticatedClientRequestIsRejected() throws Exception {
         mockMvc.perform(get("/api/clients"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"));
     }
 
     @Test
@@ -74,6 +78,8 @@ class ClientIntegrationTest {
                         .value("Page of clients returned"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description")
                         .value("Client not found"))
+                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema['$ref']")
+                        .value(org.hamcrest.Matchers.hasItem("#/components/schemas/ApiResult")))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description")
                         .value("Client updated"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].delete.responses['204'].description")
@@ -187,6 +193,31 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.data.district").value("Mueang Lop Buri"))
                 .andExpect(jsonPath("$.data.province").value("Lop Buri"))
                 .andExpect(jsonPath("$.data.postalCode").value("15000"));
+    }
+
+    @Test
+    void clientValidationAndNotFoundErrorsUseApiResult() throws Exception {
+        String token = registerAndGetToken("client-error-envelope@example.com");
+
+        mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details.name").exists());
+
+        mockMvc.perform(get("/api/clients/{id}", UUID.randomUUID())
+                .header("Authorization", bearer(token)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"));
     }
 
     @Test

@@ -33,8 +33,6 @@ import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.ChangeClientStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
-import th.ac.kku.freelance_hub.exception.ErrorResponse;
-import th.ac.kku.freelance_hub.exception.ValidationErrorResponse;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
 
@@ -49,8 +47,8 @@ public class ClientController {
 
     @Operation(summary = "Create a client", description = "Create a client for the authenticated user")
     @ApiResponse(responseCode = "201", description = "Client created", content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> create(
@@ -63,8 +61,8 @@ public class ClientController {
 
     @Operation(summary = "List clients", description = "List the authenticated user's clients with optional filters, sorting, and pagination")
     @ApiResponse(responseCode = "200", description = "Page of clients returned", content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "400", description = "Invalid filter, sorting, or pagination options")
-    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "400", description = "Invalid filter, sorting, or pagination options", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<List<ClientResponse>>> list(
@@ -84,8 +82,8 @@ public class ClientController {
 
     @Operation(summary = "Get a client", description = "Get one client belonging to the authenticated user by ID")
     @ApiResponse(responseCode = "200", description = "Client returned", content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> getById(
@@ -97,9 +95,9 @@ public class ClientController {
 
     @Operation(summary = "Replace a client", description = "Replace editable details of a client belonging to the authenticated user")
     @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> replace(
@@ -111,9 +109,9 @@ public class ClientController {
 
     @Operation(summary = "Update a client", description = "Update fields of a client belonging to the authenticated user")
     @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> update(
@@ -126,9 +124,9 @@ public class ClientController {
 
     @Operation(summary = "Change client status", description = "Activate or deactivate a client by updating only its is_active flag")
     @ApiResponse(responseCode = "200", description = "Client status updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{id}/status")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> changeStatus(
@@ -141,8 +139,8 @@ public class ClientController {
     /** Soft-delete: preserve the client and its active status while hiding it from Client APIs. */
     @Operation(summary = "Soft-delete a client", description = "Set deleted_at without changing is_active, while preserving client history")
     @ApiResponse(responseCode = "204", description = "Client soft-deleted", content = @Content)
-    @ApiResponse(responseCode = "401", description = "Authentication required")
-    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
