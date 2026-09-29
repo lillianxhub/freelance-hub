@@ -226,7 +226,7 @@ class TimerServiceImplTest {
 
     @Test
     void rejectsTimerForArchivedClient() {
-        project.getClient().archive();
+        project.getClient().setActive(false);
         stubOwnedUserAndProject();
 
         assertThatThrownBy(() -> timerService.startTimer(
