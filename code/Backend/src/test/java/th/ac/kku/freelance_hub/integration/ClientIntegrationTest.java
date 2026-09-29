@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -133,6 +134,35 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.meta.total").value(1))
                 .andExpect(jsonPath("$.data[0].name").value("Address Match"))
                 .andExpect(jsonPath("$.data[0].address").value("123 Main Road"));
+    }
+
+    @Test
+    void ownerCanReplaceClientWithoutChangingOwnershipOrStatus() throws Exception {
+        String ownerToken = registerAndGetToken("client-replace-owner@example.com");
+        String otherToken = registerAndGetToken("client-replace-other@example.com");
+        String createdBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Original\",\"companyName\":\"Acme\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(createdBody).path("data").path("id").asText());
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Stolen\"}"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Replaced\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Replaced"))
+                .andExpect(jsonPath("$.data.companyName").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
     }
 
     @Test

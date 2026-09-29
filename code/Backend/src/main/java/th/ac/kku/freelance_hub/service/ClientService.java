@@ -19,6 +19,9 @@ public interface ClientService {
 
     Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter);
 
+    /** Replace all editable client details; omitted optional fields are cleared. */
+    ClientResponse replace(UUID ownerId, UUID clientId, CreateClientRequest request);
+
     ClientResponse update(UUID ownerId, UUID clientId, UpdateClientRequest request);
 
     /** Archive a client while preserving its project and time history. */

@@ -22,6 +22,15 @@ public class ClientMapper {
         return client;
     }
 
+    /** Replaces all editable fields; omitted optional values are cleared. */
+    public void replaceEntity(CreateClientRequest request, Client client) {
+        Objects.requireNonNull(request, "request is required");
+        Objects.requireNonNull(client, "client is required");
+        client.updateDetailsWithAddress(request.getName(), request.getCompanyName(), request.getEmail(),
+            request.getPhone(), request.getAddress(), request.getSubdistrict(), request.getDistrict(),
+            request.getProvince(), request.getPostalCode(), request.getTaxId(), request.getNotes());
+    }
+
     public void updateEntity(UpdateClientRequest request, Client client) {
         Objects.requireNonNull(request, "request is required");
         Objects.requireNonNull(client, "client is required");

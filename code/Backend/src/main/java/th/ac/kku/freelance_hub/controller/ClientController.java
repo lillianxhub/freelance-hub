@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -89,6 +90,20 @@ public class ClientController {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
                 "Client retrieved", clientService.getById(ownerId, id)));
+    }
+
+    @Operation(summary = "Replace a client", description = "Replace editable details of a client belonging to the authenticated user")
+    @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = th.ac.kku.freelance_hub.dto.response.ApiResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<ClientResponse>> replace(
+            @PathVariable UUID id, @Valid @RequestBody CreateClientRequest request) {
+        UUID ownerId = userService.getCurrentUserEntity().getId();
+        return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
+                "Client updated", clientService.replace(ownerId, id, request)));
     }
 
     @Operation(summary = "Update a client", description = "Update fields of a client belonging to the authenticated user")

@@ -110,6 +110,14 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
+    public ClientResponse replace(UUID ownerId, UUID clientId, CreateClientRequest request) {
+        Client client = findOwnedClient(ownerId, clientId);
+        clientMapper.replaceEntity(request, client);
+        return clientMapper.toResponse(clientRepository.save(client));
+    }
+
+    @Override
+    @Transactional
     public ClientResponse update(UUID ownerId, UUID clientId, UpdateClientRequest request) {
         Client client = findOwnedClient(ownerId, clientId);
         clientMapper.updateEntity(request, client);

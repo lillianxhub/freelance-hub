@@ -94,6 +94,30 @@ class ClientServiceImplTest {
     }
 
     @Test
+    void replaceClearsUnspecifiedOptionalFields() {
+        client.updateDetails("Existing Client", "Acme", "old@example.com", null, null, null, null);
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+        when(clientRepository.save(client)).thenReturn(client);
+
+        service.replace(OWNER_ID, clientId, CreateClientRequest.builder().name("New Name").build());
+
+        assertThat(client.getName()).isEqualTo("New Name");
+        assertThat(client.getCompanyName()).isNull();
+        assertThat(client.getEmail()).isNull();
+        verify(clientRepository).save(client);
+    }
+
+    @Test
+    void replaceCannotChangeAnotherOwnersClient() {
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.replace(OWNER_ID, clientId,
+            CreateClientRequest.builder().name("New Name").build()))
+            .isInstanceOf(ClientNotFoundException.class);
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
     void archivePreservesClientAndChangesStatus() {
         when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
 

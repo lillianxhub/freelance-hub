@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -207,6 +208,49 @@ class ClientControllerTest {
             .andExpect(status().isNotFound());
 
         verify(clientService).getById(OWNER_ID, clientId);
+    }
+
+    @Test
+    void replaceUsesCurrentUserAndReturnsWrappedClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class)))
+            .thenReturn(ClientResponse.builder().id(clientId).name("New Name").build());
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"New Name\",\"ownerId\":999}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Client updated"))
+            .andExpect(jsonPath("$.data.id").value(clientId.toString()))
+            .andExpect(jsonPath("$.data.name").value("New Name"));
+
+        verify(clientService).replace(eq(OWNER_ID), eq(clientId),
+            org.mockito.ArgumentMatchers.argThat(request -> request.getName().equals("New Name")));
+    }
+
+    @Test
+    void replaceRejectsMissingNameBeforeCallingService() throws Exception {
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest());
+
+        verify(clientService, never()).replace(any(), any(), any());
+    }
+
+    @Test
+    void replaceReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
+        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(clientService.replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class)))
+            .thenThrow(new ClientNotFoundException(clientId));
+
+        mockMvc.perform(put("/api/clients/{id}", clientId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"New Name\"}"))
+            .andExpect(status().isNotFound());
+
+        verify(clientService).replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class));
     }
 
     @Test
