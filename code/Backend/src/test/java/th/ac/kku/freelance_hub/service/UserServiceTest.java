@@ -111,7 +111,7 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.updateCurrentUser(request))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessage("User profile is not available");
+            .hasMessage("ไม่พบข้อมูลโปรไฟล์ผู้ใช้");
 
         verify(userRepository, never()).save(any());
         verifyNoInteractions(userMapper);
@@ -142,7 +142,7 @@ class UserServiceTest {
             .newPassword("same-password")
             .build()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("differ");
+            .hasMessage("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
 
         verify(userRepository, never()).save(any());
         verifyNoInteractions(refreshTokenService);

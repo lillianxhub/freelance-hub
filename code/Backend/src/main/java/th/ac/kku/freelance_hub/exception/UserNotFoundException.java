@@ -8,10 +8,10 @@ import java.util.UUID;
 public class UserNotFoundException extends RuntimeException {
 
     public UserNotFoundException(UUID id) {
-        super("User not found with id: " + id);
+        super("ไม่พบผู้ใช้รหัส: " + id);
     }
 
     public UserNotFoundException(String email) {
-        super("User not found with email: " + email);
+        super("ไม่พบผู้ใช้อีเมล: " + email);
     }
 }
