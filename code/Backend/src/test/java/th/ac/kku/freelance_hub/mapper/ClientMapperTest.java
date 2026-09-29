@@ -140,6 +140,7 @@ class ClientMapperTest {
         assertThat(response.getId()).isEqualTo(id);
         assertThat(response.getName()).isEqualTo("Alice");
         assertThat(response.getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(response.getIsActive()).isTrue();
         assertThat(response.getCreatedAt()).isEqualTo(createdAt);
         assertThat(response.getUpdatedAt()).isEqualTo(updatedAt);
         assertThat(response.getVersion()).isEqualTo(2L);
