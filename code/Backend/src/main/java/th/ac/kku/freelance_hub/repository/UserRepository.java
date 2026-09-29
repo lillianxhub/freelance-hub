@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 import th.ac.kku.freelance_hub.domain.entity.User;
 
@@ -17,6 +18,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Find user by email
      */
     Optional<User> findByEmail(String email);
+
+    @EntityGraph(attributePaths = "profile")
+    Optional<User> findWithProfileById(UUID id);
 
     /**
      * Check if email already exists

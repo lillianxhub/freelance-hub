@@ -104,23 +104,22 @@ erDiagram
         timestamptz deleted_at
         bigint version
     }
-    REVOKED_TOKENS {
+    REFRESH_TOKENS {
         uuid id PK
-        varchar jti UK
         uuid user_id FK
-        timestamptz expires_at
-        timestamptz revoked_at
-        boolean is_active
+        uuid family_id
+        varchar token_hash UK
         timestamptz created_at
-        timestamptz updated_at
-        timestamptz deleted_at
+        timestamptz expires_at
+        timestamptz used_at
+        timestamptz revoked_at
     }
 
     USERS ||--|| USER_PROFILES : has
     USERS ||--o{ CLIENTS : owns
     USERS ||--o{ PROJECTS : owns
     USERS ||--o{ TIME_ENTRIES : owns
-    USERS ||--o{ REVOKED_TOKENS : revokes
+    USERS ||--o{ REFRESH_TOKENS : refreshes
     CLIENTS ||--o{ PROJECTS : serves
     PROJECTS ||--o{ TASKS : contains
     PROJECTS ||--o{ TIME_ENTRIES : records
@@ -130,7 +129,7 @@ erDiagram
 ## Cardinality and Constraints
 
 - `users` 1 - 1 `user_profiles`: `user_profiles.user_id` is both PK and FK.
-- `users` 1 - N `clients`, `projects`, `time_entries`, and `revoked_tokens`.
+- `users` 1 - N `clients`, `projects`, `time_entries`, and `refresh_tokens`.
 - `clients` 1 - N `projects`; the actual FK is composite `(projects.client_id, projects.owner_id)` -> `(clients.id, clients.owner_id)`.
 - `projects` 1 - N `tasks` and `time_entries`; the TimeEntry relationship uses `(project_id, owner_id)` to prevent cross-user references.
 - `tasks` 0..1 - N `time_entries`; when selected, `(task_id, project_id)` must match the same Project.

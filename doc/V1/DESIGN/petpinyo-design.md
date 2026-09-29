@@ -10,12 +10,12 @@
 | Layered Architecture | แยก presentation, business logic, persistence และ domain | `controller/AuthController`, `service/AuthServiceImpl`, `repository/UserRepository`, `domain/entity/User` |
 | MVC / REST Controller | แยกการรับ HTTP และ response status จาก business logic | `controller/AuthController.java:22-105`, `controller/UserController.java:14-41` |
 | Service Layer | รวม use case authentication ไว้ใน boundary เดียว | `service/AuthService.java:7-15`, `service/impl/AuthServiceImpl.java:33-87` |
-| Repository | ซ่อนรายละเอียด JPA data access | `repository/UserRepository.java:13-25`, `UserProfileRepository.java:11-13`, `RevokedTokenRepository.java:9-14` |
+| Repository | ซ่อนรายละเอียด JPA data access | `repository/UserRepository`, `RefreshTokenRepository` |
 | DTO + Mapper | แยก API contract จาก JPA entity และ password field | `dto/request/RegisterRequest`, `dto/response/AuthResponse`, `dto/response/UserResponse`, `mapper/UserMapper.java:18-58` |
 | Dependency Injection | เปลี่ยน implementation และทดสอบด้วย mock ได้ | `AuthServiceImpl.java:22-31`, `SecurityConfig.java:66-80` |
 | JWT Bearer Token | ทำ authentication แบบ stateless | `security/JwtTokenProvider.java:29-72`, `config/SecurityConfig.java:57-61` |
 | Security Filter | ตรวจ bearer token ก่อน request ถึง controller | `security/JwtAuthenticationFilter.java:30-66` |
-| Token Revocation / Deny-list | ทำให้ logout ยกเลิก token ก่อนหมดอายุได้ | `domain/entity/RevokedToken.java:19-58`, `service/RevokedTokenService.java:18-30`, `JwtAuthenticationFilter.java:39-44` |
+| Refresh Token Rotation | หมุน token ทุกครั้งและปิด family เมื่อตรวจพบ replay | `domain/entity/RefreshToken`, `service/RefreshTokenService` |
 
 ## Class Diagram
 
@@ -26,8 +26,9 @@ classDiagram
     class AuthService {
         <<interface>>
         +register(RegisterRequest) AuthResponse
-        +login(LoginRequest) AuthResponse
-        +logout(token, email) void
+        +login(LoginRequest) AuthSessionResult
+        +refresh(token) AuthSessionResult
+        +logout(token) void
     }
     class AuthServiceImpl
     class UserRepository {
@@ -37,7 +38,7 @@ classDiagram
     }
     class JwtTokenProvider
     class JwtAuthenticationFilter
-    class RevokedTokenService
+    class RefreshTokenService
     class UserService {
         +updateCurrentUser(UpdateUserProfileRequest) UserResponse
         +changePassword(ChangePasswordRequest) void
@@ -66,12 +67,11 @@ classDiagram
     AuthServiceImpl ..|> AuthService
     AuthServiceImpl --> UserRepository
     AuthServiceImpl --> JwtTokenProvider
-    AuthServiceImpl --> RevokedTokenService
+    AuthServiceImpl --> RefreshTokenService
     UserController --> UserService
     User "1" o-- "0..1" UserProfile
     Client "1" --> "0..1" Address : addressId
     JwtAuthenticationFilter --> JwtTokenProvider
-    JwtAuthenticationFilter --> RevokedTokenService
 ```
 
 ## Password และ address contract

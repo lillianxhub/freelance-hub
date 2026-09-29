@@ -13,7 +13,7 @@ import {
   ErrorState,
   LoadingState,
 } from "../../../components/ViewState";
-import { useWorkspace } from "../../../Workspace/useWorkspace";
+import { useTimeEntries } from "../../useTimeEntries";
 import type { TimeEntry } from "../../../types/timeTracking";
 import type { RangePreset, TimeFilters } from "../../../types/timeTrackerPage";
 import TimerPanel from "../../components/TimerPanel";
@@ -34,7 +34,8 @@ import { getErrorMessage } from "../../../api/apiError";
 import type { Task } from "../../../types/task";
 
 function TimeTrackerPage() {
-  const { data, loading, error, refresh, save, remove } = useWorkspace();
+  const workspace = useTimeEntries();
+  const { data, loading, error, refresh, save, remove } = workspace;
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState(createEmptyManualForm());
   const [manualTasks, setManualTasks] = useState<Task[]>([]);
@@ -284,7 +285,7 @@ function TimeTrackerPage() {
       />
 
       <div className="tracker-layout">
-        <TimerPanel />
+        <TimerPanel workspace={workspace} />
 
         <TimeSummary
           totalMinutes={totalMinutes}

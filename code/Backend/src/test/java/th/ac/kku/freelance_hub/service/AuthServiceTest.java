@@ -55,7 +55,7 @@ class AuthServiceTest {
         private UserMapper userMapper;
 
         @Mock
-        private RevokedTokenService revokedTokenService;
+        private RefreshTokenService refreshTokenService;
 
         @InjectMocks
         private AuthServiceImpl authService;
@@ -112,7 +112,7 @@ class AuthServiceTest {
                 when(userMapper.toProfile(registerRequest)).thenReturn(userProfile);
                 when(userRepository.save(any(User.class))).thenReturn(user);
                 when(tokenProvider.generateToken(user.getEmail())).thenReturn("jwt-token");
-                when(tokenProvider.getExpirationTime()).thenReturn(86400000L);
+                when(tokenProvider.getExpirationTime()).thenReturn(900000L);
                 when(userMapper.toResponse(user)).thenReturn(userResponse);
 
                 // When
@@ -121,7 +121,7 @@ class AuthServiceTest {
                 // Then
                 assertThat(response).isNotNull();
                 assertThat(response.getToken()).isEqualTo("jwt-token");
-                assertThat(response.getExpiresIn()).isEqualTo(86400000L);
+                assertThat(response.getExpiresIn()).isEqualTo(900000L);
                 assertThat(response.getUser()).isEqualTo(userResponse);
 
                 verify(userRepository).existsByEmail(registerRequest.getEmail());
@@ -155,17 +155,21 @@ class AuthServiceTest {
                                 .thenReturn(authentication);
                 when(userRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.of(user));
                 when(tokenProvider.generateToken(loginRequest.getEmail())).thenReturn("jwt-token");
-                when(tokenProvider.getExpirationTime()).thenReturn(86400000L);
+                when(tokenProvider.getExpirationTime()).thenReturn(900000L);
                 when(userMapper.toResponse(user)).thenReturn(userResponse);
+                when(refreshTokenService.issue(user)).thenReturn(
+                        new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(604800)));
 
                 // When
-                AuthResponse response = authService.login(loginRequest);
+                AuthSessionResult session = authService.login(loginRequest);
+                AuthResponse response = session.response();
 
                 // Then
                 assertThat(response).isNotNull();
                 assertThat(response.getToken()).isEqualTo("jwt-token");
-                assertThat(response.getExpiresIn()).isEqualTo(86400000L);
+                assertThat(response.getExpiresIn()).isEqualTo(900000L);
                 assertThat(response.getUser()).isEqualTo(userResponse);
+                assertThat(session.refreshToken()).isEqualTo("refresh-token");
 
                 verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
                 verify(userRepository).findByEmail(loginRequest.getEmail());
@@ -209,20 +213,9 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("Should revoke only the JWT ID during logout")
-        void shouldRevokeTokenDuringLogout() {
-                String token = "raw-jwt-value";
-                String jti = UUID.randomUUID().toString();
-                Instant expiresAt = Instant.now().plusSeconds(3600);
-                Date expiration = Date.from(expiresAt);
-                when(tokenProvider.getEmailFromToken(token)).thenReturn(user.getEmail());
-                when(tokenProvider.getJtiFromToken(token)).thenReturn(jti);
-                when(tokenProvider.getExpirationFromToken(token)).thenReturn(expiration);
-                when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
-
-                authService.logout(token, user.getEmail());
-
-                verify(revokedTokenService).revoke(jti, user, expiration.toInstant());
-                verify(revokedTokenService, never()).revoke(eq(token), any(), any());
+        @DisplayName("Should revoke only the current refresh-token family during logout")
+        void shouldRevokeRefreshFamilyDuringLogout() {
+                authService.logout("refresh-token");
+                verify(refreshTokenService).revokeFamily("refresh-token");
         }
 }

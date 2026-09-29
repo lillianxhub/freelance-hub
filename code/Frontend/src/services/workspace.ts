@@ -16,7 +16,13 @@ function emptyString(value: string | null | undefined): string {
   return value ?? ''
 }
 
-function toProfile(user: ApiUser): Profile {
+function normalizePhone(value: string | null | undefined): string {
+  const digits = emptyString(value).replace(/\D/g, '')
+  if (digits.startsWith('66') && digits.length === 11) return `0${digits.slice(2)}`
+  return digits.slice(0, 10)
+}
+
+export function toProfile(user: ApiUser): Profile {
   const fullName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
   return {
     id: user.id,
@@ -26,7 +32,7 @@ function toProfile(user: ApiUser): Profile {
     first_name: emptyString(user.firstName),
     last_name: emptyString(user.lastName),
     email: user.email,
-    phone: emptyString(user.phone),
+    phone: normalizePhone(user.phone),
     address: emptyString(user.address),
     city: '',
     country: '',
@@ -34,7 +40,7 @@ function toProfile(user: ApiUser): Profile {
     province: emptyString(user.province),
     district: emptyString(user.district),
     sub_district: emptyString(user.subdistrict),
-    tax_id: '',
+    tax_id: emptyString(user.taxId),
     logo_url: getStoredProfileImage(user.id),
     bank_name: '',
     bank_account_name: '',
@@ -60,6 +66,7 @@ function profilePayload(input: ResourceInput<'profiles'>) {
     district: input.district || undefined,
     province: input.province || undefined,
     postalCode: input.postal_code || undefined,
+    taxId: input.tax_id || undefined,
     dateFormat: input.date_format || undefined,
     bio: input.bio || undefined,
   }
@@ -218,7 +225,7 @@ async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
 }
 
 export async function updateProfile(input: ResourceInput<'profiles'>): Promise<ApiResponse<Profile>> {
-  const response = await api.patch<ApiUser>('/users/me', profilePayload(input))
+  const response = await api.put<ApiUser>('/users/me', profilePayload(input))
   return { ...response, data: toProfile(response.data) }
 }
 

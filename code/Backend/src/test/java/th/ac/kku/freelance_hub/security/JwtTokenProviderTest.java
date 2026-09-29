@@ -16,7 +16,7 @@ class JwtTokenProviderTest {
 
     private JwtTokenProvider jwtTokenProvider;
     private final String jwtSecret = "your-very-secure-secret-key-for-testing-must-be-at-least-256-bits-long-freelance-hub";
-    private final Long jwtExpiration = 86400000L; // 24 hours
+    private final Long jwtExpiration = 900000L; // 15 minutes
 
     @BeforeEach
     void setUp() {
@@ -64,6 +64,8 @@ class JwtTokenProviderTest {
                 .doesNotThrowAnyException();
         assertThat(jwtTokenProvider.getExpirationFromToken(token).toInstant())
                 .isAfter(beforeGeneration);
+        assertThat(jwtTokenProvider.getExpirationFromToken(token).toInstant())
+                .isBefore(beforeGeneration.plusSeconds(901));
     }
 
     @Test

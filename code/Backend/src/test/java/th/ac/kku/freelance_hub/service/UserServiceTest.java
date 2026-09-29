@@ -30,14 +30,16 @@ class UserServiceTest {
     @Mock UserRepository userRepository;
     @Mock UserMapper userMapper;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock RefreshTokenService refreshTokenService;
 
     private UserService userService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, userMapper, passwordEncoder);
+        userService = new UserService(userRepository, userMapper, passwordEncoder, refreshTokenService);
         user = User.builder()
+            .id(java.util.UUID.randomUUID())
             .email("user@example.com")
             .passwordHash("old-hash")
             .build();
@@ -64,6 +66,7 @@ class UserServiceTest {
 
         verify(passwordEncoder).encode("new-password");
         verify(userRepository).save(user);
+        verify(refreshTokenService).revokeAllForUser(user.getId());
     }
 
     @Test
@@ -74,7 +77,8 @@ class UserServiceTest {
             .oldPassword("wrong-password")
             .newPassword("new-password")
             .build()))
-            .isInstanceOf(InvalidCredentialsException.class);
+            .isInstanceOf(InvalidCredentialsException.class)
+            .hasMessage("รหัสผ่านไม่ถูกต้อง");
 
         verifyNoInteractions(userMapper);
     }
