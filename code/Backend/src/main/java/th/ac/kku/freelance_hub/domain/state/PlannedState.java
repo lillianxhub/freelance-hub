@@ -30,4 +30,5 @@ public final class PlannedState implements ProjectState {
     public boolean canEditTasks() {
         return true;
     }
+    
 }

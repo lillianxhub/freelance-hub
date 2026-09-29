@@ -186,6 +186,10 @@ public class Project {
         }
 
         status = nextStatus;
+
+        if (nextStatus == ProjectStatus.ARCHIVED) {
+            isActive = false;
+        }
     }
 
     public void archive() {

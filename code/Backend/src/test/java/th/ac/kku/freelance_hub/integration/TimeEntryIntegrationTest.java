@@ -418,7 +418,7 @@ class TimeEntryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of("status", "ACTIVE"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
         return projectId;
     }
 
@@ -450,7 +450,10 @@ class TimeEntryIntegrationTest {
     }
 
     private UUID responseId(MvcResult result) throws Exception {
-        return UUID.fromString(responseJson(result).path("id").asText());
+        JsonNode response = responseJson(result);
+        JsonNode data = response.path("data");
+        return UUID.fromString((data.hasNonNull("id") ? data : response)
+                .path("id").asText());
     }
 
     private JsonNode responseJson(MvcResult result) throws Exception {

@@ -73,7 +73,7 @@
 ### UC-PRJ-05 เปลี่ยนสถานะ Project
 
 1. Freelancer ส่งสถานะใหม่ไปที่ `/status`
-2. Service โหลด Project ของผู้ใช้ แล้วให้ `Project` ตรวจว่าการเปลี่ยนสถานะทำได้หรือไม่
+2. Service โหลด Project ของผู้ใช้; `Project.changeStatus()` เลือก State จากสถานะปัจจุบันผ่าน `ProjectStates.from()` แล้วตรวจ `canTransitionTo()`
 3. เมื่อผ่านกติกา ระบบบันทึกสถานะและคืน `200 OK`
 
 **กติกาปัจจุบัน:** `PLANNED → ACTIVE/ARCHIVED`; `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`; `ON_HOLD → ACTIVE/ARCHIVED`; `COMPLETED → ARCHIVED` ส่วน `ARCHIVED` ไม่เปลี่ยนไปสถานะอื่น การส่งสถานะเดิมซ้ำทำได้
@@ -95,7 +95,7 @@
 ### UC-TSK-01 สร้าง Task
 
 1. Freelancer ส่งชื่อ คำอธิบาย และตำแหน่ง `sortOrder` ภายใน Project
-2. Service ตรวจว่า Project เป็นของผู้ใช้ และ Project ไม่อยู่ในสถานะ `COMPLETED` หรือ `ARCHIVED`
+2. Service ตรวจว่า Project เป็นของผู้ใช้และเรียก `project.canEditTasks()` ซึ่งให้ State ปัจจุบันตัดสินว่าแก้ Task ได้หรือไม่
 3. ระบบแทรก Task ในตำแหน่งที่ระบุ โดยตำแหน่งเริ่มนับจาก `0` และจัดลำดับ Task ที่เหลือใหม่
 4. คืน `201 Created`, `TaskResponse` และ `Location` ของ Task ใหม่
 
@@ -123,7 +123,7 @@
 ### UC-TSK-04 แก้ไข Task
 
 1. Freelancer ส่งชื่อและคำอธิบายใหม่
-2. Service ตรวจเจ้าของ และตรวจว่า Project ไม่เป็น `COMPLETED` หรือ `ARCHIVED`
+2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนแก้ Task
 3. ระบบแก้ไข Task แล้วคืน `200 OK`
 
 **Alternative flow:** ชื่อไม่ถูกต้อง = `400`; ไม่พบ Project/Task หรือไม่ใช่เจ้าของ = `404`; Project แก้ Task ไม่ได้ = `409`  
@@ -132,7 +132,7 @@
 ### UC-TSK-05 เริ่ม Task
 
 1. Freelancer ขอเริ่ม Task
-2. Service ตรวจเจ้าของและสถานะ Project
+2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนเริ่ม Task
 3. `Task.start()` ยอมรับเฉพาะ Task สถานะ `OPEN` แล้วเปลี่ยนเป็น `IN_PROGRESS`
 4. คืน `200 OK` พร้อม Task ล่าสุด
 
@@ -142,7 +142,7 @@
 ### UC-TSK-06 ปิด Task
 
 1. Freelancer ขอปิด Task
-2. Service ตรวจเจ้าของและสถานะ Project
+2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนปิด Task
 3. ระบบบันทึกเวลา `completedAt` และเปลี่ยน Task เป็น `COMPLETED`
 4. คืน `200 OK` พร้อม Task ล่าสุด
 
@@ -154,7 +154,7 @@
 ### UC-TSK-07 เปลี่ยนลำดับ Task
 
 1. Freelancer ส่ง `sortOrder` ใหม่ โดยนับจาก `0`
-2. Service ตรวจเจ้าของและสถานะ Project แล้วโหลด Task ตามลำดับปัจจุบัน
+2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` แล้วโหลด Task ตามลำดับปัจจุบัน
 3. ระบบย้าย Task ไปตำแหน่งใหม่และบันทึกลำดับของ Task ทั้งชุด
 4. คืน `200 OK` พร้อม Task ที่ย้าย
 
@@ -164,7 +164,7 @@
 ### UC-TSK-08 ลบ Task
 
 1. Freelancer ขอให้ลบ Task
-2. Service ตรวจเจ้าของและสถานะ Project
+2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนลบ Task
 3. ระบบตรวจว่า Task ไม่มี Time Entry ที่บันทึกไว้
 4. เมื่อลบได้ ระบบ **ลบ Task จริง** และจัดลำดับ Task ที่เหลือใหม่
 5. คืน `204 No Content`
@@ -182,6 +182,8 @@ sequenceDiagram
     participant S as ProjectServiceImpl
     participant R as ProjectRepository
     participant P as Project
+    participant PS as ProjectStates
+    participant ST as ProjectState
     participant H as GlobalExceptionHandler
 
     F->>C: PATCH /api/projects/{id}/status + JWT
@@ -192,17 +194,24 @@ sequenceDiagram
     alt พบ Project ของผู้ใช้
         R-->>S: Project
         S->>P: changeStatus(nextStatus)
+        P->>PS: from(currentStatus)
+        PS-->>P: State ของสถานะปัจจุบัน
+        P->>ST: canTransitionTo(nextStatus)
+        ST-->>P: true หรือ false
         alt เปลี่ยนสถานะได้
+            P-->>S: อัปเดต ProjectStatus
             S->>R: save(Project)
             R-->>S: Project
             S-->>C: ProjectResponse
             C-->>F: 200 OK
         else ผิดกติกาสถานะ
-            P-->>H: IllegalStateException
+            P-->>S: IllegalStateException
+            S-->>C: ส่งต่อ IllegalStateException
+            C-->>H: Spring ส่งให้ exception handler
             H-->>F: 409 Conflict
         end
     else ไม่พบหรือเป็นของผู้อื่น
-        R-->>H: ProjectNotFoundException
+        R-->>H: ProjectNotFoundExceptio n
         H-->>F: 404 Not Found
     end
 ```
