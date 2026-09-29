@@ -19,6 +19,7 @@ import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
 import th.ac.kku.freelance_hub.dto.response.AuthResponse;
 import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.exception.EmailAlreadyExistsException;
+import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
@@ -217,5 +218,52 @@ class AuthServiceTest {
         void shouldRevokeRefreshFamilyDuringLogout() {
                 authService.logout("refresh-token");
                 verify(refreshTokenService).revokeFamily("refresh-token");
+        }
+
+        @Test
+        @DisplayName("Refresh issues a new access token for the rotated user")
+        void shouldRefreshSessionForRotatedUser() {
+                Instant expiresAt = Instant.now().plusSeconds(3600);
+                when(refreshTokenService.rotate("old-refresh")).thenReturn(new RefreshTokenService.Rotation(
+                                user, new RefreshTokenService.IssuedToken("new-refresh", expiresAt), false));
+                when(userRepository.findWithProfileById(user.getId())).thenReturn(Optional.of(user));
+                when(tokenProvider.generateToken(user.getEmail())).thenReturn("new-access");
+                when(tokenProvider.getExpirationTime()).thenReturn(900000L);
+                when(userMapper.toResponse(user)).thenReturn(userResponse);
+
+                AuthSessionResult session = authService.refresh("old-refresh");
+
+                assertThat(session.response().getToken()).isEqualTo("new-access");
+                assertThat(session.response().getUser()).isEqualTo(userResponse);
+                assertThat(session.refreshToken()).isEqualTo("new-refresh");
+                assertThat(session.refreshExpiresAt()).isEqualTo(expiresAt);
+                verify(userRepository).findWithProfileById(user.getId());
+        }
+
+        @Test
+        @DisplayName("Invalid or replayed refresh token cannot issue an access token")
+        void shouldRejectInvalidRefreshRotation() {
+                when(refreshTokenService.rotate("replayed-refresh"))
+                                .thenReturn(new RefreshTokenService.Rotation(null, null, true));
+
+                assertThatThrownBy(() -> authService.refresh("replayed-refresh"))
+                                .isInstanceOf(InvalidRefreshTokenException.class);
+
+                verifyNoInteractions(tokenProvider);
+                verify(userRepository, never()).findWithProfileById(any());
+        }
+
+        @Test
+        @DisplayName("Refresh cannot issue an access token if the user no longer exists")
+        void shouldRejectRefreshForMissingUser() {
+                when(refreshTokenService.rotate("old-refresh")).thenReturn(new RefreshTokenService.Rotation(
+                                user, new RefreshTokenService.IssuedToken("new-refresh", Instant.now().plusSeconds(3600)),
+                                false));
+                when(userRepository.findWithProfileById(user.getId())).thenReturn(Optional.empty());
+
+                assertThatThrownBy(() -> authService.refresh("old-refresh"))
+                                .isInstanceOf(InvalidRefreshTokenException.class);
+
+                verifyNoInteractions(tokenProvider);
         }
 }

@@ -6,6 +6,6 @@ package th.ac.kku.freelance_hub.exception;
 public class EmailAlreadyExistsException extends RuntimeException {
 
     public EmailAlreadyExistsException(String email) {
-        super("Email already exists: " + email);
+        super("อีเมลนี้ถูกใช้งานแล้ว: " + email);
     }
 }

@@ -17,14 +17,12 @@ import { useTimeEntries } from "../../useTimeEntries";
 import type { TimeEntry } from "../../../types/timeTracking";
 import type { RangePreset, TimeFilters } from "../../../types/timeTrackerPage";
 import TimerPanel from "../../components/TimerPanel";
-import TimeSummary from "../../components/TimeSummary";
 import TimeEntryTable from "../../components/TimeEntryTable";
 import TimeEntryForm from "../../components/TimeEntryForm";
 import {
   createEmptyManualForm,
   localDateValue,
 } from "../../../utils/timeTracking";
-import { calculateTimeValue } from "../../../utils/formatters";
 import { listTimerTasks } from "../../../services/timerOptions";
 import {
   createManualTimeEntry,
@@ -124,18 +122,6 @@ function TimeTrackerPage() {
     )
     .sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at));
 
-  const totalMinutes = entries.reduce(
-    (sum, entry) => sum + (entry.duration_minutes || 0),
-    0,
-  );
-  const billableMinutes = entries
-    .filter((entry) => entry.billable)
-    .reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0);
-  const totalValue = entries.reduce(
-    (sum, entry) => sum + calculateTimeValue(entry),
-    0,
-  );
-
   const openManual = (entry: TimeEntry | null = null) => {
     if (entry) {
       const start = new Date(entry.started_at);
@@ -219,7 +205,7 @@ function TimeTrackerPage() {
           startedAt: startedAt.toISOString(),
           ...(manualForm.manual_mode === "RANGE"
             ? { endedAt: endedAt.toISOString() }
-            : { durationMinutes: duration }),
+            : { durationSeconds: duration * 60 }),
         });
       }
       await refresh();
@@ -286,13 +272,6 @@ function TimeTrackerPage() {
 
       <div className="tracker-layout">
         <TimerPanel workspace={workspace} />
-
-        <TimeSummary
-          totalMinutes={totalMinutes}
-          billableMinutes={billableMinutes}
-          totalValue={totalValue}
-          count={entries.length}
-        />
       </div>
 
       <section className="panel entries-panel">
@@ -436,7 +415,10 @@ function TimeTrackerPage() {
               type="date"
               value={filters.to}
               onChange={(event) =>
-                setFilters((current) => ({ ...current, to: event.target.value }))
+                setFilters((current) => ({
+                  ...current,
+                  to: event.target.value,
+                }))
               }
             />
           </div>

@@ -1,11 +1,11 @@
-package th.ac.kku.freelance_hub.dto.response;
+package th.ac.kku.freelance_hub.common.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Pagination metadata shared by API responses that return a collection. */
+/** Pagination information, present only for paginated responses. */
 @Data
 @Builder
 @NoArgsConstructor

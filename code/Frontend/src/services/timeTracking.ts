@@ -28,12 +28,15 @@ export async function saveTimeEntry(entry: ResourceInput<'time_entries'>): Promi
     description: entry.description || '',
     startedAt: entry.started_at,
     endedAt: entry.ended_at || undefined,
-    durationMinutes: entry.duration_minutes || undefined,
+    durationSeconds: entry.duration_minutes ? entry.duration_minutes * 60 : undefined,
   })
 }
 
-export async function createManualTimeEntry(payload: ManualTimeEntryPayload): Promise<TimeEntry> {
-  const response = await api.post<ApiTimeEntry>('/time-entries', payload)
+export async function createManualTimeEntry({ durationSeconds, ...payload }: ManualTimeEntryPayload): Promise<TimeEntry> {
+  const response = await api.post<ApiTimeEntry>('/time-entries', {
+    ...payload,
+    ...(durationSeconds === undefined ? {} : { durationMinutes: durationSeconds }),
+  })
   return toTimeEntry(response.data)
 }
 
