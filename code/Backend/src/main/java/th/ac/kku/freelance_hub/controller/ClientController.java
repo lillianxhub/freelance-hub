@@ -56,7 +56,7 @@ public class ClientController {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         ClientResponse response = clientService.create(ownerId, request);
         return ResponseEntity.created(URI.create("/api/clients/" + response.getId()))
-                .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("Client created", response));
+                .body(th.ac.kku.freelance_hub.dto.response.ApiResponse.success("สร้างลูกค้าสำเร็จ", response));
     }
 
     @Operation(summary = "List clients", description = "List the authenticated user's clients with optional filters, sorting, and pagination")
@@ -77,7 +77,7 @@ public class ClientController {
                 .totalPages(clients.getTotalPages())
                 .build();
         return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
-                "Clients retrieved", clients.getContent(), meta));
+                "ดึงรายชื่อลูกค้าสำเร็จ", clients.getContent(), meta));
     }
 
     @Operation(summary = "Get a client", description = "Get one client belonging to the authenticated user by ID")
@@ -90,7 +90,7 @@ public class ClientController {
             @PathVariable UUID id) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
-                "Client retrieved", clientService.getById(ownerId, id)));
+                "ดึงข้อมูลลูกค้าสำเร็จ", clientService.getById(ownerId, id)));
     }
 
     @Operation(summary = "Replace a client", description = "Replace editable details of a client belonging to the authenticated user")
@@ -104,7 +104,7 @@ public class ClientController {
             @PathVariable UUID id, @Valid @RequestBody CreateClientRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
-                "Client updated", clientService.replace(ownerId, id, request)));
+                "อัปเดตข้อมูลลูกค้าสำเร็จ", clientService.replace(ownerId, id, request)));
     }
 
     @Operation(summary = "Update a client", description = "Update fields of a client belonging to the authenticated user")
@@ -119,7 +119,7 @@ public class ClientController {
             @Valid @RequestBody UpdateClientRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
-                "Client updated", clientService.update(ownerId, id, request)));
+                "อัปเดตข้อมูลลูกค้าสำเร็จ", clientService.update(ownerId, id, request)));
     }
 
     @Operation(summary = "Change client status", description = "Archive or reactivate a client by updating its is_active flag")
@@ -133,7 +133,7 @@ public class ClientController {
             @PathVariable UUID id, @Valid @RequestBody ChangeClientStatusRequest request) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         return ResponseEntity.ok(th.ac.kku.freelance_hub.dto.response.ApiResponse.success(
-                "Client status updated", clientService.changeStatus(ownerId, id, request.getIsActive())));
+                "อัปเดตสถานะลูกค้าสำเร็จ", clientService.changeStatus(ownerId, id, request.getIsActive())));
     }
 
     /** Soft-delete: preserve the client and its history by marking it archived. */
