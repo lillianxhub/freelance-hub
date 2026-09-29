@@ -350,10 +350,10 @@ class TimerServiceImplTest {
 
         assertThat(response.getStartedAt()).isEqualTo(startedAt);
         assertThat(response.getEndedAt()).isEqualTo(NOW);
-        assertThat(response.getDurationMinutes()).isEqualTo(2);
+        assertThat(response.getDurationSeconds()).isEqualTo(120L);
         assertThat(response.isRunning()).isFalse();
         assertThat(runningTimer.getEndedAt()).isEqualTo(NOW);
-        assertThat(runningTimer.getDurationMinutes()).isEqualTo(2);
+        assertThat(runningTimer.getDurationSeconds()).isEqualTo(120L);
         ArgumentCaptor<TimerStoppedEvent> eventCaptor =
                 ArgumentCaptor.forClass(TimerStoppedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -362,7 +362,7 @@ class TimerServiceImplTest {
         assertThat(event.ownerId()).isEqualTo(OWNER_ID);
         assertThat(event.projectId()).isEqualTo(PROJECT_ID);
         assertThat(event.taskId()).isEqualTo(TASK_ID);
-        assertThat(event.durationMinutes()).isEqualTo(2);
+        assertThat(event.durationSeconds()).isEqualTo(120L);
         assertThat(event.startedAt()).isEqualTo(startedAt);
         assertThat(event.endedAt()).isEqualTo(NOW);
         verify(timeEntryRepository, never())

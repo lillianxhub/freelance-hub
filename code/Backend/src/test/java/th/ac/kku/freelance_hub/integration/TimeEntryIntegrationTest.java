@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.integration;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -95,19 +96,38 @@ class TimeEntryIntegrationTest {
                         HttpHeaders.LOCATION,
                         org.hamcrest.Matchers.startsWith("/api/time-entries/")
                 ))
-                .andExpect(jsonPath("$.projectId").value(projectId.toString()))
-                .andExpect(jsonPath("$.taskId").value(taskId.toString()))
-                .andExpect(jsonPath("$.entryType").value("TIMER"))
-                .andExpect(jsonPath("$.running").value(true))
-                .andExpect(jsonPath("$.endedAt").doesNotExist())
+                .andExpect(jsonPath("$.data.projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$.data.taskId").value(taskId.toString()))
+                .andExpect(jsonPath("$.data.entryType").value("TIMER"))
+                .andExpect(jsonPath("$.data.running").value(true))
+                .andExpect(jsonPath("$.data.endedAt").doesNotExist())
                 .andReturn();
-        UUID timerId = responseId(started);
+        UUID timerId = UUID.fromString(
+                responseJson(started).path("data").path("id").asText()
+        );
 
         mockMvc.perform(get("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(timerId.toString()))
-                .andExpect(jsonPath("$.running").value(true));
+                .andExpect(jsonPath("$.data.running").value(true))
+                .andExpect(jsonPath("$.data.timeEntry.id")
+                        .value(timerId.toString()))
+                .andExpect(jsonPath("$.data.timeEntry.project.id")
+                        .value(projectId.toString()))
+                .andExpect(jsonPath("$.data.timeEntry.project.name")
+                        .value("Timer project"))
+                .andExpect(jsonPath("$.data.timeEntry.task.id")
+                        .value(taskId.toString()))
+                .andExpect(jsonPath("$.data.timeEntry.task.title")
+                        .value("Implementation"))
+                .andExpect(jsonPath("$.data.timeEntry.startedAt")
+                        .value(TIMER_STARTED_AT.toString()))
+                .andExpect(jsonPath("$.data.timeEntry.description")
+                        .value("Work in progress"))
+                .andExpect(jsonPath("$.data.timeEntry.projectId")
+                        .doesNotExist())
+                .andExpect(jsonPath("$.data.timeEntry.running")
+                        .doesNotExist());
 
         mockMvc.perform(post("/api/timer/start")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
@@ -121,29 +141,43 @@ class TimeEntryIntegrationTest {
         mockMvc.perform(post("/api/timer/stop")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(timerId.toString()))
-                .andExpect(jsonPath("$.running").value(false))
-                .andExpect(jsonPath("$.endedAt").isNotEmpty())
-                .andExpect(jsonPath("$.durationMinutes").value(2));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("หยุดจับเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data.id")
+                        .value(timerId.toString()))
+                .andExpect(jsonPath("$.data.startedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.endedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.durationSeconds").value(120));
 
         mockMvc.perform(get("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.running").value(false))
+                .andExpect(jsonPath("$.data.timeEntry").doesNotExist());
 
         mockMvc.perform(post("/api/timer/start")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of("projectId", projectId))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.taskId").doesNotExist());
+                .andExpect(jsonPath("$.data.taskId").doesNotExist());
 
         mockMvc.perform(delete("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("ยกเลิกการจับเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         mockMvc.perform(get("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.running").value(false))
+                .andExpect(jsonPath("$.data.timeEntry").doesNotExist());
     }
 
     @Test
@@ -164,11 +198,27 @@ class TimeEntryIntegrationTest {
                                 "endedAt", ENDED_AT
                         ))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.entryType").value("MANUAL"))
-                .andExpect(jsonPath("$.durationMinutes").value(90))
-                .andExpect(jsonPath("$.running").value(false))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("เพิ่มรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data.project.id")
+                        .value(projectId.toString()))
+                .andExpect(jsonPath("$.data.project.name")
+                        .value("Manual project"))
+                .andExpect(jsonPath("$.data.task.id")
+                        .value(taskId.toString()))
+                .andExpect(jsonPath("$.data.task.title").value("Design"))
+                .andExpect(jsonPath("$.data.startedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.endedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.durationSeconds").value(5400))
+                .andExpect(jsonPath("$.data.description")
+                        .value("Initial design"))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()))
                 .andReturn();
-        UUID entryId = responseId(created);
+        UUID entryId = UUID.fromString(
+                responseJson(created).path("data").path("id").asText()
+        );
 
         mockMvc.perform(patch("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
@@ -201,7 +251,7 @@ class TimeEntryIntegrationTest {
                         .param("to", "2026-09-02T00:00:00Z"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.entryCount").value(1))
-                .andExpect(jsonPath("$.totalMinutes").value(90));
+                .andExpect(jsonPath("$.totalSeconds").value(5400));
 
         mockMvc.perform(delete("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
@@ -225,7 +275,9 @@ class TimeEntryIntegrationTest {
                         .content(manualEntryJson(ownerProjectId, "Private work")))
                 .andExpect(status().isCreated())
                 .andReturn();
-        UUID entryId = responseId(created);
+        UUID entryId = UUID.fromString(
+                responseJson(created).path("data").path("id").asText()
+        );
 
         mockMvc.perform(post("/api/time-entries")
                         .header(HttpHeaders.AUTHORIZATION, bearer(otherToken))
@@ -268,7 +320,7 @@ class TimeEntryIntegrationTest {
                                 "projectId", projectId,
                                 "startedAt", STARTED_AT,
                                 "endedAt", ENDED_AT,
-                                "durationMinutes", 90
+                                "durationSeconds", 5400
                         ))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
@@ -348,7 +400,7 @@ class TimeEntryIntegrationTest {
                 "projectId", projectId,
                 "description", description,
                 "startedAt", STARTED_AT,
-                "durationMinutes", 30
+                "durationSeconds", 1800
         ));
     }
 

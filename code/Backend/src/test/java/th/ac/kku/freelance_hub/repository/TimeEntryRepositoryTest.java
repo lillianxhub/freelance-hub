@@ -267,13 +267,13 @@ class TimeEntryRepositoryTest {
             String description,
             Instant startedAt
     ) {
-        return timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDuration(
+        return timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 owner,
                 project,
                 task,
                 description,
                 startedAt,
-                30
+                1800
         ));
     }
 }

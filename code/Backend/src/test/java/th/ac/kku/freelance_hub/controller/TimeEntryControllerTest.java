@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -97,7 +98,7 @@ class TimeEntryControllerTest {
                                   "taskId": "%s",
                                   "description": "Manual work",
                                   "startedAt": "2026-09-26T08:00:00Z",
-                                  "durationMinutes": 30
+                                  "durationSeconds": 1800
                                 }
                                 """.formatted(PROJECT_ID, TASK_ID)))
                 .andExpect(status().isCreated())
@@ -105,7 +106,28 @@ class TimeEntryControllerTest {
                         "Location",
                         "/api/time-entries/" + ENTRY_ID
                 ))
-                .andExpect(jsonPath("$.id").value(ENTRY_ID.toString()));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message")
+                        .value("เพิ่มรายการเวลาเรียบร้อยแล้ว"))
+                .andExpect(jsonPath("$.data.id")
+                        .value(ENTRY_ID.toString()))
+                .andExpect(jsonPath("$.data.project.id")
+                        .value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.project.name")
+                        .value("Project name"))
+                .andExpect(jsonPath("$.data.task.id")
+                        .value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data.task.title")
+                        .value("Task name"))
+                .andExpect(jsonPath("$.data.startedAt")
+                        .value(FROM.toString()))
+                .andExpect(jsonPath("$.data.endedAt")
+                        .value(TO.toString()))
+                .andExpect(jsonPath("$.data.durationSeconds").value(1800))
+                .andExpect(jsonPath("$.data.description")
+                        .value("Manual work"))
+                .andExpect(jsonPath("$.meta").value(nullValue()))
+                .andExpect(jsonPath("$.error").value(nullValue()));
 
         verify(timeEntryService).createManual(
                 eq(OWNER_ID),
@@ -172,7 +194,7 @@ class TimeEntryControllerTest {
                 .from(FROM)
                 .to(TO)
                 .entryCount(3)
-                .totalMinutes(90)
+                .totalSeconds(5400)
                 .build());
 
         mockMvc.perform(get("/api/time-entries/summary")
@@ -180,7 +202,7 @@ class TimeEntryControllerTest {
                         .param("to", TO.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.entryCount").value(3))
-                .andExpect(jsonPath("$.totalMinutes").value(90));
+                .andExpect(jsonPath("$.totalSeconds").value(5400));
 
         verify(timeEntryQueryService).summarize(
                 eq(OWNER_ID),
@@ -241,12 +263,14 @@ class TimeEntryControllerTest {
         return TimeEntryResponse.builder()
                 .id(ENTRY_ID)
                 .projectId(PROJECT_ID)
+                .projectName("Project name")
                 .taskId(TASK_ID)
+                .taskName("Task name")
                 .description(description)
                 .entryType(EntryType.MANUAL)
                 .startedAt(FROM)
                 .endedAt(TO)
-                .durationMinutes(30)
+                .durationSeconds(1800L)
                 .build();
     }
 }

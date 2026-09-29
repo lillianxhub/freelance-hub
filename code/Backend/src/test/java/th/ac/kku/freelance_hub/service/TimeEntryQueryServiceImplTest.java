@@ -95,7 +95,7 @@ class TimeEntryQueryServiceImplTest {
                 .to(NOW.plusSeconds(60 * 60))
                 .page(1)
                 .size(5)
-                .sortBy("durationMinutes")
+                .sortBy("durationSeconds")
                 .direction(Sort.Direction.ASC)
                 .build();
 
@@ -190,13 +190,13 @@ class TimeEntryQueryServiceImplTest {
         Instant from = NOW.minusSeconds(24 * 60 * 60);
         Instant to = NOW.plusSeconds(1);
         TimeEntry oneMinuteEntry = manualEntry(project, task);
-        TimeEntry thirtyMinuteEntry = TimeEntry.createManualWithDuration(
+        TimeEntry thirtyMinuteEntry = TimeEntry.createManualWithDurationSeconds(
                 owner,
                 project,
                 null,
                 "Long task",
                 NOW.minusSeconds(60 * 60),
-                30
+                1800
         );
         TimeEntry runningTimer = TimeEntry.startTimer(
                 owner,
@@ -223,7 +223,7 @@ class TimeEntryQueryServiceImplTest {
         assertThat(response.getFrom()).isEqualTo(from);
         assertThat(response.getTo()).isEqualTo(to);
         assertThat(response.getEntryCount()).isEqualTo(2);
-        assertThat(response.getTotalMinutes()).isEqualTo(31);
+        assertThat(response.getTotalSeconds()).isEqualTo(1860);
         verify(timeEntryRepository).findAll(
                 ArgumentMatchers.<Specification<TimeEntry>>any()
         );
@@ -241,7 +241,7 @@ class TimeEntryQueryServiceImplTest {
         );
 
         assertThat(response.getEntryCount()).isZero();
-        assertThat(response.getTotalMinutes()).isZero();
+        assertThat(response.getTotalSeconds()).isZero();
         assertThat(response.getFrom()).isNull();
         assertThat(response.getTo()).isNull();
     }

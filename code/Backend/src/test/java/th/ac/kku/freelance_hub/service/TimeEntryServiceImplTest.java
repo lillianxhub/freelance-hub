@@ -108,7 +108,7 @@ class TimeEntryServiceImplTest {
         assertThat(response.getEntryType()).isEqualTo(EntryType.MANUAL);
         assertThat(response.getStartedAt()).isEqualTo(startedAt);
         assertThat(response.getEndedAt()).isEqualTo(NOW);
-        assertThat(response.getDurationMinutes()).isEqualTo(2);
+        assertThat(response.getDurationSeconds()).isEqualTo(120L);
         assertThat(response.getTaskId()).isEqualTo(TASK_ID);
         assertThat(response.isRunning()).isFalse();
         verify(timeEntryRepository).save(any(TimeEntry.class));
@@ -136,14 +136,14 @@ class TimeEntryServiceImplTest {
                         .projectId(PROJECT_ID)
                         .description("Historical work")
                         .startedAt(NOW)
-                        .durationMinutes(30)
+                        .durationSeconds(90L)
                         .build()
         );
 
         assertThat(response.getStartedAt()).isEqualTo(NOW);
         assertThat(response.getEndedAt())
-                .isEqualTo(NOW.plusSeconds(30 * 60));
-        assertThat(response.getDurationMinutes()).isEqualTo(30);
+                .isEqualTo(NOW.plusSeconds(90));
+        assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.isRunning()).isFalse();
     }
 
@@ -157,7 +157,7 @@ class TimeEntryServiceImplTest {
         assertThatThrownBy(() -> service.createManual(OWNER_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(
-                        "Provide either end time or duration minutes, but not both"
+                        "Provide either end time or duration seconds, but not both"
                 );
 
         verifyNoInteractions(userRepository, projectRepository, taskRepository);
@@ -170,13 +170,13 @@ class TimeEntryServiceImplTest {
                 .projectId(PROJECT_ID)
                 .startedAt(NOW)
                 .endedAt(NOW.plusSeconds(60))
-                .durationMinutes(1)
+                .durationSeconds(60L)
                 .build();
 
         assertThatThrownBy(() -> service.createManual(OWNER_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(
-                        "Provide either end time or duration minutes, but not both"
+                        "Provide either end time or duration seconds, but not both"
                 );
 
         verify(timeEntryRepository, never()).save(any(TimeEntry.class));
@@ -304,7 +304,7 @@ class TimeEntryServiceImplTest {
 
         assertThat(response.getStartedAt()).isEqualTo(newStart);
         assertThat(response.getEndedAt()).isEqualTo(NOW);
-        assertThat(response.getDurationMinutes()).isEqualTo(5);
+        assertThat(response.getDurationSeconds()).isEqualTo(300L);
     }
 
     @Test

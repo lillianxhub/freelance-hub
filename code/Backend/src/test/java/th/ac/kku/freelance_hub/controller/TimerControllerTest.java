@@ -180,7 +180,6 @@ class TimerControllerTest {
         stubCurrentUser();
         TimeEntryResponse stoppedTimer = runningTimer();
         stoppedTimer.setEndedAt(STARTED_AT.plusSeconds(120));
-        stoppedTimer.setDurationMinutes(2);
         stoppedTimer.setDurationSeconds(120L);
         stoppedTimer.setRunning(false);
         when(timeEntryService.stopTimer(OWNER_ID))
@@ -198,8 +197,6 @@ class TimerControllerTest {
                 .andExpect(jsonPath("$.data.endedAt")
                         .value(STARTED_AT.plusSeconds(120).toString()))
                 .andExpect(jsonPath("$.data.durationSeconds").value(120))
-                .andExpect(jsonPath("$.data.durationMinutes")
-                        .doesNotExist())
                 .andExpect(jsonPath("$.meta").doesNotExist())
                 .andExpect(jsonPath("$.error").doesNotExist());
 
