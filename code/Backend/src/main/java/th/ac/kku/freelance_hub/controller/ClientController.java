@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -66,7 +67,7 @@ public class ClientController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<th.ac.kku.freelance_hub.dto.response.ApiResponse<List<ClientResponse>>> list(
-            @Valid @ModelAttribute ClientFilterRequest filter) {
+            @ParameterObject @Valid @ModelAttribute ClientFilterRequest filter) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         Page<ClientResponse> clients = clientService.list(ownerId, filter);
         // Pagination metadata is one-based even though the query parameter is zero-based.
