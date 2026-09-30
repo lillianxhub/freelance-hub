@@ -17,6 +17,9 @@ public interface ClientService {
 
     ClientResponse getById(UUID ownerId, UUID clientId);
 
+    /** Include selected Project fields and, optionally, their Task fields. */
+    ClientResponse getById(UUID ownerId, UUID clientId, boolean includeProjects, boolean includeTasks);
+
     Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter);
 
     /** Replace all editable client details; omitted optional fields are cleared. */

@@ -1,5 +1,9 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +23,8 @@ import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
+import th.ac.kku.freelance_hub.dto.response.ClientProjectSummaryResponse;
+import th.ac.kku.freelance_hub.dto.response.ClientTaskSummaryResponse;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.exception.UserNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
@@ -59,6 +65,33 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public ClientResponse getById(UUID ownerId, UUID clientId) {
         return clientMapper.toResponse(findOwnedClient(ownerId, clientId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClientResponse getById(UUID ownerId, UUID clientId, boolean includeProjects, boolean includeTasks) {
+        ClientResponse response = getById(ownerId, clientId);
+        if (!includeProjects && !includeTasks) {
+            return response;
+        }
+
+        List<ClientRepository.IncludedProject> projects =
+                clientRepository.findIncludedProjects(ownerId, clientId);
+        Map<UUID, List<ClientTaskSummaryResponse>> tasksByProject = new HashMap<>();
+        if (includeTasks && !projects.isEmpty()) {
+            for (ClientRepository.IncludedTask task : clientRepository.findIncludedTasks(ownerId, clientId)) {
+                tasksByProject.computeIfAbsent(task.getProjectId(), ignored -> new ArrayList<>())
+                        .add(new ClientTaskSummaryResponse(task.getId(), task.getName(), task.getStatus()));
+            }
+        }
+
+        response.setProjects(projects.stream()
+                .map(project -> new ClientProjectSummaryResponse(
+                        project.getId(), project.getName(), project.getColor(),
+                        project.getStatus(), project.getTargetMinutes(),
+                        includeTasks ? tasksByProject.getOrDefault(project.getId(), List.of()) : null))
+                .toList());
+        return response;
     }
 
     @Override

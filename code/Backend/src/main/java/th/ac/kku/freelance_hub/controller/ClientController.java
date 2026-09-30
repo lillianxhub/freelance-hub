@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -80,17 +81,35 @@ public class ClientController {
                 "ดึงรายชื่อลูกค้าสำเร็จ", clients.getContent(), meta));
     }
 
-    @Operation(summary = "Get a client", description = "Get one client belonging to the authenticated user by ID")
+    @Operation(summary = "Get a client", description = "Get one owned client; include=projects or include=projects.tasks adds selected related fields")
     @ApiResponse(responseCode = "200", description = "Client returned", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "400", description = "Unsupported include path", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> getById(
-            @PathVariable UUID id) {
+            @PathVariable UUID id, @RequestParam(required = false) String include) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
+        boolean includeProjects = false;
+        boolean includeTasks = false;
+        if (include != null && !include.isEmpty()) {
+            for (String path : include.split(",", -1)) {
+                switch (path) {
+                    case "projects" -> includeProjects = true;
+                    case "projects.tasks" -> {
+                        includeProjects = true;
+                        includeTasks = true;
+                    }
+                    default -> throw new IllegalArgumentException("ไม่รองรับ include: " + path);
+                }
+            }
+        }
+        ClientResponse client = includeProjects
+                ? clientService.getById(ownerId, id, includeProjects, includeTasks)
+                : clientService.getById(ownerId, id);
         return ResponseEntity.ok(ApiResult.success(
-                "ดึงข้อมูลลูกค้าสำเร็จ", clientService.getById(ownerId, id)));
+                "ดึงข้อมูลลูกค้าสำเร็จ", client));
     }
 
     @Operation(summary = "Replace a client", description = "Replace editable details of a client belonging to the authenticated user")
