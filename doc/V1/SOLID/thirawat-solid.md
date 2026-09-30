@@ -12,7 +12,7 @@
 | Single Responsibility | `repository/ClientRepository.java` | Repository รับผิดชอบ data-access contract ของ Client โดยเฉพาะ |
 | Open/Closed | `service/ClientService.java`, `controller/ClientController.java` | Controller พึ่ง service contract จึงเปลี่ยน implementation หรือใช้ test double ได้โดยไม่แก้ controller ทั้งนี้การเพิ่มรูปแบบ filter ใหม่ยังต้องแก้ `ClientServiceImpl` ปัจจุบัน |
 | Liskov Substitution | `service/ClientService.java`, `service/impl/ClientServiceImpl.java` | `ClientServiceImpl` implement operation ของ interface ครบ รวม `replace`, `changeStatus` และ `softDelete`; ปัจจุบันมี production implementation เดียว จึงยังไม่มีหลักฐานการแทนที่ระหว่าง implementation หลายตัว |
-| Interface Segregation | `service/ClientService.java`, `controller/ClientController.java` | Contract นี้มีเฉพาะงาน Client ที่ controller ใช้ ไม่รวม Auth, Project หรือ Time Entry |
+| Interface Segregation | `service/ClientService.java`, `controller/ClientController.java` | Contract รวมงาน Client API กับ method สรุปเวลาตามลูกค้าสำหรับ service อื่น; ยังไม่รวม Auth หรือ CRUD ของ Project/Time Entry แต่ไม่ควรอ้างว่าทุก method ใช้โดย controller |
 | Dependency Inversion | `controller/ClientController.java`, `service/impl/ClientServiceImpl.java`, `repository/ClientRepository.java` | Controller รับ `ClientService` interface และ service รับ repository interfaces ผ่าน constructor แทนการสร้าง dependency เอง; `ClientMapper` และ `UserService` ยังเป็น concrete class จึงเป็นการใช้ DIP บางส่วน |
 
 ## Evidence จาก Client flow
@@ -23,6 +23,7 @@
 - Mapper คงฟิลด์เดิมเมื่อ PATCH ส่ง `null` แต่ PUT ใช้ข้อมูลใหม่แทนที่และล้าง optional fields ที่ไม่ส่งมา: `ClientMapper.java`
 - `changeStatus` แก้เฉพาะ `isActive`; `softDelete` ตั้งเฉพาะ `deletedAt` โดยไม่ลบ record: `ClientServiceImpl.java`, `Client.java`
 - Response ที่มี body ใช้ `ApiResult`; 400/404 ของ Client ผ่าน `ClientExceptionHandler`, ส่วน GET รายการมี `PaginationMeta`: `ClientController.java`, `ClientExceptionHandler.java`
+- Client detail เลือกแนบ Project/Task ด้วย `include=projects` หรือ `include=projects.tasks` และ repository อ่านเฉพาะฟิลด์ที่แสดง; ส่วน `summarizeTimeByClient` เป็น service method ภายในที่ใช้ projection รวมเวลาของ Time Entry ตาม Client: `ClientController.java`, `ClientRepository.java`, `ClientServiceImpl.java`
 
 ## ข้อสังเกตสำหรับรวมเอกสารหลัก
 
