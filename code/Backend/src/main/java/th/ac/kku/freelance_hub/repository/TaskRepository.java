@@ -59,6 +59,19 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             UUID ownerId
     );
 
+    @Query("""
+            SELECT t FROM Task t
+            WHERE t.project.owner.id = :ownerId
+                AND t.project.id IN :projectIds
+                AND t.isActive = true
+                AND t.deletedAt IS NULL
+            ORDER BY t.project.id, t.sortOrder, t.id
+            """)
+    List<Task> findActiveByProjectIds(
+            @Param("ownerId") UUID ownerId,
+            @Param("projectIds") List<UUID> projectIds
+    );
+
     long countByProjectId(
             UUID projectId
     );

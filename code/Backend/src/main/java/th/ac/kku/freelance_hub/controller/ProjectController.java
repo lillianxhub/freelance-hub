@@ -75,7 +75,8 @@ public class ProjectController {
     @Operation(
             summary = "List projects",
             description = "ค้นหา Project จากชื่อ Project หรือ Client "
-                    + "กรองสถานะ เรียงลำดับ และแบ่งหน้า"
+                    + "กรองสถานะ เรียงลำดับ และแบ่งหน้า; "
+                    + "ส่ง include=tasks เมื่อต้องการรายการ Task ที่ยังใช้งานของแต่ละ Project"
     )
     @ApiResponse(
             responseCode = "200",
@@ -129,7 +130,8 @@ public class ProjectController {
                 filter.getSearch(),
                 filter.getStatus(),
                 clientId,
-                pageable
+                pageable,
+                "tasks".equals(filter.getInclude())
         );
 
         PaginationMeta meta = PaginationMeta.builder()
