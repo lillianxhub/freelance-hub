@@ -121,7 +121,7 @@ class ClientControllerTest {
             .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()));
 
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
-            filter.getPage() == 0 && filter.getSize() == 20
+            filter.getPage() == 1 && filter.getSize() == 20
                 && filter.getStatus() == null && filter.getSortBy().equals("name")));
     }
 
@@ -134,7 +134,7 @@ class ClientControllerTest {
         mockMvc.perform(get("/api/clients")
                 .param("status", "ARCHIVED")
                 .param("search", "Acme")
-                .param("page", "2")
+                .param("page", "3")
                 .param("size", "5")
                 .param("sortBy", "createdAt")
                 .param("direction", "DESC"))
@@ -147,13 +147,15 @@ class ClientControllerTest {
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
             filter.getStatus() == ClientStatus.ARCHIVED
                 && filter.getSearch().equals("Acme")
-                && filter.getPage() == 2 && filter.getSize() == 5
+                && filter.getPage() == 3 && filter.getSize() == 5
                 && filter.getSortBy().equals("createdAt")
                 && filter.getDirection().isDescending()));
     }
 
     @Test
     void listRejectsInvalidPageSizeBeforeCallingService() throws Exception {
+        mockMvc.perform(get("/api/clients").param("page", "0"))
+            .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/clients").param("size", "101"))
             .andExpect(status().isBadRequest());
 
@@ -163,7 +165,7 @@ class ClientControllerTest {
     @Test
     void listBindsLimitAlongsideLegacySize() throws Exception {
         when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
-        doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(1, 7), 0))
+        doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(0, 7), 0))
             .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
 
         mockMvc.perform(get("/api/clients")
@@ -171,7 +173,7 @@ class ClientControllerTest {
                 .param("size", "5")
                 .param("limit", "7"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.meta.page").value(2))
+            .andExpect(jsonPath("$.meta.page").value(1))
             .andExpect(jsonPath("$.meta.limit").value(7));
 
         verify(clientService).list(eq(OWNER_ID), org.mockito.ArgumentMatchers.argThat(filter ->
