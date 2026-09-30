@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -120,7 +121,7 @@ public class TaskController {
             @RequestParam(name = "is_active", defaultValue = "true") boolean isActive,
             @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "limit", required = false) Integer limit,
-            Pageable pageable
+            @ParameterObject Pageable pageable
     ) {
         Pageable requestedPage = PageRequest.of(
                 page - 1,
