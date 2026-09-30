@@ -1,4 +1,5 @@
 import type { StatusBadgeProps, SupportedStatus } from '../types/ui'
+import { Badge } from './ui/badge'
 
 const statusLabels = {
   ACTIVE: 'กำลังดำเนินการ', ARCHIVED: 'เก็บถาวร', PLANNED: 'วางแผน', ON_HOLD: 'พักงาน', COMPLETED: 'เสร็จสิ้น',
@@ -7,7 +8,7 @@ const statusLabels = {
 } satisfies Record<SupportedStatus, string>
 
 function StatusBadge({ status }: StatusBadgeProps) {
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabels[status]}</span>
+  return <Badge variant="secondary" className={`status-badge h-auto min-h-5 status-${status.toLowerCase()}`}>{statusLabels[status]}</Badge>
 }
 
 export default StatusBadge

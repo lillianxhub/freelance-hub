@@ -1,10 +1,12 @@
+import { Button } from './ui/button'
 import type { EmptyStateProps, ErrorStateProps, LoadingStateProps } from '../types/ui'
 import { FiAlertCircle, FiInbox } from 'react-icons/fi'
+import { Spinner } from './ui/spinner'
 
 export function LoadingState({ label = 'กำลังโหลดข้อมูล...' }: LoadingStateProps) {
   return (
     <div className="view-state" aria-busy="true">
-      <span className="loading-spinner" />
+      <Spinner className="size-6 text-primary" />
       <p>{label}</p>
     </div>
   )
@@ -16,7 +18,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
       <span className="state-symbol"><FiAlertCircle aria-hidden="true" /></span>
       <h2>โหลดข้อมูลไม่สำเร็จ</h2>
       <p>{message}</p>
-      {onRetry && <button className="button button-primary" type="button" onClick={onRetry}>ลองใหม่</button>}
+      {onRetry && <Button variant="default" className="button button-primary" type="button" onClick={onRetry}>ลองใหม่</Button>}
     </div>
   )
 }

@@ -1,6 +1,12 @@
+import { Card } from '../../../components/ui/card'
+import { Label } from '../../../components/ui/label'
+import { Input } from '../../../components/ui/input'
+import { NativeSelect } from '../../../components/ui/native-select'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
+import { Button } from '../../../components/ui/button'
 import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
-import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiClock, FiEdit3, FiFileText, FiPlus, FiSearch } from 'react-icons/fi'
+import { FiCheckCircle, FiClock, FiEdit3, FiFileText, FiPlus, FiSearch } from 'react-icons/fi'
 import PageHeader from '../../../components/PageHeader'
 import StatusBadge from '../../../components/StatusBadge'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
@@ -43,26 +49,25 @@ function InvoicesPage() {
 
   return (
     <div className="page-view">
-      <PageHeader eyebrow="จัดการ / ใบแจ้งหนี้" title="ใบแจ้งหนี้" description="สร้าง ส่ง และติดตามการชำระเงินจากที่เดียว" actions={<Link className="button button-primary" to="/invoices/new"><FiPlus aria-hidden="true" /> สร้างใบแจ้งหนี้</Link>} />
+      <PageHeader eyebrow="จัดการ / ใบแจ้งหนี้" title="ใบแจ้งหนี้" description="สร้าง ส่ง และติดตามการชำระเงินจากที่เดียว" actions={<Button asChild variant="default"><Link className="button button-primary" to="/invoices/new"><FiPlus aria-hidden="true" /> สร้างใบแจ้งหนี้</Link></Button>} />
       <div className="summary-grid">
-        <article className="metric-card accent-orange"><div className="metric-top"><span>ยอดรอรับ</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(outstanding)}</div><div className="metric-foot">{issued.length} ฉบับที่ยังมียอดคงเหลือ</div></article>
-        <article className="metric-card accent-green"><div className="metric-top"><span>รับชำระแล้ว</span><span className="metric-icon"><FiCheckCircle aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(paid)}</div><div className="metric-foot">รายได้จาก ใบแจ้งหนี้ ทั้งหมด</div></article>
-        <article className="metric-card accent-violet"><div className="metric-top"><span>ฉบับร่าง</span><span className="metric-icon"><FiEdit3 aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(drafts)}</div><div className="metric-foot">รอตรวจสอบก่อนออกเอกสาร</div></article>
-        <article className="metric-card accent-blue"><div className="metric-top"><span>ใบแจ้งหนี้ ทั้งหมด</span><span className="metric-icon"><FiFileText aria-hidden="true" /></span></div><div className="metric-value">{data.invoices.length}<span className="metric-unit">ฉบับ</span></div><div className="metric-foot">รวมทุกสถานะ</div></article>
+        <Card asChild><article className="metric-card accent-orange"><div className="metric-top"><span>ยอดรอรับ</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(outstanding)}</div><div className="metric-foot">{issued.length} ฉบับที่ยังมียอดคงเหลือ</div></article></Card>
+        <Card asChild><article className="metric-card accent-green"><div className="metric-top"><span>รับชำระแล้ว</span><span className="metric-icon"><FiCheckCircle aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(paid)}</div><div className="metric-foot">รายได้จาก ใบแจ้งหนี้ ทั้งหมด</div></article></Card>
+        <Card asChild><article className="metric-card accent-violet"><div className="metric-top"><span>ฉบับร่าง</span><span className="metric-icon"><FiEdit3 aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(drafts)}</div><div className="metric-foot">รอตรวจสอบก่อนออกเอกสาร</div></article></Card>
+        <Card asChild><article className="metric-card accent-blue"><div className="metric-top"><span>ใบแจ้งหนี้ ทั้งหมด</span><span className="metric-icon"><FiFileText aria-hidden="true" /></span></div><div className="metric-value">{data.invoices.length}<span className="metric-unit">ฉบับ</span></div><div className="metric-foot">รวมทุกสถานะ</div></article></Card>
       </div>
 
-      <section className="panel">
+      <Card asChild><section className="panel">
         <div className="panel-heading"><div><h2>รายการใบแจ้งหนี้</h2><p>ค้นหาตามเลขที่เอกสารหรือลูกค้า</p></div></div>
-        <div className="filter-row"><label className="search-box"><span><FiSearch aria-hidden="true" /></span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหา ใบแจ้งหนี้หรือลูกค้า..." /></label><select className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as 'ALL' | InvoiceStatus); setPage(1) }}><option value="ALL">ทุกสถานะ</option><option value="DRAFT">ฉบับร่าง</option><option value="ISSUED">ออกแล้ว</option><option value="PAID">ชำระแล้ว</option><option value="OVERDUE">เกินกำหนด</option><option value="VOID">ยกเลิก</option></select><select className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value as 'ISSUE_DESC' | 'DUE_ASC' | 'TOTAL_DESC'); setPage(1) }}><option value="ISSUE_DESC">ออกล่าสุด</option><option value="DUE_ASC">ครบกำหนดใกล้สุด</option><option value="TOTAL_DESC">ยอดสูงสุด</option></select></div>
-        {invoices.length === 0 ? <EmptyState icon={<FiFileText aria-hidden="true" />} title="ไม่พบใบแจ้งหนี้" description="ลองเปลี่ยนคำค้นหาหรือสร้างใบแจ้งหนี้ ฉบับแรก" action={<Link className="button button-primary" to="/invoices/new">สร้าง ใบแจ้งหนี้</Link>} /> : (
-          <div className="table-wrap"><table className="data-table"><thead><tr><th>เลขที่ ใบแจ้งหนี้</th><th>ลูกค้า</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>ยอดรวม</th><th>คงเหลือ</th><th>สถานะ</th><th /></tr></thead><tbody>{visibleInvoices.map((invoice) => {
+        <div className="filter-row"><Label className="search-box"><span><FiSearch aria-hidden="true" /></span><Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหา ใบแจ้งหนี้หรือลูกค้า..." /></Label><NativeSelect className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as 'ALL' | InvoiceStatus); setPage(1) }}><option value="ALL">ทุกสถานะ</option><option value="DRAFT">ฉบับร่าง</option><option value="ISSUED">ออกแล้ว</option><option value="PAID">ชำระแล้ว</option><option value="OVERDUE">เกินกำหนด</option><option value="VOID">ยกเลิก</option></NativeSelect><NativeSelect className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value as 'ISSUE_DESC' | 'DUE_ASC' | 'TOTAL_DESC'); setPage(1) }}><option value="ISSUE_DESC">ออกล่าสุด</option><option value="DUE_ASC">ครบกำหนดใกล้สุด</option><option value="TOTAL_DESC">ยอดสูงสุด</option></NativeSelect></div>
+        {invoices.length === 0 ? <EmptyState icon={<FiFileText aria-hidden="true" />} title="ไม่พบใบแจ้งหนี้" description="ลองเปลี่ยนคำค้นหาหรือสร้างใบแจ้งหนี้ ฉบับแรก" action={<Button asChild variant="default"><Link className="button button-primary" to="/invoices/new">สร้าง ใบแจ้งหนี้</Link></Button>} /> : (
+          <div className="table-wrap"><Table className="data-table" pagination={{ page: safePage, totalPages, total: invoices.length, onPageChange: setPage }}><TableHeader><TableRow><TableHead>เลขที่ ใบแจ้งหนี้</TableHead><TableHead>ลูกค้า</TableHead><TableHead>วันที่ออก</TableHead><TableHead>ครบกำหนด</TableHead><TableHead>ยอดรวม</TableHead><TableHead>คงเหลือ</TableHead><TableHead>สถานะ</TableHead><TableHead /></TableRow></TableHeader><TableBody>{visibleInvoices.map((invoice) => {
             const client = data.clients.find((item) => item.id === invoice.client_id)
             const balance = invoiceBalance(invoice)
-            return <tr key={invoice.id}><td><strong>{invoice.invoice_number}</strong></td><td><div className="table-primary"><span className="client-avatar table-avatar" style={{ background: client?.color }}>{(client?.company_name || client?.name || 'CL').slice(0, 2).toUpperCase()}</span><span><strong>{client?.company_name || client?.name}</strong><small>{client?.email}</small></span></div></td><td>{formatDate(invoice.issue_date)}</td><td>{formatDate(invoice.due_date)}</td><td><strong>{formatMoney(invoice.total, invoice.currency)}</strong></td><td>{formatMoney(balance, invoice.currency)}</td><td><StatusBadge status={effectiveInvoiceStatus(invoice)} /></td><td><Link className="mini-button text-link" to={`/invoices/${invoice.id}`}>ดูรายละเอียด</Link></td></tr>
-          })}</tbody></table></div>
+            return <TableRow key={invoice.id}><TableCell><strong>{invoice.invoice_number}</strong></TableCell><TableCell><div className="table-primary"><span className="client-avatar table-avatar" style={{ background: client?.color }}>{(client?.company_name || client?.name || 'CL').slice(0, 2).toUpperCase()}</span><span><strong>{client?.company_name || client?.name}</strong><small>{client?.email}</small></span></div></TableCell><TableCell>{formatDate(invoice.issue_date)}</TableCell><TableCell>{formatDate(invoice.due_date)}</TableCell><TableCell><strong>{formatMoney(invoice.total, invoice.currency)}</strong></TableCell><TableCell>{formatMoney(balance, invoice.currency)}</TableCell><TableCell><StatusBadge status={effectiveInvoiceStatus(invoice)} /></TableCell><TableCell><Button asChild variant="ghost"><Link className="mini-button text-link" to={`/invoices/${invoice.id}`}>ดูรายละเอียด</Link></Button></TableCell></TableRow>
+          })}</TableBody></Table></div>
         )}
-        {totalPages > 1 && <div className="pagination"><button className="button button-secondary" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}><FiArrowLeft aria-hidden="true" /> ก่อนหน้า</button><span>หน้า {safePage} จาก {totalPages}</span><button className="button button-secondary" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป <FiArrowRight aria-hidden="true" /></button></div>}
-      </section>
+      </section></Card>
     </div>
   )
 }

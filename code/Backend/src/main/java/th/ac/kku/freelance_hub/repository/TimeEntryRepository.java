@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -79,5 +80,41 @@ public interface TimeEntryRepository
             UUID ownerId,
             UUID taskId,
             Pageable pageable
+    );
+
+    /** Only the duration is fetched for a total. */
+    interface DurationSecondsView {
+        Long getDurationSeconds();
+    }
+
+    /** Start time is also fetched when building daily chart buckets. */
+    interface StartedAtDurationView extends DurationSecondsView {
+        Instant getStartedAt();
+    }
+
+    /** Includes related visibility fields needed by dashboard aggregates. */
+    interface AllocationView extends StartedAtDurationView {
+        ProjectView getProject();
+
+        TaskView getTask();
+    }
+
+    interface ProjectView {
+        UUID getId();
+
+        Boolean getIsActive();
+    }
+
+    interface TaskView {
+        Boolean getIsActive();
+    }
+
+    /** The caller supplies half-open instant boundaries for the desired days. */
+    <T> List<T>
+    findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+            UUID ownerId,
+            Instant fromInclusive,
+            Instant toExclusive,
+            Class<T> projectionType
     );
 }

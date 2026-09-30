@@ -6,16 +6,36 @@ export function formatMoney(amount: number | string | null | undefined = 0, curr
 
 export function formatDuration(minutes: number | null | undefined = 0) {
   const safeMinutes = Math.max(0, Math.round(Number(minutes) || 0))
-  const hours = Math.floor(safeMinutes / 60)
-  const remainingMinutes = safeMinutes % 60
-  return hours ? `${hours}ชม. ${remainingMinutes}น.` : `${remainingMinutes}น.`
+  return formatDurationSeconds(safeMinutes * 60)
+}
+
+export interface TimeParts {
+  hours: number
+  minutes: number
+  seconds: number
+}
+
+/** แยกจำนวนวินาทีจาก API ออกเป็นชั่วโมง นาที และวินาทีสำหรับนำไปแสดงผล */
+export function splitDurationSeconds(totalSeconds: number | null | undefined = 0): TimeParts {
+  const safeSeconds = Math.max(0, Math.floor(Number(totalSeconds) || 0))
+  return {
+    hours: Math.floor(safeSeconds / 3600),
+    minutes: Math.floor((safeSeconds % 3600) / 60),
+    seconds: safeSeconds % 60,
+  }
+}
+
+/** แสดงระยะเวลาแบบ HH:mm:ss นาที เช่น 02:15:08 นาที */
+export function formatDurationSeconds(totalSeconds: number | null | undefined = 0): string {
+  const { hours, minutes, seconds } = splitDurationSeconds(totalSeconds)
+  const formatted = [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':')
+  return `${formatted} นาที`
 }
 
 export function formatTimer(totalSeconds = 0) {
-  const safeSeconds = Math.max(0, Math.floor(totalSeconds))
-  const hours = Math.floor(safeSeconds / 3600)
-  const minutes = Math.floor((safeSeconds % 3600) / 60)
-  const seconds = safeSeconds % 60
+  const { hours, minutes, seconds } = splitDurationSeconds(totalSeconds)
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
 }
 
