@@ -146,6 +146,22 @@ class ProjectServiceImplTest {
     }
 
     @Test
+    void countsActiveAndCompletedProjectsForOwner() {
+        when(projectRepository.countByOwnerIdAndStatusAndDeletedAtIsNull(
+                OWNER_ID, ProjectStatus.ACTIVE
+        )).thenReturn(3L);
+        when(projectRepository.countByOwnerIdAndStatusAndDeletedAtIsNull(
+                OWNER_ID, ProjectStatus.COMPLETED
+        )).thenReturn(2L);
+
+        var counts = service.countActiveAndCompleted(OWNER_ID);
+
+        assertThat(counts.activeCount()).isEqualTo(3);
+        assertThat(counts.completedCount()).isEqualTo(2);
+        assertThat(counts.totalCount()).isEqualTo(5);
+    }
+
+    @Test
     void rejectsInvalidStatusTransitionWithoutSaving() {
         Project project = new Project(owner, client, "Website");
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))

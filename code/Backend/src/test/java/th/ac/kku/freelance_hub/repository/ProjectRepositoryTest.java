@@ -113,6 +113,48 @@ class ProjectRepositoryTest {
                 .containsExactly(planned.getId());
     }
 
+    @Test
+    void countsOnlyOwnedActiveAndCompletedProjectsThatAreNotDeleted() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("count-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "Count Client"));
+
+        Project active = new Project(owner, client, "Active");
+        active.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(active);
+
+        Project completed = new Project(owner, client, "Completed");
+        completed.changeStatus(ProjectStatus.ACTIVE);
+        completed.changeStatus(ProjectStatus.COMPLETED);
+        projectRepository.saveAndFlush(completed);
+
+        Project deleted = new Project(owner, client, "Deleted");
+        deleted.changeStatus(ProjectStatus.ACTIVE);
+        deleted.archive();
+        projectRepository.saveAndFlush(deleted);
+
+        projectRepository.saveAndFlush(new Project(owner, client, "Planned"));
+
+        User otherOwner = userRepository.saveAndFlush(User.builder()
+                .email("count-other-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client otherClient = clientRepository.saveAndFlush(
+                new Client(otherOwner, "Other Client"));
+        Project otherActive = new Project(otherOwner, otherClient, "Other Active");
+        otherActive.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(otherActive);
+
+        var counts = projectService.countActiveAndCompleted(owner.getId());
+
+        assertThat(counts.activeCount()).isEqualTo(1);
+        assertThat(counts.completedCount()).isEqualTo(1);
+        assertThat(counts.totalCount()).isEqualTo(2);
+    }
+
         @Test
     void softDeletePreservesDataAndHidesDeletedProjectFromApiQueries() {
         User owner = userRepository.saveAndFlush(

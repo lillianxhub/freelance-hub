@@ -121,6 +121,23 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
+    public ProjectStatusCounts countActiveAndCompleted(UUID ownerId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+
+        long activeCount = projectRepository
+                .countByOwnerIdAndStatusAndDeletedAtIsNull(
+                        ownerId, ProjectStatus.ACTIVE
+                );
+        long completedCount = projectRepository
+                .countByOwnerIdAndStatusAndDeletedAtIsNull(
+                        ownerId, ProjectStatus.COMPLETED
+                );
+
+        return new ProjectStatusCounts(activeCount, completedCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,

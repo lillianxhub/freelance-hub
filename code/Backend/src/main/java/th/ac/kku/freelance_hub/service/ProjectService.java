@@ -20,6 +20,14 @@ public interface ProjectService {
 
     ProjectListItemResponse getById(UUID ownerId, UUID projectId);
 
+    ProjectStatusCounts countActiveAndCompleted(UUID ownerId);
+
+    record ProjectStatusCounts(long activeCount, long completedCount) {
+        public long totalCount() {
+            return activeCount + completedCount;
+        }
+    }
+
     default Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
