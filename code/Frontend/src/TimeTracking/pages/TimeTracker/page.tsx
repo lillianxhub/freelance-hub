@@ -1,3 +1,8 @@
+import { Card } from '../../../components/ui/card'
+import { Button } from '../../../components/ui/button'
+import { Label } from '../../../components/ui/label'
+import { NativeSelect } from '../../../components/ui/native-select'
+import { Input } from '../../../components/ui/input'
 import {
   useEffect,
   useMemo,
@@ -6,7 +11,7 @@ import {
   type FormEvent,
 } from "react";
 import { FiClock, FiPlus } from "react-icons/fi";
-import Modal from "../../../components/Modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import PageHeader from "../../../components/PageHeader";
 import {
   EmptyState,
@@ -38,6 +43,7 @@ function TimeTrackerPage() {
   const [manualForm, setManualForm] = useState(createEmptyManualForm());
   const [manualTasks, setManualTasks] = useState<Task[]>([]);
   const [manualTasksLoaded, setManualTasksLoaded] = useState(false);
+  const [filterTasks, setFilterTasks] = useState<Task[]>([]);
   const [formError, setFormError] = useState("");
   const [filters, setFilters] = useState<TimeFilters>({
     client: "ALL",
@@ -48,6 +54,7 @@ function TimeTrackerPage() {
     from: "",
     to: "",
   });
+  const [timeEntryPage, setTimeEntryPage] = useState(1);
 
   const activeProjects = useMemo(
     () =>
@@ -75,18 +82,38 @@ function TimeTrackerPage() {
       })
       .catch(() => {
         if (!active) return;
-        setManualTasks(
-          data.tasks.filter(
-            (task) => task.project_id === manualForm.project_id,
-          ),
-        );
+        setManualTasks([]);
         setManualTasksLoaded(true);
       });
 
     return () => {
       active = false;
     };
-  }, [data.tasks, manualForm.project_id, manualOpen]);
+  }, [manualForm.project_id, manualOpen]);
+
+  useEffect(() => {
+    if (filters.project === "ALL") {
+      setFilterTasks([]);
+      return undefined;
+    }
+
+    let active = true;
+    listTimerTasks(filters.project)
+      .then((tasks) => {
+        if (active) setFilterTasks(tasks);
+      })
+      .catch(() => {
+        if (active) setFilterTasks([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [filters.project]);
+
+  useEffect(() => {
+    setTimeEntryPage(1);
+  }, [filters]);
 
   if (loading) return <LoadingState label="LoadingTime entries..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -121,6 +148,16 @@ function TimeTrackerPage() {
       (entry) => !filters.to || entry.started_at.slice(0, 10) <= filters.to,
     )
     .sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at));
+  const timeEntryPageSize = 10;
+  const timeEntryTotalPages = Math.max(
+    1,
+    Math.ceil(entries.length / timeEntryPageSize),
+  );
+  const safeTimeEntryPage = Math.min(timeEntryPage, timeEntryTotalPages);
+  const visibleTimeEntries = entries.slice(
+    (safeTimeEntryPage - 1) * timeEntryPageSize,
+    safeTimeEntryPage * timeEntryPageSize,
+  );
 
   const openManual = (entry: TimeEntry | null = null) => {
     if (entry) {
@@ -260,13 +297,13 @@ function TimeTrackerPage() {
         title="บันทึกเวลา"
         description="เปลี่ยนเวลาทำTaskให้เป็นรายการที่แม่นยำและพร้อมเรียกเก็บเงิน"
         actions={
-          <button
+          <Button variant="default"
             className="button button-primary"
             type="button"
             onClick={() => openManual()}
           >
             <FiPlus aria-hidden="true" /> เพิ่มเวลาด้วยตนเอง
-          </button>
+          </Button>
         }
       />
 
@@ -274,28 +311,28 @@ function TimeTrackerPage() {
         <TimerPanel workspace={workspace} />
       </div>
 
-      <section className="panel entries-panel">
+      <Card asChild><section className="panel entries-panel">
         <div className="panel-heading">
           <div>
             <h2>รายการเวลา</h2>
             <p>ตรวจสอบ แก้ไข และกรองเวลาทำงาน</p>
           </div>
           <div className="range-buttons">
-            <button type="button" onClick={() => applyRange("DAY")}>
+            <Button variant="ghost" type="button" onClick={() => applyRange("DAY")}>
               วันนี้
-            </button>
-            <button type="button" onClick={() => applyRange("WEEK")}>
+            </Button>
+            <Button variant="ghost" type="button" onClick={() => applyRange("WEEK")}>
               สัปดาห์นี้
-            </button>
-            <button type="button" onClick={() => applyRange("ALL")}>
+            </Button>
+            <Button variant="ghost" type="button" onClick={() => applyRange("ALL")}>
               ทั้งหมด
-            </button>
+            </Button>
           </div>
         </div>
         <div className="entry-filters">
           <div className="entry-filter-field form-field">
-            <label htmlFor="time-filter-client">ลูกค้า</label>
-            <select
+            <Label htmlFor="time-filter-client">ลูกค้า</Label>
+            <NativeSelect
               id="time-filter-client"
               value={filters.client}
               onChange={(event) =>
@@ -313,11 +350,11 @@ function TimeTrackerPage() {
                   {client.company_name || client.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="entry-filter-field form-field">
-            <label htmlFor="time-filter-project">โปรเจกต์</label>
-            <select
+            <Label htmlFor="time-filter-project">โปรเจกต์</Label>
+            <NativeSelect
               id="time-filter-project"
               value={filters.project}
               onChange={(event) =>
@@ -340,13 +377,14 @@ function TimeTrackerPage() {
                     {project.name}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="entry-filter-field form-field">
-            <label htmlFor="time-filter-task">งาน</label>
-            <select
+            <Label htmlFor="time-filter-task">งาน</Label>
+            <NativeSelect
               id="time-filter-task"
               value={filters.task}
+              disabled={filters.project === "ALL"}
               onChange={(event) =>
                 setFilters((current) => ({
                   ...current,
@@ -355,18 +393,12 @@ function TimeTrackerPage() {
               }
             >
               <option value="ALL">ทุกงาน</option>
-              {data.tasks
-                .filter(
-                  (task) =>
-                    filters.project === "ALL" ||
-                    task.project_id === filters.project,
-                )
-                .map((task) => (
+              {filterTasks.map((task) => (
                   <option key={task.id} value={task.id}>
                     {task.name}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </div>
           {/* <select
             value={filters.billable}
@@ -395,8 +427,8 @@ function TimeTrackerPage() {
             <option value="INVOICED">ออก ใบแจ้งหนี้ แล้ว</option>
           </select> */}
           <div className="entry-filter-date form-field">
-            <label htmlFor="time-filter-from">ตั้งแต่วันที่</label>
-            <input
+            <Label htmlFor="time-filter-from">ตั้งแต่วันที่</Label>
+            <Input
               id="time-filter-from"
               type="date"
               value={filters.from}
@@ -409,8 +441,8 @@ function TimeTrackerPage() {
             />
           </div>
           <div className="entry-filter-date form-field">
-            <label htmlFor="time-filter-to">ถึงวันที่</label>
-            <input
+            <Label htmlFor="time-filter-to">ถึงวันที่</Label>
+            <Input
               id="time-filter-to"
               type="date"
               value={filters.to}
@@ -431,38 +463,35 @@ function TimeTrackerPage() {
           />
         ) : (
           <TimeEntryTable
-            entries={entries}
+            entries={visibleTimeEntries}
             projects={data.projects}
-            tasks={data.tasks}
+            pagination={{
+              page: safeTimeEntryPage,
+              totalPages: timeEntryTotalPages,
+              total: entries.length,
+              onPageChange: setTimeEntryPage,
+            }}
             onEdit={openManual}
             onDelete={(entry) => remove("time_entries", entry.id)}
             onDuplicate={duplicateEntry}
           />
         )}
-      </section>
+      </section></Card>
 
-      <Modal
-        open={manualOpen}
-        onClose={() => setManualOpen(false)}
-        title={manualForm.id ? "แก้ไขTime entries" : "เพิ่มTime entries"}
-        size="large"
-      >
-        <TimeEntryForm
+      <Dialog open={manualOpen} onOpenChange={(open) => { if (!open) setManualOpen(false) }}>
+        <DialogContent className="workspace-dialog workspace-dialog-large">
+          <DialogHeader><DialogTitle>{manualForm.id ? "แก้ไขTime entries" : "เพิ่มTime entries"}</DialogTitle></DialogHeader>
+          <TimeEntryForm
           value={manualForm}
           projects={data.projects}
-          tasks={
-            manualTasksLoaded
-              ? manualTasks
-              : data.tasks.filter(
-                  (task) => task.project_id === manualForm.project_id,
-                )
-          }
+          tasks={manualTasksLoaded ? manualTasks : []}
           error={formError}
           onChange={handleManualChange}
           onSubmit={saveManualEntry}
           onCancel={() => setManualOpen(false)}
-        />
-      </Modal>
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -4,12 +4,24 @@ import type { Project } from '../types/project'
 import type { Task } from '../types/task'
 import { toProject, toTask } from './workspace'
 
+const taskCache = new Map<string, Promise<Task[]>>()
+
 export async function listTimerProjects(): Promise<Project[]> {
-  const response = await api.get<ApiProject[]>('/projects?size=100&sort=name,asc')
+  const response = await api.get<ApiProject[]>('/projects?sortBy=project_name&direction=ASC')
   return response.data.map(toProject)
 }
 
 export async function listTimerTasks(projectId: string): Promise<Task[]> {
-  const response = await api.get<ApiTask[]>(`/projects/${encodeURIComponent(projectId)}/tasks?size=100&sort=sortOrder,asc`)
-  return response.data.map(toTask)
+  const cached = taskCache.get(projectId)
+  if (cached) return cached
+
+  const request = api
+    .get<ApiTask[]>(`/projects/${encodeURIComponent(projectId)}/tasks?sort=sortOrder,asc`)
+    .then((response) => response.data.map(toTask))
+    .catch((error: unknown) => {
+      taskCache.delete(projectId)
+      throw error
+    })
+  taskCache.set(projectId, request)
+  return request
 }

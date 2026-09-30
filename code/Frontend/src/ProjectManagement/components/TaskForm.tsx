@@ -1,3 +1,6 @@
+import { Input } from '../../components/ui/input'
+import { Textarea } from '../../components/ui/textarea'
+import { Button } from '../../components/ui/button'
 import FormLabel from "../../components/FormLabel";
 import type { TaskFormProps } from "../../types/projectDetailPage";
 
@@ -14,7 +17,7 @@ export default function TaskForm({
       <div className="form-grid">
         <div className="form-field full">
           <FormLabel htmlFor="task-name" required>ชื่องาน</FormLabel>
-          <input
+          <Input
             id="task-name"
             value={value.name}
             onChange={(event) =>
@@ -51,7 +54,7 @@ export default function TaskForm({
         </div> */}
         <div className="form-field full">
           <FormLabel htmlFor="task-description">รายละเอียด</FormLabel>
-          <textarea
+          <Textarea
             id="task-description"
             value={value.description}
             onChange={(event) =>
@@ -61,16 +64,16 @@ export default function TaskForm({
         </div>
       </div>
       <div className="form-actions">
-        <button
+        <Button variant="outline"
           className="button button-secondary"
           type="button"
           onClick={onCancel}
         >
           ยกเลิก
-        </button>
-        <button className="button button-primary" type="submit">
+        </Button>
+        <Button variant="default" className="button button-primary" type="submit">
           บันทึก งาน
-        </button>
+        </Button>
       </div>
     </form>
   );

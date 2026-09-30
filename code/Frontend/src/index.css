@@ -49,7 +49,6 @@
 * { box-sizing: border-box; }
 html { min-width: 320px; min-height: 100%; background: #FFFFFF; }
 body { min-width: 320px; min-height: 100vh; margin: 0; font-size: var(--font-size-base, 14px); }
-body.modal-open { overflow: hidden; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {

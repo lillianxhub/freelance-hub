@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { manageLinks, workspaceLinks } from '../constants/navigation'
 import type { SidebarLinkProps, SidebarProps } from '../types/ui'
+import { Sheet, SheetContent, SheetTitle } from './ui/sheet'
 
 function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
   const Icon = icon
@@ -13,11 +14,9 @@ function SidebarLink({ to, label, icon, badge }: SidebarLinkProps) {
   )
 }
 
-function Sidebar({ open, onClose }: SidebarProps) {
+function SidebarContent({ onClose }: Pick<SidebarProps, 'onClose'>) {
   return (
     <>
-      <button className={`sidebar-backdrop${open ? ' visible' : ''}`} type="button" aria-label="ปิดเมนู" onClick={onClose} />
-      <aside className={`sidebar${open ? ' open' : ''}`}>
         <div className="sidebar-header">
           <div className="logo-box">FH</div>
           <div>
@@ -55,7 +54,20 @@ function Sidebar({ open, onClose }: SidebarProps) {
             <span className="profile-copy"><strong>{name}</strong><small>{profile?.email || user?.email}</small></span>
           </div>
         </div> */}
-      </aside>
+    </>
+  )
+}
+
+function Sidebar({ open, onClose }: SidebarProps) {
+  return (
+    <>
+      <aside className="sidebar"><SidebarContent onClose={onClose} /></aside>
+      <Sheet open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}>
+        <SheetContent side="left" className="w-[258px] gap-0 overflow-y-auto px-[18px] py-6 sm:max-w-[258px] min-[821px]:hidden">
+          <SheetTitle className="sr-only">เมนูหลัก</SheetTitle>
+          <SidebarContent onClose={onClose} />
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

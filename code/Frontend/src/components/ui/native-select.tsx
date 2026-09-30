@@ -1,60 +1,99 @@
-import * as React from "react"
-import { cn } from "cn"
-import { ChevronDownIcon } from "lucide-react"
+import * as React from 'react'
+import { cn } from 'cn'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select'
 
-type NativeSelectProps = Omit<React.ComponentProps<"select">, "size"> & {
-  size?: "sm" | "default"
+const emptyValue = '__freelance_hub_empty_select_value__'
+
+type NativeSelectProps = Omit<React.ComponentProps<'select'>, 'size'> & {
+  size?: 'sm' | 'default'
+  wrapperClassName?: string
+  placeholder?: string
 }
 
+function isOption(
+  child: React.ReactNode,
+): child is React.ReactElement<React.ComponentProps<'option'>> {
+  return React.isValidElement(child) && child.type === 'option'
+}
+
+/** Compatibility wrapper that renders the shadcn Select primitives. */
 function NativeSelect({
   className,
-  size = "default",
-  ...props
+  size = 'default',
+  wrapperClassName,
+  children,
+  value,
+  defaultValue,
+  onChange,
+  onBlur,
+  disabled,
+  id,
+  name,
+  required,
+  placeholder,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
+  'aria-label': ariaLabel,
 }: NativeSelectProps) {
+  const options = React.Children.toArray(children).filter(isOption)
+  const toInternalValue = (nextValue: string) => nextValue || emptyValue
+  const fromInternalValue = (nextValue: string) =>
+    nextValue === emptyValue ? '' : nextValue
+  const selectedValue = value === undefined ? undefined : toInternalValue(String(value))
+  const initialValue = defaultValue === undefined
+    ? undefined
+    : toInternalValue(String(defaultValue))
+
+  const notifyChange = (nextValue: string) => {
+    if (!onChange) return
+    const fieldValue = fromInternalValue(nextValue)
+    const event = {
+      target: { name: name ?? '', value: fieldValue },
+      currentTarget: { name: name ?? '', value: fieldValue },
+    } as unknown as React.ChangeEvent<HTMLSelectElement>
+    onChange(event)
+  }
+
   return (
-    <div
-      className={cn(
-        "group/native-select relative w-fit has-[select:disabled]:opacity-50",
-        className
-      )}
-      data-slot="native-select-wrapper"
-      data-size={size}
+    <Select
+      name={name}
+      required={required}
+      disabled={disabled}
+      value={selectedValue}
+      defaultValue={initialValue}
+      onValueChange={notifyChange}
     >
-      <select
-        data-slot="native-select"
-        data-size={size}
-        className="h-8 w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent py-1 pr-8 pl-2.5 text-sm transition-colors outline-none select-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-[size=sm]:py-0.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
-        {...props}
-      />
-      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground select-none" aria-hidden="true" data-slot="native-select-icon" />
-    </div>
+      <SelectTrigger
+        id={id}
+        size={size}
+        className={cn(wrapperClassName, className)}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
+        aria-label={ariaLabel}
+        onBlur={(event) => onBlur?.(event as unknown as React.FocusEvent<HTMLSelectElement>)}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent position="popper">
+        {options.map((option) => {
+          const optionValue = option.props.value === undefined
+            ? String(option.props.children)
+            : String(option.props.value)
+          return (
+            <SelectItem key={option.key ?? optionValue} value={toInternalValue(optionValue)} disabled={option.props.disabled}>
+              {option.props.children}
+            </SelectItem>
+          )
+        })}
+      </SelectContent>
+    </Select>
   )
 }
 
-function NativeSelectOption({
-  className,
-  ...props
-}: React.ComponentProps<"option">) {
-  return (
-    <option
-      data-slot="native-select-option"
-      className={cn("bg-[Canvas] text-[CanvasText]", className)}
-      {...props}
-    />
-  )
-}
-
-function NativeSelectOptGroup({
-  className,
-  ...props
-}: React.ComponentProps<"optgroup">) {
-  return (
-    <optgroup
-      data-slot="native-select-optgroup"
-      className={cn("bg-[Canvas] text-[CanvasText]", className)}
-      {...props}
-    />
-  )
-}
-
-export { NativeSelect, NativeSelectOptGroup, NativeSelectOption }
+export { NativeSelect }

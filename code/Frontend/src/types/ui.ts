@@ -1,5 +1,4 @@
 import type {
-  ButtonHTMLAttributes,
   PropsWithChildren,
   ReactNode,
 } from 'react'
@@ -8,10 +7,6 @@ import type { ClientStatus } from './client'
 import type { ProjectStatus } from './project'
 import type { TaskStatus } from './task'
 import type { InvoiceStatus } from './billing'
-
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'text'
-}
 
 export interface ModalProps extends PropsWithChildren {
   open: boolean

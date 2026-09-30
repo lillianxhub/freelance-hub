@@ -3,6 +3,7 @@ import type { CurrencyCode } from './common'
 import type { Project } from './project'
 import type { Task } from './task'
 import type { TimeEntry } from './timeTracking'
+import type { TablePaginationProps } from '../components/ui/table'
 
 export type ManualMode = 'RANGE' | 'DURATION'
 export type ManualTimeFieldName = 'project_id' | 'task_id' | 'entry_date' | 'manual_mode' | 'start_time' | 'end_time' | 'duration_minutes'
@@ -52,7 +53,8 @@ export interface TimeEntryFormProps {
 export interface TimeEntryTableProps {
   entries: readonly TimeEntry[]
   projects: readonly Project[]
-  tasks: readonly Task[]
+  tasks?: readonly Task[]
+  pagination?: TablePaginationProps
   onEdit: (entry: TimeEntry) => void
   onDelete: (entry: TimeEntry) => void
   onDuplicate: (entry: TimeEntry) => void
