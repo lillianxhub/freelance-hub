@@ -45,4 +45,3 @@
 - [ ] Relevant documentation updated
 - [ ] No secrets or credentials were committed
 - [ ] No new warnings or errors introduced
-
