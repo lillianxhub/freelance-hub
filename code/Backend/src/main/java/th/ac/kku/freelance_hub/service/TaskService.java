@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -25,6 +26,9 @@ public interface TaskService {
     TaskResponse getById(UUID ownerId, UUID taskId);
 
     TaskResponse getById(UUID ownerId, UUID projectId, UUID taskId);
+
+    /** Empty when there is no time entry or its most recent entry has no task. */
+    Optional<String> getLatestTimeEntryTaskName(UUID ownerId);
 
     TaskResponse update(UUID ownerId, UUID taskId, UpdateTaskRequest request);
 
