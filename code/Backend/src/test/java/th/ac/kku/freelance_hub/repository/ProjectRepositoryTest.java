@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.repository;
 import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.domain.entity.Client;
@@ -9,6 +10,7 @@ import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +45,45 @@ class ProjectRepositoryTest {
     private TaskRepository taskRepository;
 
     @Autowired
+    private TimeEntryRepository timeEntryRepository;
+
+    @Autowired
     private EntityManager entityManager;
+
+    @Test
+    void projectListAndDetailCountCompletedTimeButNotRunningTimer() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("project-time-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Time Client"));
+        Project project = new Project(owner, client, "Timed Project");
+        project.updateDetails("Timed Project", null, null, null, null, 120);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project = projectRepository.saveAndFlush(project);
+
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, null, "Finished work",
+                Instant.parse("2026-09-29T09:00:00Z"), 3600
+        ));
+        timeEntryRepository.saveAndFlush(TimeEntry.startTimer(
+                owner, project, null, "Running work",
+                Instant.parse("2026-09-30T09:00:00Z")
+        ));
+
+        var listed = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10)
+        ).getContent().get(0).getTimeTracking();
+        var detail = projectService.getById(owner.getId(), project.getId())
+                .getTimeTracking();
+
+        assertThat(listed.getTrackedSeconds()).isEqualTo(3600);
+        assertThat(listed.getTrackedHours()).isEqualByComparingTo("1.00");
+        assertThat(listed.getUsagePercent()).isEqualByComparingTo("50.00");
+        assertThat(detail.getTrackedSeconds()).isEqualTo(listed.getTrackedSeconds());
+        assertThat(detail.getTrackedHours()).isEqualByComparingTo(listed.getTrackedHours());
+        assertThat(detail.getUsagePercent()).isEqualByComparingTo(listed.getUsagePercent());
+    }
 
     @Test
     void filtersProjectsByOwnerStatusAndClient() {

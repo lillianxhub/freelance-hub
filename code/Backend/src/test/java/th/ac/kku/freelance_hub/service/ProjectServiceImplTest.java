@@ -312,6 +312,8 @@ class ProjectServiceImplTest {
                 List.of(PROJECT_ID, secondProjectId),
                 TaskStatus.COMPLETED
         )).thenReturn(List.of(summary));
+        givenTrackedSeconds(PROJECT_ID, 3600);
+        givenTrackedSeconds(secondProjectId, 5400);
 
         var result = service.list(
                 OWNER_ID,
@@ -336,6 +338,10 @@ class ProjectServiceImplTest {
                 .isZero();
         assertThat(withoutTasks.getTaskProgress().getPercent())
                 .isEqualByComparingTo("0");
+        assertThat(withoutTasks.getTimeTracking().getTrackedSeconds()).isEqualTo(3600);
+        assertThat(withoutTasks.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("1.00");
+        assertThat(withoutTasks.getTimeTracking().getUsagePercent()).isNull();
 
         var withTasks = result.getContent().get(1);
 
@@ -352,6 +358,11 @@ class ProjectServiceImplTest {
                 .isEqualTo(1);
         assertThat(withTasks.getTaskProgress().getPercent())
                 .isEqualByComparingTo("33.33");
+        assertThat(withTasks.getTimeTracking().getTrackedSeconds()).isEqualTo(5400);
+        assertThat(withTasks.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("1.50");
+        assertThat(withTasks.getTimeTracking().getUsagePercent())
+                .isEqualByComparingTo("75.00");
 
         verify(taskRepository).summarizeProgressByProjectIds(
                 OWNER_ID,
@@ -376,6 +387,7 @@ class ProjectServiceImplTest {
         )).thenReturn(new PageImpl<>(List.of(project), pageable, 1));
         when(taskRepository.findActiveByProjectIds(OWNER_ID, List.of(PROJECT_ID)))
                 .thenReturn(List.of(task));
+        givenTrackedSeconds(PROJECT_ID, 0);
 
         var response = service.list(
                 OWNER_ID, null, null, null, pageable, true
@@ -485,6 +497,7 @@ class ProjectServiceImplTest {
         when(taskRepository.summarizeProgressByProjectIds(
                 OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
                 .thenReturn(List.of(summary));
+        givenTrackedSeconds(PROJECT_ID, 36000);
 
         var result = service.getById(OWNER_ID, PROJECT_ID);
 
@@ -497,7 +510,11 @@ class ProjectServiceImplTest {
         assertThat(result.getTaskProgress().getTotalTasks()).isEqualTo(3);
         assertThat(result.getTaskProgress().getCompletedTasks()).isEqualTo(1);
         assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("33.33");
-        assertThat(result.getTimeTracking()).isNull();
+        assertThat(result.getTimeTracking().getTrackedSeconds()).isEqualTo(36000);
+        assertThat(result.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("10.00");
+        assertThat(result.getTimeTracking().getUsagePercent())
+                .isEqualByComparingTo("27.78");
         verify(taskRepository).summarizeProgressByProjectIds(
                 OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED);
     }
@@ -511,6 +528,7 @@ class ProjectServiceImplTest {
         when(taskRepository.summarizeProgressByProjectIds(
                 OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
                 .thenReturn(List.of());
+        givenTrackedSeconds(PROJECT_ID, 0);
 
         var result = service.getById(OWNER_ID, PROJECT_ID);
 
@@ -518,7 +536,19 @@ class ProjectServiceImplTest {
         assertThat(result.getTaskProgress().getTotalTasks()).isZero();
         assertThat(result.getTaskProgress().getCompletedTasks()).isZero();
         assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("0");
-        assertThat(result.getTimeTracking()).isNull();
+        assertThat(result.getTimeTracking().getTrackedSeconds()).isZero();
+        assertThat(result.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("0.00");
+        assertThat(result.getTimeTracking().getUsagePercent()).isNull();
+    }
+
+    private void givenTrackedSeconds(UUID projectId, long seconds) {
+        when(timeEntryQueryService.summarize(
+                eq(OWNER_ID),
+                argThat(filter -> projectId.equals(filter.getProjectId()))
+        )).thenReturn(TimeEntrySummaryResponse.builder()
+                .totalSeconds(seconds)
+                .build());
     }
 }
 

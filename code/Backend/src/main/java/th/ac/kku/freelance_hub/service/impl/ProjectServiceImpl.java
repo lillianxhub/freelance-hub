@@ -123,7 +123,11 @@ public class ProjectServiceImpl implements ProjectService {
         long totalTasks = summaries.isEmpty() ? 0 : summaries.get(0).getTotalTasks();
         long completedTasks = summaries.isEmpty() ? 0 : summaries.get(0).getCompletedTasks();
 
-        return projectMapper.toListItemResponse(project, totalTasks, completedTasks);
+        ProjectListItemResponse response = projectMapper.toListItemResponse(
+                project, totalTasks, completedTasks
+        );
+        response.setTimeTracking(timeTracking(ownerId, project));
+        return response;
     }
 
     @Override
@@ -147,10 +151,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional(readOnly = true)
     public ProjectProgress getProgress(UUID ownerId, UUID projectId) {
         Project project = findOwnedProject(ownerId, projectId);
-        long trackedSeconds = timeEntryQueryService.summarize(
-                ownerId,
-                TimeEntryFilterRequest.builder().projectId(projectId).build()
-        ).getTotalSeconds();
+        long trackedSeconds = trackedSeconds(ownerId, projectId);
 
         Integer targetMinutes = project.getTargetMinutes();
         if (targetMinutes == null) {
@@ -159,10 +160,9 @@ public class ProjectServiceImpl implements ProjectService {
             );
         }
 
-        BigDecimal tracked = BigDecimal.valueOf(trackedSeconds);
         BigDecimal target = BigDecimal.valueOf(targetMinutes.longValue() * 60);
-        BigDecimal percent = tracked.multiply(BigDecimal.valueOf(100))
-                .divide(target, 2, RoundingMode.HALF_UP);
+        BigDecimal tracked = BigDecimal.valueOf(trackedSeconds);
+        BigDecimal percent = usagePercent(targetMinutes, trackedSeconds);
 
         ProgressLevel level;
         if (tracked.compareTo(target) >= 0) {
@@ -309,6 +309,7 @@ public class ProjectServiceImpl implements ProjectService {
                     totalTasks,
                     completedTasks
             );
+            response.setTimeTracking(timeTracking(ownerId, project));
             if (includeTasks) {
                 response.setTasks(tasksByProject.getOrDefault(
                         project.getId(), List.of()
@@ -364,6 +365,36 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findOwnedProject(ownerId, projectId);
         project.archive();
         projectRepository.save(project);
+    }
+
+    private ProjectListItemResponse.TimeTracking timeTracking(
+            UUID ownerId,
+            Project project
+    ) {
+        long seconds = trackedSeconds(ownerId, project.getId());
+        return ProjectListItemResponse.TimeTracking.builder()
+                .trackedSeconds(seconds)
+                .trackedHours(BigDecimal.valueOf(seconds)
+                        .divide(BigDecimal.valueOf(3600), 2, RoundingMode.HALF_UP))
+                .usagePercent(usagePercent(project.getTargetMinutes(), seconds))
+                .build();
+    }
+
+    private long trackedSeconds(UUID ownerId, UUID projectId) {
+        return timeEntryQueryService.summarize(
+                ownerId,
+                TimeEntryFilterRequest.builder().projectId(projectId).build()
+        ).getTotalSeconds();
+    }
+
+    private static BigDecimal usagePercent(Integer targetMinutes, long seconds) {
+        if (targetMinutes == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(seconds)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(targetMinutes.longValue() * 60),
+                        2, RoundingMode.HALF_UP);
     }
 
     private Project findOwnedProject(UUID ownerId, UUID projectId) {
