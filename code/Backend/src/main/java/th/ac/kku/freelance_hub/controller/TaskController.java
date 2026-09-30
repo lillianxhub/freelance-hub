@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -104,8 +105,8 @@ public class TaskController {
     @Operation(
             summary = "List tasks",
             description = "ดึงรายการงานย่อยในโปรเจกต์ กรองด้วย is_active "
-                    + "โดยค่าเริ่มต้นเป็น true และรองรับ page, size, sort "
-                    + "โดย page เริ่มจาก 0"
+                    + "โดยค่าเริ่มต้นเป็น true และรองรับ page, limit, sort "
+                    + "โดย page เริ่มจาก 1 และยังรับ size แบบเดิม"
     )
     @ApiResponse(responseCode = "200", description = "ดึงรายการงานย่อยสำเร็จ",
             useReturnTypeSchema = true)
@@ -117,10 +118,17 @@ public class TaskController {
     public ResponseEntity<ApiResult<List<TaskResponse>>> list(
             @PathVariable("projectId") UUID projectId,
             @RequestParam(name = "is_active", defaultValue = "true") boolean isActive,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "limit", required = false) Integer limit,
             Pageable pageable
     ) {
+        Pageable requestedPage = PageRequest.of(
+                page - 1,
+                limit == null ? pageable.getPageSize() : limit,
+                pageable.getSort()
+        );
         Page<TaskResponse> tasks = taskService.list(
-                currentOwnerId(), projectId, isActive, pageable
+                currentOwnerId(), projectId, isActive, requestedPage
         );
 
         PaginationMeta meta = PaginationMeta.builder()

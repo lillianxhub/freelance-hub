@@ -1,10 +1,9 @@
 package th.ac.kku.freelance_hub.domain.entity;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-
-import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -55,10 +54,12 @@ import jakarta.persistence.Version;
 )
 public class Task {
 
+    //Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    //Task หลายตัวสามารถอยู่ใน Project เดียวกันได้
     @ManyToOne(
             fetch = FetchType.LAZY,
             optional = false
@@ -85,6 +86,7 @@ public class Task {
     )
     private TaskStatus status = TaskStatus.OPEN;
 
+    //เลขลำดับของ Task ใน Project เอาไว้ใช้ในการจัดเรียง Task ใน Project
     @Column(
             name = "sort_order",
             nullable = false
@@ -113,6 +115,7 @@ public class Task {
     )
     private Instant updatedAt;
 
+    //เอาไว้ใช้ในการจัดการ concurrent update ของ Task
     @Version
     @Column(nullable = false)
     private Long version;
@@ -195,15 +198,17 @@ public class Task {
         }
     }
 
+    //เรียงลำดับของ Task ใน Project โดยใช้ sortOrder
+    //ถ้า sortOrder เป็นลบจะเกิด IllegalArgumentException
     public void reorder(int position) {
         if (position < 0) {
             throw new IllegalArgumentException(
                     "sortOrder must not be negative"
             );
         }
-
         sortOrder = position;
     }
+
 
     private static String requireName(String name) {
         if (name == null || name.isBlank()) {
@@ -211,7 +216,6 @@ public class Task {
                     "name is required"
             );
         }
-
         return name.trim();
     }
 

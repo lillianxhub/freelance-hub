@@ -47,9 +47,25 @@ class ProjectStateTest {
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.PLANNED);
 
         project.archive();
-        assertThatThrownBy(() -> project.changeStatus(ProjectStatus.ACTIVE))
+        assertThatThrownBy(() -> project.changeStatus(ProjectStatus.ON_HOLD))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+    }
+
+    @Test
+    void restoresArchivedProjectToActiveOrPlanned() {
+        for (ProjectStatus nextStatus : new ProjectStatus[] {
+                ProjectStatus.ACTIVE, ProjectStatus.PLANNED
+        }) {
+            Project project = newProject();
+            project.changeStatus(ProjectStatus.ARCHIVED);
+            assertThat(project.getIsActive()).isFalse();
+
+            project.changeStatus(nextStatus);
+
+            assertThat(project.getStatus()).isEqualTo(nextStatus);
+            assertThat(project.getIsActive()).isTrue();
+        }
     }
 
     @Test

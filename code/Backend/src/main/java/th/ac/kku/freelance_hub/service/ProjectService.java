@@ -20,12 +20,23 @@ public interface ProjectService {
 
     ProjectListItemResponse getById(UUID ownerId, UUID projectId);
 
-    Page<ProjectListItemResponse> list(
+    default Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
             ProjectStatus status,
             UUID clientId,
             Pageable pageable
+    ) {
+        return list(ownerId, search, status, clientId, pageable, false);
+    }
+
+    Page<ProjectListItemResponse> list(
+            UUID ownerId,
+            String search,
+            ProjectStatus status,
+            UUID clientId,
+            Pageable pageable,
+            boolean includeTasks
     );
 
     ProjectResponse update(
