@@ -32,13 +32,15 @@ import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ProjectService;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
-import th.ac.kku.freelance_hub.repository.TaskRepository;
-
+import th.ac.kku.freelance_hub.dto.response.TaskResponse;
+import th.ac.kku.freelance_hub.mapper.TaskMapper;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 
 @Service
@@ -55,6 +57,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserRepository userRepository;
     private final ProjectMapper projectMapper;
     private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
 
 
 
@@ -63,13 +66,15 @@ public class ProjectServiceImpl implements ProjectService {
         ClientRepository clientRepository,
         UserRepository userRepository,
         ProjectMapper projectMapper,
-        TaskRepository taskRepository
+        TaskRepository taskRepository,
+        TaskMapper taskMapper
     ) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.projectMapper = projectMapper;
         this.taskRepository = taskRepository;
+        this.taskMapper = taskMapper;
     }
 
     @Override
@@ -121,7 +126,8 @@ public class ProjectServiceImpl implements ProjectService {
             String search,
             ProjectStatus status,
             UUID clientId,
-            Pageable pageable
+            Pageable pageable,
+            boolean includeTasks
     ) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Pageable checkedPageable = checkPageable(pageable);
@@ -197,6 +203,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Map<UUID, TaskRepository.TaskProgressSummary> progressByProject =
                 new HashMap<>();
+        Map<UUID, List<TaskResponse>> tasksByProject = new HashMap<>();
 
         if (projects.hasContent()) {
             List<UUID> projectIds = projects.getContent()
@@ -214,6 +221,15 @@ public class ProjectServiceImpl implements ProjectService {
             for (TaskRepository.TaskProgressSummary summary : summaries) {
                 progressByProject.put(summary.getProjectId(), summary);
             }
+
+            if (includeTasks) {
+                for (Task task : taskRepository.findActiveByProjectIds(
+                        ownerId, projectIds)) {
+                    tasksByProject.computeIfAbsent(
+                            task.getProject().getId(), ignored -> new ArrayList<>()
+                    ).add(taskMapper.toResponse(task));
+                }
+            }
         }
 
         return projects.map(project -> {
@@ -228,11 +244,17 @@ public class ProjectServiceImpl implements ProjectService {
                     ? 0
                     : summary.getCompletedTasks();
 
-            return projectMapper.toListItemResponse(
+            ProjectListItemResponse response = projectMapper.toListItemResponse(
                     project,
                     totalTasks,
                     completedTasks
             );
+            if (includeTasks) {
+                response.setTasks(tasksByProject.getOrDefault(
+                        project.getId(), List.of()
+                ));
+            }
+            return response;
         });
     }
 
