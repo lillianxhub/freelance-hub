@@ -38,6 +38,7 @@ import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
+import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.service.impl.TimeEntryQueryServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +52,8 @@ class TimeEntryQueryServiceImplTest {
 
     @Mock
     private TimeEntryRepository timeEntryRepository;
+    @Mock
+    private ProjectRepository projectRepository;
 
     private TimeEntryQueryServiceImpl queryService;
     private User owner;
@@ -74,6 +77,7 @@ class TimeEntryQueryServiceImplTest {
 
         queryService = new TimeEntryQueryServiceImpl(
                 timeEntryRepository,
+                projectRepository,
                 new TimeEntryMapper()
         );
     }
@@ -326,8 +330,8 @@ class TimeEntryQueryServiceImplTest {
         Instant to = Instant.parse("2026-09-29T17:00:00Z");
         when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
                 OWNER_ID, from, to,
-                TimeEntryRepository.DurationSecondsView.class
-        )).thenReturn(List.of(() -> 1800L, () -> 1800L));
+                TimeEntryRepository.AllocationView.class
+        )).thenReturn(List.of(durationEntry(from, 1800), durationEntry(from, 1800)));
 
         long total = queryService.sumCompletedSeconds(
                 OWNER_ID, day, day.plusDays(1)
@@ -336,7 +340,7 @@ class TimeEntryQueryServiceImplTest {
         assertThat(total).isEqualTo(3600L);
         verify(timeEntryRepository).findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
                 OWNER_ID, from, to,
-                TimeEntryRepository.DurationSecondsView.class
+                TimeEntryRepository.AllocationView.class
         );
     }
 
@@ -348,7 +352,7 @@ class TimeEntryQueryServiceImplTest {
         Instant to = Instant.parse("2026-10-01T17:00:00Z");
         when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
                 OWNER_ID, from, to,
-                TimeEntryRepository.StartedAtDurationView.class
+                TimeEntryRepository.AllocationView.class
         )).thenReturn(List.of(
                 durationEntry(Instant.parse("2026-09-28T17:00:00Z"), 1800),
                 durationEntry(Instant.parse("2026-09-29T16:59:00Z"), 900),
@@ -371,7 +375,7 @@ class TimeEntryQueryServiceImplTest {
         Instant to = Instant.parse("2026-09-30T17:00:00Z");
         when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
                 OWNER_ID, from, to,
-                TimeEntryRepository.StartedAtDurationView.class
+                TimeEntryRepository.AllocationView.class
         )).thenReturn(List.of());
 
         var result = queryService.sumDailySeconds(
@@ -382,6 +386,51 @@ class TimeEntryQueryServiceImplTest {
                 new TimeEntryQueryService.DailySeconds(fromDay, 0),
                 new TimeEntryQueryService.DailySeconds(fromDay.plusDays(1), 0)
         );
+    }
+
+    @Test
+    void sumsByProjectAndIncludesProjectWithNoEntries() {
+        LocalDate day = LocalDate.of(2026, 9, 29);
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-09-29T17:00:00Z");
+        Project empty = new Project(owner, project.getClient(), "Empty Project");
+        ReflectionTestUtils.setField(empty, "id", UUID.randomUUID());
+        when(projectRepository.findAll(
+                ArgumentMatchers.<Specification<Project>>any(),
+                eq(Sort.by("name", "id"))
+        )).thenReturn(List.of(empty, project));
+        when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                OWNER_ID, from, to, TimeEntryRepository.AllocationView.class
+        )).thenReturn(List.of(
+                durationEntry(from, 90),
+                durationEntry(from, 30, false, true),
+                durationEntry(from, 40, true, false)
+        ));
+
+        assertThat(queryService.sumSecondsByProject(OWNER_ID, day, day.plusDays(1)))
+                .containsExactly(
+                        new TimeEntryQueryService.ProjectSeconds(empty.getId(), empty.getName(), 0),
+                        new TimeEntryQueryService.ProjectSeconds(PROJECT_ID, project.getName(), 90)
+                );
+    }
+
+    @Test
+    void excludesInactiveProjectsAndDeletedTasksFromTotalAndDaily() {
+        LocalDate day = LocalDate.of(2026, 9, 29);
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-09-29T17:00:00Z");
+        when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                OWNER_ID, from, to, TimeEntryRepository.AllocationView.class
+        )).thenReturn(List.of(
+                durationEntry(from, 90),
+                durationEntry(from, 30, false, true),
+                durationEntry(from, 40, true, false)
+        ));
+
+        assertThat(queryService.sumCompletedSeconds(OWNER_ID, day, day.plusDays(1)))
+                .isEqualTo(90);
+        assertThat(queryService.sumDailySeconds(OWNER_ID, day, day.plusDays(1)))
+                .containsExactly(new TimeEntryQueryService.DailySeconds(day, 90));
     }
 
     @Test
@@ -400,11 +449,18 @@ class TimeEntryQueryServiceImplTest {
         verifyNoInteractions(timeEntryRepository);
     }
 
-    private static TimeEntryRepository.StartedAtDurationView durationEntry(
+    private static TimeEntryRepository.AllocationView durationEntry(
             Instant startedAt,
             long durationSeconds
     ) {
-        return new TimeEntryRepository.StartedAtDurationView() {
+        return durationEntry(startedAt, durationSeconds, true, true);
+    }
+
+    private static TimeEntryRepository.AllocationView durationEntry(
+            Instant startedAt, long durationSeconds,
+            boolean projectActive, boolean taskActive
+    ) {
+        return new TimeEntryRepository.AllocationView() {
             @Override
             public Instant getStartedAt() {
                 return startedAt;
@@ -413,6 +469,21 @@ class TimeEntryQueryServiceImplTest {
             @Override
             public Long getDurationSeconds() {
                 return durationSeconds;
+            }
+
+            @Override
+            public TimeEntryRepository.ProjectView getProject() {
+                return new TimeEntryRepository.ProjectView() {
+                    public UUID getId() { return PROJECT_ID; }
+                    public Boolean getIsActive() { return projectActive; }
+                };
+            }
+
+            @Override
+            public TimeEntryRepository.TaskView getTask() {
+                return new TimeEntryRepository.TaskView() {
+                    public Boolean getIsActive() { return taskActive; }
+                };
             }
         };
     }

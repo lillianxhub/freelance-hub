@@ -3,6 +3,7 @@ package th.ac.kku.freelance_hub.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -42,6 +44,9 @@ class TimeEntryRepositoryTest {
 
     @Autowired
     private TimeEntryRepository timeEntryRepository;
+
+    @Autowired
+    private TimeEntryQueryService timeEntryQueryService;
 
     @Autowired
     private EntityManager entityManager;
@@ -305,6 +310,67 @@ class TimeEntryRepositoryTest {
                         owner.getId(), to.plusSeconds(3600), to.plusSeconds(7200),
                         TimeEntryRepository.DurationSecondsView.class
                 )).isEmpty();
+    }
+
+    @Test
+    void projectsRelatedVisibilityForProjectTotalsIncludingUnassignedEntries() {
+        User owner = saveUser("project-totals-owner@example.com");
+        Project project = saveActiveProject(owner, "Totals Project");
+        Task task = taskRepository.saveAndFlush(new Task(project, "Totals Task", 0));
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-09-29T17:00:00Z");
+        saveManualEntry(owner, project, task, "Assigned", from);
+        saveManualEntry(owner, project, null, "Unassigned", from.plusSeconds(60));
+        entityManager.clear();
+
+        var entries = timeEntryRepository
+                .findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                        owner.getId(), from, to,
+                        TimeEntryRepository.AllocationView.class
+                );
+
+        assertThat(entries).hasSize(2);
+        assertThat(entries).allSatisfy(entry -> {
+            assertThat(entry.getProject().getId()).isEqualTo(project.getId());
+            assertThat(entry.getProject().getIsActive()).isTrue();
+        });
+        assertThat(entries).anySatisfy(entry -> assertThat(entry.getTask()).isNull());
+        assertThat(entries).anySatisfy(entry -> {
+            assertThat(entry.getTask()).isNotNull();
+            assertThat(entry.getTask().getIsActive()).isTrue();
+        });
+    }
+
+    @Test
+    void sumsVisibleProjectsWithZeroRowsAndExcludesArchivedAndDeletedTaskTime() {
+        User owner = saveUser("totals-owner@example.com");
+        User otherOwner = saveUser("other-totals-owner@example.com");
+        Project project = saveActiveProject(owner, "A Project");
+        Project emptyProject = saveActiveProject(owner, "B Empty Project");
+        Project archivedProject = saveActiveProject(owner, "C Archived Project");
+        Project otherProject = saveActiveProject(otherOwner, "Other Project");
+        Task task = taskRepository.saveAndFlush(new Task(project, "Task", 0));
+        Task deletedTask = taskRepository.saveAndFlush(new Task(project, "Deleted Task", 1));
+        Instant start = Instant.parse("2026-09-28T17:00:00Z");
+        saveManualEntry(owner, project, task, "Assigned", start);
+        saveManualEntry(owner, project, null, "Unassigned", start.plusSeconds(60));
+        saveManualEntry(owner, project, deletedTask, "Deleted task", start.plusSeconds(120));
+        saveManualEntry(owner, archivedProject, null, "Archived", start.plusSeconds(180));
+        saveManualEntry(otherOwner, otherProject, null, "Other owner", start);
+        deletedTask.softDelete();
+        archivedProject.archive();
+        taskRepository.flush();
+        projectRepository.flush();
+        entityManager.clear();
+
+        var result = timeEntryQueryService.sumSecondsByProject(
+                owner.getId(), LocalDate.of(2026, 9, 29), LocalDate.of(2026, 9, 30)
+        );
+
+        assertThat(result).containsExactly(
+                new TimeEntryQueryService.ProjectSeconds(project.getId(), project.getName(), 3600),
+                new TimeEntryQueryService.ProjectSeconds(emptyProject.getId(), emptyProject.getName(), 0)
+        );
     }
 
     private User saveUser(String email) {

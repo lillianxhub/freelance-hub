@@ -39,5 +39,14 @@ public interface TimeEntryQueryService {
             LocalDate toExclusive
     );
 
+    /** Includes owned, visible projects even when their total is zero. */
+    List<ProjectSeconds> sumSecondsByProject(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive
+    );
+
     record DailySeconds(LocalDate day, long totalSeconds) { }
+
+    record ProjectSeconds(UUID projectId, String projectName, long totalSeconds) { }
 }

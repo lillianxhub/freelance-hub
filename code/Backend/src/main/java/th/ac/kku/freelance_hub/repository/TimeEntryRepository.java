@@ -92,6 +92,23 @@ public interface TimeEntryRepository
         Instant getStartedAt();
     }
 
+    /** Includes related visibility fields needed by dashboard aggregates. */
+    interface AllocationView extends StartedAtDurationView {
+        ProjectView getProject();
+
+        TaskView getTask();
+    }
+
+    interface ProjectView {
+        UUID getId();
+
+        Boolean getIsActive();
+    }
+
+    interface TaskView {
+        Boolean getIsActive();
+    }
+
     /** The caller supplies half-open instant boundaries for the desired days. */
     <T> List<T>
     findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
