@@ -25,6 +25,9 @@ public class ProjectFilterRequest {
 
     private ProjectStatus status;
 
+    @Pattern(regexp = "tasks", message = "include รองรับเฉพาะ tasks")
+    private String include;
+
     @Builder.Default
     @Min(value = 1, message = "หน้าต้องเริ่มจาก 1")
     private int page = 1;

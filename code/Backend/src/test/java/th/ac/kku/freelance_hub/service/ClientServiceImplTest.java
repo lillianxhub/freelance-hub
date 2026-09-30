@@ -190,7 +190,7 @@ class ClientServiceImplTest {
         assertThat(result.getContent()).hasSize(1);
         verify(clientRepository).findAll(any(Specification.class),
             org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
-                pageable.getPageNumber() == 1 && pageable.getPageSize() == 5));
+                pageable.getPageNumber() == 0 && pageable.getPageSize() == 5));
     }
 
     @Test
@@ -202,7 +202,7 @@ class ClientServiceImplTest {
 
         verify(clientRepository).findAll(any(Specification.class),
             org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
-                pageable.getPageNumber() == 1 && pageable.getPageSize() == 7));
+                pageable.getPageNumber() == 0 && pageable.getPageSize() == 7));
     }
 
     @Test

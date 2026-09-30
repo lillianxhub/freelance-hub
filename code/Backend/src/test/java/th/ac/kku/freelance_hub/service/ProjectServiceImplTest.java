@@ -20,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
+import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
@@ -27,6 +28,7 @@ import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ProjectMapper;
+import th.ac.kku.freelance_hub.mapper.TaskMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
@@ -76,7 +78,8 @@ class ProjectServiceImplTest {
                 clientRepository,
                 userRepository,
                 new ProjectMapper(),
-                taskRepository
+                taskRepository,
+                new TaskMapper()
         );
 
         owner = User.builder().id(OWNER_ID).build();
@@ -268,6 +271,32 @@ class ProjectServiceImplTest {
                 List.of(PROJECT_ID, secondProjectId),
                 TaskStatus.COMPLETED
         );
+        verify(taskRepository, never()).findActiveByProjectIds(any(), any());
+    }
+
+    @Test
+    void includesTasksOnlyWhenRequested() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        Task task = new Task(project, "Design", 0);
+        PageRequest pageable = PageRequest.of(
+                0, 20, Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        when(projectRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<Project>>any(),
+                eq(pageable)
+        )).thenReturn(new PageImpl<>(List.of(project), pageable, 1));
+        when(taskRepository.findActiveByProjectIds(OWNER_ID, List.of(PROJECT_ID)))
+                .thenReturn(List.of(task));
+
+        var response = service.list(
+                OWNER_ID, null, null, null, pageable, true
+        ).getContent().get(0);
+
+        assertThat(response.getTasks()).extracting("name")
+                .containsExactly("Design");
+        verify(taskRepository).findActiveByProjectIds(OWNER_ID, List.of(PROJECT_ID));
     }
 
     @Test
@@ -330,6 +359,29 @@ class ProjectServiceImplTest {
                 .isEqualTo(ProjectStatus.ARCHIVED);
         assertThat(project.getIsActive()).isFalse();
 
+        verify(projectRepository).save(project);
+    }
+
+    @Test
+    void changingArchivedStatusToActiveSavesProjectAsActive() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ARCHIVED);
+
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.ACTIVE)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(project.getIsActive()).isTrue();
         verify(projectRepository).save(project);
     }
 

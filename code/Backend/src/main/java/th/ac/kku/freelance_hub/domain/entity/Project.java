@@ -1,4 +1,7 @@
 package th.ac.kku.freelance_hub.domain.entity;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.state.ProjectState;
+import th.ac.kku.freelance_hub.domain.state.ProjectStates;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -10,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,8 +32,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 
-import th.ac.kku.freelance_hub.domain.state.ProjectState;
-import th.ac.kku.freelance_hub.domain.state.ProjectStates;
+
 
 @Entity
 @Table(
@@ -63,19 +64,21 @@ import th.ac.kku.freelance_hub.domain.state.ProjectStates;
 )
 public class Project {
 
-    @Id
+    @Id //PK
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-
+    //1 user มีได้หลายโปรเจค
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
+    //1ลูกค้ามีได้หลายโปรเจค
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
+    //attribute ของ Project
     @Column(nullable = false, length = 180)
     private String name;
 
@@ -91,8 +94,6 @@ public class Project {
     @Column(length = 7)
     private String color;
 
-
-
     @Column(name = "target_minutes")
     private Integer targetMinutes;
 
@@ -103,14 +104,17 @@ public class Project {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    //เอาไว้ทำ Soft_delete คือการลบแบบไม่ลบจริงๆ แต่จะทำให้ไม่สามารถเข้าถึงได้
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    //กำหนดความสัมพันธ์กับ Task
     @OneToMany(
             mappedBy = "project",
             fetch = FetchType.LAZY
     )
     private List<Task> tasks = new ArrayList<>();
+
 
     @Column(
             name = "created_at",
@@ -125,12 +129,15 @@ public class Project {
     )
     private Instant updatedAt;
 
+    //ใช้สำหรับ Optimistic Locking เพื่อป้องกันการแก้ไขข้อมูลพร้อมกัน
+    //เมื่อมีการแก้ไขข้อมูล จะทำการตรวจสอบ version ถ้า version ไม่ตรงกัน จะเกิด OptimisticLockException
     @Version
     @Column(nullable = false)
     private Long version;
 
     protected Project() {
     }
+
 
     public Project(
             User owner,
@@ -148,6 +155,7 @@ public class Project {
 
     }
 
+    //แก้รายละเอียดของ Project
     public void updateDetails(
             String name,
             String description,
@@ -168,9 +176,11 @@ public class Project {
         this.targetMinutes = targetMinutes;
     }
 
+
     public void changeClient(Client client) {
         this.client = requireOwnedClient(owner, client);
     }
+
 
     public void changeStatus(ProjectStatus nextStatus) {
         Objects.requireNonNull(nextStatus, "nextStatus is required");
@@ -189,34 +199,36 @@ public class Project {
 
         if (nextStatus == ProjectStatus.ARCHIVED) {
             isActive = false;
+        } else if (currentState.status() == ProjectStatus.ARCHIVED) {
+            isActive = true;
         }
     }
 
+    //จัดเก็บข้อมูลของ Project ให้เป็น Archived และทำ Soft_delete
     public void archive() {
         changeStatus(ProjectStatus.ARCHIVED);
         isActive = false;
         deletedAt = Instant.now();
     }
 
+    //เช็กว่าแต่ละสถานะของ Project สามารถทำงานได้หรือไม่
     public boolean canTrackTime() {
         return ProjectStates.from(status).canTrackTime();
     }
-
     public boolean canEditTasks() {
         return ProjectStates.from(status).canEditTasks();
     }
 
+    //คำนวณความคืบหน้าของ Project โดยใช้เวลาที่ติดตามและเป้าหมายเวลาที่กำหนด
     public BigDecimal progress(int trackedMinutes) {
         if (trackedMinutes < 0) {
             throw new IllegalArgumentException(
                     "trackedMinutes must not be negative"
             );
         }
-
         if (targetMinutes == null || targetMinutes == 0) {
             return BigDecimal.ZERO;
         }
-
         return BigDecimal.valueOf(trackedMinutes)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(
@@ -225,6 +237,8 @@ public class Project {
                         RoundingMode.HALF_UP
                 );
     }
+
+
 
     void addTask(Task task) {
         tasks.add(
@@ -242,9 +256,10 @@ public class Project {
                     "name is required"
             );
         }
-
         return name.trim();
     }
+
+
 
     private static Client requireOwnedClient(User owner, Client client) {
         Client requiredClient = Objects.requireNonNull(client, "client is required");
@@ -270,6 +285,7 @@ public class Project {
             );
         }
     }
+
 
     private static void validateColor(String color) {
         if (color != null

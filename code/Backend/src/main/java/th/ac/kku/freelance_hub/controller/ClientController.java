@@ -69,7 +69,7 @@ public class ClientController {
             @ParameterObject @Valid @ModelAttribute ClientFilterRequest filter) {
         UUID ownerId = userService.getCurrentUserEntity().getId();
         Page<ClientResponse> clients = clientService.list(ownerId, filter);
-        // Pagination metadata is one-based even though the query parameter is zero-based.
+        // Spring Data is zero-based internally; the public API is one-based.
         PaginationMeta meta = PaginationMeta.builder()
                 .page(clients.getNumber() + 1)
                 .limit(clients.getSize())
