@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,7 @@ import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 import th.ac.kku.freelance_hub.dto.response.ClientProjectSummaryResponse;
 import th.ac.kku.freelance_hub.dto.response.ClientTaskSummaryResponse;
+import th.ac.kku.freelance_hub.dto.response.ClientTimeTotalResponse;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.exception.UserNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
@@ -140,6 +142,21 @@ public class ClientServiceImpl implements ClientService {
                 filter.getPage() - 1, pageSize,
                 Sort.by(filter.getDirection(), filter.getSortBy()));
         return clientRepository.findAll(specification, pageable).map(clientMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClientTimeTotalResponse> summarizeTimeByClient(
+            UUID ownerId, Instant fromInclusive, Instant toExclusive) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        if (fromInclusive == null || toExclusive == null || !fromInclusive.isBefore(toExclusive)) {
+            throw new IllegalArgumentException("ช่วงเวลาที่ใช้สรุปต้องมีจุดเริ่มต้นก่อนจุดสิ้นสุด");
+        }
+        return clientRepository.sumCompletedTimeByClient(ownerId, fromInclusive, toExclusive)
+                .stream()
+                .map(total -> new ClientTimeTotalResponse(
+                        total.getClientId(), total.getClientName(), total.getTotalSeconds()))
+                .toList();
     }
 
     @Override

@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -8,6 +10,7 @@ import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.dto.response.ClientResponse;
+import th.ac.kku.freelance_hub.dto.response.ClientTimeTotalResponse;
 
 /** Business operations for clients owned by the authenticated freelancer. */
 public interface ClientService {
@@ -21,6 +24,10 @@ public interface ClientService {
     ClientResponse getById(UUID ownerId, UUID clientId, boolean includeProjects, boolean includeTasks);
 
     Page<ClientResponse> list(UUID ownerId, ClientFilterRequest filter);
+
+    /** Return completed time totals per Client for [fromInclusive, toExclusive). */
+    List<ClientTimeTotalResponse> summarizeTimeByClient(
+            UUID ownerId, Instant fromInclusive, Instant toExclusive);
 
     /** Replace all editable client details; omitted optional fields are cleared. */
     ClientResponse replace(UUID ownerId, UUID clientId, CreateClientRequest request);
