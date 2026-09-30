@@ -307,7 +307,7 @@ function TimeTrackerPage() {
         }
       />
 
-      <div className="tracker-layout">
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)] items-stretch gap-4">
         <TimerPanel workspace={workspace} />
       </div>
 

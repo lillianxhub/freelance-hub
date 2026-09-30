@@ -13,12 +13,14 @@ export function useScopedWorkspace(load: () => Promise<WorkspaceData>): Workspac
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const initialLoadStarted = useRef(false)
+  const hasLoadedData = useRef(false)
 
   const refresh = useCallback(async () => {
-    setLoading(true)
+    if (!hasLoadedData.current) setLoading(true)
     setError('')
     try {
       setData(await load())
+      hasLoadedData.current = true
     } catch (reason) {
       setError(errorMessage(reason))
     } finally {

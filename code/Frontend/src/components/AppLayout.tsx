@@ -8,11 +8,11 @@ function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <div className="app-shell">
+    <div className="flex min-h-screen bg-bg text-text-primary">
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <div className="app-main">
+      <div className="min-w-0 flex-1">
         <Topbar onMenu={() => setMenuOpen(true)} />
-        <main className="page-body"><Suspense fallback={<div className="view-state"><Spinner className="size-6 text-primary" /><p>กำลังโหลดข้อมูลหน้า...</p></div>}><Outlet /></Suspense></main>
+        <main className="px-[clamp(22px,3.4vw,54px)] pt-[34px] pb-[60px] max-[820px]:px-[18px] max-[820px]:pt-[25px] max-[820px]:pb-[45px] print:p-0"><Suspense fallback={<div className="view-state"><Spinner className="size-6 text-primary" /><p>กำลังโหลดข้อมูลหน้า...</p></div>}><Outlet /></Suspense></main>
       </div>
     </div>
   )

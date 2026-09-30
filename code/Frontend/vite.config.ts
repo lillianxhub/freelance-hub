@@ -11,6 +11,12 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: { '/api': 'http://localhost:8080' },
+    proxy: {
+      "/api": {
+        target: "https://freelance-hub-backend-staging.onrender.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
 })

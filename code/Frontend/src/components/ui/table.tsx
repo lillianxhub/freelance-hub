@@ -45,9 +45,9 @@ function Table({ className, pagination, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="relative w-full overflow-x-auto rounded-xl"
     >
-      <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      <table data-slot="table" className={cn("w-full rounded-xl border border-border caption-bottom text-sm", className)} {...props} />
       {pagination && <TablePagination {...pagination} />}
     </div>
   )
@@ -104,7 +104,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "h-10 !bg-primary-soft px-2 text-left align-middle !text-base !font-semibold whitespace-nowrap !text-text-primary [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
