@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -22,4 +24,20 @@ public interface TimeEntryQueryService {
             UUID ownerId,
             TimeEntryFilterRequest filter
     );
+
+    /** Sums completed entries by their start date in Thailand. */
+    long sumCompletedSeconds(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive
+    );
+
+    /** Includes zero-second days for a continuous Dashboard chart. */
+    List<DailySeconds> sumDailySeconds(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive
+    );
+
+    record DailySeconds(LocalDate day, long totalSeconds) { }
 }

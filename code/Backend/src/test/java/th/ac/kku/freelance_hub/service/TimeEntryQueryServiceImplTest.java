@@ -6,9 +6,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -315,6 +317,104 @@ class TimeEntryQueryServiceImplTest {
         verify(timeEntryRepository, never()).findAll(
                 ArgumentMatchers.<Specification<TimeEntry>>any()
         );
+    }
+
+    @Test
+    void convertsThaiDateBoundariesAndReturnsTotalSeconds() {
+        LocalDate day = LocalDate.of(2026, 9, 29);
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-09-29T17:00:00Z");
+        when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                OWNER_ID, from, to,
+                TimeEntryRepository.DurationSecondsView.class
+        )).thenReturn(List.of(() -> 1800L, () -> 1800L));
+
+        long total = queryService.sumCompletedSeconds(
+                OWNER_ID, day, day.plusDays(1)
+        );
+
+        assertThat(total).isEqualTo(3600L);
+        verify(timeEntryRepository).findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                OWNER_ID, from, to,
+                TimeEntryRepository.DurationSecondsView.class
+        );
+    }
+
+    @Test
+    void groupsByThaiStartDateAndIncludesEmptyDays() {
+        LocalDate fromDay = LocalDate.of(2026, 9, 29);
+        LocalDate toDay = fromDay.plusDays(3);
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-10-01T17:00:00Z");
+        when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                OWNER_ID, from, to,
+                TimeEntryRepository.StartedAtDurationView.class
+        )).thenReturn(List.of(
+                durationEntry(Instant.parse("2026-09-28T17:00:00Z"), 1800),
+                durationEntry(Instant.parse("2026-09-29T16:59:00Z"), 900),
+                durationEntry(Instant.parse("2026-09-30T17:00:00Z"), 600)
+        ));
+
+        var result = queryService.sumDailySeconds(OWNER_ID, fromDay, toDay);
+
+        assertThat(result).containsExactly(
+                new TimeEntryQueryService.DailySeconds(fromDay, 2700),
+                new TimeEntryQueryService.DailySeconds(fromDay.plusDays(1), 0),
+                new TimeEntryQueryService.DailySeconds(fromDay.plusDays(2), 600)
+        );
+    }
+
+    @Test
+    void returnsZeroForEveryDayWhenThereAreNoEntries() {
+        LocalDate fromDay = LocalDate.of(2026, 9, 29);
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-09-30T17:00:00Z");
+        when(timeEntryRepository.findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                OWNER_ID, from, to,
+                TimeEntryRepository.StartedAtDurationView.class
+        )).thenReturn(List.of());
+
+        var result = queryService.sumDailySeconds(
+                OWNER_ID, fromDay, fromDay.plusDays(2)
+        );
+
+        assertThat(result).containsExactly(
+                new TimeEntryQueryService.DailySeconds(fromDay, 0),
+                new TimeEntryQueryService.DailySeconds(fromDay.plusDays(1), 0)
+        );
+    }
+
+    @Test
+    void rejectsEmptyOrReversedAnalyticsDateRange() {
+        LocalDate day = LocalDate.of(2026, 9, 29);
+
+        assertThatThrownBy(() -> queryService.sumCompletedSeconds(
+                OWNER_ID, day, day
+        )).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> queryService.sumCompletedSeconds(
+                OWNER_ID, day, day.minusDays(1)
+        )).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> queryService.sumDailySeconds(
+                OWNER_ID, day, day
+        )).isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(timeEntryRepository);
+    }
+
+    private static TimeEntryRepository.StartedAtDurationView durationEntry(
+            Instant startedAt,
+            long durationSeconds
+    ) {
+        return new TimeEntryRepository.StartedAtDurationView() {
+            @Override
+            public Instant getStartedAt() {
+                return startedAt;
+            }
+
+            @Override
+            public Long getDurationSeconds() {
+                return durationSeconds;
+            }
+        };
     }
 
     private TimeEntry manualEntry(Project entryProject, Task entryTask) {

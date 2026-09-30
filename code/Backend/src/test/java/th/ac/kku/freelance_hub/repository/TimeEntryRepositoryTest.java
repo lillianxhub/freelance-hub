@@ -268,6 +268,45 @@ class TimeEntryRepositoryTest {
                 .containsExactlyInAnyOrder(atStart.getId(), inside.getId());
     }
 
+    @Test
+    void findsOnlyOwnedCompletedActiveDurationsByHalfOpenStartRange() {
+        User owner = saveUser("analytics-owner@example.com");
+        User otherOwner = saveUser("analytics-other@example.com");
+        Project project = saveActiveProject(owner, "Analytics Project");
+        Project otherProject = saveActiveProject(otherOwner, "Other Analytics Project");
+        Instant from = Instant.parse("2026-09-28T17:00:00Z");
+        Instant to = Instant.parse("2026-09-29T17:00:00Z");
+
+        // Starts before the Thai day and ends after midnight: count by start.
+        saveManualEntry(owner, project, null, "Before day", from.minusSeconds(60));
+        saveManualEntry(owner, project, null, "At start", from);
+        saveManualEntry(owner, project, null, "Inside", to.minusSeconds(60));
+        saveManualEntry(owner, project, null, "At end", to);
+        saveManualEntry(otherOwner, otherProject, null, "Other owner", from);
+
+        TimeEntry deleted = saveManualEntry(
+                owner, project, null, "Deleted", from.plusSeconds(60)
+        );
+        deleted.softDelete(Instant.parse("2026-09-30T00:00:00Z"));
+        timeEntryRepository.saveAndFlush(TimeEntry.startTimer(
+                owner, project, null, "Still running", from.plusSeconds(120)
+        ));
+        timeEntryRepository.flush();
+
+        assertThat(timeEntryRepository
+                .findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                        owner.getId(), from, to,
+                        TimeEntryRepository.StartedAtDurationView.class
+                ))
+                .extracting(TimeEntryRepository.StartedAtDurationView::getStartedAt)
+                .containsExactlyInAnyOrder(from, to.minusSeconds(60));
+        assertThat(timeEntryRepository
+                .findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                        owner.getId(), to.plusSeconds(3600), to.plusSeconds(7200),
+                        TimeEntryRepository.DurationSecondsView.class
+                )).isEmpty();
+    }
+
     private User saveUser(String email) {
         return userRepository.saveAndFlush(User.builder()
                 .email(email)
