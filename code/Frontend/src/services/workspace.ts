@@ -1,5 +1,5 @@
 import { api } from '../api/apiClient'
-import type { ApiClient, ApiProject, ApiResponse, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
+import type { ApiClient, ApiMeta, ApiProject, ApiResponse, ApiTask, ApiTimeEntry, ApiUser } from '../types/api'
 import type { Client } from '../types/client'
 import type { Profile } from '../types/profile'
 import type { Project } from '../types/project'
@@ -85,7 +85,7 @@ function toClient(source: ApiClient): Client {
     postal_code: '',
     tax_id: emptyString(source.taxId),
     notes: emptyString(source.notes),
-    status: source.status,
+    status: source.isActive === false ? 'ARCHIVED' : source.status,
     color: '#4F6BFF',
     created_at: source.createdAt,
     updated_at: source.updatedAt,
@@ -96,7 +96,8 @@ export function toProject(source: ApiProject): Project {
   return {
     id: source.id,
     owner_id: '',
-    client_id: source.clientId,
+    client_id: source.clientId ?? source.client?.id ?? '',
+    client_name: source.client?.name,
     name: source.name,
     description: emptyString(source.description),
     color: source.color || '#4F6BFF',
@@ -104,13 +105,27 @@ export function toProject(source: ApiProject): Project {
     billing_type: 'HOURLY',
     hourly_rate: null,
     fixed_price: null,
-    budget_hours: source.targetMinutes ? source.targetMinutes / 60 : null,
+    budget_hours: source.targetHours ?? (source.targetMinutes ? source.targetMinutes / 60 : null),
     budget_amount: null,
     currency: 'THB',
     start_date: emptyString(source.startDate),
     end_date: emptyString(source.endDate),
     created_at: source.createdAt,
     updated_at: source.updatedAt,
+    task_progress: source.taskProgress
+      ? {
+          total_tasks: source.taskProgress.totalTasks,
+          completed_tasks: source.taskProgress.completedTasks,
+          percent: source.taskProgress.percent,
+        }
+      : undefined,
+    time_tracking: source.timeTracking
+      ? {
+          tracked_seconds: source.timeTracking.trackedSeconds,
+          tracked_hours: source.timeTracking.trackedHours,
+          usage_percent: source.timeTracking.usagePercent,
+        }
+      : source.timeTracking ?? undefined,
   }
 }
 
@@ -133,12 +148,14 @@ export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
   return {
     id: source.id,
     owner_id: '',
-    project_id: source.projectId,
-    task_id: source.taskId || null,
+    project_id: source.projectId ?? source.project?.id ?? '',
+    task_id: source.taskId ?? source.task?.id ?? null,
+    task_name: source.taskName ?? source.task?.title,
     description: emptyString(source.description),
     started_at: source.startedAt,
     ended_at: source.endedAt || null,
-    duration_minutes: source.durationMinutes ?? null,
+    duration_minutes: source.durationMinutes ?? (source.durationSeconds === undefined ? null : source.durationSeconds / 60),
+    duration_seconds: source.durationSeconds ?? (source.durationMinutes === undefined ? null : source.durationMinutes * 60),
     billable: true,
     rate_snapshot: 0,
     currency: 'THB',
@@ -179,22 +196,98 @@ function projectPayload(input: ResourceInput<'projects'>) {
 }
 
 export async function listClients(): Promise<Client[]> {
-  const response = await api.get<ApiClient[]>('/clients?size=100&sortBy=name&direction=ASC')
+  const response = await api.get<ApiClient[]>('/clients?page=1&limit=10&sortBy=name&direction=ASC')
+  return response.data.map(toClient)
+}
+
+export interface ClientsPageResult {
+  clients: Client[]
+  meta: ApiMeta
+}
+
+export interface ClientListFilters {
+  search?: string
+  status?: Client['status']
+  sortBy?: 'name' | 'companyName' | 'email' | 'createdAt' | 'updatedAt'
+  direction?: 'ASC' | 'DESC'
+}
+
+export async function listClientsPage(page = 1, limit = 10, filters: ClientListFilters = {}): Promise<ClientsPageResult> {
+  const query = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    sortBy: filters.sortBy ?? 'name',
+    direction: filters.direction ?? 'ASC',
+  })
+  if (filters.search?.trim()) query.set('search', filters.search.trim())
+  if (filters.status) query.set('status', filters.status)
+  const response = await api.get<ApiClient[]>(`/clients?${query.toString()}`)
+  return {
+    clients: response.data.map(toClient),
+    meta: response.meta ?? {
+      page,
+      limit,
+      total: response.data.length,
+      totalPages: 1,
+    },
+  }
+}
+
+export async function listClientOptions(): Promise<Client[]> {
+  const response = await api.get<ApiClient[]>('/clients?sortBy=name&direction=ASC')
   return response.data.map(toClient)
 }
 
 export async function listProjects(): Promise<Project[]> {
-  const response = await api.get<ApiProject[]>('/projects?size=100&sort=name,asc')
-  return response.data.map(toProject)
+  const { projects } = await listProjectsPage()
+  return projects
+}
+
+export async function getProjectById(id: string): Promise<Project> {
+  const response = await api.get<ApiProject>(`/projects/${encodeURIComponent(id)}`)
+  return toProject(response.data)
+}
+
+export interface ProjectsPageResult {
+  projects: Project[]
+  meta: ApiMeta
+}
+
+export interface ProjectListFilters {
+  search?: string
+  status?: Project['status']
+  sortBy?: 'update_at' | 'end_date' | 'project_name'
+  direction?: 'ASC' | 'DESC'
+}
+
+export async function listProjectsPage(page = 1, limit = 10, filters: ProjectListFilters = {}): Promise<ProjectsPageResult> {
+  const query = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    sortBy: filters.sortBy ?? 'project_name',
+    direction: filters.direction ?? 'ASC',
+  })
+  if (filters.search?.trim()) query.set('search', filters.search.trim())
+  if (filters.status) query.set('status', filters.status)
+  const response = await api.get<ApiProject[]>(`/projects?${query.toString()}`)
+  return {
+    projects: response.data.map(toProject),
+    meta: response.meta ?? {
+      page,
+      limit,
+      total: response.data.length,
+      totalPages: 1,
+    },
+  }
 }
 
 export async function listTasks(projects: readonly Project[]): Promise<Task[]> {
-  const pages = await Promise.all(projects.map((project) => api.get<ApiTask[]>(`/projects/${project.id}/tasks?size=100&sort=sortOrder,asc`)))
+  const pages = await Promise.all(projects.map((project) => api.get<ApiTask[]>(`/projects/${project.id}/tasks?page=1&limit=10&sort=sortOrder,asc`)))
   return pages.flatMap((page) => page.data.map(toTask))
 }
 
 export async function listTimeEntries(): Promise<TimeEntry[]> {
-  const response = await api.get<ApiTimeEntry[]>('/time-entries?size=100&sortBy=startedAt&direction=DESC')
+  const response = await api.get<ApiTimeEntry[]>('/time-entries?page=1&limit=10&sortBy=startedAt&direction=DESC')
   return response.data.map(toTimeEntry)
 }
 
@@ -216,10 +309,15 @@ export async function loadAllResources(): Promise<WorkspaceData> {
 async function saveClient(input: ResourceInput<'clients'>): Promise<Client> {
   if (!input.id) return toClient((await api.post<ApiClient>('/clients', clientPayload(input))).data)
   if (input.status === 'ARCHIVED') {
-    await api.delete(`/clients/${input.id}`)
-    return { ...input, status: 'ARCHIVED' } as Client
+    return updateClientStatus(input.id, false)
   }
-  return toClient((await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input))).data)
+  const updated = toClient((await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input))).data)
+  return updated.status === 'ARCHIVED' ? updateClientStatus(input.id, true) : updated
+}
+
+export async function updateClientStatus(id: string, isActive: boolean): Promise<Client> {
+  const response = await api.patch<ApiClient>(`/clients/${encodeURIComponent(id)}/status`, { isActive })
+  return toClient(response.data)
 }
 
 export async function updateProfile(input: ResourceInput<'profiles'>): Promise<ApiResponse<Profile>> {
@@ -233,7 +331,7 @@ async function saveProject(input: ResourceInput<'projects'>): Promise<Project> {
     await api.delete(`/projects/${input.id}`)
     return { ...input, status: 'ARCHIVED' } as Project
   }
-  return toProject((await api.patch<ApiProject>(`/projects/${input.id}`, projectPayload(input))).data)
+  return toProject((await api.put<ApiProject>(`/projects/${input.id}`, projectPayload(input))).data)
 }
 
 async function saveTask(input: ResourceInput<'tasks'>): Promise<Task> {
@@ -264,7 +362,7 @@ export async function saveResource<K extends ResourceName>(resource: K, input: R
 export async function deleteResource(resource: ResourceName, id: string, projectId?: string): Promise<void> {
   if (unsupportedResources.has(resource)) throw new Error(`${resource} ยังไม่มี endpoint ใน Swagger ของ backend`)
   if (resource === 'clients') {
-    await api.delete(`/clients/${id}`)
+    await updateClientStatus(id, false)
     return
   }
   if (resource === 'projects') {

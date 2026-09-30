@@ -32,26 +32,39 @@ function isString(value: unknown): value is string {
   return typeof value === 'string'
 }
 
+function thaiName(value: Record<string, unknown>): string | null {
+  if (isString(value.name_th)) return value.name_th
+  if (isRecord(value.name) && isString(value.name.th)) return value.name.th
+  return null
+}
+
 function parseSubDistrict(value: unknown): ThaiSubDistrict | null {
-  if (!isRecord(value) || !isNumber(value.id) || !isString(value.name_th) || !isNumber(value.zip_code)) return null
-  return { id: value.id, name_th: value.name_th, zip_code: value.zip_code }
+  if (!isRecord(value) || !isNumber(value.id) || !isNumber(value.zip_code)) return null
+  const name = thaiName(value)
+  return name ? { id: value.id, name_th: name, zip_code: value.zip_code } : null
 }
 
 function parseDistrict(value: unknown): ThaiDistrict | null {
-  if (!isRecord(value) || !isNumber(value.id) || !isString(value.name_th) || !Array.isArray(value.sub_districts)) return null
+  if (!isRecord(value) || !isNumber(value.id) || !Array.isArray(value.sub_districts)) return null
+  const name = thaiName(value)
+  if (!name) return null
   const subDistricts = value.sub_districts.map(parseSubDistrict).filter((item): item is ThaiSubDistrict => item !== null)
-  return { id: value.id, name_th: value.name_th, sub_districts: subDistricts }
+  return { id: value.id, name_th: name, sub_districts: subDistricts }
 }
 
 function parseProvince(value: unknown): ThaiProvince | null {
-  if (!isRecord(value) || !isNumber(value.id) || !isString(value.name_th) || !Array.isArray(value.districts)) return null
+  if (!isRecord(value) || !isNumber(value.id) || !Array.isArray(value.districts)) return null
+  const name = thaiName(value)
+  if (!name) return null
   const districts = value.districts.map(parseDistrict).filter((item): item is ThaiDistrict => item !== null)
-  return { id: value.id, name_th: value.name_th, districts }
+  return { id: value.id, name_th: name, districts }
 }
 
 function parseAddressData(value: unknown): ThaiProvince[] {
   if (!Array.isArray(value)) throw new Error('รูปแบบข้อมูลที่อยู่ไม่ถูกต้อง')
-  return value.map(parseProvince).filter((item): item is ThaiProvince => item !== null)
+  const provinces = value.map(parseProvince).filter((item): item is ThaiProvince => item !== null)
+  if (provinces.length === 0) throw new Error('ไม่พบข้อมูลจังหวัดจาก API')
+  return provinces
 }
 
 export function loadThaiAddressData(): Promise<ThaiProvince[]> {

@@ -1,17 +1,54 @@
 import * as React from "react"
 import { cn } from "cn"
+import { Button } from "./button"
+import { Pagination, PaginationContent, PaginationItem } from "./pagination"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+export interface TablePaginationProps {
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  total?: number
+  className?: string
+}
+
+type TableProps = React.ComponentProps<"table"> & {
+  pagination?: TablePaginationProps
+}
+
+function TablePagination({ page, totalPages, total, onPageChange, className }: TablePaginationProps) {
+  const safeTotalPages = Math.max(1, totalPages)
+  const safePage = Math.min(Math.max(1, page), safeTotalPages)
+
+  return (
+    <Pagination className={cn("mt-5", className)}>
+      <PaginationContent>
+        <PaginationItem>
+          <Button variant="outline" type="button" disabled={safePage === 1} onClick={() => onPageChange(safePage - 1)}>
+            <ChevronLeftIcon aria-hidden="true" /> ก่อนหน้า
+          </Button>
+        </PaginationItem>
+        <PaginationItem className="px-2 text-sm text-muted-foreground">
+          หน้า {safePage} จาก {safeTotalPages}{total === undefined ? '' : ` · ${total} รายการ`}
+        </PaginationItem>
+        <PaginationItem>
+          <Button variant="outline" type="button" disabled={safePage === safeTotalPages} onClick={() => onPageChange(safePage + 1)}>
+            ถัดไป <ChevronRightIcon aria-hidden="true" />
+          </Button>
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  )
+}
+
+function Table({ className, pagination, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
       className="relative w-full overflow-x-auto"
     >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+      <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      {pagination && <TablePagination {...pagination} />}
     </div>
   )
 }
@@ -110,4 +147,5 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  TablePagination,
 }

@@ -1,3 +1,4 @@
+import { Card } from '../../../components/ui/card'
 import { Link, useParams } from 'react-router-dom'
 import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock } from 'react-icons/fi'
 import PageHeader from '../../../components/PageHeader'
@@ -28,15 +29,15 @@ function ClientDetailPage() {
       <PageHeader eyebrow="พื้นที่ทำงาน / ลูกค้า" title={displayName} description={`${client.name || 'ไม่ระบุผู้ติดต่อ'} · ${client.email || 'ไม่มีอีเมล'}`} actions={<StatusBadge status={client.status} />} />
 
       <div className="summary-grid">
-        <article className="metric-card accent-blue"><div className="metric-top"><span>โปรเจกต์</span><span className="metric-icon"><FiBriefcase aria-hidden="true" /></span></div><div className="metric-value">{projects.length}</div><div className="metric-foot">ทั้งหมดของลูกค้ารายนี้</div></article>
-        <article className="metric-card accent-green"><div className="metric-top"><span>เวลาที่บันทึก</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatDuration(totalMinutes)}</div><div className="metric-foot">รวมทุกโปรเจกต์</div></article>
+        <Card asChild><article className="metric-card accent-blue"><div className="metric-top"><span>โปรเจกต์</span><span className="metric-icon"><FiBriefcase aria-hidden="true" /></span></div><div className="metric-value">{projects.length}</div><div className="metric-foot">ทั้งหมดของลูกค้ารายนี้</div></article></Card>
+        <Card asChild><article className="metric-card accent-green"><div className="metric-top"><span>เวลาที่บันทึก</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatDuration(totalMinutes)}</div><div className="metric-foot">รวมทุกโปรเจกต์</div></article></Card>
         {/* <article className="metric-card accent-violet"><div className="metric-top"><span>รายได้เกิดขึ้น</span><span className="metric-icon">฿</span></div><div className="metric-value metric-compact">{formatMoney(revenue)}</div><div className="metric-foot">จากเวลา คิดค่าบริการ</div></article>
         <article className="metric-card accent-orange"><div className="metric-top"><span>ใบแจ้งหนี้</span><span className="metric-icon">▤</span></div><div className="metric-value">{invoices.length}</div><div className="metric-foot">ยอดรวม {formatMoney(invoices.reduce((sum, invoice) => sum + invoice.total, 0))}</div></article> */}
       </div>
 
       <div className="detail-grid">
         <div className="section-stack">
-          <section className="panel">
+          <Card asChild><section className="panel">
             <div className="panel-heading"><div><h2>โปรเจกต์</h2><p>โปรเจกต์ทั้งหมดของลูกค้ารายนี้</p></div></div>
             <div className="list-stack">
               {projects.map((project) => {
@@ -45,7 +46,7 @@ function ClientDetailPage() {
               })}
               {projects.length === 0 && <p className="inline-empty">ยังไม่มีโปรเจกต์</p>}
             </div>
-          </section>
+          </section></Card>
 
           {/* <section className="panel">
             <div className="panel-heading"><div><h2>ใบแจ้งหนี้</h2><p>ประวัติการเรียกเก็บเงิน</p></div></div>
@@ -56,7 +57,7 @@ function ClientDetailPage() {
           </section> */}
         </div>
 
-        <aside className="panel">
+        <Card asChild><aside className="panel">
           <div className="panel-heading"><div><h2>ข้อมูลลูกค้า</h2><p>ข้อมูลสำหรับติดต่อ</p></div></div>
           <div className="detail-list">
             <div className="detail-item"><span>ผู้ติดต่อ</span><strong>{client.name || '—'}</strong></div>
@@ -66,7 +67,7 @@ function ClientDetailPage() {
             <div className="detail-item"><span>ที่อยู่</span><p>{client.address || '—'}</p></div>
             <div className="detail-item"><span>หมายเหตุ</span><p>{client.notes || '—'}</p></div>
           </div>
-        </aside>
+        </aside></Card>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { Button } from '../../components/ui/button'
 import AuthenticationLayout from "./AuthenticationLayout";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -57,13 +58,13 @@ function LoginForm() {
           onChange={handleChange}
         />
 
-        <button
+        <Button variant="default"
           className="button button-primary wide"
           type="submit"
           disabled={loading}
         >
           {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-        </button>
+        </Button>
 
         <p className="auth-footer">
           ยังไม่มีบัญชี? <Link to="/register">สมัครสมาชิก</Link>
