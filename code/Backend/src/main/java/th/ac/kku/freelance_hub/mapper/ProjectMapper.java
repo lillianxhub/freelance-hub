@@ -71,6 +71,7 @@ public class ProjectMapper {
                 .id(project.getId())
                 .name(project.getName())
                 .description(project.getDescription())
+                .color(project.getColor())
                 .status(project.getStatus())
                 .startDate(project.getStartDate())
                 .endDate(project.getEndDate())

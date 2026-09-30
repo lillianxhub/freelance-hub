@@ -48,5 +48,7 @@ class ProjectMapperTest {
         assertThat(response.getName()).isEqualTo("Website");
         assertThat(response.getTargetMinutes()).isEqualTo(120);
         assertThat(response.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(mapper.toListItemResponse(project, 0, 0).getColor())
+                .isEqualTo("#336699");
     }
 }

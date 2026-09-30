@@ -31,6 +31,7 @@ import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
 import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
+import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.service.ProjectService;
@@ -121,11 +122,12 @@ class ProjectControllerTest {
                 eq("web"),
                 eq(ProjectStatus.ACTIVE),
                 eq(CLIENT_ID),
-                any(Pageable.class)
+                any(Pageable.class),
+                eq(false)
         )).thenReturn(new PageImpl<>(
-            List.<ProjectListItemResponse>of(),
+            List.of(ProjectListItemResponse.builder().id(PROJECT_ID).build()),
             PageRequest.of(1, 5),
-            0
+            6
         ));
 
         mockMvc.perform(get("/api/projects")
@@ -136,7 +138,8 @@ class ProjectControllerTest {
                         .param("limit", "5")
                         .param("sortBy", "project_name")
                         .param("direction", "DESC"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].tasks").doesNotExist());
 
         verify(projectService).list(
                 eq(OWNER_ID),
@@ -149,7 +152,32 @@ class ProjectControllerTest {
                                 && pageable.getSort()
                                         .getOrderFor("name")
                                         .isDescending()
-                )
+                ),
+                eq(false)
+        );
+    }
+
+    @Test
+    void listIncludesTasksWhenRequested() throws Exception {
+        when(userService.getCurrentUserEntity())
+                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(projectService.list(
+                eq(OWNER_ID), eq(null), eq(null), eq(null),
+                any(Pageable.class), eq(true)
+        )).thenReturn(new PageImpl<>(List.of(
+                ProjectListItemResponse.builder()
+                        .id(PROJECT_ID)
+                        .tasks(List.of(TaskResponse.builder().name("Design").build()))
+                        .build()
+        )));
+
+        mockMvc.perform(get("/api/projects").param("include", "tasks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].tasks[0].name").value("Design"));
+
+        verify(projectService).list(
+                eq(OWNER_ID), eq(null), eq(null), eq(null),
+                any(Pageable.class), eq(true)
         );
     }
 

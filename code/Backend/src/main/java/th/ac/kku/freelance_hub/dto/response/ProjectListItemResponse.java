@@ -3,8 +3,10 @@ package th.ac.kku.freelance_hub.dto.response;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +22,7 @@ public class ProjectListItemResponse {
     private UUID id;
     private String name;
     private String description;
+    private String color;
     private ProjectStatus status;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -28,6 +31,9 @@ public class ProjectListItemResponse {
     private ClientSummary client;
     private TaskProgress taskProgress;
     private TimeTracking timeTracking;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<TaskResponse> tasks;
 
     private Instant createdAt;
     private Instant updatedAt;
