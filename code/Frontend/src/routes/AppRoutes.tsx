@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { Navigate, useRoutes, type RouteObject } from "react-router-dom";
+import { Navigate, useParams, useRoutes, type RouteObject } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import ProtectedRoute from "../Authentication/components/ProtectedRoute";
 import { AnalyticsProvider } from "../Analytics/AnalyticsContext";
@@ -7,6 +7,7 @@ import { ClientsProvider } from "../ClientManagement/ClientsContext";
 import { ProfileProvider } from "../Profile/ProfileContext";
 import { ProjectsProvider } from "../ProjectManagement/ProjectsContext";
 import { TimeEntriesProvider } from "../TimeTracking/TimeEntriesContext";
+import { TimerProvider } from "../TimeTracking/TimerContext";
 import type { AppRouteDefinition } from "../types/routes";
 import ProfilePage from "../Profile/pages/Profile/page";
 
@@ -31,6 +32,17 @@ const TimeTrackerPage = lazy(
     () => import("../TimeTracking/pages/TimeTracker/page"),
 );
 const ReportsPage = lazy(() => import("../Analytics/pages/Reports/page"));
+
+function ProjectDetailRoute() {
+    const { projectId } = useParams();
+    if (!projectId) return <Navigate to="/projects" replace />;
+
+    return (
+        <ProjectsProvider key={projectId} projectId={projectId}>
+            <ProjectDetailPage />
+        </ProjectsProvider>
+    );
+}
 
 const publicRoutes: AppRouteDefinition[] = [
     { path: "/login", label: "Login", element: <LoginPage /> },
@@ -77,11 +89,7 @@ const protectedRoutes: AppRouteDefinition[] = [
     {
         path: "/projects/:projectId",
         label: "Projects detail",
-        element: (
-            <ProjectsProvider>
-                <ProjectDetailPage />
-            </ProjectsProvider>
-        ),
+        element: <ProjectDetailRoute />,
     },
     {
         path: "/time-tracker",
@@ -122,7 +130,9 @@ function ProtectedWorkspace() {
     return (
         <ProtectedRoute>
             <TimeEntriesProvider>
-                <AppLayout />
+                <TimerProvider>
+                    <AppLayout />
+                </TimerProvider>
             </TimeEntriesProvider>
         </ProtectedRoute>
     );

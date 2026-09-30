@@ -1,3 +1,7 @@
+import { Card } from '../../../components/ui/card'
+import { Progress } from '../../../components/ui/progress'
+import { Button } from '../../../components/ui/button'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -7,7 +11,7 @@ import {
   FiClock,
   FiPlus,
 } from "react-icons/fi";
-import Modal from "../../../components/Modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import PageHeader from "../../../components/PageHeader";
 import StatusBadge from "../../../components/StatusBadge";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
@@ -31,6 +35,7 @@ function ProjectDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [formError, setFormError] = useState("");
+  const [timeEntryPage, setTimeEntryPage] = useState(1);
 
   if (loading) return <LoadingState label="LoadingProjects..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -42,8 +47,15 @@ function ProjectDetailPage() {
   const tasks = data.tasks
     .filter((task) => task.project_id === project.id)
     .sort((a, b) => a.sort_order - b.sort_order);
-  const entries = data.time_entries.filter(
-    (entry) => entry.project_id === project.id,
+  const entries = data.time_entries
+    .filter((entry) => entry.project_id === project.id)
+    .sort((first, second) => Date.parse(second.started_at) - Date.parse(first.started_at));
+  const timeEntryPageSize = 6;
+  const timeEntryTotalPages = Math.max(1, Math.ceil(entries.length / timeEntryPageSize));
+  const safeTimeEntryPage = Math.min(timeEntryPage, timeEntryTotalPages);
+  const visibleTimeEntries = entries.slice(
+    (safeTimeEntryPage - 1) * timeEntryPageSize,
+    safeTimeEntryPage * timeEntryPageSize,
   );
   const totalMinutes = entries.reduce(
     (sum, entry) => sum + (entry.duration_minutes || 0),
@@ -94,19 +106,19 @@ function ProjectDetailPage() {
       <PageHeader
         eyebrow="พื้นที่ทำงาน / โปรเจกต์"
         title={project.name}
-        description={`${client?.company_name || client?.name} · ${project.description || "ไม่มีรายละเอียด"}`}
+        description={`${project.client_name || client?.company_name || client?.name || "ไม่พบลูกค้า"} · ${project.description || "ไม่มีรายละเอียด"}`}
         actions={
           <>
             <StatusBadge status={project.status} />
-            <Link className="button button-primary" to="/time-tracker">
+            <Button asChild variant="default"><Link className="button button-primary" to="/time-tracker">
               <FiClock aria-hidden="true" /> เริ่มจับเวลา
-            </Link>
+            </Link></Button>
           </>
         }
       />
 
       <div className="summary-grid project-detail-summary-grid">
-        <article className="metric-card accent-blue">
+        <Card asChild><article className="metric-card accent-blue">
           <div className="metric-top">
             <span>เวลาที่ใช้</span>
             <span className="metric-icon">
@@ -119,7 +131,7 @@ function ProjectDetailPage() {
           <div className="metric-foot">
             จากงบ {project.budget_hours || "—"} ชั่วโมง
           </div>
-        </article>
+        </article></Card>
         {/* <article className="metric-card accent-green">
           <div className="metric-top">
             <span>มูลค่าเกิดขึ้น</span>
@@ -139,7 +151,7 @@ function ProjectDetailPage() {
               : "มูลค่า fixed price"}
           </div>
         </article> */}
-        <article className="metric-card accent-violet">
+        <Card asChild><article className="metric-card accent-violet">
           <div className="metric-top">
             <span>งาน</span>
             <span className="metric-icon">
@@ -151,7 +163,7 @@ function ProjectDetailPage() {
             <span className="metric-unit">/ {tasks.length}</span>
           </div>
           <div className="metric-foot">เสร็จแล้ว {taskProgress}%</div>
-        </article>
+        </article></Card>
         {/* <article
           className={`metric-card ${budgetPercent >= 100 ? "accent-red" : "accent-orange"}`}
         >
@@ -175,19 +187,19 @@ function ProjectDetailPage() {
 
       <div className="detail-grid">
         <div className="section-stack">
-          <section className="panel">
+          <Card asChild><section className="panel">
             <div className="panel-heading">
               <div>
                 <h2>งาน</h2>
                 <p>สร้าง ปิดงาน แก้ไข และเรียงลำดับงานในโปรเจกต์</p>
               </div>
-              <button
+              <Button variant="default"
                 className="button button-primary"
                 type="button"
                 onClick={() => openTask()}
               >
                 <FiPlus aria-hidden="true" /> เพิ่มงาน
-              </button>
+              </Button>
             </div>
             <TaskList
               tasks={tasks}
@@ -201,54 +213,62 @@ function ProjectDetailPage() {
               onEdit={openTask}
               onDelete={(task) => remove("tasks", task.id)}
             />
-          </section>
+          </section></Card>
 
-          <section className="panel">
+          <Card asChild><section className="panel">
             <div className="panel-heading">
               <div>
                 <h2>รายการเวลาล่าสุด</h2>
                 <p>เวลาล่าสุดที่บันทึกในโปรเจกต์</p>
               </div>
-              <Link className="text-button" to="/time-tracker">
+              <Button asChild variant="ghost"><Link className="text-button" to="/time-tracker">
                 ดูทั้งหมด <FiArrowRight aria-hidden="true" />
-              </Link>
+              </Link></Button>
             </div>
             <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>รายละเอียด</th>
-                    <th>วันที่</th>
-                    <th>ระยะเวลา</th>
+              <Table
+                className="data-table"
+                pagination={{
+                  page: safeTimeEntryPage,
+                  totalPages: timeEntryTotalPages,
+                  total: entries.length,
+                  onPageChange: setTimeEntryPage,
+                }}
+              >
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>รายละเอียด</TableHead>
+                    <TableHead>วันที่</TableHead>
+                    <TableHead>ระยะเวลา</TableHead>
                     {/* ส่วนคิดค่าบริการและมูลค่าถูกซ่อนไว้ชั่วคราว */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.slice(0, 6).map((entry) => (
-                    <tr key={entry.id}>
-                      <td>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleTimeEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>
                         <strong>
                           {entry.description || "ไม่มีรายละเอียด"}
                         </strong>
-                      </td>
-                      <td>{formatDate(entry.started_at)}</td>
-                      <td>{formatDuration(entry.duration_minutes)}</td>
+                      </TableCell>
+                      <TableCell>{formatDate(entry.started_at)}</TableCell>
+                      <TableCell>{formatDuration(entry.duration_minutes)}</TableCell>
                       {/* <td>{entry.billable ? "ใช่" : "ไม่"}</td>
                       <td>{formatMoney(calculateTimeValue(entry), entry.currency)}</td> */}
-                    </tr>
+                    </TableRow>
                   ))}
                   {entries.length === 0 && (
-                    <tr>
-                      <td colSpan={3}>ยังไม่มีรายการเวลา</td>
-                    </tr>
+                    <TableRow>
+                      <TableCell colSpan={3}>ยังไม่มีรายการเวลา</TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
-          </section>
+          </section></Card>
         </div>
 
-        <aside className="panel">
+        <Card asChild><aside className="panel">
           <div className="panel-heading">
             <div>
               <h2>รายละเอียดโปรเจกต์</h2>
@@ -304,32 +324,24 @@ function ProjectDetailPage() {
                 </span>
                 <strong>{taskProgress}%</strong>
               </div>
-              <div className="progress-track">
-                <span
-                  style={{
-                    width: `${taskProgress}%`,
-                    background: project.color,
-                  }}
-                />
-              </div>
+              <Progress className="progress-track" value={taskProgress} indicatorColor={project.color} />
             </div>
           </div>
-        </aside>
+        </aside></Card>
       </div>
 
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={taskForm.id ? "แก้ไข Task" : "เพิ่ม Task"}
-      >
-        <TaskForm
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
+        <DialogContent className="workspace-dialog">
+          <DialogHeader><DialogTitle>{taskForm.id ? "แก้ไข Task" : "เพิ่ม Task"}</DialogTitle></DialogHeader>
+          <TaskForm
           value={taskForm}
           error={formError}
           onChange={setTaskForm}
           onSubmit={saveTask}
           onCancel={() => setModalOpen(false)}
-        />
-      </Modal>
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
