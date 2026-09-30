@@ -1,20 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
 import { cancelTimer as cancelTimerRequest, startTimer as startTimerRequest, stopTimer as stopTimerRequest } from '../services/timeTracking'
+import { listTimerTasks } from '../services/timerOptions'
+import type { Task } from '../types/task'
 import type { WorkspaceContextValue } from '../types/workspaceContext'
+import { useCurrentTimer } from './useCurrentTimer'
 
-export function useTimer({ data, refresh }: WorkspaceContextValue) {
+interface UseTimerOptions {
+  loadTaskOptions?: boolean
+}
+
+export function useTimer({ data, refresh }: WorkspaceContextValue, { loadTaskOptions = false }: UseTimerOptions = {}) {
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedTask, setSelectedTask] = useState('')
   const [description, setDescription] = useState('')
   const [billable, setBillable] = useState(true)
   const [tick, setTick] = useState(() => Date.now())
+  const [selectedTasksFromApi, setSelectedTasksFromApi] = useState<Task[]>([])
+  const [optionsError, setOptionsError] = useState('')
+  const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const activeProjects = useMemo(() => data.projects.filter((project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED'), [data.projects])
-  const runningEntry = data.time_entries.find((entry) => !entry.ended_at) || null
+  const fallbackRunningEntry = data.time_entries.find((entry) => !entry.ended_at) || null
+  const currentEntry = currentTimer?.running ? currentTimer.timeEntry : null
+  const runningEntry = useMemo(() => currentEntry
+    ? {
+        id: currentEntry.id,
+        project_id: currentEntry.project.id,
+        task_id: currentEntry.task?.id ?? null,
+        description: currentEntry.description ?? '',
+        started_at: currentEntry.startedAt,
+      }
+    : fallbackRunningEntry, [currentEntry, fallbackRunningEntry])
   const timerProjectId = selectedProject || activeProjects[0]?.id || ''
   const selectedProjectData = data.projects.find((project) => project.id === timerProjectId)
-  const selectedTasks = data.tasks.filter((task) => task.project_id === timerProjectId && task.status !== 'DONE')
-  const runningProject = runningEntry && data.projects.find((project) => project.id === runningEntry.project_id)
-  const runningTask = runningEntry && data.tasks.find((task) => task.id === runningEntry.task_id)
+  const selectedTasks = selectedTasksFromApi.filter((task) => task.status !== 'DONE')
+  const runningProject = runningEntry && (data.projects.find((project) => project.id === runningEntry.project_id) || (currentEntry ? { id: currentEntry.project.id, name: currentEntry.project.name, color: '#4F6BFF' } : null))
+  const runningTask = runningEntry && (data.tasks.find((task) => task.id === runningEntry.task_id) || (currentEntry?.task ? { id: currentEntry.task.id, name: currentEntry.task.title } : null))
   const elapsedSeconds = runningEntry ? Math.max(0, Math.floor((tick - Date.parse(runningEntry.started_at)) / 1000)) : 0
 
   useEffect(() => {
@@ -22,6 +42,30 @@ export function useTimer({ data, refresh }: WorkspaceContextValue) {
     const interval = window.setInterval(() => setTick(Date.now()), 1000)
     return () => window.clearInterval(interval)
   }, [runningEntry])
+
+  useEffect(() => {
+    if (!loadTaskOptions || !timerProjectId || runningEntry) {
+      setSelectedTasksFromApi([])
+      return undefined
+    }
+
+    let active = true
+    setOptionsError('')
+    setSelectedTasksFromApi([])
+    listTimerTasks(timerProjectId)
+      .then((tasks) => {
+        if (active) setSelectedTasksFromApi(tasks)
+      })
+      .catch(() => {
+        if (!active) return
+        setSelectedTasksFromApi([])
+        setOptionsError('ไม่สามารถโหลดงานของโปรเจกต์ได้')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [loadTaskOptions, Boolean(runningEntry), timerProjectId])
 
   async function startTimer() {
     if (!selectedProjectData || runningEntry) return
@@ -31,6 +75,7 @@ export function useTimer({ data, refresh }: WorkspaceContextValue) {
       description: description.trim() || undefined,
     })
     await refresh()
+    await refreshCurrentTimer()
     setDescription('')
   }
 
@@ -38,13 +83,15 @@ export function useTimer({ data, refresh }: WorkspaceContextValue) {
     if (!runningEntry) return
     await stopTimerRequest()
     await refresh()
+    await refreshCurrentTimer()
   }
 
   async function cancelTimer() {
     if (!runningEntry) return
     await cancelTimerRequest()
     await refresh()
+    await refreshCurrentTimer()
   }
 
-  return { activeProjects, runningEntry, timerProjectId, selectedTask, setSelectedProject, setSelectedTask, description, setDescription, billable, setBillable, selectedTasks, runningProject, runningTask, elapsedSeconds, startTimer, stopTimer, cancelTimer, optionsError: '' }
+  return { activeProjects, runningEntry, timerProjectId, selectedTask, setSelectedProject, setSelectedTask, description, setDescription, billable, setBillable, selectedTasks, runningProject, runningTask, elapsedSeconds, startTimer, stopTimer, cancelTimer, optionsError }
 }

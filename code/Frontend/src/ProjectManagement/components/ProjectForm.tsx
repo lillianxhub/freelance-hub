@@ -1,3 +1,7 @@
+import { Input } from '../../components/ui/input'
+import { NativeSelect } from '../../components/ui/native-select'
+import { Textarea } from '../../components/ui/textarea'
+import { Button } from '../../components/ui/button'
 import type { ProjectFormProps } from "../../types/projectsPage";
 import FormLabel from "../../components/FormLabel";
 
@@ -16,7 +20,7 @@ export default function ProjectForm({
       <div className="form-grid">
         <div className="form-field">
           <FormLabel htmlFor="project-name" required>ชื่อโปรเจกต์</FormLabel>
-          <input
+          <Input
             id="project-name"
             name="name"
             value={value.name}
@@ -26,7 +30,7 @@ export default function ProjectForm({
         </div>
         <div className="form-field">
           <FormLabel htmlFor="project-client" required>ลูกค้า</FormLabel>
-          <select
+          <NativeSelect
             id="project-client"
             name="client_id"
             value={value.client_id}
@@ -43,7 +47,7 @@ export default function ProjectForm({
                   {client.company_name || client.name}
                 </option>
               ))}
-          </select>
+          </NativeSelect>
         </div>
         {/* <div className="form-field">
           <label htmlFor="project-billing">รูปแบบราคา</label>
@@ -88,7 +92,7 @@ export default function ProjectForm({
         )} */}
         <div className="form-field">
           <FormLabel htmlFor="budget-hours" required>จำนวนชั่วโมง</FormLabel>
-          <input
+          <Input
             id="budget-hours"
             name="budget_hours"
             type="number"
@@ -101,7 +105,7 @@ export default function ProjectForm({
         </div>
         <div className="form-field">
           <FormLabel htmlFor="start-date" required>วันที่เริ่ม</FormLabel>
-          <input
+          <Input
             id="start-date"
             name="start_date"
             type="date"
@@ -112,7 +116,7 @@ export default function ProjectForm({
         </div>
         <div className="form-field">
           <FormLabel htmlFor="end-date" required>วันที่สิ้นสุด</FormLabel>
-          <input
+          <Input
             id="end-date"
             name="end_date"
             type="date"
@@ -123,7 +127,7 @@ export default function ProjectForm({
         </div>
         <div className="form-field">
           <FormLabel htmlFor="project-color" required>สีโปรเจกต์</FormLabel>
-          <input
+          <Input
             id="project-color"
             name="color"
             type="color"
@@ -147,7 +151,7 @@ export default function ProjectForm({
         </div> */}
         <div className="form-field full">
           <FormLabel htmlFor="project-description">รายละเอียด</FormLabel>
-          <textarea
+          <Textarea
             id="project-description"
             name="description"
             value={value.description}
@@ -156,20 +160,20 @@ export default function ProjectForm({
         </div>
       </div>
       <div className="form-actions">
-        <button
+        <Button variant="outline"
           className="button button-secondary"
           type="button"
           onClick={onCancel}
         >
           ยกเลิก
-        </button>
-        <button
+        </Button>
+        <Button variant="default"
           className="button button-primary"
           type="submit"
           disabled={saving}
         >
           {saving ? "กำลังบันทึก..." : "บันทึกโปรเจกต์"}
-        </button>
+        </Button>
       </div>
     </form>
   );

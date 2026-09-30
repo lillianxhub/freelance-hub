@@ -1,11 +1,11 @@
 import { api } from '../api/apiClient'
-import type { ApiTimeEntry } from '../types/api'
+import type { ApiCurrentTimer, ApiTimeEntry } from '../types/api'
 import type { ResourceInput } from '../types/workspace'
 import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
 import { toTimeEntry } from './workspace'
 
 export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> {
-  const query = new URLSearchParams({ size: '100', sortBy: 'startedAt', direction: 'DESC' })
+  const query = new URLSearchParams({ page: '1', limit: '10', sortBy: 'startedAt', direction: 'DESC' })
   if (projectId) query.set('projectId', projectId)
   const response = await api.get<ApiTimeEntry[]>(`/time-entries?${query.toString()}`)
   return response.data.map(toTimeEntry)
@@ -35,13 +35,13 @@ export async function saveTimeEntry(entry: ResourceInput<'time_entries'>): Promi
 export async function createManualTimeEntry({ durationSeconds, ...payload }: ManualTimeEntryPayload): Promise<TimeEntry> {
   const response = await api.post<ApiTimeEntry>('/time-entries', {
     ...payload,
-    ...(durationSeconds === undefined ? {} : { durationMinutes: durationSeconds }),
+    ...(durationSeconds === undefined ? {} : { durationSeconds }),
   })
   return toTimeEntry(response.data)
 }
 
 export async function updateTimeEntry(id: string, payload: UpdateTimeEntryPayload): Promise<TimeEntry> {
-  const response = await api.patch<ApiTimeEntry>(`/time-entries/${encodeURIComponent(id)}`, payload)
+  const response = await api.put<ApiTimeEntry>(`/time-entries/${encodeURIComponent(id)}`, payload)
   return toTimeEntry(response.data)
 }
 
@@ -52,6 +52,11 @@ export async function deleteTimeEntry(id: string): Promise<void> {
 export async function startTimer(payload: StartTimerPayload): Promise<TimeEntry> {
   const response = await api.post<ApiTimeEntry>('/timer/start', payload)
   return toTimeEntry(response.data)
+}
+
+export async function getCurrentTimer(): Promise<ApiCurrentTimer> {
+  const response = await api.get<ApiCurrentTimer>('/timer/current')
+  return response.data
 }
 
 export async function stopTimer(): Promise<TimeEntry> {

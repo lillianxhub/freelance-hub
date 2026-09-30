@@ -1,3 +1,4 @@
+import { Card } from '../../components/ui/card'
 import { formatDuration, formatMoney } from "../../utils/formatters";
 import type { TimeSummaryProps } from "../../types/timeTrackerPage";
 
@@ -8,7 +9,7 @@ export default function TimeSummary({
   count,
 }: TimeSummaryProps) {
   return (
-    <section className="panel week-summary">
+    <Card asChild><section className="panel week-summary">
       <div className="panel-heading">
         <div>
           <h2>สรุปตามตัวกรอง</h2>
@@ -39,6 +40,6 @@ export default function TimeSummary({
           <strong>{count}</strong>
         </div>
       </div>
-    </section>
+    </section></Card>
   );
 }
