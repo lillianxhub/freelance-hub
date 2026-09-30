@@ -126,7 +126,7 @@ export function setApiToken(token: string | null): void {
 async function rotateAccessToken(): Promise<boolean> {
     const response = await fetch(`${apiBase}/auth/refresh`, {
         method: "POST",
-        credentials: "include",
+        credentials: "same-origin",
     });
     if (!response.ok) {
         setApiToken(null);
@@ -184,7 +184,7 @@ async function request<T>(
     let response = await fetch(`${apiBase}${path}`, {
         ...init,
         headers,
-        credentials: "include",
+        credentials: "same-origin",
     });
     if (
         response.status === 401 &&
@@ -195,7 +195,7 @@ async function request<T>(
         response = await fetch(`${apiBase}${path}`, {
             ...init,
             headers,
-            credentials: "include",
+            credentials: "same-origin",
         });
     }
     if (!response.ok) {
