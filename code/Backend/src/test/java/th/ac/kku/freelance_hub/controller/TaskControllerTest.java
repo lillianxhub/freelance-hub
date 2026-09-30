@@ -124,13 +124,13 @@ class TaskControllerTest {
                 eq(OWNER_ID), eq(PROJECT_ID), eq(true), any(Pageable.class)
         )).thenReturn(new PageImpl<>(
                 List.of(response("Design", TaskStatus.OPEN)),
-                PageRequest.of(1, 5),
+                PageRequest.of(0, 5),
                 11
         ));
 
         mockMvc.perform(get(BASE, PROJECT_ID)
                         .param("page", "1")
-                        .param("size", "5")
+                        .param("limit", "5")
                         .param("sort", "sortOrder,desc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -138,7 +138,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].id").value(TASK_ID.toString()))
                 .andExpect(jsonPath("$.data[0].name").value("Design"))
-                .andExpect(jsonPath("$.meta.page").value(2))
+                .andExpect(jsonPath("$.meta.page").value(1))
                 .andExpect(jsonPath("$.meta.limit").value(5))
                 .andExpect(jsonPath("$.meta.total").value(11))
                 .andExpect(jsonPath("$.meta.totalPages").value(3))
@@ -149,7 +149,7 @@ class TaskControllerTest {
                 eq(PROJECT_ID),
                 eq(true),
                 org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
-                        pageable.getPageNumber() == 1
+                        pageable.getPageNumber() == 0
                                 && pageable.getPageSize() == 5
                                 && pageable.getSort()
                                         .getOrderFor("sortOrder")
@@ -190,15 +190,21 @@ class TaskControllerTest {
         when(taskService.list(
                 eq(OWNER_ID), eq(PROJECT_ID), eq(true), any(Pageable.class)
         )).thenReturn(new PageImpl<>(
-                List.<TaskResponse>of(), PageRequest.of(0, 20), 0
+                List.<TaskResponse>of(), PageRequest.of(1, 5), 0
         ));
 
-        mockMvc.perform(get(BASE, PROJECT_ID).param("is_active", "true"))
+        mockMvc.perform(get(BASE, PROJECT_ID)
+                        .param("is_active", "true")
+                        .param("page", "2")
+                        .param("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
 
         verify(taskService).list(
-                eq(OWNER_ID), eq(PROJECT_ID), eq(true), any(Pageable.class)
+                eq(OWNER_ID), eq(PROJECT_ID), eq(true),
+                org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
+                        pageable.getPageNumber() == 1
+                                && pageable.getPageSize() == 5)
         );
     }
 
