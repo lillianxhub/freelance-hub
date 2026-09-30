@@ -152,6 +152,72 @@ class ClientIntegrationTest {
     }
 
     @Test
+    void clientDetailIncludesOnlyRequestedProjectsAndTasks() throws Exception {
+        String ownerToken = registerAndGetToken("client-include-owner@example.com");
+        String otherToken = registerAndGetToken("client-include-other@example.com");
+        String clientBody = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Included Client\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(clientBody).path("data").path("id").asText());
+
+        String projectBody = mockMvc.perform(post("/api/projects")
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"clientId\":\"" + clientId + "\",\"name\":\"Included Project\","
+                        + "\"color\":\"#123456\",\"targetMinutes\":120}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID projectId = UUID.fromString(objectMapper.readTree(projectBody).path("data").path("id").asText());
+
+        String taskBody = mockMvc.perform(post("/api/projects/{projectId}/tasks", projectId)
+                .header("Authorization", bearer(ownerToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Included Task\",\"sortOrder\":0}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID taskId = UUID.fromString(objectMapper.readTree(taskBody).path("data").path("id").asText());
+
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.projects").doesNotExist());
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .param("include", "projects"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.projects[0].id").value(projectId.toString()))
+                .andExpect(jsonPath("$.data.projects[0].name").value("Included Project"))
+                .andExpect(jsonPath("$.data.projects[0].tasks").doesNotExist());
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .param("include", "projects,projects.tasks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.projects[0].tasks[0].id").value(taskId.toString()))
+                .andExpect(jsonPath("$.data.projects[0].tasks[0].name").value("Included Task"));
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .param("include", "projects.tasks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.projects[0].tasks[0].id").value(taskId.toString()));
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .param("include", "tasks"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_ARGUMENT"));
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(ownerToken))
+                .param("include", "Projects"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(otherToken))
+                .param("include", "projects.tasks"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void updatedAddressFieldsAreStoredSeparatelyAndReturnedAfterReload() throws Exception {
         String ownerToken = registerAndGetToken("client-address-update@example.com");
         String createdBody = mockMvc.perform(post("/api/clients")
