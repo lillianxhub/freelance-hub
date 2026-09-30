@@ -30,10 +30,10 @@ public class ClientFilterRequest {
     @Size(max = 150, message = "Search must not exceed 150 characters")
     private String search;
 
-    /** Zero-based page index, preserved for existing clients. */
+    /** One-based page number exposed by the API. */
     @Builder.Default
-    @Min(value = 0, message = "Page must be zero or greater")
-    private int page = 0;
+    @Min(value = 1, message = "Page must be at least 1")
+    private int page = 1;
 
     @Builder.Default
     @Min(value = 1, message = "Page size must be at least 1")

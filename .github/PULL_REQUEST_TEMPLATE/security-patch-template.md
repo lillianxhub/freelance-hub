@@ -32,4 +32,3 @@
 - [ ] No new vulnerability or bug introduced
 - [ ] Project security practices followed
 - [ ] No sensitive information included in the pull request
-
