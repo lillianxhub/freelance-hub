@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -98,7 +99,7 @@ public class TimeEntryController {
                     List<TimeEntryListItemResponse>
             >
     > list(
-            @Valid @ModelAttribute TimeEntryFilterRequest filter
+            @ParameterObject @Valid @ModelAttribute TimeEntryFilterRequest filter
     ) {
         Page<TimeEntryResponse> page = timeEntryQueryService.list(
                 currentOwnerId(),
@@ -154,7 +155,7 @@ public class TimeEntryController {
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping("/summary")
     public ResponseEntity<ApiResult<TimeEntrySummaryResponse>> summarize(
-            @ModelAttribute TimeEntryFilterRequest filter
+            @ParameterObject @ModelAttribute TimeEntryFilterRequest filter
     ) {
         return ResponseEntity.ok(
                 ApiResult.success(
