@@ -30,4 +30,3 @@
 - [ ] Content is clear, concise, and grammatically correct
 - [ ] Relevant README or documentation was updated
 - [ ] Documentation reflects the current project state
-
