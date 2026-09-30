@@ -292,7 +292,7 @@ function ProfilePage() {
                 required
               />
               <FieldError id="profile-display-name-error" message={profileErrors.display_name} />
-              <small>ชื่อนี้จะแสดงบนหน้าเว็บและเมนูบัญชี</small>
+              <small className="text-xs text-muted-foreground">ชื่อนี้จะแสดงบนหน้าเว็บและเมนูบัญชี</small>
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-first-name" required>ชื่อ</FormLabel>
@@ -330,7 +330,7 @@ function ProfilePage() {
                 disabled
                 aria-disabled="true"
               />
-              <small>อีเมลนี้ใช้สำหรับเข้าสู่ระบบ</small>
+              <small className="text-xs text-muted-foreground">อีเมลนี้ใช้สำหรับเข้าสู่ระบบ</small>
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-phone" required>เบอร์โทรศัพท์</FormLabel>
@@ -346,7 +346,7 @@ function ProfilePage() {
                 aria-describedby={profileErrors.phone ? "profile-phone-error" : undefined}
               />
               <FieldError id="profile-phone-error" message={profileErrors.phone} />
-              <small>กรอกตัวเลขได้ไม่เกิน 10 หลัก</small>
+              <small className="text-xs text-muted-foreground">กรอกตัวเลขได้ไม่เกิน 10 หลัก</small>
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-tax">เลขประจำตัวผู้เสียภาษี</FormLabel>
@@ -362,7 +362,7 @@ function ProfilePage() {
                 aria-describedby={profileErrors.tax_id ? "profile-tax-error" : undefined}
               />
               <FieldError id="profile-tax-error" message={profileErrors.tax_id} />
-              <small>กรอกตัวเลขได้ไม่เกิน 13 หลัก</small>
+              <small className="text-xs text-muted-foreground">กรอกตัวเลขได้ไม่เกิน 13 หลัก</small>
             </div>
             {/* <div className="form-field full">
               <label htmlFor="profile-bio">แนะนำตัว</label>
@@ -378,7 +378,7 @@ function ProfilePage() {
           </div>
 
           <div className="profile-divider" />
-          <p className="profile-section-label">ที่อยู่จัดส่งเอกสาร</p>
+          <p className="profile-section-label">ที่อยู่</p>
           {addressError && <p className="form-message error">{addressError}</p>}
 
           <div className="form-grid profile-address-grid">
@@ -529,7 +529,7 @@ function ProfilePage() {
             {passwordTooShort ? (
               <small className="field-error">รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร</small>
             ) : (
-              <small>ต้องมีอย่างน้อย 8 ตัวอักษร</small>
+              <small className="text-xs text-muted-foreground">ต้องมีอย่างน้อย 8 ตัวอักษร</small>
             )}
             {passwordUnchanged && (
               <small className="field-error">รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม</small>
