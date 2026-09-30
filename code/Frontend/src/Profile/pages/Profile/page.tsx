@@ -1,14 +1,17 @@
+import { Card } from '../../../components/ui/card'
+import { NativeSelect } from '../../../components/ui/native-select'
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import Button from "../../../components/Button";
+import { Button } from "../../../components/ui/button";
 import FormLabel from "../../../components/FormLabel";
-import Input from "../../../components/Input";
+import { Input } from "../../../components/ui/input";
+import PasswordInput from "../../../components/PasswordInput";
 import PageHeader from "../../../components/PageHeader";
-import Toast from "../../../components/Toast";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
 import { useProfile } from "../../useProfile";
 import type { ChangePasswordInput, Profile, ProfileFieldErrors } from "../../../types/profile";
 import type { ResourceInput } from "../../../types/workspace";
-import type { ToastMessage } from "../../../types/toast";
+import type { NotificationMessage } from "../../../types/notification";
+import { toast } from 'sonner';
 import type { FieldErrorProps } from "../../../types/ui";
 import { getErrorMessage } from "../../../api/apiError";
 import { changePassword } from "../../../services/profile";
@@ -71,7 +74,9 @@ function ProfilePage() {
   const [draft, setDraft] = useState<
     Profile | ResourceInput<"profiles"> | null
   >(null);
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const showToast = ({ success, message }: NotificationMessage) => {
+    toast[success ? 'success' : 'error'](message);
+  };
   const [saving, setSaving] = useState(false);
   const [provinces, setProvinces] = useState<ThaiProvince[]>([]);
   const [addressLoading, setAddressLoading] = useState(true);
@@ -200,12 +205,12 @@ function ProfilePage() {
       });
       await refresh();
       setDraft(null);
-      setToast({
+      showToast({
         success: response.success,
         message: response.message || "บันทึกโปรไฟล์เรียบร้อยแล้ว",
       });
     } catch (err) {
-      setToast({
+      showToast({
         success: false,
         message: getErrorMessage(err, "ไม่สามารถบันทึกโปรไฟล์ได้"),
       });
@@ -222,18 +227,18 @@ function ProfilePage() {
   const submitPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (passwordForm.new_password.length < 8) {
-      setToast({
+      showToast({
         success: false,
         message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร",
       });
       return;
     }
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setToast({ success: false, message: "ยืนยันรหัสผ่านใหม่ไม่ตรงกัน" });
+      showToast({ success: false, message: "ยืนยันรหัสผ่านใหม่ไม่ตรงกัน" });
       return;
     }
     if (passwordForm.current_password === passwordForm.new_password) {
-      setToast({
+      showToast({
         success: false,
         message: "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม",
       });
@@ -250,12 +255,12 @@ function ProfilePage() {
         new_password: "",
         confirm_password: "",
       });
-      setToast({
+      showToast({
         success: response.success,
         message: response.message || "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
       });
     } catch (passwordError) {
-      setToast({
+      showToast({
         success: false,
         message: getErrorMessage(passwordError, "ไม่สามารถเปลี่ยนรหัสผ่านได้"),
       });
@@ -273,7 +278,7 @@ function ProfilePage() {
       />
 
       <form className="profile-layout" onSubmit={submit} noValidate>
-        <section className="panel profile-form-card">
+        <Card asChild><section className="panel profile-form-card">
           <div className="form-grid profile-contact-grid">
             <div className="form-field full">
               <FormLabel htmlFor="profile-display-name" required>ชื่อที่แสดง</FormLabel>
@@ -391,7 +396,7 @@ function ProfilePage() {
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-province" required>จังหวัด</FormLabel>
-              <select
+              <NativeSelect
                 id="profile-province"
                 value={profile.province || ""}
                 onChange={updateProvince}
@@ -407,12 +412,12 @@ function ProfilePage() {
                     {province.name_th}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <FieldError id="profile-province-error" message={profileErrors.province} />
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-district" required>อำเภอ / เขต</FormLabel>
-              <select
+              <NativeSelect
                 id="profile-district"
                 value={profile.district || ""}
                 onChange={updateDistrict}
@@ -426,12 +431,12 @@ function ProfilePage() {
                     {district.name_th}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <FieldError id="profile-district-error" message={profileErrors.district} />
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-sub-district" required>ตำบล / แขวง</FormLabel>
-              <select
+              <NativeSelect
                 id="profile-sub-district"
                 value={profile.sub_district || ""}
                 onChange={updateSubDistrict}
@@ -445,12 +450,12 @@ function ProfilePage() {
                     {subDistrict.name_th}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <FieldError id="profile-sub-district-error" message={profileErrors.sub_district} />
             </div>
             <div className="form-field">
               <FormLabel htmlFor="profile-postal-code" required>รหัสไปรษณีย์</FormLabel>
-              <select
+              <NativeSelect
                 id="profile-postal-code"
                 name="postal_code"
                 value={profile.postal_code || ""}
@@ -465,31 +470,32 @@ function ProfilePage() {
                     {selectedSubDistrict.zip_code}
                   </option>
                 )}
-              </select>
+              </NativeSelect>
               <FieldError id="profile-postal-code-error" message={profileErrors.postal_code} />
             </div>
           </div>
 
           <div className="profile-form-actions">
             <Button
-              variant="secondary"
+              variant="outline"
+              className="min-h-10"
               type="button"
               onClick={() => setDraft(null)}
             >
               ยกเลิก
             </Button>
             <Button
-              variant="primary"
+              className="min-h-10"
               type="submit"
               disabled={saving || !hasProfileChanges}
             >
               {saving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
             </Button>
           </div>
-        </section>
+        </section></Card>
       </form>
 
-      <form className="panel password-card" onSubmit={submitPassword}>
+      <Card asChild><form className="panel password-card" onSubmit={submitPassword}>
         <div className="panel-heading">
           <div>
             <h2>เปลี่ยนรหัสผ่าน</h2>
@@ -499,10 +505,9 @@ function ProfilePage() {
         <div className="form-grid password-grid">
           <div className="form-field">
             <FormLabel htmlFor="current-password" required>รหัสผ่านเดิม</FormLabel>
-            <Input
+            <PasswordInput
               id="current-password"
               name="current_password"
-              type="password"
               value={passwordForm.current_password}
               onChange={updatePassword}
               autoComplete="current-password"
@@ -511,10 +516,9 @@ function ProfilePage() {
           </div>
           <div className="form-field">
             <FormLabel htmlFor="new-password" required>รหัสผ่านใหม่</FormLabel>
-            <Input
+            <PasswordInput
               id="new-password"
               name="new_password"
-              type="password"
               value={passwordForm.new_password}
               onChange={updatePassword}
               autoComplete="new-password"
@@ -533,10 +537,9 @@ function ProfilePage() {
           </div>
           <div className="form-field">
             <FormLabel htmlFor="confirm-password" required>ยืนยันรหัสผ่านใหม่</FormLabel>
-            <Input
+            <PasswordInput
               id="confirm-password"
               name="confirm_password"
-              type="password"
               value={passwordForm.confirm_password}
               onChange={updatePassword}
               autoComplete="new-password"
@@ -551,21 +554,14 @@ function ProfilePage() {
         </div>
         <div className="profile-form-actions">
           <Button
-            variant="primary"
+            className="min-h-10"
             type="submit"
             disabled={passwordSaving || passwordFormInvalid}
           >
             {passwordSaving ? "กำลังเปลี่ยนรหัสผ่าน..." : "เปลี่ยนรหัสผ่าน"}
           </Button>
         </div>
-      </form>
-      {toast && (
-        <Toast
-          success={toast.success}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
+      </form></Card>
     </div>
   );
 }

@@ -1,6 +1,11 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { Card } from '../../../components/ui/card'
+import { Pagination, PaginationContent, PaginationItem } from '../../../components/ui/pagination'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
+import { NativeSelect } from '../../../components/ui/native-select'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { FiArrowLeft, FiArrowRight, FiPlus, FiSearch, FiUsers } from 'react-icons/fi'
-import Modal from '../../../components/Modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog'
 import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
 import { useClients } from '../../useClients'
@@ -11,6 +16,16 @@ import ClientCard from '../../components/ClientCard'
 import ClientForm from '../../components/ClientForm'
 import { normalizeDigits, validateClient } from '../../client.validators'
 import { getErrorMessage } from '../../../api/apiError'
+import { listClientsPage, updateClientStatus, type ClientListFilters } from '../../../services/workspace'
+import type { ApiMeta } from '../../../types/api'
+
+const clientPageLimit = 10
+
+const clientSortParams: Record<ClientSort, Pick<ClientListFilters, 'sortBy' | 'direction'>> = {
+  UPDATED_DESC: { sortBy: 'updatedAt', direction: 'DESC' },
+  NAME_ASC: { sortBy: 'companyName', direction: 'ASC' },
+  CREATED_ASC: { sortBy: 'createdAt', direction: 'ASC' },
+}
 
 const emptyForm: ResourceInput<'clients'> = {
   name: '', company_name: '', email: '', phone: '', address: '', province: '', district: '', sub_district: '', postal_code: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#4F6BFF',
@@ -22,28 +37,46 @@ function ClientsPage() {
   const [status, setStatus] = useState<ClientFilter>('ACTIVE')
   const [sortBy, setSortBy] = useState<ClientSort>('UPDATED_DESC')
   const [page, setPage] = useState(1)
+  const [pageClients, setPageClients] = useState<Client[]>([])
+  const [pageMeta, setPageMeta] = useState<ApiMeta>({ page: 1, limit: clientPageLimit, total: 0, totalPages: 1 })
+  const [pageLoading, setPageLoading] = useState(true)
+  const [pageError, setPageError] = useState('')
+  const latestRequest = useRef(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
-  const pageSize = 6
-
-  const clients = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return (data?.clients || [])
-      .filter((client) => status === 'ALL' || client.status === status)
-      .filter((client) => !normalizedQuery || [client.name, client.company_name, client.email, client.phone]
-        .some((value) => value?.toLowerCase().includes(normalizedQuery)))
-      .sort((a, b) => {
-        if (sortBy === 'NAME_ASC') return (a.company_name || a.name).localeCompare(b.company_name || b.name)
-        if (sortBy === 'CREATED_ASC') return Date.parse(a.created_at ?? '') - Date.parse(b.created_at ?? '')
-        return Date.parse(b.updated_at ?? '') - Date.parse(a.updated_at ?? '')
+  const loadClientPage = useCallback(async (requestedPage: number) => {
+    const requestId = ++latestRequest.current
+    setPageLoading(true)
+    setPageError('')
+    try {
+      const result = await listClientsPage(requestedPage, clientPageLimit, {
+        search: query,
+        status: status === 'ALL' ? undefined : status,
+        ...clientSortParams[sortBy],
       })
-  }, [data?.clients, query, sortBy, status])
+      if (requestId !== latestRequest.current) return
+      if (requestedPage > Math.max(1, result.meta.totalPages)) {
+        setPage(Math.max(1, result.meta.totalPages))
+        return
+      }
+      setPageClients(result.clients)
+      setPageMeta(result.meta)
+    } catch (loadError) {
+      if (requestId === latestRequest.current) setPageError(getErrorMessage(loadError, 'ไม่สามารถโหลดรายชื่อลูกค้าได้'))
+    } finally {
+      if (requestId === latestRequest.current) setPageLoading(false)
+    }
+  }, [query, sortBy, status])
 
-  const totalPages = Math.max(1, Math.ceil(clients.length / pageSize))
-  const safePage = Math.min(page, totalPages)
-  const visibleClients = clients.slice((safePage - 1) * pageSize, safePage * pageSize)
+  useEffect(() => {
+    void loadClientPage(page)
+  }, [loadClientPage, page])
+
+  const totalPages = Math.max(1, pageMeta.totalPages)
+  const safePage = Math.min(pageMeta.page, totalPages)
+  const visibleClients = pageClients
 
   const openCreate = () => {
     setForm(emptyForm)
@@ -84,6 +117,8 @@ function ClientsPage() {
     try {
       await save('clients', { ...form, name: form.name.trim(), company_name: form.company_name.trim() })
       setModalOpen(false)
+      if (page === 1) await loadClientPage(1)
+      else setPage(1)
     } catch (err) {
       setFormError(getErrorMessage(err, 'บันทึกลูกค้าไม่สำเร็จ'))
     } finally {
@@ -92,11 +127,13 @@ function ClientsPage() {
   }
 
   const archiveClients = async (client: Client) => {
-    await save('clients', { ...client, status: client.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED' })
+    await updateClientStatus(client.id, client.status === 'ARCHIVED')
+    await refresh()
+    await loadClientPage(safePage)
   }
 
-  if (loading) return <LoadingState label="กำลังโหลดรายชื่อลูกค้า..." />
-  if (error) return <ErrorState message={error} onRetry={refresh} />
+  if (loading || pageLoading) return <LoadingState label="กำลังโหลดรายชื่อลูกค้า..." />
+  if (error || pageError) return <ErrorState message={error || pageError} onRetry={() => { void refresh(); void loadClientPage(page) }} />
 
   return (
     <div className="page-view">
@@ -104,21 +141,21 @@ function ClientsPage() {
         eyebrow="พื้นที่ทำงาน / ลูกค้า"
         title="ลูกค้า"
         description="เก็บข้อมูลลูกค้า โปรเจกต์ และกิจกรรมทั้งหมดไว้ในที่เดียว"
-        actions={<button className="button button-primary" type="button" onClick={openCreate}><FiPlus aria-hidden="true" /> เพิ่มลูกค้า</button>}
+        actions={<Button variant="default" className="button button-primary" type="button" onClick={openCreate}><FiPlus aria-hidden="true" /> เพิ่มลูกค้า</Button>}
       />
 
       <div className="filter-row">
-        <div className="search-box"><span><FiSearch aria-hidden="true" /></span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร" aria-label="ค้นหาClients" /></div>
-        <select className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองStatusClients">
+        <div className="search-box"><span><FiSearch aria-hidden="true" /></span><Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร" aria-label="ค้นหาClients" /></div>
+        <NativeSelect className="select-button" value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองStatusClients">
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งานอยู่</option>
           <option value="ARCHIVED">เก็บถาวร</option>
-        </select>
-        <select className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับClients"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></select>
+        </NativeSelect>
+        <NativeSelect className="select-button" value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับClients"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></NativeSelect>
       </div>
 
       {visibleClients.length === 0 ? (
-        <section className="panel"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<button className="button button-primary" type="button" onClick={openCreate}>เพิ่มลูกค้า</button>} /></section>
+        <Card asChild><section className="panel"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<Button variant="default" className="button button-primary" type="button" onClick={openCreate}>เพิ่มลูกค้า</Button>} /></section></Card>
       ) : (
         <div className="card-grid">
           {visibleClients.map((client) => {
@@ -132,16 +169,19 @@ function ClientsPage() {
       )}
 
       {totalPages > 1 && (
-        <div className="pagination">
-          <button className="button button-secondary" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}><FiArrowLeft aria-hidden="true" /> ก่อนหน้า</button>
-          <span>หน้า {safePage} จาก {totalPages}</span>
-          <button className="button button-secondary" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป <FiArrowRight aria-hidden="true" /></button>
-        </div>
+        <Pagination className="mt-5"><PaginationContent>
+          <PaginationItem><Button variant="outline" type="button" disabled={safePage === 1} onClick={() => setPage((value) => value - 1)}><FiArrowLeft aria-hidden="true" /> ก่อนหน้า</Button></PaginationItem>
+          <PaginationItem className="px-2 text-sm text-muted-foreground">หน้า {safePage} จาก {totalPages}</PaginationItem>
+          <PaginationItem><Button variant="outline" type="button" disabled={safePage === totalPages} onClick={() => setPage((value) => value + 1)}>ถัดไป <FiArrowRight aria-hidden="true" /></Button></PaginationItem>
+        </PaginationContent></Pagination>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'} size="large">
-        <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onFieldsChange={handleFieldsChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
-      </Modal>
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
+        <DialogContent className="workspace-dialog workspace-dialog-large">
+          <DialogHeader><DialogTitle>{form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'}</DialogTitle></DialogHeader>
+          <ClientForm value={form} error={formError} saving={saving} onChange={handleChange} onFieldsChange={handleFieldsChange} onSubmit={handleSubmit} onCancel={() => setModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

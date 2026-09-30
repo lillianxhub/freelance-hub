@@ -1,3 +1,6 @@
+import { Button } from '../../../components/ui/button'
+import { Card } from '../../../components/ui/card'
+import { Progress } from '../../../components/ui/progress'
 import { Link } from 'react-router-dom'
 import { FiActivity, FiBriefcase, FiCheckSquare, FiClock, FiPlus, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
 import PageHeader from '../../../components/PageHeader'
@@ -116,9 +119,9 @@ function DashboardPage() {
         title={`${greetingForHour(now.getHours())}, ${name}`}
         description="ติดตามเวลาทำงาน โปรเจกต์ และงานที่ต้องทำต่อได้จากที่เดียว"
         actions={
-          <Link className="button button-primary" to="/projects">
+          <Button asChild variant="default"><Link className="button button-primary" to="/projects">
             <FiPlus aria-hidden="true" /> เพิ่มโปรเจกต์
-          </Link>
+          </Link></Button>
         }
       />
 
@@ -158,7 +161,7 @@ function DashboardPage() {
       </section>
 
       <section className="dashboard-grid dashboard-main-grid">
-        <section className="panel chart-panel dashboard-activity-panel">
+        <Card asChild><section className="panel chart-panel dashboard-activity-panel">
           <div className="panel-heading">
             <div>
               <h2>ภาพรวมกิจกรรม</h2>
@@ -166,18 +169,18 @@ function DashboardPage() {
             </div>
           </div>
           <ProductivityChart data={chartData} />
-        </section>
+        </section></Card>
         <TimerPanel workspace={analytics} />
       </section>
 
       <section className="dashboard-grid dashboard-work-grid">
-        <section className="panel">
+        <Card asChild><section className="panel">
           <div className="panel-heading">
             <div>
               <h2>โปรเจกต์ที่กำลังทำ</h2>
               <p>ติดตามความคืบหน้าจากงานที่เสร็จแล้ว</p>
             </div>
-            <Link className="mini-button text-link" to="/projects">ดูทั้งหมด</Link>
+            <Button asChild variant="ghost"><Link className="mini-button text-link" to="/projects">ดูทั้งหมด</Link></Button>
           </div>
           <div className="dashboard-projects">
             {visibleProjects.length ? visibleProjects.map(({ project, client, totalTasks: projectTasks, completedTasks: projectDone, progress }) => (
@@ -186,7 +189,7 @@ function DashboardPage() {
                 <span>
                   <strong>{project.name}</strong>
                   <small>{client?.company_name || client?.name || 'ไม่ระบุลูกค้า'}</small>
-                  <i className="progress-track"><b style={{ width: `${progress}%`, background: project.color }} /></i>
+                  <Progress className="progress-track" value={progress} indicatorColor={project.color} />
                 </span>
                 <span className="dashboard-project-meta">
                   <StatusBadge status={project.status} />
@@ -195,15 +198,15 @@ function DashboardPage() {
               </Link>
             )) : <p className="inline-empty">ยังไม่มีโปรเจกต์ที่กำลังทำ</p>}
           </div>
-        </section>
+        </section></Card>
 
-        <section className="panel">
+        <Card asChild><section className="panel">
           <div className="panel-heading">
             <div>
               <h2>งานที่ใกล้ถึงกำหนด</h2>
               <p>งานที่ยังไม่เสร็จ เรียงตามกำหนดส่ง</p>
             </div>
-            <Link className="mini-button text-link" to="/projects">ดูโปรเจกต์ทั้งหมด</Link>
+            <Button asChild variant="ghost"><Link className="mini-button text-link" to="/projects">ดูโปรเจกต์ทั้งหมด</Link></Button>
           </div>
           <div className="dashboard-tasks">
             {upcomingTasks.length ? upcomingTasks.map((task) => {
@@ -223,7 +226,7 @@ function DashboardPage() {
               )
             }) : <p className="inline-empty">ไม่มีงานค้างอยู่</p>}
           </div>
-        </section>
+        </section></Card>
       </section>
     </div>
   )
