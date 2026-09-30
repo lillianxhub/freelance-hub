@@ -234,6 +234,33 @@ class ProjectRepositoryTest {
     }
 
     @Test
+    void includedTasksBelongToVisibleProjectsAndExcludeDeletedTasks() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("include-tasks-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "Include Tasks Client"));
+        Project project = projectRepository.saveAndFlush(
+                new Project(owner, client, "Include Tasks Project"));
+
+        taskRepository.saveAndFlush(new Task(project, "Visible Task", 0));
+        Task deleted = taskRepository.saveAndFlush(
+                new Task(project, "Deleted Task", 1));
+        deleted.softDelete();
+        taskRepository.saveAndFlush(deleted);
+
+        var result = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10), true
+        );
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTasks())
+                .extracting(task -> task.getName())
+                .containsExactly("Visible Task");
+    }
+
+    @Test
     void projectDetailCountsOnlyItsActiveTasksAndChecksOwnership() {
         User owner = userRepository.saveAndFlush(User.builder()
                 .email("detail-owner@example.com").passwordHash("test-hash").build());

@@ -16,7 +16,9 @@ public final class ArchivedState implements ProjectState {
 
     @Override
     public boolean canTransitionTo(ProjectStatus nextStatus) {
-        return nextStatus == ProjectStatus.ARCHIVED;
+        return nextStatus == ProjectStatus.ARCHIVED
+                || nextStatus == ProjectStatus.ACTIVE
+                || nextStatus == ProjectStatus.PLANNED;
     }
 
     @Override
