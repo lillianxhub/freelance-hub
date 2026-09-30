@@ -173,6 +173,28 @@ public class Task {
         status = TaskStatus.COMPLETED;
     }
 
+    public void changeStatus(TaskStatus nextStatus, Instant completedAt) {
+        Objects.requireNonNull(nextStatus, "nextStatus is required");
+        if (status == nextStatus) {
+            return;
+        }
+
+        switch (nextStatus) {
+            case OPEN -> throw new IllegalStateException(
+                    "cannot change task status from " + status + " to OPEN"
+            );
+            case IN_PROGRESS -> start();
+            case COMPLETED -> complete(completedAt);
+        }
+    }
+
+    public void softDelete() {
+        if (deletedAt == null) {
+            isActive = false;
+            deletedAt = Instant.now();
+        }
+    }
+
     public void reorder(int position) {
         if (position < 0) {
             throw new IllegalArgumentException(

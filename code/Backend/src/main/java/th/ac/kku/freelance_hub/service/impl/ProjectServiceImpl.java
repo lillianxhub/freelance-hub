@@ -31,6 +31,16 @@ import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ProjectService;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.repository.TaskRepository;
+
+import th.ac.kku.freelance_hub.repository.TaskRepository;
+
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
@@ -39,21 +49,27 @@ public class ProjectServiceImpl implements ProjectService {
             "targetMinutes", "createdAt", "updatedAt"
     );
 
+
     private final ProjectRepository projectRepository;
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
     private final ProjectMapper projectMapper;
+    private final TaskRepository taskRepository;
+
+
 
     public ProjectServiceImpl(
-            ProjectRepository projectRepository,
-            ClientRepository clientRepository,
-            UserRepository userRepository,
-            ProjectMapper projectMapper
+        ProjectRepository projectRepository,
+        ClientRepository clientRepository,
+        UserRepository userRepository,
+        ProjectMapper projectMapper,
+        TaskRepository taskRepository
     ) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.projectMapper = projectMapper;
+        this.taskRepository = taskRepository;
     }
 
     @Override
@@ -85,15 +101,22 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProjectResponse getById(UUID ownerId, UUID projectId) {
-        return projectMapper.toResponse(
-                findOwnedProject(ownerId, projectId)
-        );
+    public ProjectListItemResponse getById(UUID ownerId, UUID projectId) {
+        Project project = findOwnedProject(ownerId, projectId);
+        List<TaskRepository.TaskProgressSummary> summaries =
+                taskRepository.summarizeProgressByProjectIds(
+                        ownerId, List.of(projectId), TaskStatus.COMPLETED
+                );
+
+        long totalTasks = summaries.isEmpty() ? 0 : summaries.get(0).getTotalTasks();
+        long completedTasks = summaries.isEmpty() ? 0 : summaries.get(0).getCompletedTasks();
+
+        return projectMapper.toListItemResponse(project, totalTasks, completedTasks);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> list(
+    public Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
             ProjectStatus status,
@@ -111,15 +134,23 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         Specification<Project> specification = (root, query, cb) -> {
-            Predicate predicate = cb.equal(
+            Predicate predicate = cb.and(
+                cb.equal(
                     root.get("owner").get("id"),
                     ownerId
+                ),
+                cb.isNull(root.get("deletedAt"))
             );
 
             if (status != null) {
                 predicate = cb.and(
                         predicate,
                         cb.equal(root.get("status"), status)
+                );
+            } else {
+                predicate = cb.and(
+                        predicate,
+                        cb.notEqual(root.get("status"), ProjectStatus.ARCHIVED)
                 );
             }
 
@@ -135,12 +166,23 @@ public class ProjectServiceImpl implements ProjectService {
                         + escapeLike(searchTerm.toLowerCase(Locale.ROOT))
                         + "%";
 
+                Predicate projectNameMatches = cb.like(
+                        cb.lower(root.get("name")),
+                        pattern,
+                        '\\'
+                );
+
+                Predicate clientNameMatches = cb.like(
+                        cb.lower(root.get("client").get("name")),
+                        pattern,
+                        '\\'
+                );
+
                 predicate = cb.and(
                         predicate,
-                        cb.like(
-                                cb.lower(root.get("name")),
-                                pattern,
-                                '\\'
+                        cb.or(
+                                projectNameMatches,
+                                clientNameMatches
                         )
                 );
             }
@@ -148,9 +190,50 @@ public class ProjectServiceImpl implements ProjectService {
             return predicate;
         };
 
-        return projectRepository
-                .findAll(specification, checkedPageable)
-                .map(projectMapper::toResponse);
+        Page<Project> projects = projectRepository.findAll(
+            specification,
+            checkedPageable
+        );
+
+        Map<UUID, TaskRepository.TaskProgressSummary> progressByProject =
+                new HashMap<>();
+
+        if (projects.hasContent()) {
+            List<UUID> projectIds = projects.getContent()
+                    .stream()
+                    .map(Project::getId)
+                    .toList();
+
+            List<TaskRepository.TaskProgressSummary> summaries =
+                    taskRepository.summarizeProgressByProjectIds(
+                            ownerId,
+                            projectIds,
+                            TaskStatus.COMPLETED
+                    );
+
+            for (TaskRepository.TaskProgressSummary summary : summaries) {
+                progressByProject.put(summary.getProjectId(), summary);
+            }
+        }
+
+        return projects.map(project -> {
+            TaskRepository.TaskProgressSummary summary =
+                    progressByProject.get(project.getId());
+
+            long totalTasks = summary == null
+                    ? 0
+                    : summary.getTotalTasks();
+
+            long completedTasks = summary == null
+                    ? 0
+                    : summary.getCompletedTasks();
+
+            return projectMapper.toListItemResponse(
+                    project,
+                    totalTasks,
+                    completedTasks
+            );
+        });
     }
 
     @Override
