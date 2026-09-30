@@ -13,6 +13,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +27,7 @@ import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ProjectMapper;
@@ -67,6 +70,9 @@ class ProjectServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private TimeEntryQueryService timeEntryQueryService;
+
     private ProjectServiceImpl service;
     private User owner;
     private Client client;
@@ -79,7 +85,8 @@ class ProjectServiceImplTest {
                 userRepository,
                 new ProjectMapper(),
                 taskRepository,
-                new TaskMapper()
+                new TaskMapper(),
+                timeEntryQueryService
         );
 
         owner = User.builder().id(OWNER_ID).build();
@@ -143,6 +150,86 @@ class ProjectServiceImplTest {
 
         verify(projectRepository)
                 .findByIdAndOwnerId(PROJECT_ID, OWNER_ID);
+    }
+
+    @Test
+    void countsActiveAndCompletedProjectsForOwner() {
+        when(projectRepository.countByOwnerIdAndStatusAndDeletedAtIsNull(
+                OWNER_ID, ProjectStatus.ACTIVE
+        )).thenReturn(3L);
+        when(projectRepository.countByOwnerIdAndStatusAndDeletedAtIsNull(
+                OWNER_ID, ProjectStatus.COMPLETED
+        )).thenReturn(2L);
+
+        var counts = service.countActiveAndCompleted(OWNER_ID);
+
+        assertThat(counts.activeCount()).isEqualTo(3);
+        assertThat(counts.completedCount()).isEqualTo(2);
+        assertThat(counts.totalCount()).isEqualTo(5);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0,0.00,BELOW_80",
+            "4799,79.98,BELOW_80",
+            "4800,80.00,REACHED_80",
+            "6000,100.00,REACHED_100",
+            "6600,110.00,REACHED_100"
+    })
+    void calculatesProgressFromCompletedTimeEntrySeconds(
+            long trackedSeconds,
+            String expectedPercent,
+            ProjectService.ProgressLevel expectedLevel
+    ) {
+        Project project = new Project(owner, client, "Website");
+        project.updateDetails("Website", null, null, null, null, 100);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(timeEntryQueryService.summarize(
+                eq(OWNER_ID),
+                argThat(filter -> PROJECT_ID.equals(filter.getProjectId()))
+        )).thenReturn(TimeEntrySummaryResponse.builder()
+                .totalSeconds(trackedSeconds)
+                .build());
+
+        var progress = service.getProgress(OWNER_ID, PROJECT_ID);
+
+        assertThat(progress.targetMinutes()).isEqualTo(100);
+        assertThat(progress.trackedSeconds()).isEqualTo(trackedSeconds);
+        assertThat(progress.progressPercent())
+                .isEqualByComparingTo(expectedPercent);
+        assertThat(progress.level()).isEqualTo(expectedLevel);
+    }
+
+    @Test
+    void progressWithoutTargetKeepsTrackedTimeWithoutPercent() {
+        Project project = new Project(owner, client, "No target");
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(timeEntryQueryService.summarize(
+                eq(OWNER_ID),
+                argThat(filter -> PROJECT_ID.equals(filter.getProjectId()))
+        )).thenReturn(TimeEntrySummaryResponse.builder()
+                .totalSeconds(3600)
+                .build());
+
+        var progress = service.getProgress(OWNER_ID, PROJECT_ID);
+
+        assertThat(progress.trackedSeconds()).isEqualTo(3600);
+        assertThat(progress.targetMinutes()).isNull();
+        assertThat(progress.progressPercent()).isNull();
+        assertThat(progress.level())
+                .isEqualTo(ProjectService.ProgressLevel.NO_TARGET);
+    }
+
+    @Test
+    void progressDoesNotReadTimeForUnknownProject() {
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getProgress(OWNER_ID, PROJECT_ID))
+                .isInstanceOf(ProjectNotFoundException.class);
+        verifyNoInteractions(timeEntryQueryService);
     }
 
     @Test
@@ -225,6 +312,8 @@ class ProjectServiceImplTest {
                 List.of(PROJECT_ID, secondProjectId),
                 TaskStatus.COMPLETED
         )).thenReturn(List.of(summary));
+        givenTrackedSeconds(PROJECT_ID, 3600);
+        givenTrackedSeconds(secondProjectId, 5400);
 
         var result = service.list(
                 OWNER_ID,
@@ -249,6 +338,10 @@ class ProjectServiceImplTest {
                 .isZero();
         assertThat(withoutTasks.getTaskProgress().getPercent())
                 .isEqualByComparingTo("0");
+        assertThat(withoutTasks.getTimeTracking().getTrackedSeconds()).isEqualTo(3600);
+        assertThat(withoutTasks.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("1.00");
+        assertThat(withoutTasks.getTimeTracking().getUsagePercent()).isNull();
 
         var withTasks = result.getContent().get(1);
 
@@ -265,6 +358,11 @@ class ProjectServiceImplTest {
                 .isEqualTo(1);
         assertThat(withTasks.getTaskProgress().getPercent())
                 .isEqualByComparingTo("33.33");
+        assertThat(withTasks.getTimeTracking().getTrackedSeconds()).isEqualTo(5400);
+        assertThat(withTasks.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("1.50");
+        assertThat(withTasks.getTimeTracking().getUsagePercent())
+                .isEqualByComparingTo("75.00");
 
         verify(taskRepository).summarizeProgressByProjectIds(
                 OWNER_ID,
@@ -289,6 +387,7 @@ class ProjectServiceImplTest {
         )).thenReturn(new PageImpl<>(List.of(project), pageable, 1));
         when(taskRepository.findActiveByProjectIds(OWNER_ID, List.of(PROJECT_ID)))
                 .thenReturn(List.of(task));
+        givenTrackedSeconds(PROJECT_ID, 0);
 
         var response = service.list(
                 OWNER_ID, null, null, null, pageable, true
@@ -398,6 +497,7 @@ class ProjectServiceImplTest {
         when(taskRepository.summarizeProgressByProjectIds(
                 OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
                 .thenReturn(List.of(summary));
+        givenTrackedSeconds(PROJECT_ID, 36000);
 
         var result = service.getById(OWNER_ID, PROJECT_ID);
 
@@ -410,7 +510,11 @@ class ProjectServiceImplTest {
         assertThat(result.getTaskProgress().getTotalTasks()).isEqualTo(3);
         assertThat(result.getTaskProgress().getCompletedTasks()).isEqualTo(1);
         assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("33.33");
-        assertThat(result.getTimeTracking()).isNull();
+        assertThat(result.getTimeTracking().getTrackedSeconds()).isEqualTo(36000);
+        assertThat(result.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("10.00");
+        assertThat(result.getTimeTracking().getUsagePercent())
+                .isEqualByComparingTo("27.78");
         verify(taskRepository).summarizeProgressByProjectIds(
                 OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED);
     }
@@ -424,6 +528,7 @@ class ProjectServiceImplTest {
         when(taskRepository.summarizeProgressByProjectIds(
                 OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
                 .thenReturn(List.of());
+        givenTrackedSeconds(PROJECT_ID, 0);
 
         var result = service.getById(OWNER_ID, PROJECT_ID);
 
@@ -431,7 +536,19 @@ class ProjectServiceImplTest {
         assertThat(result.getTaskProgress().getTotalTasks()).isZero();
         assertThat(result.getTaskProgress().getCompletedTasks()).isZero();
         assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("0");
-        assertThat(result.getTimeTracking()).isNull();
+        assertThat(result.getTimeTracking().getTrackedSeconds()).isZero();
+        assertThat(result.getTimeTracking().getTrackedHours())
+                .isEqualByComparingTo("0.00");
+        assertThat(result.getTimeTracking().getUsagePercent()).isNull();
+    }
+
+    private void givenTrackedSeconds(UUID projectId, long seconds) {
+        when(timeEntryQueryService.summarize(
+                eq(OWNER_ID),
+                argThat(filter -> projectId.equals(filter.getProjectId()))
+        )).thenReturn(TimeEntrySummaryResponse.builder()
+                .totalSeconds(seconds)
+                .build());
     }
 }
 

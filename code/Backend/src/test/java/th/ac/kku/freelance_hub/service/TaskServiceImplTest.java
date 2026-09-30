@@ -73,6 +73,63 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void latestTimeEntryTaskNameUsesMostRecentEntryForOwner() {
+        Task firstTask = taskRepository.findById(taskService.create(
+                owner.getId(), project.getId(), request("Design", 0)
+        ).getId()).orElseThrow();
+        Task latestTask = taskRepository.findById(taskService.create(
+                owner.getId(), project.getId(), request("Review", 1)
+        ).getId()).orElseThrow();
+
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, firstTask, "Earlier work",
+                Instant.parse("2026-01-01T09:00:00Z"), 600
+        ));
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, latestTask, "Latest work",
+                Instant.parse("2026-01-02T09:00:00Z"), 600
+        ));
+
+        User otherOwner = userRepository.saveAndFlush(User.builder()
+                .email(UUID.randomUUID() + "@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Project otherProject = projectRepository.saveAndFlush(new Project(
+                otherOwner,
+                clientRepository.saveAndFlush(new Client(otherOwner, "Other client")),
+                "Other project"
+        ));
+        Task otherTask = taskRepository.saveAndFlush(new Task(otherProject, "Other task", 0));
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                otherOwner, otherProject, otherTask, "Other user's latest work",
+                Instant.parse("2026-01-03T09:00:00Z"), 600
+        ));
+
+        assertThat(taskService.getLatestTimeEntryTaskName(owner.getId()))
+                .contains("Review");
+    }
+
+    @Test
+    void latestTimeEntryTaskNameIsEmptyWhenLatestEntryHasNoTask() {
+        assertThat(taskService.getLatestTimeEntryTaskName(owner.getId())).isEmpty();
+
+        Task task = taskRepository.findById(taskService.create(
+                owner.getId(), project.getId(), request("Design", 0)
+        ).getId()).orElseThrow();
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, task, "Earlier work",
+                Instant.parse("2026-01-01T09:00:00Z"), 600
+        ));
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, null, "Project work",
+                Instant.parse("2026-01-02T09:00:00Z"), 600
+        ));
+
+        assertThat(taskService.getLatestTimeEntryTaskName(owner.getId()))
+                .isEmpty();
+    }
+
+    @Test
     void insertsAndReordersTasksWithoutDuplicateSortOrders() {
         taskService.create(owner.getId(), project.getId(), request("A", 0));
         TaskResponse b = taskService.create(

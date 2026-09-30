@@ -45,6 +45,11 @@ public interface ProjectRepository
             UUID ownerId
     );
 
+    long countByOwnerIdAndStatusAndDeletedAtIsNull(
+            UUID ownerId,
+            ProjectStatus status
+    );
+
     Page<Project> findAllByOwnerId(
             UUID ownerId,
             Pageable pageable
