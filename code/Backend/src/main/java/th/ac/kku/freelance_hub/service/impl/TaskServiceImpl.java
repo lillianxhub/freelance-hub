@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -21,14 +22,17 @@ import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
 import th.ac.kku.freelance_hub.dto.response.TaskResponse;
+import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TaskMapper;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.service.TaskService;
+import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -42,17 +46,20 @@ public class TaskServiceImpl implements TaskService {
     private final ProjectRepository projectRepository;
     private final TaskMapper taskMapper;
     private final EntityManager entityManager;
+    private final TimeEntryQueryService timeEntryQueryService;
 
     public TaskServiceImpl(
             TaskRepository taskRepository,
             ProjectRepository projectRepository,
             TaskMapper taskMapper,
-            EntityManager entityManager
+            EntityManager entityManager,
+            TimeEntryQueryService timeEntryQueryService
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.taskMapper = taskMapper;
         this.entityManager = entityManager;
+        this.timeEntryQueryService = timeEntryQueryService;
     }
 
     @Override
@@ -117,6 +124,23 @@ public class TaskServiceImpl implements TaskService {
         return taskMapper.toResponse(
                 findOwnedTask(ownerId, projectId, taskId)
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<String> getLatestTimeEntryTaskName(UUID ownerId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+
+        TimeEntryFilterRequest filter = TimeEntryFilterRequest.builder()
+                .page(1)
+                .limit(1)
+                .sortBy("startedAt")
+                .direction(Sort.Direction.DESC)
+                .build();
+
+        return timeEntryQueryService.list(ownerId, filter).stream()
+                .findFirst()
+                .map(TimeEntryResponse::getTaskName);
     }
 
     @Override
