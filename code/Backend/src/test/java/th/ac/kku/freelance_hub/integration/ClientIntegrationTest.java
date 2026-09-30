@@ -117,7 +117,7 @@ class ClientIntegrationTest {
 
         mockMvc.perform(get("/api/clients")
                 .header("Authorization", bearer(ownerToken))
-                .param("page", "0")
+                .param("page", "1")
                 .param("limit", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.meta.page").value(1))
