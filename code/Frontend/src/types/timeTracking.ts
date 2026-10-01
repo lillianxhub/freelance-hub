@@ -15,6 +15,8 @@ export interface TimeEntry extends OwnedRecord {
   currency: CurrencyCode
 }
 
+export type TimeEntryInput = Omit<TimeEntry, keyof OwnedRecord> & Partial<OwnedRecord>
+
 export interface ManualTimeEntryPayload {
   projectId: string
   taskId: string | null

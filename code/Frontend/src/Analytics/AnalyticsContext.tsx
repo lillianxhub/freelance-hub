@@ -1,24 +1,21 @@
 import { createContext, useCallback, type PropsWithChildren } from 'react'
-import { api } from '../api/apiClient'
-import { useScopedWorkspace } from '../shared/useScopedWorkspace'
-import { createEmptyWorkspace, listClientOptions, listTimeEntries, toProfile } from '../services/workspace'
+import { useAsyncData } from '../shared/useAsyncData'
+import { listClientOptions } from '../services/client'
 import { listTimerProjects, listTimerTasks } from '../services/timerOptions'
-import type { ApiUser } from '../types/api'
-import type { WorkspaceContextValue } from '../types/workspaceContext'
+import { listTimeEntries } from '../services/timeTracking'
+import type { AsyncDataState } from '../types/asyncData'
+import type { AnalyticsData } from '../types/analytics'
 
-export const AnalyticsContext = createContext<WorkspaceContextValue | null>(null)
+export interface AnalyticsContextValue extends AsyncDataState<AnalyticsData> {}
+export const AnalyticsContext = createContext<AnalyticsContextValue | null>(null)
+const emptyData: AnalyticsData = { clients: [], projects: [], tasks: [], time_entries: [] }
 
 export function AnalyticsProvider({ children }: PropsWithChildren) {
-  const load = useCallback(async () => {
-    const [user, clients, projects, timeEntries] = await Promise.all([
-      api.get<ApiUser>('/users/me').then((response) => response.data),
-      listClientOptions(),
-      listTimerProjects(),
-      listTimeEntries(),
-    ])
+  const load = useCallback(async (): Promise<AnalyticsData> => {
+    const [clients, projects, time_entries] = await Promise.all([listClientOptions(), listTimerProjects(), listTimeEntries()])
     const tasks = (await Promise.all(projects.map((project) => listTimerTasks(project.id)))).flat()
-    return { ...createEmptyWorkspace(), profiles: [toProfile(user)], clients, projects, tasks, time_entries: timeEntries }
+    return { clients, projects, tasks, time_entries }
   }, [])
-  const value = useScopedWorkspace(load)
+  const value = useAsyncData(load, emptyData)
   return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>
 }

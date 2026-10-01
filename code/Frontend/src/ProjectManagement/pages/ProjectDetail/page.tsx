@@ -39,7 +39,7 @@ function formatEntryStartTime(value: string) {
 
 function ProjectDetailPage() {
   const { projectId } = useParams();
-  const { data, loading, error, refresh, save, remove } = useProjects();
+  const { data, loading, error, refresh, saveTask: persistTask, deleteTask } = useProjects();
   const [modalOpen, setModalOpen] = useState(false);
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [formError, setFormError] = useState("");
@@ -89,7 +89,7 @@ function ProjectDetailPage() {
       setFormError("กรุณากรอกชื่องาน");
       return;
     }
-    await save("tasks", {
+    await persistTask({
       ...taskForm,
       project_id: project.id,
       name: taskForm.name.trim(),
@@ -104,8 +104,8 @@ function ProjectDetailPage() {
     if (nextIndex < 0 || nextIndex >= tasks.length) return;
     const other = tasks[nextIndex];
     await Promise.all([
-      save("tasks", { ...task, sort_order: other.sort_order }),
-      save("tasks", { ...other, sort_order: task.sort_order }),
+      persistTask({ ...task, sort_order: other.sort_order }),
+      persistTask({ ...other, sort_order: task.sort_order }),
     ]);
   };
 
@@ -177,14 +177,14 @@ function ProjectDetailPage() {
               <TaskList
                 tasks={tasks}
                 onToggle={(task) =>
-                  save("tasks", {
+                  persistTask({
                     ...task,
                     status: task.status === "DONE" ? "TODO" : "DONE",
                   })
                 }
                 onMove={moveTask}
                 onEdit={openTask}
-                onDelete={(task) => remove("tasks", task.id)}
+                onDelete={(task) => deleteTask(project.id, task.id)}
               />
             </CardContent>
           </section></Card>

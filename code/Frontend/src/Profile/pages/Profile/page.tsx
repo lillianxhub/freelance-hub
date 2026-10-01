@@ -9,20 +9,19 @@ import PageHeader from "../../../components/PageHeader";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
 import { useProfile } from "../../useProfile";
 import type { ChangePasswordInput, Profile, ProfileFieldErrors } from "../../../types/profile";
-import type { ResourceInput } from "../../../types/workspace";
+import type { ProfileInput } from "../../../types/profile";
 import type { NotificationMessage } from "../../../types/notification";
 import { toast } from 'sonner';
 import type { FieldErrorProps } from "../../../types/ui";
 import { getErrorMessage } from "../../../api/apiError";
 import { changePassword } from "../../../services/profile";
-import { updateProfile } from "../../../services/workspace";
 import {
   loadThaiAddressData,
   type ThaiProvince,
 } from "../../../services/thaiAddress";
 import { validateProfileFields } from "../../profile.validators";
 
-const emptyProfile: ResourceInput<"profiles"> = {
+const emptyProfile: ProfileInput = {
   full_name: "",
   display_name: "",
   first_name: "",
@@ -48,7 +47,7 @@ const emptyProfile: ResourceInput<"profiles"> = {
   bio: "",
 };
 
-const editableProfileFields: Array<keyof ResourceInput<"profiles">> = [
+const editableProfileFields: Array<keyof ProfileInput> = [
   "display_name",
   "first_name",
   "last_name",
@@ -70,9 +69,9 @@ function FieldError({ id, message }: FieldErrorProps) {
 }
 
 function ProfilePage() {
-  const { data, loading, error, refresh } = useProfile();
+  const { data, loading, error, refresh, updateProfile } = useProfile();
   const [draft, setDraft] = useState<
-    Profile | ResourceInput<"profiles"> | null
+    Profile | ProfileInput | null
   >(null);
   const showToast = ({ success, message }: NotificationMessage) => {
     toast[success ? 'success' : 'error'](message);
@@ -112,7 +111,7 @@ function ProfilePage() {
   if (loading) return <LoadingState label="กำลังโหลดโปรไฟล์..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
-  const profile = draft || data.profiles[0] || emptyProfile;
+  const profile = draft || data || emptyProfile;
   const selectedProvince = provinces.find(
     (item) => item.name_th === profile.province,
   );
@@ -124,7 +123,7 @@ function ProfilePage() {
   const selectedSubDistrict = subDistricts.find(
     (item) => item.name_th === profile.sub_district,
   );
-  const savedProfile = data.profiles[0] || emptyProfile;
+  const savedProfile = data || emptyProfile;
   const hasProfileChanges = draft !== null && editableProfileFields.some(
     (field) => fieldValue(profile[field]) !== fieldValue(savedProfile[field]),
   );
@@ -140,9 +139,9 @@ function ProfilePage() {
     passwordMismatch ||
     passwordUnchanged;
 
-  const updateFields = (values: Partial<ResourceInput<"profiles">>) => {
+  const updateFields = (values: Partial<ProfileInput>) => {
     setDraft((current) => ({
-      ...(current || data.profiles[0] || emptyProfile),
+      ...(current || data || emptyProfile),
       ...values,
     }));
   };
@@ -154,7 +153,7 @@ function ProfilePage() {
   ) => {
     const { name, value } = event.target;
     setDraft((current) => ({
-      ...(current || data.profiles[0] || emptyProfile),
+      ...(current || data || emptyProfile),
       [name]: value,
     }));
   };

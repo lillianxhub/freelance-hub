@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { cancelTimer as cancelTimerRequest, startTimer as startTimerRequest, stopTimer as stopTimerRequest } from '../services/timeTracking'
 import { listTimerTasks } from '../services/timerOptions'
 import type { Task } from '../types/task'
-import type { WorkspaceContextValue } from '../types/workspaceContext'
+import type { TimeEntriesData } from './TimeEntriesContext'
 import { useCurrentTimer } from './useCurrentTimer'
 
 interface UseTimerOptions {
   loadTaskOptions?: boolean
 }
 
-export function useTimer({ data, refresh }: WorkspaceContextValue, { loadTaskOptions = false }: UseTimerOptions = {}) {
+export function useTimer({ data, refresh }: { data: TimeEntriesData; refresh: () => Promise<void> }, { loadTaskOptions = false }: UseTimerOptions = {}) {
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedTask, setSelectedTask] = useState('')
   const [description, setDescription] = useState('')

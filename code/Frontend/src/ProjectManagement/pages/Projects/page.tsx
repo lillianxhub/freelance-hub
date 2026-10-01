@@ -1,6 +1,5 @@
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
 import { NativeSelect } from '../../../components/ui/native-select'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { FiBriefcase, FiPlus } from "react-icons/fi";
@@ -24,7 +23,7 @@ import ProjectCard from "../../components/ProjectCard";
 import FilterBar from '../../../components/FilterBar'
 import { getErrorMessage } from "../../../api/apiError";
 import { changeProjectStatus } from "../../../services/project";
-import { listProjectsPage, type ProjectListFilters } from "../../../services/workspace";
+import { listProjectsPage, type ProjectListFilters } from "../../../services/project";
 import type { NotificationMessage } from "../../../types/notification";
 import { toast } from 'sonner';
 import type { ApiMeta } from "../../../types/api";
@@ -77,7 +76,7 @@ function getPaginationItems(currentPage: number, totalPages: number): Array<numb
 }
 
 function ProjectsPage() {
-  const { data, loading, error, refresh, save } = useProjects();
+  const { data, loading, error, refresh, saveProject } = useProjects();
   const [query, setQuery] = useState("");
   const [clientId, setClientId] = useState("ALL");
   const [status, setStatus] = useState<ProjectFilter>("ALL");
@@ -192,7 +191,7 @@ function ProjectsPage() {
     setSaving(true);
     setFormError("");
     try {
-      await save("projects", {
+      await saveProject({
         ...form,
         name: form.name.trim(),
         hourly_rate:

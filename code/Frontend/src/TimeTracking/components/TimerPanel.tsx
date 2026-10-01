@@ -8,12 +8,12 @@ import { formatTimer } from '../../lib/formatters'
 import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
 import { useState } from 'react'
 import { useTimer } from '../useTimer'
-import type { WorkspaceContextValue } from '../../types/workspaceContext'
+import type { TimeEntriesContextValue } from '../TimeEntriesContext'
 import { getErrorMessage } from '../../api/apiError'
 import { toast } from 'sonner'
 
 interface TimerPanelProps {
-  workspace: WorkspaceContextValue
+  workspace: TimeEntriesContextValue
 }
 
 type TimerAction = 'starting' | 'stopping' | 'cancelling'

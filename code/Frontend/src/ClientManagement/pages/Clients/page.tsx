@@ -17,14 +17,14 @@ import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
 import { useClients } from '../../useClients'
 import type { Client } from '../../../types/client'
-import type { ResourceInput } from '../../../types/workspace'
+import type { ClientInput } from '../../../types/client'
 import type { ClientFilter, ClientSort } from '../../../types/clientsPage'
 import ClientCard from '../../components/ClientCard'
 import ClientForm from '../../components/ClientForm'
 import FilterBar from '../../../components/FilterBar'
 import { normalizeDigits, validateClient } from '../../client.validators'
 import { getErrorMessage } from '../../../api/apiError'
-import { listClientsPage, updateClientStatus, type ClientListFilters } from '../../../services/workspace'
+import { listClientsPage, type ClientListFilters } from '../../../services/client'
 import type { ApiMeta } from '../../../types/api'
 
 const clientPageLimit = 10
@@ -47,11 +47,11 @@ function getPaginationItems(currentPage: number, totalPages: number): Array<numb
     )
 }
 
-const emptyForm: ResourceInput<'clients'> = {
+const emptyForm: ClientInput = {
   name: '', company_name: '', email: '', phone: '', address: '', province: '', district: '', sub_district: '', postal_code: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#4F6BFF',
 }
 
-function toClientForm(value: Partial<ResourceInput<'clients'>> = {}): ResourceInput<'clients'> {
+function toClientForm(value: Partial<ClientInput> = {}): ClientInput {
   return {
     ...emptyForm,
     ...value,
@@ -72,7 +72,7 @@ function toClientForm(value: Partial<ResourceInput<'clients'>> = {}): ResourceIn
 }
 
 function ClientsPage() {
-  const { data, loading, error, refresh, save } = useClients()
+  const { data, loading, error, refresh, saveClient, archiveClient } = useClients()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<ClientFilter>('ACTIVE')
   const [sortBy, setSortBy] = useState<ClientSort>('UPDATED_DESC')
@@ -141,7 +141,7 @@ function ClientsPage() {
     setForm((current) => ({ ...current, [name]: normalizedValue }))
   }
 
-  const handleFieldsChange = (values: Partial<ResourceInput<'clients'>>) => {
+  const handleFieldsChange = (values: Partial<ClientInput>) => {
     setForm((current) => ({ ...current, ...values }))
   }
 
@@ -156,7 +156,7 @@ function ClientsPage() {
     setSaving(true)
     setFormError('')
     try {
-      await save('clients', { ...form, name: (form.name ?? '').trim(), company_name: (form.company_name ?? '').trim() })
+      await saveClient({ ...form, name: (form.name ?? '').trim(), company_name: (form.company_name ?? '').trim() })
       setModalOpen(false)
       if (page === 1) await loadClientPage(1)
       else setPage(1)
@@ -168,7 +168,8 @@ function ClientsPage() {
   }
 
   const archiveClients = async (client: Client) => {
-    await updateClientStatus(client.id, client.status === 'ARCHIVED')
+    if (client.status === 'ARCHIVED') await saveClient({ ...client, status: 'ACTIVE' })
+    else await archiveClient(client.id)
     await refresh()
     await loadClientPage(safePage)
   }
