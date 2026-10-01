@@ -9,7 +9,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import th.ac.kku.freelance_hub.FreelanceHubApplication;
 
-/** One-shot local development seeder. Not part of normal application startup. */
+/**
+ * One-shot local development seeder. Not part of normal application startup.
+ */
 public final class LocalSeedCommand {
 
     private static final Set<String> LOCAL_DATABASE_HOSTS = Set.of("localhost", "127.0.0.1", "postgres");
@@ -18,6 +20,7 @@ public final class LocalSeedCommand {
     }
 
     public static void main(String[] args) {
+
         if (!"true".equalsIgnoreCase(System.getenv("LOCAL_SEED_RUN"))) {
             throw new IllegalStateException("Set LOCAL_SEED_RUN=true explicitly to use the local seeder.");
         }
@@ -48,7 +51,8 @@ public final class LocalSeedCommand {
         }
         URI uri = URI.create(jdbcUrl.substring("jdbc:".length()));
         if (!LOCAL_DATABASE_HOSTS.contains(uri.getHost()) || uri.getUserInfo() != null) {
-            throw new IllegalStateException("Local seed may connect only to localhost or the local Docker postgres service.");
+            throw new IllegalStateException(
+                    "Local seed may connect only to localhost or the local Docker postgres service.");
         }
     }
 }
