@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { manageLinks, workspaceLinks } from '../constants/navigation'
+import { workspaceLinks } from '../constants/navigation'
 import type { SidebarLinkProps, SidebarProps } from '../types/ui'
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet'
 
@@ -41,10 +41,10 @@ function SidebarContent({ onClose }: Pick<SidebarProps, 'onClose'>) {
           ))}
         </nav>
 
-        <div className="mt-4 mb-[7px] px-[11px] text-xs font-bold tracking-[0.12em] text-subtle uppercase">จัดการ</div>
+        {/* <div className="mt-4 mb-[7px] px-[11px] text-xs font-bold tracking-[0.12em] text-subtle uppercase">จัดการ</div>
         <nav className="flex flex-col gap-[3px]" onClick={onClose}>
           {manageLinks.map((link) => <SidebarLink key={link.to} {...link} />)}
-        </nav>
+        </nav> */}
 
         {/* <div className="sidebar-bottom">
           <NavLink className="help-card" to="/reports" onClick={onClose}>
@@ -64,9 +64,9 @@ function SidebarContent({ onClose }: Pick<SidebarProps, 'onClose'>) {
 function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <>
-      <aside className="hidden h-screen w-[258px] shrink-0 flex-col border-r border-border bg-sidebar px-[18px] pt-6 pb-[18px] min-[821px]:sticky min-[821px]:top-0 min-[821px]:z-40 min-[821px]:flex print:hidden"><SidebarContent onClose={onClose} /></aside>
+      <aside className="hidden h-screen w-[258px] shrink-0 flex-col border-r border-border bg-sidebar px-[18px] pt-6 pb-[18px] lg:sticky lg:top-0 lg:z-40 lg:flex print:hidden"><SidebarContent onClose={onClose} /></aside>
       <Sheet open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}>
-        <SheetContent side="left" className="w-[258px] gap-0 overflow-y-auto px-[18px] py-6 sm:max-w-[258px] min-[821px]:hidden">
+        <SheetContent side="left" className="w-[258px] gap-0 overflow-y-auto px-[18px] py-6 sm:max-w-[258px] lg:hidden">
           <SheetTitle className="sr-only">เมนูหลัก</SheetTitle>
           <SidebarContent onClose={onClose} />
         </SheetContent>

@@ -35,7 +35,7 @@ export function useScopedWorkspace(load: () => Promise<WorkspaceData>): Workspac
   }, [refresh])
 
   return useMemo<WorkspaceContextValue>(() => ({
-    data: data ?? { profiles: [], clients: [], projects: [], tasks: [], time_entries: [], finance_entries: [], invoices: [], invoice_items: [], payments: [] },
+    data: data ?? { profiles: [], clients: [], projects: [], tasks: [], time_entries: [] },
     loading,
     error,
     refresh,

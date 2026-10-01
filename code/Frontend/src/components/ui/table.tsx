@@ -1,8 +1,14 @@
 import * as React from "react"
 import { cn } from "cn"
-import { Button } from "./button"
-import { Pagination, PaginationContent, PaginationItem } from "./pagination"
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./pagination"
 
 export interface TablePaginationProps {
   page: number
@@ -16,29 +22,73 @@ type TableProps = React.ComponentProps<"table"> & {
   pagination?: TablePaginationProps
 }
 
-function TablePagination({ page, totalPages, total, onPageChange, className }: TablePaginationProps) {
+function TablePagination({ page, totalPages, onPageChange, className }: TablePaginationProps) {
   const safeTotalPages = Math.max(1, totalPages)
   const safePage = Math.min(Math.max(1, page), safeTotalPages)
+  const paginationItems = getPaginationItems(safePage, safeTotalPages)
 
   return (
-    <Pagination className={cn("mt-5", className)}>
+    <Pagination className={cn("mt-6", className)}>
       <PaginationContent>
         <PaginationItem>
-          <Button variant="outline" type="button" disabled={safePage === 1} onClick={() => onPageChange(safePage - 1)}>
-            <ChevronLeftIcon aria-hidden="true" /> ก่อนหน้า
-          </Button>
+          <PaginationPrevious
+            href={`?page=${safePage - 1}`}
+            text="ก่อนหน้า"
+            aria-disabled={safePage === 1}
+            className={safePage === 1 ? "pointer-events-none opacity-50" : undefined}
+            onClick={(event) => {
+              event.preventDefault()
+              if (safePage > 1) onPageChange(safePage - 1)
+            }}
+          />
         </PaginationItem>
-        <PaginationItem className="px-2 text-sm text-muted-foreground">
-          หน้า {safePage} จาก {safeTotalPages}{total === undefined ? '' : ` · ${total} รายการ`}
-        </PaginationItem>
+        {paginationItems.map((item, index) => (
+          <PaginationItem key={`${item}-${index}`}>
+            {item === "ellipsis" ? (
+              <PaginationEllipsis />
+            ) : (
+              <PaginationLink
+                href={`?page=${item}`}
+                isActive={item === safePage}
+                onClick={(event) => {
+                  event.preventDefault()
+                  onPageChange(item)
+                }}
+              >
+                {item}
+              </PaginationLink>
+            )}
+          </PaginationItem>
+        ))}
         <PaginationItem>
-          <Button variant="outline" type="button" disabled={safePage === safeTotalPages} onClick={() => onPageChange(safePage + 1)}>
-            ถัดไป <ChevronRightIcon aria-hidden="true" />
-          </Button>
+          <PaginationNext
+            href={`?page=${safePage + 1}`}
+            text="ถัดไป"
+            aria-disabled={safePage === safeTotalPages}
+            className={safePage === safeTotalPages ? "pointer-events-none opacity-50" : undefined}
+            onClick={(event) => {
+              event.preventDefault()
+              if (safePage < safeTotalPages) onPageChange(safePage + 1)
+            }}
+          />
         </PaginationItem>
       </PaginationContent>
     </Pagination>
   )
+}
+
+function getPaginationItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
+  return [...pages]
+    .filter((item) => item >= 1 && item <= totalPages)
+    .sort((a, b) => a - b)
+    .flatMap((item, index, items) =>
+      index > 0 && item - items[index - 1] > 1 ? ["ellipsis" as const, item] : [item],
+    )
 }
 
 function Table({ className, pagination, ...props }: TableProps) {
@@ -104,7 +154,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 !bg-primary-soft px-2 text-left align-middle !text-base !font-semibold whitespace-nowrap !text-text-primary [&:has([role=checkbox])]:pr-0",
+        "h-10 !bg-primary-soft px-2 text-left align-middle !text-sm !font-semibold whitespace-nowrap !text-text-primary [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

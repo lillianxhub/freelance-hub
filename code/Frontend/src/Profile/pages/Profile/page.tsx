@@ -1,4 +1,4 @@
-import { Card } from '../../../components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { NativeSelect } from '../../../components/ui/native-select'
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
@@ -66,7 +66,7 @@ function fieldValue(value: unknown): string {
 }
 
 function FieldError({ id, message }: FieldErrorProps) {
-  return message ? <p id={id} className="field-error">{message}</p> : null;
+  return message ? <p id={id} className="mt-1 text-xs font-semibold text-destructive">{message}</p> : null;
 }
 
 function ProfilePage() {
@@ -270,17 +270,15 @@ function ProfilePage() {
   };
 
   return (
-    <div className="page-view profile-page">
+    <div className="mx-auto w-full max-w-screen-2xl">
       <PageHeader
-        eyebrow="บัญชีของฉัน"
         title="ข้อมูลส่วนตัว"
-        description="ข้อมูลที่ใช้แสดงในบัญชีและเอกสารของคุณ"
       />
 
-      <form className="profile-layout" onSubmit={submit} noValidate>
-        <Card asChild><section className="panel profile-form-card">
-          <div className="form-grid profile-contact-grid">
-            <div className="form-field full">
+      <form className="grid gap-4" onSubmit={submit} noValidate>
+        <Card asChild><section className="p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="col-span-full flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-display-name" required>ชื่อที่แสดง</FormLabel>
               <Input
                 id="profile-display-name"
@@ -294,7 +292,7 @@ function ProfilePage() {
               <FieldError id="profile-display-name-error" message={profileErrors.display_name} />
               <small className="text-xs text-muted-foreground">ชื่อนี้จะแสดงบนหน้าเว็บและเมนูบัญชี</small>
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-first-name" required>ชื่อ</FormLabel>
               <Input
                 id="profile-first-name"
@@ -307,7 +305,7 @@ function ProfilePage() {
               />
               <FieldError id="profile-first-name-error" message={profileErrors.first_name} />
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-last-name" required>นามสกุล</FormLabel>
               <Input
                 id="profile-last-name"
@@ -320,7 +318,7 @@ function ProfilePage() {
               />
               <FieldError id="profile-last-name-error" message={profileErrors.last_name} />
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-email">อีเมลบัญชี</FormLabel>
               <Input
                 id="profile-email"
@@ -332,7 +330,7 @@ function ProfilePage() {
               />
               <small className="text-xs text-muted-foreground">อีเมลนี้ใช้สำหรับเข้าสู่ระบบ</small>
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-phone" required>เบอร์โทรศัพท์</FormLabel>
               <Input
                 id="profile-phone"
@@ -348,7 +346,7 @@ function ProfilePage() {
               <FieldError id="profile-phone-error" message={profileErrors.phone} />
               <small className="text-xs text-muted-foreground">กรอกตัวเลขได้ไม่เกิน 10 หลัก</small>
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-tax">เลขประจำตัวผู้เสียภาษี</FormLabel>
               <Input
                 id="profile-tax"
@@ -364,7 +362,7 @@ function ProfilePage() {
               <FieldError id="profile-tax-error" message={profileErrors.tax_id} />
               <small className="text-xs text-muted-foreground">กรอกตัวเลขได้ไม่เกิน 13 หลัก</small>
             </div>
-            {/* <div className="form-field full">
+            {/* <div className="col-span-full flex flex-col gap-1.5">
               <label htmlFor="profile-bio">แนะนำตัว</label>
               <textarea
                 id="profile-bio"
@@ -377,12 +375,12 @@ function ProfilePage() {
             </div> */}
           </div>
 
-          <div className="profile-divider" />
-          <p className="profile-section-label">ที่อยู่</p>
-          {addressError && <p className="form-message error">{addressError}</p>}
+          <div className="my-6 border-t border-border" />
+          <p className="mb-3 text-sm font-semibold tracking-wide text-text-secondary">ที่อยู่</p>
+          {addressError && <p className="rounded-lg bg-red-soft px-3 py-2 text-sm text-destructive">{addressError}</p>}
 
-          <div className="form-grid profile-address-grid">
-            <div className="form-field full">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="col-span-full flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-address" required>ที่อยู่</FormLabel>
               <Input
                 id="profile-address"
@@ -394,7 +392,7 @@ function ProfilePage() {
               />
               <FieldError id="profile-address-error" message={profileErrors.address} />
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-province" required>จังหวัด</FormLabel>
               <NativeSelect
                 id="profile-province"
@@ -415,7 +413,7 @@ function ProfilePage() {
               </NativeSelect>
               <FieldError id="profile-province-error" message={profileErrors.province} />
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-district" required>อำเภอ / เขต</FormLabel>
               <NativeSelect
                 id="profile-district"
@@ -434,7 +432,7 @@ function ProfilePage() {
               </NativeSelect>
               <FieldError id="profile-district-error" message={profileErrors.district} />
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-sub-district" required>ตำบล / แขวง</FormLabel>
               <NativeSelect
                 id="profile-sub-district"
@@ -453,7 +451,7 @@ function ProfilePage() {
               </NativeSelect>
               <FieldError id="profile-sub-district-error" message={profileErrors.sub_district} />
             </div>
-            <div className="form-field">
+            <div className="flex flex-col gap-1.5">
               <FormLabel htmlFor="profile-postal-code" required>รหัสไปรษณีย์</FormLabel>
               <NativeSelect
                 id="profile-postal-code"
@@ -475,17 +473,17 @@ function ProfilePage() {
             </div>
           </div>
 
-          <div className="profile-form-actions">
+          <div className="mt-6 flex flex-col gap-2 border-t border-border pt-6 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
-              className="min-h-10"
+              className="min-h-10 w-full sm:w-auto"
               type="button"
               onClick={() => setDraft(null)}
             >
               ยกเลิก
             </Button>
             <Button
-              className="min-h-10"
+              className="min-h-10 w-full sm:w-auto"
               type="submit"
               disabled={saving || !hasProfileChanges}
             >
@@ -495,15 +493,13 @@ function ProfilePage() {
         </section></Card>
       </form>
 
-      <Card asChild><form className="panel password-card" onSubmit={submitPassword}>
-        <div className="panel-heading">
-          <div>
-            <h2>เปลี่ยนรหัสผ่าน</h2>
-            <p>ใช้รหัสผ่านเดิมเพื่อกำหนดรหัสผ่านใหม่สำหรับเข้าสู่ระบบ</p>
-          </div>
-        </div>
-        <div className="form-grid password-grid">
-          <div className="form-field">
+      <Card asChild><form className="mt-4 p-6" onSubmit={submitPassword}>
+        <CardHeader className="mb-6 p-0">
+          <CardTitle>เปลี่ยนรหัสผ่าน</CardTitle>
+          <CardDescription>ใช้รหัสผ่านเดิมเพื่อกำหนดรหัสผ่านใหม่สำหรับเข้าสู่ระบบ</CardDescription>
+        </CardHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
             <FormLabel htmlFor="current-password" required>รหัสผ่านเดิม</FormLabel>
             <PasswordInput
               id="current-password"
@@ -514,7 +510,7 @@ function ProfilePage() {
               required
             />
           </div>
-          <div className="form-field">
+          <div className="flex flex-col gap-1.5">
             <FormLabel htmlFor="new-password" required>รหัสผ่านใหม่</FormLabel>
             <PasswordInput
               id="new-password"
@@ -527,15 +523,15 @@ function ProfilePage() {
               required
             />
             {passwordTooShort ? (
-              <small className="field-error">รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร</small>
+              <small className="mt-1 text-xs font-semibold text-destructive">รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร</small>
             ) : (
               <small className="text-xs text-muted-foreground">ต้องมีอย่างน้อย 8 ตัวอักษร</small>
             )}
             {passwordUnchanged && (
-              <small className="field-error">รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม</small>
+              <small className="mt-1 text-xs font-semibold text-destructive">รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม</small>
             )}
           </div>
-          <div className="form-field">
+          <div className="flex flex-col gap-1.5">
             <FormLabel htmlFor="confirm-password" required>ยืนยันรหัสผ่านใหม่</FormLabel>
             <PasswordInput
               id="confirm-password"
@@ -548,13 +544,13 @@ function ProfilePage() {
               required
             />
             {passwordMismatch && (
-              <small className="field-error">ยืนยันรหัสผ่านใหม่ไม่ตรงกัน</small>
+              <small className="mt-1 text-xs font-semibold text-destructive">ยืนยันรหัสผ่านใหม่ไม่ตรงกัน</small>
             )}
           </div>
         </div>
-        <div className="profile-form-actions">
+        <div className="mt-6 flex flex-col gap-2 border-t border-border pt-6 sm:flex-row sm:justify-end">
           <Button
-            className="min-h-10"
+            className="min-h-10 w-full sm:w-auto"
             type="submit"
             disabled={passwordSaving || passwordFormInvalid}
           >

@@ -4,7 +4,6 @@ import type { Client } from './client'
 import type { Project } from './project'
 import type { Task } from './task'
 import type { TimeEntry } from './timeTracking'
-import type { FinanceEntry, Invoice, InvoiceItem, Payment } from './billing'
 
 export interface WorkspaceData {
   profiles: Profile[]
@@ -12,10 +11,6 @@ export interface WorkspaceData {
   projects: Project[]
   tasks: Task[]
   time_entries: TimeEntry[]
-  finance_entries: FinanceEntry[]
-  invoices: Invoice[]
-  invoice_items: InvoiceItem[]
-  payments: Payment[]
 }
 
 export type ResourceMap = WorkspaceData
