@@ -38,10 +38,10 @@ public final class LocalSeedCommand {
                 .initializers(applicationContext -> requireLocalDatabase(
                         applicationContext.getEnvironment().getProperty("spring.datasource.url")))
                 .run(args)) {
-            String email = System.getenv().getOrDefault("LOCAL_SEED_EMAIL", "seed.local@example.test");
-            LocalSeedService.SeedResult result = context.getBean(LocalSeedService.class).seed(email, password);
-            System.out.printf("Local seed ready: user=%s client=%s project=%s task=%s%n",
-                    result.userId(), result.clientId(), result.projectId(), result.taskId());
+            String email = System.getenv().getOrDefault("LOCAL_SEED_EMAIL", "local.seed@example.test");
+            boolean runningTimer = "true".equalsIgnoreCase(System.getenv("LOCAL_SEED_RUNNING_TIMER"));
+            LocalSeedService.SeedResult result = context.getBean(LocalSeedService.class).seed(email, password, runningTimer);
+            System.out.printf("Local seed owner id=%s%n", result.userId());
         }
     }
 
