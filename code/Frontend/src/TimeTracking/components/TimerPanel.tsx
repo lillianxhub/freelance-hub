@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button'
 import { Label } from '../../components/ui/label'
 import { NativeSelect } from '../../components/ui/native-select'
 import { Input } from '../../components/ui/input'
-import { formatTimer } from '../../utils/formatters'
+import { formatTimer } from '../../lib/formatters'
 import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
 import { useState } from 'react'
 import { useTimer } from '../useTimer'
@@ -47,7 +47,7 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
     <Card asChild>
       <section className="min-h-[250px] items-stretch gap-6 px-5 py-5 sm:px-6 sm:py-6">
         <div className="flex w-full items-start justify-between gap-4">
-          <div className="text-[clamp(42px,10vw,112px)] leading-[0.9] font-bold tracking-[-0.07em] text-text-primary tabular-nums">
+          <div className="text-[clamp(42px,10vw,112px)] leading-[0.9] font-bold tracking-[0.01em] text-text-primary tabular-nums">
             {timerLeading}:<span className="text-subtle">{timerSeconds}</span>
           </div>
           <Badge

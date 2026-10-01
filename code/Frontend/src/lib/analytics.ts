@@ -9,8 +9,7 @@ export function inDateRange(value: string, from: string, to: string) {
 export function summarizeTime(entries: readonly TimeSummaryEntry[] = []) {
   const trackedMinutes = entries.reduce((sum, entry) => sum + Number(entry.duration_minutes || 0), 0)
   const billableMinutes = entries.filter((entry) => entry.billable).reduce((sum, entry) => sum + Number(entry.duration_minutes || 0), 0)
-  const unbilledValue = entries.filter((entry) => entry.billable && !entry.invoice_id).reduce((sum, entry) => sum + calculateTimeValue(entry), 0)
-  return { trackedMinutes, billableMinutes, utilization: trackedMinutes ? (billableMinutes / trackedMinutes) * 100 : 0, unbilledValue }
+  return { trackedMinutes, billableMinutes, utilization: trackedMinutes ? (billableMinutes / trackedMinutes) * 100 : 0 }
 }
 
 export function groupTimeBy<T extends TimeSummaryEntry>(entries: readonly T[], keyForEntry: (entry: T) => string) {

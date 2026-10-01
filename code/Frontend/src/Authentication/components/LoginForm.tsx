@@ -59,7 +59,7 @@ function LoginForm() {
         />
 
         <Button variant="default"
-          className="button button-primary wide"
+          className="h-10 w-full"
           type="submit"
           disabled={loading}
         >

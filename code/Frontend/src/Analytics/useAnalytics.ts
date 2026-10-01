@@ -1,6 +1,6 @@
 import { useContext, useMemo } from 'react'
 import { AnalyticsContext } from './AnalyticsContext'
-import { summarizeTime } from '../utils/analytics'
+import { summarizeTime } from '../lib/analytics'
 
 export function useAnalytics() {
   const workspace = useContext(AnalyticsContext)

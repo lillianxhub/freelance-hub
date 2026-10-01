@@ -3,17 +3,16 @@ import test from 'node:test'
 import { groupTimeBy, inDateRange, summarizeTime, toCsv } from './analytics'
 
 const entries = [
-  { project_id: 'p1', duration_minutes: 120, billable: true, rate_snapshot: 1000, invoice_id: null },
-  { project_id: 'p1', duration_minutes: 60, billable: false, rate_snapshot: 1000, invoice_id: null },
-  { project_id: 'p2', duration_minutes: 30, billable: true, rate_snapshot: 800, invoice_id: 'inv-1' },
+  { project_id: 'p1', duration_minutes: 120, billable: true, rate_snapshot: 1000 },
+  { project_id: 'p1', duration_minutes: 60, billable: false, rate_snapshot: 1000 },
+  { project_id: 'p2', duration_minutes: 30, billable: true, rate_snapshot: 800 },
 ]
 
-test('summarizeTime calculates tracked, billable, utilization and unbilled value', () => {
+test('summarizeTime calculates tracked, billable and utilization', () => {
   const summary = summarizeTime(entries)
   assert.equal(summary.trackedMinutes, 210)
   assert.equal(summary.billableMinutes, 150)
   assert.equal(summary.utilization, (150 / 210) * 100)
-  assert.equal(summary.unbilledValue, 2000)
 })
 
 test('groupTimeBy aggregates and sorts project time', () => {

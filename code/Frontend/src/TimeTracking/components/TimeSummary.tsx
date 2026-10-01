@@ -1,5 +1,5 @@
-import { Card } from '../../components/ui/card'
-import { formatDuration, formatMoney } from "../../utils/formatters";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { formatDuration, formatMoney } from "../../lib/formatters";
 import type { TimeSummaryProps } from "../../types/timeTrackerPage";
 
 export default function TimeSummary({
@@ -9,37 +9,43 @@ export default function TimeSummary({
   count,
 }: TimeSummaryProps) {
   return (
-    <Card asChild><section className="panel week-summary">
-      <div className="panel-heading">
-        <div>
-          <h2>สรุปตามตัวกรอง</h2>
-          <p>สรุปจากตัวกรองรายการด้านล่าง</p>
-        </div>
-        <strong className="week-hours">{formatDuration(totalMinutes)}</strong>
-      </div>
-      <div className="summary-list">
-        <div>
-          <span>เวลาที่คิดค่าบริการ</span>
-          <strong>{formatDuration(billableMinutes)}</strong>
-        </div>
-        <div>
-          <span>สัดส่วนเวลาที่คิดเงินได้</span>
-          <strong>
-            {totalMinutes
-              ? Math.round((billableMinutes / totalMinutes) * 100)
-              : 0}
-            %
-          </strong>
-        </div>
-        <div>
-          <span>มูลค่าเกิดขึ้น</span>
-          <strong>{formatMoney(totalValue)}</strong>
-        </div>
-        <div>
-          <span>จำนวนรายการ</span>
-          <strong>{count}</strong>
-        </div>
-      </div>
-    </section></Card>
+    <Card asChild>
+      <section className="!p-0">
+        <CardHeader className="p-6 pb-4">
+          <CardTitle>สรุปตามตัวกรอง</CardTitle>
+          <CardDescription>สรุปจากตัวกรองรายการด้านล่าง</CardDescription>
+          <CardAction>
+            <strong className="text-3xl font-bold leading-tight tabular-nums text-primary">
+              {formatDuration(totalMinutes)}
+            </strong>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="p-6 pt-0">
+          <div className="grid">
+            <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
+              <span className="text-text-secondary">เวลาที่คิดค่าบริการ</span>
+              <strong className="text-base text-text-primary">{formatDuration(billableMinutes)}</strong>
+            </div>
+            <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
+              <span className="text-text-secondary">สัดส่วนเวลาที่คิดเงินได้</span>
+              <strong className="text-base text-text-primary">
+                {totalMinutes
+                  ? Math.round((billableMinutes / totalMinutes) * 100)
+                  : 0}
+                %
+              </strong>
+            </div>
+            <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
+              <span className="text-text-secondary">มูลค่าเกิดขึ้น</span>
+              <strong className="text-base text-text-primary">{formatMoney(totalValue)}</strong>
+            </div>
+            <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
+              <span className="text-text-secondary">จำนวนรายการ</span>
+              <strong className="text-base text-text-primary">{count}</strong>
+            </div>
+          </div>
+        </CardContent>
+      </section>
+    </Card>
   );
 }

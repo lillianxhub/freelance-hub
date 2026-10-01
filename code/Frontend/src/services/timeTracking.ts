@@ -1,8 +1,66 @@
 import { api } from '../api/apiClient'
-import type { ApiCurrentTimer, ApiTimeEntry } from '../types/api'
+import type { ApiCurrentTimer, ApiMeta, ApiTimeEntry } from '../types/api'
 import type { ResourceInput } from '../types/workspace'
 import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
 import { toTimeEntry } from './workspace'
+
+export interface TimeEntryListQuery {
+  clientId?: string
+  projectId?: string
+  taskId?: string
+  from?: string
+  to?: string
+  page?: number
+  limit?: number
+}
+
+export interface TimeEntryPage {
+  entries: TimeEntry[]
+  meta: ApiMeta
+}
+
+export interface TimeEntrySummary {
+  entryCount: number
+  totalSeconds: number
+}
+
+export async function listTimeEntriesPage(query: TimeEntryListQuery = {}): Promise<TimeEntryPage> {
+  const params = new URLSearchParams({
+    page: String(query.page ?? 1),
+    limit: String(query.limit ?? 5),
+    sortBy: 'startedAt',
+    direction: 'DESC',
+  })
+  if (query.clientId) params.set('clientId', query.clientId)
+  if (query.projectId) params.set('projectId', query.projectId)
+  if (query.taskId) params.set('taskId', query.taskId)
+  if (query.from) params.set('from', query.from)
+  if (query.to) params.set('to', query.to)
+
+  const response = await api.get<ApiTimeEntry[]>(`/time-entries?${params.toString()}`)
+  const entries = response.data.map(toTimeEntry)
+  return {
+    entries,
+    meta: response.meta ?? {
+      page: query.page ?? 1,
+      limit: query.limit ?? 5,
+      total: entries.length,
+      totalPages: entries.length ? 1 : 0,
+    },
+  }
+}
+
+export async function summarizeTimeEntries(query: TimeEntryListQuery = {}): Promise<TimeEntrySummary> {
+  const params = new URLSearchParams()
+  if (query.clientId) params.set('clientId', query.clientId)
+  if (query.projectId) params.set('projectId', query.projectId)
+  if (query.taskId) params.set('taskId', query.taskId)
+  if (query.from) params.set('from', query.from)
+  if (query.to) params.set('to', query.to)
+
+  const response = await api.get<TimeEntrySummary>(`/time-entries/summary?${params.toString()}`)
+  return response.data
+}
 
 export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> {
   const query = new URLSearchParams({ page: '1', limit: '10', sortBy: 'startedAt', direction: 'DESC' })

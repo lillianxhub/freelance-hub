@@ -133,7 +133,7 @@ function RegisterForm() {
         <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.password} autoComplete="new-password" minLength={8} />
         <AuthInput label="ยืนยันรหัสผ่าน" type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.confirmPassword} autoComplete="new-password" minLength={8} />
 
-        <Button className="wide min-h-10" type="submit" disabled={loading}>
+        <Button className="min-h-10 w-full" type="submit" disabled={loading}>
           {loading ? 'กำลังสมัคร...' : 'สมัครสมาชิก'}
         </Button>
 

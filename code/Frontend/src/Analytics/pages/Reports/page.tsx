@@ -1,7 +1,7 @@
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { Label } from '../../../components/ui/label'
-import { Input } from '../../../components/ui/input'
+import { DatePicker } from '../../../components/ui/date-picker'
 import { NativeSelect } from '../../../components/ui/native-select'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../../components/ui/chart'
@@ -23,8 +23,8 @@ import {
   groupTimeBy,
   inDateRange,
   summarizeTime,
-} from "../../../utils/analytics";
-import { formatDuration } from "../../../utils/formatters";
+} from "../../../lib/analytics";
+import { formatDuration } from "../../../lib/formatters";
 
 const reportNow = new Date();
 const reportTo = new Date(
@@ -160,43 +160,8 @@ function ReportsPage() {
         ];
       }),
     ]);
-  /* const exportRevenue = () =>
-    downloadCsv(`revenue-report-${range.from}-${range.to}.csv`, [
-      [
-        "เลขที่ใบแจ้งหนี้",
-        "ลูกค้า",
-        "วันที่ออกเอกสาร",
-        "วันครบกำหนด",
-        "สถานะ",
-        "ยอดก่อนภาษี",
-        "ภาษี",
-        "ยอดรวม",
-        "รับเงินแล้ว",
-        "ยอดคงเหลือ",
-        "สกุลเงิน",
-      ],
-      ...filteredInvoices.map((invoice) => {
-        const client = data.clients.find(
-          (item) => item.id === invoice.client_id,
-        );
-        return [
-          invoice.invoice_number,
-          client?.company_name || client?.name,
-          invoice.issue_date,
-          invoice.due_date,
-          invoice.status,
-          invoice.subtotal,
-          invoice.tax_amount,
-          invoice.total,
-          invoice.amount_paid,
-          Number(invoice.total) - Number(invoice.amount_paid || 0),
-          invoice.currency,
-        ];
-      }),
-    ]); */
-
   return (
-    <div className="page-view">
+    <div className="mx-auto w-full max-w-auto">
       <PageHeader
         eyebrow="จัดการ / รายงาน"
         title="รายงานและข้อมูลสรุป"
@@ -204,46 +169,35 @@ function ReportsPage() {
         actions={
           <>
             <Button variant="outline"
-              className="button button-secondary"
+              className="h-10"
               type="button"
               onClick={exportTime}
             >
               <FiDownload aria-hidden="true" /> เวลา CSV
             </Button>
-            {/* <button
-              className="button button-primary"
-              type="button"
-              onClick={exportRevenue}
-            >
-              <FiDownload aria-hidden="true" /> ดาวน์โหลดรายรับ CSV
-            </button> */}
           </>
         }
       />
       <Card asChild><section className="panel report-controls">
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="report-from">จากวันที่</Label>
-          <Input
+          <DatePicker
             id="report-from"
-            type="date"
             value={range.from}
-            onChange={(event) =>
-              setRange((current) => ({ ...current, from: event.target.value }))
-            }
+            onChange={(value) => setRange((current) => ({ ...current, from: value }))}
+            aria-label="จากวันที่"
           />
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="report-to">ถึงวันที่</Label>
-          <Input
+          <DatePicker
             id="report-to"
-            type="date"
             value={range.to}
-            onChange={(event) =>
-              setRange((current) => ({ ...current, to: event.target.value }))
-            }
+            onChange={(value) => setRange((current) => ({ ...current, to: value }))}
+            aria-label="ถึงวันที่"
           />
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="report-client">ลูกค้า</Label>
           <NativeSelect
             id="report-client"
@@ -259,7 +213,7 @@ function ReportsPage() {
             ))}
           </NativeSelect>
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="report-project">โปรเจกต์</Label>
           <NativeSelect id="report-project" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
             <option value="ALL">โปรเจกต์ทั้งหมด</option>
@@ -268,7 +222,7 @@ function ReportsPage() {
             ))}
           </NativeSelect>
         </div>
-        {/* <div className="form-field">
+        {/* <div className="flex flex-col gap-1.5">
           <label htmlFor="report-currency">สกุลเงิน</label>
           <select
             id="report-currency"

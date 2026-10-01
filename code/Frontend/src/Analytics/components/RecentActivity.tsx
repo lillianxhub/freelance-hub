@@ -1,4 +1,4 @@
-import { formatDate, formatDuration } from '../../utils/formatters'
+import { formatDate, formatDuration } from '../../lib/formatters'
 import type { RecentActivityProps } from '../../types/analytics'
 
 export default function RecentActivity({ entries, projects }: RecentActivityProps) {

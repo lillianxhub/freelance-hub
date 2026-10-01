@@ -1,7 +1,7 @@
 import { Button } from './ui/button'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../Authentication/useAuthentication'
-import { initials } from '../utils/formatters'
+import { initials } from '../lib/formatters'
 import type { TopbarProps } from '../types/ui'
 import { FiChevronDown, FiMenu } from 'react-icons/fi'
 import TopbarTimer from '../TimeTracking/components/TopbarTimer'
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from './ui/avatar'
 
 const labels: Record<string, string> = {
   dashboard: 'ภาพรวม', clients: 'ลูกค้า', projects: 'โปรเจกต์', 'time-tracker': 'บันทึกเวลา',
-  finances: 'การเงิน', invoices: 'ใบแจ้งหนี้', reports: 'รายงาน', profile: 'โปรไฟล์',
+  reports: 'รายงาน', profile: 'โปรไฟล์',
 }
 
 function Topbar({ onMenu }: TopbarProps) {
@@ -27,34 +27,32 @@ function Topbar({ onMenu }: TopbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-[25] flex h-[66px] items-center justify-between border-b border-border bg-white/90 px-[34px] backdrop-blur-[14px] max-[820px]:px-[18px] print:hidden">
-      <Button variant="ghost"
-        className="hidden size-[34px] place-items-center rounded-[9px] border border-border bg-white p-0 text-[#667087] max-[820px]:grid"
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/90 px-8 backdrop-blur-md lg:px-4 print:hidden">
+      <Button
+        variant="ghost"
+        className="grid size-9 place-items-center rounded-lg border border-border bg-background p-0 text-muted-foreground lg:hidden"
         type="button"
         aria-label="เปิดเมนู"
         onClick={onMenu}
       >
         <FiMenu aria-hidden="true" />
       </Button>
-      <div className="flex items-center gap-2 text-sm text-text-secondary max-[820px]:hidden">
+      <div className="hidden items-center gap-2 text-sm text-text-secondary lg:flex">
         <span>พื้นที่ทำงาน</span>
         <span>/</span>
         <strong className="text-text-primary">{label}</strong>
       </div>
-      <div className="flex items-center gap-[9px] max-[820px]:ml-auto">
+      <div className="ml-auto flex items-center gap-2">
         <TopbarTimer />
-        {/* <span className="mode-badge connected">
-          <i />Backend API
-        </span> */}
-        {/* <button className="icon-button" type="button" aria-label="ค้นหา">⌕</button> */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost"
-              className="flex h-auto gap-2 rounded-[10px] border-0 bg-transparent px-1 py-[3px] text-left text-text-primary hover:bg-surface-soft"
+            <Button
+              variant="ghost"
+              className="flex h-auto gap-2 rounded-lg border-0 bg-transparent px-1 py-1 text-left text-text-primary hover:bg-surface-soft"
               type="button"
             >
               <Avatar title={user?.email}><AvatarFallback className="bg-primary text-primary-foreground">{initials(displayName)}</AvatarFallback></Avatar>
-            <span className="flex min-w-28 flex-col max-[820px]:hidden">
+            <span className="hidden min-w-28 flex-col lg:flex">
                 <strong className="block truncate text-sm">{displayName}</strong>
                 <small className="mt-0.5 block truncate text-xs text-text-secondary">{user?.email}</small>
               </span>

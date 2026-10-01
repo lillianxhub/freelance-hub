@@ -8,9 +8,7 @@ import type { TimeEntry } from '../types/timeTracking'
 import type { ResourceInput, ResourceName, ResourceRecord, WorkspaceData } from '../types/workspace'
 import { getStoredProfileImage } from './profile'
 
-const unsupportedResources = new Set<ResourceName>([
-  'time_entries', 'finance_entries', 'invoices', 'invoice_items', 'payments',
-])
+const unsupportedResources = new Set<ResourceName>(['time_entries'])
 
 function emptyString(value: string | null | undefined): string {
   return value ?? ''
@@ -79,10 +77,10 @@ function toClient(source: ApiClient): Client {
     email: emptyString(source.email),
     phone: emptyString(source.phone),
     address: emptyString(source.address),
-    province: '',
-    district: '',
-    sub_district: '',
-    postal_code: '',
+    province: emptyString(source.province),
+    district: emptyString(source.district),
+    sub_district: emptyString(source.subdistrict),
+    postal_code: emptyString(source.postalCode),
     tax_id: emptyString(source.taxId),
     notes: emptyString(source.notes),
     status: source.isActive === false ? 'ARCHIVED' : source.status,
@@ -90,6 +88,11 @@ function toClient(source: ApiClient): Client {
     created_at: source.createdAt,
     updated_at: source.updatedAt,
   }
+}
+
+export async function getClientById(id: string): Promise<Client> {
+  const response = await api.get<ApiClient>(`/clients/${encodeURIComponent(id)}`)
+  return toClient(response.data)
 }
 
 export function toProject(source: ApiProject): Project {
@@ -149,6 +152,7 @@ export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
     id: source.id,
     owner_id: '',
     project_id: source.projectId ?? source.project?.id ?? '',
+    project_name: source.projectName ?? source.project?.name,
     task_id: source.taskId ?? source.task?.id ?? null,
     task_name: source.taskName ?? source.task?.title,
     description: emptyString(source.description),
@@ -159,7 +163,6 @@ export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
     billable: true,
     rate_snapshot: 0,
     currency: 'THB',
-    invoice_id: null,
     created_at: source.createdAt,
     updated_at: source.updatedAt,
   }
@@ -238,8 +241,8 @@ export async function listClientOptions(): Promise<Client[]> {
   return response.data.map(toClient)
 }
 
-export async function listProjects(): Promise<Project[]> {
-  const { projects } = await listProjectsPage()
+export async function listProjects(filters: ProjectListFilters = {}): Promise<Project[]> {
+  const { projects } = await listProjectsPage(1, 10, filters)
   return projects
 }
 
@@ -254,6 +257,7 @@ export interface ProjectsPageResult {
 }
 
 export interface ProjectListFilters {
+  clientId?: string
   search?: string
   status?: Project['status']
   sortBy?: 'update_at' | 'end_date' | 'project_name'
@@ -267,6 +271,7 @@ export async function listProjectsPage(page = 1, limit = 10, filters: ProjectLis
     sortBy: filters.sortBy ?? 'project_name',
     direction: filters.direction ?? 'ASC',
   })
+  if (filters.clientId) query.set('clientId', filters.clientId)
   if (filters.search?.trim()) query.set('search', filters.search.trim())
   if (filters.status) query.set('status', filters.status)
   const response = await api.get<ApiProject[]>(`/projects?${query.toString()}`)
@@ -292,7 +297,7 @@ export async function listTimeEntries(): Promise<TimeEntry[]> {
 }
 
 export function createEmptyWorkspace(): WorkspaceData {
-  return { profiles: [], clients: [], projects: [], tasks: [], time_entries: [], finance_entries: [], invoices: [], invoice_items: [], payments: [] }
+  return { profiles: [], clients: [], projects: [], tasks: [], time_entries: [] }
 }
 
 export async function loadAllResources(): Promise<WorkspaceData> {
