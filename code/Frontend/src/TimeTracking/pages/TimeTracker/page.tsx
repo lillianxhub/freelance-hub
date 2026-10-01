@@ -44,7 +44,7 @@ function toApiDateBoundary(value: string, endExclusive = false): string | undefi
 
 function TimeTrackerPage() {
   const workspace = useTimeEntries();
-  const { data, loading, error, refresh, save, remove } = workspace;
+  const { data, loading, error, refresh, saveTimeEntry, deleteTimeEntry } = workspace;
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState(createEmptyManualForm());
   const [manualTasks, setManualTasks] = useState<Task[]>([]);
@@ -272,7 +272,7 @@ function TimeTrackerPage() {
         Date.now() + (entry.duration_minutes ?? 0) * 60000,
       ).toISOString(),
     };
-    save("time_entries", duplicate);
+    void saveTimeEntry(duplicate);
   };
 
   const applyRange = (preset: RangePreset) => {
@@ -359,7 +359,7 @@ function TimeTrackerPage() {
         }}
         onRetry={() => setTimeEntriesRequestKey((current) => current + 1)}
         onEdit={openManual}
-        onDelete={(entry) => remove('time_entries', entry.id)}
+        onDelete={(entry) => deleteTimeEntry(entry.id)}
         onDuplicate={duplicateEntry}
       />
 

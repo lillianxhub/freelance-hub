@@ -6,7 +6,7 @@ import { useEffect, useState, type ChangeEvent, type FocusEvent, type FormEvent 
 import FormLabel from '../../components/FormLabel'
 import type { ClientFieldErrors, ClientFieldName, ClientFormProps } from '../../types/clientsPage'
 import type { FieldErrorProps } from '../../types/ui'
-import type { ResourceInput } from '../../types/workspace'
+import type { ClientInput } from '../../types/client'
 import { loadThaiAddressData, type ThaiProvince } from '../../services/thaiAddress'
 import { validateClientField, validateClientFields } from '../client.validators'
 
@@ -35,7 +35,7 @@ function ClientForm({ value, error, saving, onChange, onFieldsChange, onSubmit, 
   const subDistricts = selectedDistrict?.sub_districts || []
   const selectedSubDistrict = subDistricts.find((item) => item.name_th === value.sub_district)
 
-  const updateFieldError = (field: ClientFieldName, nextValue: ResourceInput<'clients'>) => {
+  const updateFieldError = (field: ClientFieldName, nextValue: ClientInput) => {
     if (!fieldErrors[field]) return
     setFieldErrors((current) => ({ ...current, [field]: validateClientField(field, nextValue) }))
   }

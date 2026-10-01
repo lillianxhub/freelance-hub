@@ -1,8 +1,8 @@
 import { useContext } from 'react'
 import { ProjectsContext } from './ProjectsContext'
-import type { WorkspaceContextValue } from '../types/workspaceContext'
+import type { ProjectsContextValue } from './ProjectsContext'
 
-export function useProjects(): WorkspaceContextValue {
+export function useProjects(): ProjectsContextValue {
   const context = useContext(ProjectsContext)
   if (!context) throw new Error('useProjects must be used inside ProjectsProvider')
   return context

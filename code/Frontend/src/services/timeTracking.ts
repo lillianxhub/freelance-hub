@@ -1,8 +1,18 @@
 import { api } from '../api/apiClient'
 import type { ApiCurrentTimer, ApiMeta, ApiTimeEntry } from '../types/api'
-import type { ResourceInput } from '../types/workspace'
+import type { TimeEntryInput } from '../types/timeTracking'
 import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
-import { toTimeEntry } from './workspace'
+
+function emptyString(value: string | null | undefined): string { return value ?? '' }
+
+export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
+  return { id: source.id, owner_id: '', project_id: source.projectId ?? source.project?.id ?? '',
+    project_name: source.projectName ?? source.project?.name, task_id: source.taskId ?? source.task?.id ?? null,
+    task_name: source.taskName ?? source.task?.title, description: emptyString(source.description), started_at: source.startedAt,
+    ended_at: source.endedAt || null, duration_minutes: source.durationMinutes ?? (source.durationSeconds === undefined ? null : source.durationSeconds / 60),
+    duration_seconds: source.durationSeconds ?? (source.durationMinutes === undefined ? null : source.durationMinutes * 60),
+    billable: true, rate_snapshot: 0, currency: 'THB', created_at: source.createdAt, updated_at: source.updatedAt }
+}
 
 export interface TimeEntryListQuery {
   clientId?: string
@@ -69,7 +79,7 @@ export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> 
   return response.data.map(toTimeEntry)
 }
 
-export async function saveTimeEntry(entry: ResourceInput<'time_entries'>): Promise<TimeEntry> {
+export async function saveTimeEntry(entry: TimeEntryInput): Promise<TimeEntry> {
   if (!entry.project_id) throw new Error('รายการเวลาต้องระบุโปรเจกต์')
   if (entry.id) {
     return updateTimeEntry(entry.id, {

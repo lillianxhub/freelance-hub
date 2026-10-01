@@ -26,6 +26,8 @@ export interface Profile extends OwnedRecord {
   bio: string
 }
 
+export type ProfileInput = Omit<Profile, keyof OwnedRecord> & Partial<OwnedRecord>
+
 export interface ChangePasswordInput {
   current_password: string
   new_password: string

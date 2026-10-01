@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --import tsx --test src/api/*.test.ts src/utils/*.test.ts",
+    "test": "node --import tsx --test src/api/*.test.ts src/services/*.test.ts src/utils/*.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

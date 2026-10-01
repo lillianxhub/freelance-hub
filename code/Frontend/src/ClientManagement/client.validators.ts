@@ -1,4 +1,4 @@
-import type { ResourceInput } from '../types/workspace'
+import type { ClientInput } from '../types/client'
 import { isValidEmail, isValidPhone } from '../Authentication/authentication.validators'
 import type { ClientFieldErrors, ClientFieldName } from '../types/clientsPage'
 
@@ -16,7 +16,7 @@ function isRequired(value: unknown): boolean {
 
 export function validateClientField(
   field: ClientFieldName,
-  client: ResourceInput<'clients'>,
+  client: ClientInput,
 ): string | undefined {
   const value = toText(client[field])
 
@@ -29,7 +29,7 @@ export function validateClientField(
   return undefined
 }
 
-export function validateClientFields(client: ResourceInput<'clients'>): ClientFieldErrors {
+export function validateClientFields(client: ClientInput): ClientFieldErrors {
   const fields: ClientFieldName[] = [
     'name',
     'company_name',
@@ -51,7 +51,7 @@ export function validateClientFields(client: ResourceInput<'clients'>): ClientFi
   }, {})
 }
 
-export function validateClient(client: ResourceInput<'clients'>): string | null {
+export function validateClient(client: ClientInput): string | null {
   const name = toText(client.name)
   const companyName = toText(client.company_name)
   const email = toText(client.email)

@@ -1,8 +1,8 @@
 import type { FormEvent } from 'react'
 import type { Task } from './task'
-import type { ResourceInput } from './workspace'
+import type { TaskInput } from './task'
 
-export type TaskDraft = Omit<ResourceInput<'tasks'>, 'project_id' | 'sort_order'> & { project_id?: string; sort_order?: number }
+export type TaskDraft = Omit<TaskInput, 'project_id' | 'sort_order'> & { project_id?: string; sort_order?: number }
 
 export interface TaskFormProps {
   value: TaskDraft
