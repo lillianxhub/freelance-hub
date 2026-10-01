@@ -1,9 +1,12 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const { BACKEND_ORIGIN } = loadEnv(mode, '.', '')
+
+  return {
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -13,10 +16,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://freelance-hub-backend-staging.onrender.com",
+        target: BACKEND_ORIGIN || "http://localhost:8080",
         changeOrigin: true,
         secure: true,
       },
     },
   },
+  }
 })
