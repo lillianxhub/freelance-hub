@@ -196,7 +196,9 @@ export LOCAL_SEED_PASSWORD='your-local-test-password'
 docker compose run --rm --no-deps -e LOCAL_SEED_RUN=true -e LOCAL_SEED_PASSWORD app
 ```
 
-บัญชีตัวอย่างใช้ email `seed.local@example.test` หากต้องการ email อื่น ให้ตั้ง `LOCAL_SEED_EMAIL` ใน shell และเพิ่ม `-e LOCAL_SEED_EMAIL` ก่อน `app` หาก email เดิมมีอยู่แล้วแต่รหัสผ่านไม่ตรง Seeder จะหยุดโดยไม่เปลี่ยนรหัสผ่านเดิม ห้ามใช้ข้อมูลรับรอง production
+บัญชีตัวอย่างใช้ email `local.seed@example.test` (หรือกำหนด `LOCAL_SEED_EMAIL` ก่อนรัน) และรหัสผ่านจาก `LOCAL_SEED_PASSWORD` โดย Seeder จะไม่แสดงรหัสผ่านใน log และจะหยุดหาก email เดิมมีรหัสผ่านไม่ตรงกัน ชุดข้อมูลประกอบด้วย profile, clients, projects, tasks และ time entries สำหรับทดสอบหน้ารายการและตัวกรอง การรันซ้ำจะอ้างอิง ID เดิมและไม่เขียนทับข้อมูลที่แก้จาก UI
+
+ปกติ Seeder จะไม่สร้าง timer ที่กำลังทำงาน หากต้องการลอง Stop/Cancel ให้ตั้ง `LOCAL_SEED_RUNNING_TIMER=true` ก่อนรัน โดยจะไม่สร้าง timer ซ้ำหากบัญชีนี้มี timer เปิดอยู่แล้ว Seeder ใช้ได้เฉพาะ PostgreSQL local ที่ผ่านการตรวจ host และสร้างตาราง mapping เฉพาะฐานข้อมูล local เท่านั้น ห้ามใช้ข้อมูลรับรอง production
 
 ## API Documentation
 
