@@ -1,5 +1,7 @@
 # Freelance Hub
 
+<p align="center"><img src="code/Frontend/public/logo.svg" alt="Freelance Hub logo" width="220" /></p>
+
 Freelance Hub คือระบบบริหารงานสำหรับ Freelancer ที่รวมการจัดการลูกค้า โปรเจกต์ และงานย่อยไว้ในที่เดียว
 ระบบรองรับการจับเวลาทำงานแบบ real-time และ manual entry พร้อมสรุปชั่วโมงการทำงาน
 ผู้ใช้สามารถวิเคราะห์เวลาทำงานและดู productivity insights ผ่าน Dashboard
@@ -178,25 +180,29 @@ docker compose build app
 docker compose up -d --no-deps app
 ```
 
-ตั้งรหัสผ่านสำหรับบัญชีทดสอบอย่างน้อย 8 ตัวอักษร (ใช้เฉพาะ local):
+รัน seeder จากเครื่องโดยตรงด้วย `./seed-local.sh` (จากโฟลเดอร์ `code/Backend/`) หรือใช้ Docker ตามคำสั่งด้านล่าง ค่าเริ่มต้นล่าสุดของ `seed-local.sh` คือ email `seed@example.co` และรหัสผ่าน `LocalSeed1` ใช้สำหรับ local เท่านั้น และรหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร สามารถกำหนด `LOCAL_SEED_EMAIL` และ `LOCAL_SEED_PASSWORD` เพื่อเปลี่ยนค่าเริ่มต้นได้
+
+ตั้งรหัสผ่านเองก่อนรันได้ดังนี้:
 
 ```powershell
 # Windows PowerShell
+$env:LOCAL_SEED_EMAIL = 'seed@example.co'
 $env:LOCAL_SEED_PASSWORD = 'your-local-test-password'
 ```
 
 ```bash
 # macOS / Linux
+export LOCAL_SEED_EMAIL='seed@example.co'
 export LOCAL_SEED_PASSWORD='your-local-test-password'
 ```
 
-จากนั้นใช้คำสั่งเดียวกันทุกระบบ:
+จากนั้นใช้คำสั่งเดียวกันทุกระบบเพื่อ seed ผ่าน Docker โดยให้ข้อมูล login ตรงกับค่าเริ่มต้นของ `seed-local.sh`:
 
 ```bash
-docker compose run --rm --no-deps -e LOCAL_SEED_RUN=true -e LOCAL_SEED_PASSWORD app
+docker compose run --rm --no-deps -e LOCAL_SEED_RUN=true -e LOCAL_SEED_EMAIL -e LOCAL_SEED_PASSWORD app
 ```
 
-บัญชีตัวอย่างใช้ email `local.seed@example.test` (หรือกำหนด `LOCAL_SEED_EMAIL` ก่อนรัน) และรหัสผ่านจาก `LOCAL_SEED_PASSWORD` โดย Seeder จะไม่แสดงรหัสผ่านใน log และจะหยุดหาก email เดิมมีรหัสผ่านไม่ตรงกัน ชุดข้อมูลประกอบด้วย profile, clients, projects, tasks และ time entries สำหรับทดสอบหน้ารายการและตัวกรอง การรันซ้ำจะอ้างอิง ID เดิมและไม่เขียนทับข้อมูลที่แก้จาก UI
+เข้าสู่ระบบด้วย `seed@example.co` / `LocalSeed1` เมื่อใช้ `./seed-local.sh` โดยไม่กำหนด override; Docker seeder ใช้ email/password ที่ export ไว้ก่อนรัน หรือใช้ email และรหัสผ่านที่กำหนดเอง Seeder จะไม่แสดงรหัสผ่านใน log และจะหยุดหาก email เดิมมีรหัสผ่านไม่ตรงกัน ชุดข้อมูลประกอบด้วย profile, clients, projects, tasks และ time entries สำหรับทดสอบหน้ารายการและตัวกรอง การรันซ้ำจะอ้างอิง ID เดิมและไม่เขียนทับข้อมูลที่แก้จาก UI
 
 ปกติ Seeder จะไม่สร้าง timer ที่กำลังทำงาน หากต้องการลอง Stop/Cancel ให้ตั้ง `LOCAL_SEED_RUNNING_TIMER=true` ก่อนรัน โดยจะไม่สร้าง timer ซ้ำหากบัญชีนี้มี timer เปิดอยู่แล้ว Seeder ใช้ได้เฉพาะ PostgreSQL local ที่ผ่านการตรวจ host และสร้างตาราง mapping เฉพาะฐานข้อมูล local เท่านั้น ห้ามใช้ข้อมูลรับรอง production
 
