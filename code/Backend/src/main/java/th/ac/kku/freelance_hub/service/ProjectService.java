@@ -56,13 +56,26 @@ public interface ProjectService {
         return list(ownerId, search, status, clientId, pageable, false);
     }
 
-    Page<ProjectListItemResponse> list(
+    default Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
             ProjectStatus status,
             UUID clientId,
             Pageable pageable,
             boolean includeTasks
+    ) {
+        return list(ownerId, search, status, clientId, pageable,
+                includeTasks, false);
+    }
+
+    Page<ProjectListItemResponse> list(
+            UUID ownerId,
+            String search,
+            ProjectStatus status,
+            UUID clientId,
+            Pageable pageable,
+            boolean includeTasks,
+            boolean allStatuses
     );
 
     ProjectResponse update(
