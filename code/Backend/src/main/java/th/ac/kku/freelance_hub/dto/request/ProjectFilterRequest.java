@@ -12,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 @Data
 @Builder
@@ -23,7 +22,9 @@ public class ProjectFilterRequest {
     @Size(max = 180, message = "คำค้นหาต้องไม่เกิน 180 ตัวอักษร")
     private String search;
 
-    private ProjectStatus status;
+    @Pattern(regexp = "ALL|PLANNED|ACTIVE|ON_HOLD|COMPLETED|ARCHIVED",
+            message = "status ไม่ถูกต้อง")
+    private String status;
 
     @Pattern(regexp = "tasks", message = "include รองรับเฉพาะ tasks")
     private String include;

@@ -187,7 +187,8 @@ public class ProjectServiceImpl implements ProjectService {
             ProjectStatus status,
             UUID clientId,
             Pageable pageable,
-            boolean includeTasks
+            boolean includeTasks,
+            boolean allStatuses
     ) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Pageable checkedPageable = checkPageable(pageable);
@@ -213,7 +214,7 @@ public class ProjectServiceImpl implements ProjectService {
                         predicate,
                         cb.equal(root.get("status"), status)
                 );
-            } else {
+            } else if (!allStatuses) {
                 predicate = cb.and(
                         predicate,
                         cb.notEqual(root.get("status"), ProjectStatus.ARCHIVED)
