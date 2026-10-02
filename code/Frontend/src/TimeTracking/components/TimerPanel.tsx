@@ -4,28 +4,21 @@ import { Button } from '../../components/ui/button'
 import { Label } from '../../components/ui/label'
 import { NativeSelect } from '../../components/ui/native-select'
 import { Input } from '../../components/ui/input'
-import { formatTimer } from '../../lib/formatters'
-import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
-import { useState } from 'react'
-import { useTimer } from '../useTimer'
-import type { TimeEntriesContextValue } from '../TimeEntriesContext'
+import { formatTimer } from "../../utils/formatters";
+import { FiPlay, FiSquare } from "react-icons/fi";
+import { useTimer } from "../useTimer";
+import type { TimerWorkspace } from "../../types/timerWorkspace";
 import { getErrorMessage } from '../../api/apiError'
 import { toast } from 'sonner'
 
 interface TimerPanelProps {
-  workspace: TimeEntriesContextValue
+  workspace: TimerWorkspace;
+  onProjectOptionsOpen?: () => void;
 }
 
-type TimerAction = 'starting' | 'stopping' | 'cancelling'
-
-export default function TimerPanel({ workspace }: TimerPanelProps) {
-  const timer = useTimer(workspace, { loadTaskOptions: true })
-  const formattedTimer = formatTimer(timer.elapsedSeconds)
-  const [timerLeading, timerSeconds] = formattedTimer.split(/:(?=[^:]+$)/)
-  const [pendingAction, setPendingAction] = useState<TimerAction | null>(null)
-
-  const runTimerAction = async (action: () => Promise<void>, actionType: TimerAction) => {
-    setPendingAction(actionType)
+export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPanelProps) {
+  const timer = useTimer(workspace, { loadTaskOptions: true });
+  const runTimerAction = async (action: () => Promise<void>) => {
     try {
       await action()
     } catch (error: unknown) {
@@ -64,29 +57,27 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
             <FiLoader className="size-4 animate-spin" aria-hidden="true" />
             <span>{pendingActionLabel}</span>
           </div>
-        )}
-
-        {timer.runningEntry ? (
-          <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(240px,1.6fr)_auto]">
-            <div className="contents">
-              <div className="grid min-w-0 gap-2">
-                <p className="text-xs text-text-secondary">โปรเจกต์</p>
-                <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                  <p className="truncate text-sm font-semibold text-text-primary">{timer.runningProject?.name || 'ไม่ระบุโปรเจกต์'}</p>
-                </div>
-              </div>
-              <div className="grid min-w-0 gap-2">
-                <p className="text-xs text-text-secondary">งาน</p>
-                <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                  <p className="truncate text-sm font-semibold text-text-primary">{timer.runningTask?.name || 'ไม่ระบุงาน'}</p>
-                </div>
-              </div>
-              <div className="grid min-w-0 gap-2">
-                <p className="text-xs text-text-secondary">คำอธิบาย</p>
-                <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                  <p className="truncate text-sm font-semibold text-text-primary">{timer.runningEntry.description || 'ไม่มีรายละเอียด'}</p>
-                </div>
-              </div>
+        </>
+      ) : (
+        <>
+          <div className="timer-selects">
+            <div className="form-field">
+              <Label htmlFor="timer-project">โปรเจกต์</Label>
+              <NativeSelect
+                id="timer-project"
+                value={timer.timerProjectId}
+                onOpenChange={(open) => { if (open) onProjectOptionsOpen?.() }}
+                onChange={(event) => {
+                  timer.setSelectedProject(event.target.value);
+                  timer.setSelectedTask("");
+                }}
+              >
+                {timer.activeProjects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </NativeSelect>
             </div>
 
             <div className="flex w-full items-center gap-2 lg:min-w-[205px]">
