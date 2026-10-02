@@ -7,15 +7,16 @@ import { Input } from '../../components/ui/input'
 import { formatTimer } from "../../utils/formatters";
 import { FiPlay, FiSquare } from "react-icons/fi";
 import { useTimer } from "../useTimer";
-import type { WorkspaceContextValue } from "../../types/workspaceContext";
+import type { TimerWorkspace } from "../../types/timerWorkspace";
 import { getErrorMessage } from '../../api/apiError'
 import { toast } from 'sonner'
 
 interface TimerPanelProps {
-  workspace: WorkspaceContextValue;
+  workspace: TimerWorkspace;
+  onProjectOptionsOpen?: () => void;
 }
 
-export default function TimerPanel({ workspace }: TimerPanelProps) {
+export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPanelProps) {
   const timer = useTimer(workspace, { loadTaskOptions: true });
   const runTimerAction = async (action: () => Promise<void>) => {
     try {
@@ -74,6 +75,7 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
               <NativeSelect
                 id="timer-project"
                 value={timer.timerProjectId}
+                onOpenChange={(open) => { if (open) onProjectOptionsOpen?.() }}
                 onChange={(event) => {
                   timer.setSelectedProject(event.target.value);
                   timer.setSelectedTask("");
