@@ -120,7 +120,7 @@ function RegisterForm() {
   return (
     <AuthenticationLayout>
       <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-brand"><span>FH</span><strong>freelance hub</strong></div>
+        <div className="auth-brand"><img src="/logo-light.svg" alt="" /><strong>freelance hub</strong></div>
         <h1>สมัครสมาชิก</h1>
         <p className="auth-description">สร้าง พื้นที่ทำงานสำหรับจัดการงานฟรีแลนซ์ของคุณ</p>
         {error && <p className="auth-error">{error}</p>}

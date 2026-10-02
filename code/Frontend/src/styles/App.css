@@ -664,6 +664,11 @@ select[data-slot="native-select"] { padding-right: 32px; }
 .auth-brand strong {
     font-size: var(--font-size-lg);
 }
+.auth-brand img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
 .auth-form h1 {
     margin: 0;
     font-size: var(--font-size-4xl);
