@@ -6,10 +6,7 @@ import type {
 } from "../types/api";
 import { ApiError } from "./apiError";
 
-const apiBase = (import.meta.env?.VITE_API_BASE_URL || "/api").replace(
-    /\/$/,
-    "",
-);
+const apiBase = (import.meta.env?.VITE_API_BASE_URL ?? "/api").replace(/\/$/, "");
 let accessToken: string | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 

@@ -4,7 +4,7 @@ import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const { BACKEND_ORIGIN } = loadEnv(mode, '.', '')
+  const { BACKEND_ORIGIN, VITE_API_BASE_URL } = loadEnv(mode, '.', '')
 
   return {
   plugins: [react(), tailwindcss()],
@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
   },
   server: {
     proxy: {
-      "/api": {
+      [VITE_API_BASE_URL || "/api"]: {
         target: BACKEND_ORIGIN || "http://localhost:8080",
         changeOrigin: true,
         secure: true,
