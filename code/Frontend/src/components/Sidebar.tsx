@@ -21,7 +21,7 @@ function SidebarContent({ onClose }: Pick<SidebarProps, 'onClose'>) {
   return (
     <div className="flex h-full flex-col">
         <div className="mb-[22px] flex items-center gap-[11px] px-[5px]">
-          <div className="grid size-[39px] shrink-0 place-items-center rounded-[11px] bg-gradient-to-br from-primary to-brand-secondary text-sm font-bold text-white shadow-[0_8px_20px_rgba(79,107,255,0.23)]">FH</div>
+          <img src="/logo-light.svg" alt="" className="size-[39px] shrink-0 object-contain" />
           <div className="min-w-0">
             <div className="text-base font-bold tracking-[-0.02em]">freelance hub</div>
             <div className="mt-px text-sm text-text-secondary uppercase">พื้นที่ทำงาน</div>
