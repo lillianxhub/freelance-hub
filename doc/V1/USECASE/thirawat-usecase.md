@@ -17,7 +17,7 @@
 |---|---|---|---|---|
 | UC-CLI-01 | Create Client | `POST /api/clients` | สร้าง Client โดย `isActive=true`; คืน `201 ApiResult<ClientResponse>` และ `Location` | FR-CLI-01, FR-CLI-02 |
 | UC-CLI-02 | List/Search Clients | `GET /api/clients` | คืนรายการของ owner พร้อม filter, sort, pagination และ `meta` (`200`) | FR-CLI-03 |
-| UC-CLI-03 | View Client | `GET /api/clients/{id}` | คืน `ApiResult<ClientResponse>` ของ owner (`200`) | FR-CLI-01 |
+| UC-CLI-03 | View Client | `GET /api/clients/{id}` | คืน `ApiResult<ClientResponse>` ของ owner; เลือกแนบ Project/Task ด้วย `include` ได้ (`200`) | FR-CLI-01, FR-CLI-04 (บางส่วน) |
 | UC-CLI-04 | Replace Client | `PUT /api/clients/{id}` | แทนที่ข้อมูลที่แก้ไขได้; optional fields ที่ไม่ส่งมาถูกล้าง (`200`) | FR-CLI-01, FR-CLI-02 |
 | UC-CLI-05 | Update Client | `PATCH /api/clients/{id}` | แก้เฉพาะฟิลด์ที่ส่งมาและคืนข้อมูลล่าสุด (`200`) | FR-CLI-01, FR-CLI-02 |
 | UC-CLI-06 | Change Client Status | `PATCH /api/clients/{id}/status` | กำหนด `isActive` โดยไม่แก้ `deletedAt` (`200`) | FR-CLI-01, FR-CLI-05 |
@@ -45,11 +45,21 @@
 ## UC-CLI-03 View Client
 
 1. Freelancer ส่ง UUID ของ Client ไปที่ `GET /api/clients/{id}`
-2. Service ค้นด้วย `findByIdAndOwnerId` แล้ว mapper สร้าง `ClientResponse`
-3. Controller คืน `200 ApiResult<ClientResponse>` รวม `status` ที่คำนวณจาก `isActive` และข้อมูลที่อยู่แบบ flat fields
+2. Service ค้นด้วย `findByIdAndOwnerId` แล้ว mapper สร้าง `ClientResponse`; ถ้าระบุ `include=projects` จะอ่านเฉพาะข้อมูล Project ที่เกี่ยวข้อง หรือใช้ `include=projects.tasks` เพื่อแนบ Task ภายใต้ Project (รองรับการคั่นหลาย path ด้วยจุลภาค)
+3. Controller คืน `200 ApiResult<ClientResponse>` รวม `status` ที่คำนวณจาก `isActive` และข้อมูลที่อยู่แบบ flat fields; หากไม่ส่ง `include` จะไม่แนบ `projects`
 
-**Alternative flow:** ไม่พบ Client หรือเป็นของผู้ใช้อื่น = `404` แบบเดียวกัน; ไม่มี JWT = `401`  
+**Alternative flow:** ไม่พบ Client หรือเป็นของผู้ใช้อื่น = `404` แบบเดียวกัน; `include` ที่ไม่รองรับ เช่น `tasks` หรือ `Projects` = `400`; ไม่มี JWT = `401`
 **Postcondition:** ไม่มีการเปลี่ยนข้อมูล
+
+`include` ใช้รูปแบบ path คล้าย JSON:API แต่ response ยังคงเป็น `ApiResult` ของทีม ไม่ใช่เอกสาร JSON:API เต็มรูปแบบ และยังไม่แนบเวลาที่ใช้ในแต่ละ Project
+
+## ข้อมูลเวลาแยกตามลูกค้าสำหรับ Dashboard/Analytics
+
+`ClientService.summarizeTimeByClient(ownerId, fromInclusive, toExclusive)` เป็น method ภายในให้ service อื่นเรียก ไม่ใช่ Client HTTP endpoint โดยคืน `ClientTimeTotalResponse(clientId, clientName, totalSeconds)` เรียงเวลามากไปน้อย
+
+- Query รวม `durationSeconds` ของ Time Entry ที่จบแล้วและยังไม่ถูกลบ ผ่านความสัมพันธ์ Time Entry → Project → Client โดยจำกัด owner และไม่รวม Time Entry/Project/Task ที่ inactive หรือถูก soft delete
+- กรองด้วย `startedAt` ในช่วง `[fromInclusive, toExclusive)`; ผู้เรียกต้องแปลงวันที่ในหน้าจอเป็น `Instant` ตาม timezone ที่ต้องการก่อน
+- Project ที่ไม่ได้ผูก Client จะไม่อยู่ในผลลัพธ์นี้; การแสดงกลุ่ม “Self Project/อื่น ๆ” และการแปลงหน่วยเวลาเป็นหน้าที่ของ Dashboard/Analytics
 
 ## UC-CLI-04 Replace Client
 
@@ -122,7 +132,7 @@ sequenceDiagram
 
 ## ขอบเขตที่ยังไม่เสร็จ
 
-- `FR-CLI-04` ต้องแสดงโปรเจกต์และเวลาในหน้ารายละเอียดลูกค้า แต่ `GET /api/clients/{id}` ปัจจุบันคืนเฉพาะ `ClientResponse` ไม่มีข้อมูลโปรเจกต์หรือเวลา
+- `FR-CLI-04` ยังครบไม่หมด: Client detail แนบ Project/Task แบบเลือกได้แล้ว แต่ยังไม่คืนเวลาที่ใช้ในแต่ละ Project; method รวมเวลาปัจจุบันรวมตาม Client สำหรับ Dashboard/Analytics ไม่ใช่เวลาราย Project ในหน้า Client detail
 - การค้นหาใน `FR-CLI-03` เป็น prefix search จากชื่อ บริษัท อีเมล เบอร์โทร และที่อยู่ตามรูปแบบที่บันทึกไว้; ยังไม่ใช่การค้นหาแบบตัดช่องว่างหรือเครื่องหมายในเบอร์โทร
 - การป้องกันเริ่ม timer ใหม่เมื่อ Client ถูก archive (`isActive=false`) เป็นกติกาข้าม feature ใน `BR-06` ไม่ใช่พฤติกรรมที่ Client API นี้พิสูจน์แล้ว
 - ยังไม่พบ Use Case Diagram ใน `doc/diagrams/`; ก่อนรวมเอกสารหลักควรเทียบชื่อ actor/use case กับ diagram ฉบับทีม
