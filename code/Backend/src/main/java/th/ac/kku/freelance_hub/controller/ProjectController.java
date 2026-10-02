@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-// import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
 import th.ac.kku.freelance_hub.dto.request.ProjectFilterRequest;
@@ -77,7 +77,8 @@ public class ProjectController {
             summary = "List projects",
             description = "ค้นหา Project จากชื่อ Project หรือ Client "
                     + "กรองสถานะ เรียงลำดับ และแบ่งหน้า; "
-                    + "ส่ง include=tasks เมื่อต้องการรายการ Task ที่ยังใช้งานของแต่ละ Project"
+                    + "ส่ง include=tasks เมื่อต้องการรายการ Task ที่ยังใช้งานของแต่ละ Project; "
+                    + "status=ALL จะแสดงทุกสถานะรวม ARCHIVED"
     )
     @ApiResponse(
             responseCode = "200",
@@ -126,13 +127,17 @@ public class ProjectController {
                 sort
         );
 
+        boolean allStatuses = "ALL".equals(filter.getStatus());
+        ProjectStatus status = filter.getStatus() == null || allStatuses
+                ? null : ProjectStatus.valueOf(filter.getStatus());
         Page<ProjectListItemResponse> projects = projectService.list(
                 currentOwnerId(),
                 filter.getSearch(),
-                filter.getStatus(),
+                status,
                 clientId,
                 pageable,
-                "tasks".equals(filter.getInclude())
+                "tasks".equals(filter.getInclude()),
+                allStatuses
         );
 
         PaginationMeta meta = PaginationMeta.builder()

@@ -293,6 +293,15 @@ class ProjectRepositoryTest {
                 .containsExactlyInAnyOrder(planned.getId(), active.getId());
         assertThat(defaultList.getTotalElements()).isEqualTo(2);
 
+        var allStatusesList = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10),
+                false, true);
+        assertThat(allStatusesList.getContent())
+                .extracting(response -> response.getId())
+                .containsExactlyInAnyOrder(
+                        planned.getId(), active.getId(), archived.getId());
+        assertThat(allStatusesList.getTotalElements()).isEqualTo(3);
+
         var paginatedList = projectService.list(
                 owner.getId(), null, null, null, PageRequest.of(0, 1));
         assertThat(paginatedList.getContent()).hasSize(1);
