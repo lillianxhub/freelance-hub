@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
@@ -117,4 +119,27 @@ public interface TimeEntryRepository
             Instant toExclusive,
             Class<T> projectionType
     );
+
+    interface ProjectTotalView {
+    UUID getProjectId();
+    Long getTotalSeconds();
+}
+
+    @Query("""
+        SELECT t.project.id AS projectId,
+               SUM(t.durationSeconds) AS totalSeconds
+        FROM TimeEntry t
+        LEFT JOIN t.task task
+        WHERE t.owner.id = :ownerId
+          AND t.isActive = true
+          AND t.endedAt IS NOT NULL
+          AND t.durationSeconds IS NOT NULL
+          AND t.project.isActive = true
+          AND t.project.deletedAt IS NULL
+          AND (task IS NULL OR task.isActive = true)
+        GROUP BY t.project.id
+        """)
+    List<ProjectTotalView> sumCompletedSecondsByProject(
+            @Param("ownerId") UUID ownerId
+);
 }
