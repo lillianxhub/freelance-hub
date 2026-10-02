@@ -14,6 +14,7 @@ type NativeSelectProps = Omit<React.ComponentProps<'select'>, 'size'> & {
   size?: 'sm' | 'default'
   wrapperClassName?: string
   placeholder?: string
+  onOpenChange?: (open: boolean) => void
 }
 
 function isOption(
@@ -37,6 +38,7 @@ function NativeSelect({
   name,
   required,
   placeholder,
+  onOpenChange,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
   'aria-label': ariaLabel,
@@ -68,6 +70,7 @@ function NativeSelect({
       value={selectedValue}
       defaultValue={initialValue}
       onValueChange={notifyChange}
+      onOpenChange={onOpenChange}
     >
       <SelectTrigger
         id={id}

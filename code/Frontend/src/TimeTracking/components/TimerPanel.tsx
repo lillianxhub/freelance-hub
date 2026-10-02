@@ -8,17 +8,18 @@ import { formatTimer } from '../../lib/formatters'
 import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
 import { useState } from 'react'
 import { useTimer } from '../useTimer'
-import type { TimeEntriesContextValue } from '../TimeEntriesContext'
+import type { TimerWorkspace } from '../../types/timerWorkspace'
 import { getErrorMessage } from '../../api/apiError'
 import { toast } from 'sonner'
 
 interface TimerPanelProps {
-  workspace: TimeEntriesContextValue
+  workspace: TimerWorkspace
+  onProjectOptionsOpen?: () => void
 }
 
 type TimerAction = 'starting' | 'stopping' | 'cancelling'
 
-export default function TimerPanel({ workspace }: TimerPanelProps) {
+export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPanelProps) {
   const timer = useTimer(workspace, { loadTaskOptions: true })
   const formattedTimer = formatTimer(timer.elapsedSeconds)
   const [timerLeading, timerSeconds] = formattedTimer.split(/:(?=[^:]+$)/)
@@ -121,6 +122,7 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
                 <NativeSelect
                   id="timer-project"
                   value={timer.timerProjectId}
+                  onOpenChange={(open) => { if (open) onProjectOptionsOpen?.() }}
                   onChange={(event) => {
                     timer.setSelectedProject(event.target.value)
                     timer.setSelectedTask('')
