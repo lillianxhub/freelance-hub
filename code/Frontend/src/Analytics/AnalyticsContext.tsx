@@ -2,7 +2,7 @@ import { createContext, useCallback, type PropsWithChildren } from 'react'
 import { useAsyncData } from '../shared/useAsyncData'
 import { listClientOptions } from '../services/client'
 import { listTimerProjects, listTimerTasks } from '../services/timerOptions'
-import { listTimeEntries } from '../services/timeTracking'
+import { listTimeEntriesPage } from '../services/timeTracking'
 import type { AsyncDataState } from '../types/asyncData'
 import type { AnalyticsData } from '../types/analytics'
 
@@ -12,7 +12,20 @@ const emptyData: AnalyticsData = { clients: [], projects: [], tasks: [], time_en
 
 export function AnalyticsProvider({ children }: PropsWithChildren) {
   const load = useCallback(async (): Promise<AnalyticsData> => {
-    const [clients, projects, time_entries] = await Promise.all([listClientOptions(), listTimerProjects(), listTimeEntries()])
+    const [clients, projects, firstTimeEntryPage] = await Promise.all([
+      listClientOptions(),
+      listTimerProjects(),
+      listTimeEntriesPage({ page: 1, limit: 100 }),
+    ])
+    const remainingTimeEntryPages = await Promise.all(
+      Array.from({ length: Math.max(0, firstTimeEntryPage.meta.totalPages - 1) }, (_, index) =>
+        listTimeEntriesPage({ page: index + 2, limit: 100 }),
+      ),
+    )
+    const time_entries = [
+      ...firstTimeEntryPage.entries,
+      ...remainingTimeEntryPages.flatMap((page) => page.entries),
+    ]
     const tasks = (await Promise.all(projects.map((project) => listTimerTasks(project.id)))).flat()
     return { clients, projects, tasks, time_entries }
   }, [])

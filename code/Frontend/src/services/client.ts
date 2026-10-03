@@ -46,7 +46,13 @@ export async function listClientsPage(page = 1, limit = 10, filters: ClientListF
 }
 
 export async function listClientOptions(): Promise<Client[]> {
-  return (await api.get<ApiClient[]>('/clients?sortBy=name&direction=ASC')).data.map(toClient)
+  const firstPage = await listClientsPage(1, 100)
+  const remainingPages = await Promise.all(
+    Array.from({ length: Math.max(0, firstPage.meta.totalPages - 1) }, (_, index) =>
+      listClientsPage(index + 2, 100),
+    ),
+  )
+  return [...firstPage.clients, ...remainingPages.flatMap((page) => page.clients)]
 }
 
 export async function saveClient(input: ClientInput): Promise<Client> {

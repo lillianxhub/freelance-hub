@@ -4,13 +4,15 @@ import StatusBadge from '../../components/StatusBadge'
 import { Button } from '../../components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
-import type { DashboardOpenTask } from '../../types/dashboard'
+import { formatDate } from '../../lib/formatters'
+import type { Project } from '../../types/project'
+import type { Task } from '../../types/task'
 import { DASHBOARD_LIMITS } from '../dashboard.constants'
 
-interface Props { tasks: readonly DashboardOpenTask[] }
+interface Props { tasks: readonly Task[]; projects: readonly Project[] }
 
-export default function DashboardTasksTable({ tasks }: Props) {
-  const rows = tasks.filter((task) => task.status !== 'COMPLETED').slice(0, DASHBOARD_LIMITS.pendingTasks)
+export default function DashboardTasksTable({ tasks, projects }: Props) {
+  const rows = tasks.filter((task) => task.status !== 'DONE').sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999')).slice(0, DASHBOARD_LIMITS.pendingTasks)
   return (
     <Card>
       <CardHeader>
@@ -34,14 +36,15 @@ export default function DashboardTasksTable({ tasks }: Props) {
                 </TableRow>
                 </TableHeader>
             <TableBody>{rows.map((task, index) => {
+              const project = projects.find((item) => item.id === task.project_id)
               return <TableRow key={task.id}>
                 <TableCell>
-                  <Link className="flex items-center gap-3 font-semibold text-text-primary hover:text-primary" to={`/projects/${task.projectId}`}>
+                  <Link className="flex items-center gap-3 font-semibold text-text-primary hover:text-primary" to={`/projects/${task.project_id}`}>
                   <span className="grid size-7 place-items-center rounded-full bg-secondary text-xs text-primary">{index + 1}</span>{task.name}</Link>
                   </TableCell>
-                <TableCell>{task.projectName || 'ไม่ระบุโปรเจกต์'}</TableCell>
+                <TableCell>{project?.name || 'ไม่ระบุโปรเจกต์'}</TableCell>
                 {/* <TableCell>{task.due_date ? formatDate(task.due_date) : 'ยังไม่กำหนด'}</TableCell> */}
-                <TableCell><StatusBadge status={task.status === 'OPEN' ? 'TODO' : task.status === 'COMPLETED' ? 'DONE' : 'IN_PROGRESS'} /></TableCell>
+                <TableCell><StatusBadge status={task.status} /></TableCell>
               </TableRow>
             })}</TableBody>
           </Table>

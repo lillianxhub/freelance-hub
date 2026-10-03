@@ -53,7 +53,11 @@ const protectedRoutes: AppRouteDefinition[] = [
     {
         path: "/dashboard",
         label: "Dashboard",
-        element: <DashboardPage />,
+        element: (
+            <AnalyticsProvider>
+                <DashboardPage />
+            </AnalyticsProvider>
+        ),
     },
     {
         path: "/clients",
