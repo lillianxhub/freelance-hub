@@ -22,7 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
 @ExtendWith(MockitoExtension.class)
@@ -35,7 +35,7 @@ class TimerStoppedProgressListenerTest {
     private ProjectRepository projectRepository;
 
     @Mock
-    private TimeEntryQueryService timeEntryQueryService;
+    private TimeEntryService timeEntryService;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -49,7 +49,7 @@ class TimerStoppedProgressListenerTest {
         when(project.getTargetMinutes()).thenReturn(100);
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
                 .thenReturn(Optional.of(project));
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         )).thenReturn(
@@ -63,7 +63,7 @@ class TimerStoppedProgressListenerTest {
 
         ArgumentCaptor<TimeEntryFilterRequest> filterCaptor =
                 ArgumentCaptor.forClass(TimeEntryFilterRequest.class);
-        verify(timeEntryQueryService).summarize(
+        verify(timeEntryService).summarize(
                 eq(OWNER_ID),
                 filterCaptor.capture()
         );
@@ -91,7 +91,7 @@ class TimerStoppedProgressListenerTest {
 
         listener.onTimerStopped(stoppedEvent(10));
 
-        verifyNoInteractions(timeEntryQueryService, eventPublisher);
+        verifyNoInteractions(timeEntryService, eventPublisher);
     }
 
     private static TimerStoppedEvent stoppedEvent(int durationMinutes) {

@@ -25,10 +25,10 @@ export function ProjectsProvider({ children, projectId }: ProjectsProviderProps)
   const load = useCallback(async (): Promise<ProjectsData> => {
     if (!projectId) return { ...emptyData, clients: await listClientOptions() }
     const project = await getProjectById(projectId)
-    const [tasks, time_entries, client] = await Promise.all([
-      listTasks(projectId), listTimeEntries(projectId), project.client_id ? getClientById(project.client_id) : Promise.resolve(undefined),
+    const [tasks, client] = await Promise.all([
+      listTasks(projectId), project.client_id ? getClientById(project.client_id) : Promise.resolve(undefined),
     ])
-    return { clients: client ? [client] : [], projects: [project], tasks, time_entries }
+    return { clients: client ? [client] : [], projects: [project], tasks, time_entries: [] }
   }, [projectId])
   const state = useAsyncData(load, emptyData, projectId ?? 'project-list')
   const value: ProjectsContextValue = { ...state,

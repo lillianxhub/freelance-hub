@@ -21,9 +21,10 @@
 - การอ่าน/แก้/เปลี่ยนสถานะ/soft delete ใช้ `findByIdAndOwnerId` และตรวจ `deletedAt == null`; ไม่พบ ไม่ใช่เจ้าของ หรือถูก soft delete แล้วจะได้ `ClientNotFoundException`: `ClientServiceImpl.java`
 - รายการลูกค้าเริ่มด้วย predicate ของ owner และ `deletedAt IS NULL` แล้วต่อ status/search ก่อน pagination: `ClientServiceImpl.java`
 - Mapper คงฟิลด์เดิมเมื่อ PATCH ส่ง `null` แต่ PUT ใช้ข้อมูลใหม่แทนที่และล้าง optional fields ที่ไม่ส่งมา: `ClientMapper.java`
-- `changeStatus` แก้เฉพาะ `isActive`; `softDelete` ตั้งเฉพาะ `deletedAt` โดยไม่ลบ record: `ClientServiceImpl.java`, `Client.java`
+- `changeStatus(false)` เปลี่ยน Client เป็น inactive และเรียก `Project.changeStatus(ARCHIVED)` สำหรับ Project ของลูกค้านั้นที่ยังไม่ถูก soft delete ภายใน transaction เดียวกัน; เปิด Client กลับมาไม่คืนสถานะ Project อัตโนมัติ ส่วน `softDelete` ตั้งเฉพาะ `deletedAt` ของ Client โดยไม่ลบ record: `ClientServiceImpl.java`, `ClientRepository.java`, `Client.java`, `Project.java`
 - Response ที่มี body ใช้ `ApiResult`; 400/404 ของ Client ผ่าน `ClientExceptionHandler`, ส่วน GET รายการมี `PaginationMeta`: `ClientController.java`, `ClientExceptionHandler.java`
 - Client detail เลือกแนบ Project/Task ด้วย `include=projects` หรือ `include=projects.tasks` และ repository อ่านเฉพาะฟิลด์ที่แสดง; ส่วน `summarizeTimeByClient` เป็น service method ภายในที่ใช้ projection รวมเวลาของ Time Entry ตาม Client: `ClientController.java`, `ClientRepository.java`, `ClientServiceImpl.java`
+- `ClientServiceImpl` เติม `totalTrackedSeconds` ใน GET รายการและรายละเอียดผ่าน aggregate projection โดย query ทีเดียวเฉพาะ IDs ในหน้าปัจจุบัน; mapper ยังรับผิดชอบเฉพาะการแปลง entity และไม่มีการ query ใน mapper กติกายอดใหม่นับประวัติแบบเดียวกับ Time Entry summary ไม่ใช้ตัวกรอง Project/Task inactive ของ method Analytics เดิม: `ClientRepository.java`, `ClientServiceImpl.java`, `dto/response/client/ClientResponse.java`
 
 ## ข้อสังเกตสำหรับรวมเอกสารหลัก
 

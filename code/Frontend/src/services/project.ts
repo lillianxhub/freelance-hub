@@ -27,13 +27,23 @@ export interface ProjectsPageResult { projects: Project[]; meta: ApiMeta }
 export interface ProjectListFilters {
   clientId?: string
   search?: string
-  status?: Project['status']
+  status?: Project['status'] | 'ALL'
   sortBy?: 'update_at' | 'end_date' | 'project_name'
   direction?: 'ASC' | 'DESC'
 }
 
 export async function listProjects(filters: ProjectListFilters = {}): Promise<Project[]> {
   return (await listProjectsPage(1, 10, filters)).projects
+}
+
+export async function listAllProjects(filters: ProjectListFilters = {}): Promise<Project[]> {
+  const firstPage = await listProjectsPage(1, 100, filters)
+  const remainingPages = await Promise.all(
+    Array.from({ length: Math.max(0, firstPage.meta.totalPages - 1) }, (_, index) =>
+      listProjectsPage(index + 2, 100, filters),
+    ),
+  )
+  return [...firstPage.projects, ...remainingPages.flatMap((page) => page.projects)]
 }
 
 export async function getProjectById(id: string): Promise<Project> {
