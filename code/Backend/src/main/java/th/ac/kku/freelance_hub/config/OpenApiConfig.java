@@ -9,6 +9,8 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springdoc.core.customizers.OpenApiCustomizer;
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 
 
 @Configuration
@@ -37,5 +39,23 @@ public class OpenApiConfig {
                                 .bearerFormat("JWT")
                                 .description("Enter JWT Bearer token")))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName));
+    }
+
+    @Bean
+    public OpenApiCustomizer errorResponseExampleCustomizer() {
+        return openApi -> openApi.getPaths().values().stream()
+                .flatMap(path -> path.readOperations().stream())
+                .flatMap(operation -> operation.getResponses().entrySet().stream())
+                .filter(response -> isErrorStatus(response.getKey()))
+                .filter(response -> response.getValue().getContent() != null)
+                .forEach(response -> response.getValue().getContent().values().forEach(mediaType ->
+                        mediaType.setExample(ApiResult.error(
+                                response.getValue().getDescription(),
+                                "HTTP_" + response.getKey(),
+                                null))));
+    }
+
+    private boolean isErrorStatus(String responseCode) {
+        return responseCode.matches("[45]\\d{2}");
     }
 }
