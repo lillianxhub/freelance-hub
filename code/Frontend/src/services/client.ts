@@ -66,17 +66,6 @@ export async function saveClient(input: ClientInput): Promise<Client> {
 
 export async function updateClientStatus(id: string, isActive: boolean): Promise<Client> {
   return toClient((await api.patch<ApiClient>(`/clients/${encodeURIComponent(id)}/status`, { isActive })).data)
-  export async function saveClient(input: ClientInput): Promise<Client> {
-    if (!input.id) return toClient((await api.post<ApiClient>('/clients', clientPayload(input))).data)
-    if (input.status === 'ARCHIVED') return updateClientStatus(input.id, false)
-    const updated = toClient((await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input))).data)
-    return updated.status === 'ARCHIVED' ? updateClientStatus(input.id, true) : updated
-  }
+}
 
-  export async function updateClientStatus(id: string, isActive: boolean): Promise<Client> {
-    return toClient((await api.patch<ApiClient>(`/clients/${encodeURIComponent(id)}/status`, { isActive })).data)
-  }
-
-  export async function deleteClient(id: string): Promise<void> { await updateClientStatus(id, false) }
-
-  export async function deleteClient(id: string): Promise<void> { await updateClientStatus(id, false) }
+export async function deleteClient(id: string): Promise<void> { await updateClientStatus(id, false) }
