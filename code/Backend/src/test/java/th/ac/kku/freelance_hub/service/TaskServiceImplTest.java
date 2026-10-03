@@ -445,8 +445,8 @@ class TaskServiceImplTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"COMPLETED, OPEN", "COMPLETED, IN_PROGRESS", "IN_PROGRESS, OPEN"})
-    void changeTaskStatusRejectsBackwardTransitions(TaskStatus before, TaskStatus after) {
+    @CsvSource({"COMPLETED, OPEN", "IN_PROGRESS, OPEN"})
+    void changeTaskStatusRejectsTransitionsToOpen(TaskStatus before, TaskStatus after) {
         Task task = new Task(project, "Task", 0);
         if (before == TaskStatus.COMPLETED) {
             task.complete(Instant.parse("2026-01-01T10:00:00Z"));
@@ -463,6 +463,48 @@ class TaskServiceImplTest {
         Task stored = taskRepository.findById(taskId).orElseThrow();
         assertThat(stored.getStatus()).isEqualTo(before);
         assertThat(stored.getCompletedAt()).isEqualTo(originalCompletedAt);
+    }
+
+    @Test
+    void changeTaskStatusReopensCompletedTaskAndCanCompleteAgain() {
+        Instant firstCompletedAt = Instant.parse("2026-01-01T10:00:00Z");
+        Task task = new Task(project, "Task", 0);
+        task.complete(firstCompletedAt);
+        UUID taskId = taskRepository.saveAndFlush(task).getId();
+
+        TaskResponse reopened = taskService.changeStatus(owner.getId(), taskId,
+                ChangeTaskStatusRequest.builder().status(TaskStatus.IN_PROGRESS).build());
+        assertThat(reopened.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(reopened.getCompletedAt()).isNull();
+
+        entityManager.clear();
+        Task stored = taskRepository.findById(taskId).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(stored.getCompletedAt()).isNull();
+
+        TaskResponse completedAgain = taskService.changeStatus(owner.getId(), taskId,
+                ChangeTaskStatusRequest.builder().status(TaskStatus.COMPLETED).build());
+        assertThat(completedAgain.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(completedAgain.getCompletedAt()).isAfter(firstCompletedAt);
+    }
+
+    @Test
+    void changeTaskStatusCannotReopenTaskInArchivedProject() {
+        Instant completedAt = Instant.parse("2026-01-01T10:00:00Z");
+        Task task = new Task(project, "Task", 0);
+        task.complete(completedAt);
+        UUID taskId = taskRepository.saveAndFlush(task).getId();
+        project.changeStatus(ProjectStatus.ARCHIVED);
+        projectRepository.saveAndFlush(project);
+
+        assertThatThrownBy(() -> taskService.changeStatus(owner.getId(), taskId,
+                ChangeTaskStatusRequest.builder().status(TaskStatus.IN_PROGRESS).build()))
+                .isInstanceOf(IllegalStateException.class);
+
+        entityManager.clear();
+        Task stored = taskRepository.findById(taskId).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(stored.getCompletedAt()).isEqualTo(completedAt);
     }
 
     @ParameterizedTest
