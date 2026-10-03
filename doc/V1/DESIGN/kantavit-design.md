@@ -1,22 +1,23 @@
 # Design Patterns: Project และ Task Management
 
 **เจ้าของ feature:** `kantavit_673380027-4_01`  
-**ขอบเขต:** GoF State สำหรับสถานะ Project และกฎที่เกี่ยวกับการจับเวลาและการแก้ Task
+**ขอบเขต:** กฎสถานะ Project และการตอบสนองต่อ event เมื่อเวลา Project ถึงเกณฑ์
+**หลักฐานโค้ด:** `code/Backend/src/main/java/th/ac/kku/freelance_hub/`
 
-เอกสารนี้บันทึก pattern ที่ใช้จริงในโค้ดปัจจุบัน โดยอ้างอิงไฟล์ภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/`
-
-| Pattern / รูปแบบ | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ |
+| Pattern | หน้าที่ | คลาสหลัก |
 |---|---|---|
-| State (GoF) | แยกกฎการเปลี่ยนสถานะ การเริ่มจับเวลา และการแก้ Task ตามสถานะของ Project ออกจากการตรวจเงื่อนไขใน `Project` | `domain/state/ProjectState.java:5-14`, `domain/state/PlannedState.java`, `domain/state/ActiveState.java`, `domain/state/OnHoldState.java`, `domain/state/CompletedState.java`, `domain/state/ArchivedState.java`, `domain/entity/Project.java:171-196` |
-| State factory | แปลง `ProjectStatus` ที่เก็บในฐานข้อมูลเป็น State object ที่มีกฎของสถานะนั้น | `domain/state/ProjectStates.java:8-24`, `domain/entity/Project.java:173,192,196` |
+| State (GoF) | ให้สถานะปัจจุบันตัดสินว่า Project เปลี่ยนสถานะ เริ่มจับเวลา หรือแก้ Task ได้หรือไม่ | `domain/state/ProjectState.java`, `PlannedState.java`, `ActiveState.java`, `OnHoldState.java`, `CompletedState.java`, `ArchivedState.java`, `ProjectStates.java`, `domain/entity/Project.java` |
+| Observer ผ่าน Spring events (GoF) | หลัง timer หยุด ตรวจเกณฑ์เวลาและกระจายเหตุการณ์ไปยังผู้รับโดยไม่ผูกกับ controller หรือหน้าบ้าน | `event/TimerStoppedProgressListener.java`, `ProjectProgressThresholdEvent.java`, `ProjectProgressThresholdListener.java`, `domain/progress/ProjectProgressThresholds.java` |
 
-## Class Diagram: Project State
+## State: กฎสถานะ Project
+
+`Project` ยังเก็บ `ProjectStatus` เป็น enum ในฐานข้อมูล เมื่อเรียก `changeStatus()`, `canTrackTime()` หรือ `canEditTasks()` จะใช้ `ProjectStates.from(status)` เลือก State object ที่มีกฎของสถานะนั้น จึงไม่ต้องรวมเงื่อนไขทุกสถานะไว้ในเมธอดเดียว (`domain/entity/Project.java:185-219`, `domain/state/ProjectStates.java:13-24`)
 
 ```mermaid
 classDiagram
     class Project {
         -ProjectStatus status
-        +changeStatus(ProjectStatus nextStatus) void
+        +changeStatus(ProjectStatus nextStatus)
         +canTrackTime() boolean
         +canEditTasks() boolean
     }
@@ -35,8 +36,7 @@ classDiagram
     class OnHoldState
     class CompletedState
     class ArchivedState
-
-    Project ..> ProjectStates : เลือก State
+    Project ..> ProjectStates : เลือกจากสถานะปัจจุบัน
     ProjectStates ..> ProjectState : คืน State
     ProjectState <|.. PlannedState
     ProjectState <|.. ActiveState
@@ -45,29 +45,55 @@ classDiagram
     ProjectState <|.. ArchivedState
 ```
 
-## กฎของแต่ละ State
-
-| สถานะปัจจุบัน | เปลี่ยนไปสถานะอื่นได้ | เริ่มจับเวลาได้ | แก้ Task ได้ |
+| สถานะปัจจุบัน | เปลี่ยนไปได้ | เริ่ม timer ได้ | แก้ Task ได้ |
 |---|---|---|---|
 | `PLANNED` | `ACTIVE`, `ARCHIVED` | ไม่ได้ | ได้ |
 | `ACTIVE` | `ON_HOLD`, `COMPLETED`, `ARCHIVED` | ได้ | ได้ |
 | `ON_HOLD` | `ACTIVE`, `ARCHIVED` | ไม่ได้ | ได้ |
 | `COMPLETED` | `ARCHIVED` | ไม่ได้ | ไม่ได้ |
-| `ARCHIVED` | ไม่มี | ไม่ได้ | ไม่ได้ |
+| `ARCHIVED` | `ACTIVE`, `PLANNED` เมื่อ Client ยังใช้งานและไม่ถูก soft delete | ไม่ได้ | ไม่ได้ |
 
-ทุก State ยอมรับการส่งสถานะเดิมซ้ำ เช่น `ACTIVE → ACTIVE` โดยไม่เปลี่ยนกฎอื่น
+State ทุกตัวอนุญาตสถานะเดิมซ้ำ แต่ Service จะปฏิเสธ request หาก timer ของ Project กำลังทำงาน การเปลี่ยนเป็น `ARCHIVED` ผ่าน `PATCH /api/projects/{id}/status` ตั้ง `isActive=false` แต่ **ไม่** ตั้ง `deletedAt`; เปลี่ยนกลับเป็น `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` เฉพาะเมื่อ Client มี `isActive=true` และ `deletedAt=null` เท่านั้น `PUT /api/projects/{id}` ปฏิเสธการแก้รายละเอียดของ Project ที่ `ARCHIVED`; ส่วน `DELETE /api/projects/{id}` เรียก `Project.archive()` และตั้ง `deletedAt` จึงเป็น soft delete (`domain/entity/Project.java:185-218`, `service/impl/ProjectServiceImpl.java:328-350`)
 
-## การนำไปใช้
+`TaskServiceImpl` ตรวจ `project.canEditTasks()` ก่อนสร้าง แก้ เปลี่ยนสถานะ ย้าย และลบ Task; ฝั่ง Time Entry ตรวจ `project.canTrackTime()` ก่อนเริ่ม timer ขณะที่ `TaskStatus` (`OPEN`, `IN_PROGRESS`, `COMPLETED`) เป็น enum และกฎใน `Task.changeStatus()` ไม่ใช่ State pattern อีกชุด Task ที่ `COMPLETED` ย้อนเป็น `IN_PROGRESS` ได้โดยล้าง `completedAt` แต่ย้อนเป็น `OPEN` ไม่ได้ และถ้า Project เป็น `ARCHIVED` จะย้อน Task ไม่ได้ (`service/impl/TaskServiceImpl.java:178-197,297-311`, `domain/entity/Task.java:179-199`)
 
-1. `Project.changeStatus()` เรียก `ProjectStates.from(status)` เพื่อเลือก State ปัจจุบัน แล้วให้ `canTransitionTo(nextStatus)` ตรวจคำขอ หากไม่ผ่านจะโยน `IllegalStateException`; หากผ่านจึงบันทึกค่า enum ใหม่: `domain/entity/Project.java:171-183`
-2. `Project.canTrackTime()` และ `Project.canEditTasks()` ส่งคำถามไปยัง State ปัจจุบัน: `domain/entity/Project.java:191-196`
-3. การเริ่ม Time Entry ตรวจ `project.canTrackTime()` และการสร้าง/แก้/ย้าย/ลบ Task ตรวจ `project.canEditTasks()`: `domain/entity/TimeEntry.java:262-269`, `service/impl/TaskServiceImpl.java:226-241`
-4. Entity ยังเก็บ `ProjectStatus` enum ในฐานข้อมูลด้วย `@Enumerated(EnumType.STRING)`; State object ใช้ตัดสินกฎระหว่างทำงาน ไม่ได้เป็นข้อมูลที่บันทึกเพิ่ม: `domain/entity/Project.java:95-96`
+**ขอบเขตการขยาย:** เปลี่ยนกฎของสถานะเดิมได้ใน State ของสถานะนั้น แต่เพิ่มสถานะใหม่ยังต้องแก้ `ProjectStatus` enum และ `ProjectStates.from()` ไม่มี State object ที่เก็บลงฐานข้อมูล (`domain/state/ProjectStates.java:13-24`)
 
-มี `ProjectStateTest` ทดสอบลำดับสถานะ สิทธิ์เริ่มจับเวลา สิทธิ์แก้ Task การเปลี่ยนสถานะที่ห้าม และการส่งสถานะเดิมซ้ำ: `code/Backend/src/test/java/th/ac/kku/freelance_hub/domain/entity/ProjectStateTest.java:14-64`
+## Observer: เกณฑ์เวลา 80% และ 100%
 
-## ขอบเขตของ pattern
+การหยุด timer ฝั่ง Time Tracking เผยแพร่ `TimerStoppedEvent` ซึ่งเป็น input จาก feature ของทีม ส่วนที่รับผิดชอบใน Project คือ listener สำหรับคำนวณเกณฑ์, event ความคืบหน้า และ listener ที่รับ event นั้น
 
-- การเพิ่มกฎให้สถานะที่มีอยู่แก้ใน State ของสถานะนั้น แต่การเพิ่ม **สถานะใหม่** ยังต้องแก้ `ProjectStatus` enum และ `ProjectStates.from()` ด้วย
-- API และโครงสร้างฐานข้อมูลยังใช้สถานะเดิม เอกสารนี้ไม่ได้อ้างว่ามีการเพิ่ม endpoint หรือ migration เพื่อใช้ State pattern
-- Observer สำหรับ event ความคืบหน้าเป็นงานอีกส่วนหนึ่ง จึงยังไม่รวมเป็น pattern ที่เสร็จแล้วในเอกสารนี้
+```mermaid
+sequenceDiagram
+    participant T as Timer Service (ส่วนของทีม)
+    participant E as TimerStoppedEvent
+    participant L as TimerStoppedProgressListener
+    participant Q as TimeEntryQueryService
+    participant H as ProjectProgressThresholds
+    participant P as ProjectProgressThresholdEvent
+    participant O as ProjectProgressThresholdListener
+    T->>E: publish หลังหยุด timer
+    E-->>L: รับหลัง transaction commit
+    L->>Q: summarize(ownerId, projectId)
+    Q-->>L: เวลาที่บันทึกจบแล้ว
+    L->>H: newlyReached(ก่อน, หลัง, targetMinutes)
+    H-->>L: 80, 100 หรือไม่มีเกณฑ์ใหม่
+    opt มีเกณฑ์ใหม่
+        L->>P: publish แยกตามเกณฑ์
+        P-->>O: @EventListener
+        O->>O: เขียน log
+    end
+```
+
+`TimerStoppedProgressListener` ใช้ `@TransactionalEventListener(AFTER_COMMIT)` และ query ใหม่แบบ read-only หลัง timer ถูกบันทึกแล้ว ถ้า Project ไม่มี `targetMinutes` จะไม่ส่ง threshold event; `ProjectProgressThresholds.newlyReached()` คืนเฉพาะเกณฑ์ที่ข้ามใหม่ จึงไม่ส่งซ้ำทุกครั้งที่หยุด timer (`event/TimerStoppedProgressListener.java:34-70`, `domain/progress/ProjectProgressThresholds.java:40-53`)
+
+ผลลัพธ์ที่มีจริงตอนนี้คือ `ProjectProgressThresholdListener` เขียน log เมื่อได้ event (`event/ProjectProgressThresholdListener.java:14-22`) **ยังไม่มีระบบแจ้งเตือนผู้ใช้หรือเก็บ notification** ดังนั้นไม่ควรอ้างว่า FR-PRJ-07 ครบด้าน UI การมี `ProjectProgressThresholds` เป็นตัวช่วยคำนวณ ไม่ใช่ GoF Strategy
+
+## หลักฐานทดสอบ
+
+- `domain/entity/ProjectStateTest.java` ทดสอบ transition, การย้อน `ARCHIVED → ACTIVE/PLANNED` เฉพาะเมื่อ Client ยังใช้งาน และสิทธิ์ timer/Task; `service/ProjectServiceImplTest.java` ทดสอบการห้ามแก้ Project ที่จัดเก็บและการห้ามคืนสถานะเมื่อ Client ถูกจัดเก็บ
+- `service/TaskServiceImplTest.java` ทดสอบ `COMPLETED → IN_PROGRESS → COMPLETED`, การล้าง `completedAt` และการห้ามย้อน Task เมื่อ Project เป็น `ARCHIVED`
+- `domain/progress/ProjectProgressThresholdsTest.java` ทดสอบขอบ 80%/100%, ไม่มีเป้าหมาย และการไม่ส่งเกณฑ์ที่ผ่านไปแล้วซ้ำ
+- `event/TimerStoppedProgressListenerTest.java` และ `event/ProjectProgressThresholdListenerTest.java` ทดสอบการเผยแพร่ event และการรับเพื่อเขียน log
+
+ไฟล์ทดสอบข้างต้นอยู่ใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/` การมีไฟล์ทดสอบไม่ได้ยืนยันผลการรันรอบล่าสุด
