@@ -8,7 +8,7 @@
 |---|---|---|
 | Single Responsibility | `controller/ProjectController.java:95`, `controller/TaskController.java:82`, `controller/TaskDetailController.java:51` | Controller รับ request, อ่าน owner ปัจจุบัน และจัด HTTP/`ApiResult`; ไม่ทำ query ฐานข้อมูลโดยตรง |
 | Single Responsibility | `mapper/ProjectMapper.java:16,33`, `mapper/TaskMapper.java:11` | Mapper แปลง entity เป็น DTO; ProjectMapper สร้าง Client summary, Task progress และชั่วโมงเป้าหมาย ส่วน Service เติมเวลาใช้งานจริง |
-| Single Responsibility | `domain/state/ProjectState.java:5`, `domain/entity/Project.java:185`, `domain/entity/Task.java:179,194` | State แต่ละคลาสถือกฎของสถานะ Project; Project ประสานการเปลี่ยนสถานะ; Task จัดการ transition และ soft delete ของตัวเอง |
+| Single Responsibility | `domain/state/ProjectState.java:5`, `domain/entity/Project.java:185`, `domain/entity/Task.java:179,201` | State แต่ละคลาสถือกฎของสถานะ Project; Project ประสานการเปลี่ยนสถานะ; Task จัดการ transition และ soft delete ของตัวเอง |
 | Single Responsibility | `domain/progress/ProjectProgressThresholds.java:5,40`, `event/TimerStoppedProgressListener.java:34`, `event/ProjectProgressThresholdListener.java:14` | แยกการคำนวณเกณฑ์ การตอบสนองต่อ timer stop และการเขียน log เป็นคนละหน้าที่ |
 | Open/Closed | `domain/state/ProjectState.java:5`, `domain/state/ProjectStates.java:13`, `domain/state/ArchivedState.java:18` | เปลี่ยนกฎของสถานะเดิมใน State นั้นได้โดยไม่ต้องแก้ Controller; การเพิ่มสถานะใหม่ยังต้องแก้ enum และ `ProjectStates.from()` จึงเป็น OCP บางส่วน |
 | Open/Closed | `event/ProjectProgressThresholdEvent.java:5`, `event/ProjectProgressThresholdListener.java:14` | เพิ่ม listener ที่รับ threshold event ได้โดยไม่ต้องแก้ตัวเผยแพร่ event แต่กฎเกณฑ์ 80/100 ยังอยู่ใน `ProjectProgressThresholds` |
@@ -22,8 +22,8 @@
 - `ProjectController.java:95-155` ใช้ `ProjectFilterRequest` และส่งการค้นหาให้ Service; `status=ALL` รวม `ARCHIVED` ส่วนไม่ส่ง status จะซ่อน `ARCHIVED` โดยยังตัด `deletedAt` ออก (`dto/request/ProjectFilterRequest.java:24-30`, `service/impl/ProjectServiceImpl.java:203-222`)
 - `ProjectServiceImpl.java:116-130,269-319,371-389` ประกอบ Client/Task progress และ `timeTracking` จาก Time Entry ที่จบแล้วให้ทั้ง Project detail และ list; เมื่อไม่มี `targetMinutes`, `usagePercent` เป็น `null`
 - `ProjectServiceImpl.java:135-179` มี `countActiveAndCompleted()` กับ `getProgress()` สำหรับ Dashboard; `TaskServiceImpl.java:131-144` มี `getLatestTimeEntryTaskName()` ทั้งหมดเป็น service method ไม่ใช่ HTTP endpoint ใหม่
-- `Project.java:185-219` ให้ State ปัจจุบันตัดสิน transition, สิทธิ์จับเวลา และสิทธิ์แก้ Task; `ARCHIVED` ย้อนเป็น `ACTIVE` หรือ `PLANNED` ได้ถ้าเป็นการเปลี่ยนสถานะปกติ ส่วน `Project.archive()` ตั้ง `deletedAt` สำหรับ soft delete
-- `TaskServiceImpl.java:67-103,179-199,232-290,303-311` ตรวจเจ้าของ/State ก่อนแก้ Task, จัดลำดับ และใช้ `Task.softDelete()` แทนลบแถว (`Task.java:194-199`)
+- `Project.java:185-226` ให้ State ปัจจุบันตัดสิน transition, สิทธิ์จับเวลา และสิทธิ์แก้ Task; `ARCHIVED` ย้อนเป็น `ACTIVE` หรือ `PLANNED` ได้เมื่อ Client ยังใช้งานและไม่ถูก soft delete เท่านั้น `ProjectServiceImpl.java:328-350` ห้ามแก้รายละเอียด Project ที่ `ARCHIVED` ส่วน `Project.archive()` ตั้ง `deletedAt` สำหรับ soft delete
+- `TaskServiceImpl.java:67-103,178-197,232-290,297-311` ตรวจเจ้าของและสิทธิ์แก้ Task ตามสถานะ Project ก่อนบันทึก; `Task.changeStatus()` อนุญาต `COMPLETED → IN_PROGRESS` โดยล้าง `completedAt` และยังห้ามย้อนเป็น `OPEN`; การลบใช้ `Task.softDelete()` แทนลบแถว (`Task.java:179-208`)
 - `TimerStoppedProgressListener.java:34-70` รับ `TimerStoppedEvent` หลัง commit, คำนวณเกณฑ์ใหม่ แล้วเผยแพร่ `ProjectProgressThresholdEvent`; `ProjectProgressThresholdListener.java:14-22` เขียน log ยังไม่มี notification ถึงผู้ใช้
 
 ## ข้อจำกัดของการวิเคราะห์

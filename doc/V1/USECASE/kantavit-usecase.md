@@ -61,18 +61,18 @@
 ### UC-PRJ-04 แก้รายละเอียด Project
 
 1. ส่ง `PUT /api/projects/{id}` โดย request ต้องมี `clientId` และ `name`; ส่งรายละเอียดอื่นได้เหมือนตอนสร้าง
-2. Service ตรวจ Project/Client ของผู้ใช้ อัปเดตรายละเอียดและคืน `ApiResult<ProjectResponse>`
+2. Service ตรวจ Project ของผู้ใช้ก่อน หากเป็น `ARCHIVED` จะปฏิเสธการแก้ไข; กรณีที่แก้ได้จึงตรวจ Client อัปเดตรายละเอียด และคืน `ApiResult<ProjectResponse>`
 
-**ทางเลือก:** request ไม่ถูกต้อง = `400`; ไม่พบ Project/Client ของผู้ใช้ = `404`
+**ทางเลือก:** request ไม่ถูกต้อง = `400`; ไม่พบ Project/Client ของผู้ใช้ = `404`; Project เป็น `ARCHIVED` = `409`
 **Postcondition:** รายละเอียดเปลี่ยน แต่การเปลี่ยนสถานะเป็น use case แยก
 
 ### UC-PRJ-05 เปลี่ยนสถานะ Project
 
-1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่
-2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; ส่งสถานะเดิมซ้ำได้
+1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่; Service ตรวจว่าไม่มี timer ของ Project นี้กำลังทำงานก่อนเปลี่ยนสถานะ
+2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; การคืนจาก `ARCHIVED` ทำได้ต่อเมื่อ Client ยังใช้งาน (`isActive=true`) และไม่ถูก soft delete (`deletedAt=null`); ส่งสถานะเดิมซ้ำได้
 3. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
 
-**ทางเลือก:** สถานะไม่ถูกต้อง = `400`; ไม่พบ Project = `404`; transition ผิดกฎ = `409`
+**ทางเลือก:** สถานะไม่ถูกต้อง = `400`; ไม่พบ Project = `404`; transition ผิดกฎ, Client ถูกจัดเก็บ/soft delete หรือ timer ของ Project กำลังทำงาน = `409`
 
 ### UC-PRJ-06 ลบ Project แบบ soft delete
 
@@ -101,7 +101,7 @@
 
 ### UC-TSK-05 เปลี่ยนสถานะ Task
 
-`PATCH /api/tasks/{taskId}/status` ใช้ enum ของ Task เอง (`OPEN`, `IN_PROGRESS`, `COMPLETED`) ไม่ใช้ `ProjectStatus`: `OPEN → IN_PROGRESS/COMPLETED`, `IN_PROGRESS → COMPLETED`; `COMPLETED` ย้อนกลับไม่ได้ และส่งสถานะเดิมซ้ำจะไม่เปลี่ยนข้อมูล การทำงานต้องผ่าน `project.canEditTasks()` ด้วย
+`PATCH /api/tasks/{taskId}/status` ใช้ enum ของ Task เอง (`OPEN`, `IN_PROGRESS`, `COMPLETED`) ไม่ใช้ `ProjectStatus`: `OPEN → IN_PROGRESS/COMPLETED`, `IN_PROGRESS → COMPLETED`, `COMPLETED → IN_PROGRESS` เท่านั้นเมื่อย้อนงาน; ย้อนเป็น `OPEN` ไม่ได้ การย้อนจะล้าง `completedAt` เป็น `null` และหากทำเสร็จอีกครั้งจะบันทึกเวลาใหม่ การส่งสถานะเดิมซ้ำจะไม่เปลี่ยนข้อมูล Service ตรวจ `project.canEditTasks()` ก่อนเปลี่ยนสถานะ จึงไม่ให้ย้อน Task ใน Project ที่ `COMPLETED` หรือ `ARCHIVED` (`409`)
 
 ### UC-TSK-06 เรียงลำดับ Task
 
@@ -135,18 +135,26 @@ sequenceDiagram
     C->>S: changeStatus(ownerId, id, request)
     S->>R: findByIdAndOwnerId(id, ownerId)
     R-->>S: Project หรือไม่พบ
-    S->>P: changeStatus(nextStatus)
-    P->>ST: from(status), canTransitionTo(nextStatus)
-    ST-->>P: อนุญาตหรือปฏิเสธ
-    alt อนุญาต
-        P-->>S: อัปเดต status และ isActive
-        S->>R: save(Project)
-        S-->>C: ProjectResponse
-        C-->>F: 200 ApiResult
-    else ปฏิเสธ
-        P-->>S: IllegalStateException
-        S-->>H: Spring ส่ง exception ให้ handler
+    alt timer ของ Project กำลังทำงาน
+        S-->>H: IllegalStateException
         H-->>F: 409 Conflict
+    else ไม่มี timer กำลังทำงาน
+        S->>P: changeStatus(nextStatus)
+        P->>ST: from(status), canTransitionTo(nextStatus)
+        ST-->>P: อนุญาตหรือปฏิเสธ
+        opt คืนจาก ARCHIVED
+            P->>P: ตรวจ Client.isActive และ Client.deletedAt
+        end
+        alt transition ผ่านและ Client ใช้งาน
+            P-->>S: อัปเดต status และ isActive
+            S->>R: save(Project)
+            S-->>C: ProjectResponse
+            C-->>F: 200 ApiResult
+        else transition ผิดกฎหรือ Client ถูกจัดเก็บ
+            P-->>S: IllegalStateException
+            S-->>H: Spring ส่ง exception ให้ handler
+            H-->>F: 409 Conflict
+        end
     end
 ```
 
