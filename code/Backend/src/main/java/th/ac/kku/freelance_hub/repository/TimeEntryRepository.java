@@ -62,6 +62,24 @@ public interface TimeEntryRepository
 
     Page<TimeEntry> findAllByOwnerId(UUID ownerId, Pageable pageable);
 
+    @Query("""
+        SELECT entry FROM TimeEntry entry
+        JOIN FETCH entry.project project
+        LEFT JOIN FETCH entry.task task
+        WHERE entry.owner.id = :ownerId
+          AND entry.isActive = true
+          AND entry.endedAt IS NOT NULL
+          AND entry.durationSeconds IS NOT NULL
+          AND project.isActive = true
+          AND project.deletedAt IS NULL
+          AND (task IS NULL OR task.isActive = true)
+        ORDER BY entry.startedAt DESC, entry.id DESC
+        """)
+    List<TimeEntry> findRecentCompletedForDashboard(
+            @Param("ownerId") UUID ownerId,
+            Pageable pageable
+    );
+
     /**
      * Loads every unlocked entry for a project, including soft-deleted entries
      * and running timers. Requires a transaction; row locks last until it ends.

@@ -95,7 +95,7 @@ public class TaskDetailController {
     @Operation(
             summary = "Change task status",
             description = "เปลี่ยนสถานะ OPEN เป็น IN_PROGRESS หรือ COMPLETED "
-                    + "และ IN_PROGRESS เป็น COMPLETED โดย COMPLETED ย้อนกลับไม่ได้ "
+                    + "และ IN_PROGRESS เป็น COMPLETED; COMPLETED กลับเป็น OPEN ได้ "
                     + "การส่งสถานะเดิมจะไม่เปลี่ยนข้อมูล "
                     + "และสถานะโปรเจกต์ต้องอนุญาตให้แก้ไขงานย่อย"
     )

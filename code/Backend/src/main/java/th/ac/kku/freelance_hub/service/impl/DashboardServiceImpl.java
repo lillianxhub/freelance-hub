@@ -17,6 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import th.ac.kku.freelance_hub.domain.entity.Project;
@@ -36,6 +37,7 @@ import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardSummaryResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.OpenTaskResponse;
+import th.ac.kku.freelance_hub.dto.response.dashboard.RecentTimeEntryResponse;
 @Service
 @Transactional(readOnly = true)
 public class DashboardServiceImpl implements DashboardService {
@@ -192,8 +194,22 @@ public class DashboardServiceImpl implements DashboardService {
                 ))
                 .toList();
 
+        List<RecentTimeEntryResponse> recentTimeEntries =
+                timeEntryRepository.findRecentCompletedForDashboard(
+                        ownerId, PageRequest.of(0, 2)
+                ).stream()
+                .map(entry -> new RecentTimeEntryResponse(
+                        entry.getId(),
+                        entry.getProject().getName(),
+                        entry.getTask() == null ? null : entry.getTask().getName(),
+                        entry.getDescription(),
+                        entry.getStartedAt(),
+                        entry.getDurationSeconds()
+                ))
+                .toList();
+
         return new DashboardResponse(
-                now, summary, dailyWork, visibleProjects, openTasks
+                now, summary, dailyWork, visibleProjects, openTasks, recentTimeEntries
         );
     }
 

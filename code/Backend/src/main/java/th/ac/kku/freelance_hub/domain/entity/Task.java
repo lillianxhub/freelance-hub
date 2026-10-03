@@ -183,9 +183,15 @@ public class Task {
         }
 
         switch (nextStatus) {
-            case OPEN -> throw new IllegalStateException(
-                    "cannot change task status from " + status + " to OPEN"
-            );
+            case OPEN -> {
+                if (status != TaskStatus.COMPLETED) {
+                    throw new IllegalStateException(
+                            "cannot change task status from " + status + " to OPEN"
+                    );
+                }
+                status = TaskStatus.OPEN;
+                this.completedAt = null;
+            }
             case IN_PROGRESS -> start();
             case COMPLETED -> complete(completedAt);
         }

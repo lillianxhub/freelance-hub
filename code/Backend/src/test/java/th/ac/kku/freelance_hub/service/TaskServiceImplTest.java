@@ -423,11 +423,13 @@ class TaskServiceImplTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"OPEN, IN_PROGRESS", "OPEN, COMPLETED", "IN_PROGRESS, COMPLETED"})
-    void changeTaskStatusAllowsExistingForwardTransitions(TaskStatus before, TaskStatus after) {
+    @CsvSource({"OPEN, IN_PROGRESS", "OPEN, COMPLETED", "IN_PROGRESS, COMPLETED", "COMPLETED, OPEN"})
+    void changeTaskStatusAllowsSupportedTransitions(TaskStatus before, TaskStatus after) {
         Task task = new Task(project, "Task", 0);
         if (before == TaskStatus.IN_PROGRESS) {
             task.start();
+        } else if (before == TaskStatus.COMPLETED) {
+            task.complete(Instant.parse("2026-01-01T10:00:00Z"));
         }
         task = taskRepository.saveAndFlush(task);
 
@@ -445,7 +447,7 @@ class TaskServiceImplTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"COMPLETED, OPEN", "COMPLETED, IN_PROGRESS", "IN_PROGRESS, OPEN"})
+    @CsvSource({"COMPLETED, IN_PROGRESS", "IN_PROGRESS, OPEN"})
     void changeTaskStatusRejectsBackwardTransitions(TaskStatus before, TaskStatus after) {
         Task task = new Task(project, "Task", 0);
         if (before == TaskStatus.COMPLETED) {
