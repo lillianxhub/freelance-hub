@@ -236,7 +236,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 
 | Method           | Endpoint                        | หน้าที่                                             |
 | ---------------- | ------------------------------- | --------------------------------------------------- |
-| POST             | `/api/auth/register`            | สมัครสมาชิก                                         |
+| POST             | `/api/auth/register`            | สมัครสมาชิก คืนข้อมูลผู้ใช้โดยไม่ออก token แล้วไปหน้า Login |
 | POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
 | POST             | `/api/auth/refresh`             | หมุน refresh token และออก access token ใหม่        |
 | POST             | `/api/auth/logout`              | เพิกถอน refresh-token family และล้าง cookie        |
@@ -260,7 +260,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 
 - list endpoint รองรับ `page`, `size`, `sort` และตัวกรองที่เกี่ยวข้อง
 - validation error ใช้ HTTP 400, ไม่ผ่านการยืนยันตัวตนใช้ 401, ไม่มีสิทธิ์ใช้ 403, ไม่พบข้อมูลใช้ 404 และข้อมูลขัดแย้งใช้ 409
-- error response มี `timestamp`, `status`, `code`, `message`, `fieldErrors` และ `traceId`
+- error response ใช้ `ApiResult` โดย `success=false`, `message` อยู่ชั้นบน และ `error` มี `code`, `details`, `status`, `timestamp` (UTC), `fieldErrors`, `traceId`; validation errors ใส่ข้อมูลรายฟิลด์ใน `error.fieldErrors` เท่านั้น
 - วันและเวลาใช้ ISO 8601 และบันทึก timestamp เป็น UTC
 - ต้องมี CRUD ครบอย่างน้อย 2 resource หลัก โดยกำหนดให้ `Client` และ `Project` เป็น resource ขั้นต่ำ
 - endpoint ที่สร้างข้อมูลสำเร็จใช้ 201, อ่าน/แก้ไขสำเร็จใช้ 200, ลบหรือ archive ที่ไม่ส่ง body ใช้ 204 และข้อผิดพลาดใช้ 400/404/409/500 ตามกรณี
