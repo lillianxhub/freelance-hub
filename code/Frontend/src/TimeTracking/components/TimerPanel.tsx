@@ -46,9 +46,9 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
 
   return (
     <Card asChild>
-      <section className="min-h-[250px] items-stretch gap-6 px-5 py-5 sm:px-6 sm:py-6">
-        <div className="flex w-full items-start justify-between gap-4">
-          <div className="text-[clamp(42px,10vw,112px)] leading-[0.9] font-bold tracking-[0.01em] text-text-primary tabular-nums">
+      <section className="@container min-h-[250px] min-w-0 items-stretch gap-6 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex w-full flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 whitespace-nowrap text-[clamp(36px,10vw,112px)] leading-[0.9] font-bold tracking-[0.01em] text-text-primary tabular-nums">
             {timerLeading}:<span className="text-subtle">{timerSeconds}</span>
           </div>
           <Badge
@@ -68,7 +68,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
         )}
 
         {timer.runningEntry ? (
-          <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(240px,1.6fr)_auto]">
+          <div className="grid w-full min-w-0 grid-cols-1 items-end gap-3 @min-[520px]:grid-cols-2 @min-[900px]:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(240px,1.6fr)_auto]">
             <div className="grid min-w-0 gap-2">
               <p className="text-xs text-text-secondary">โปรเจกต์</p>
               <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
@@ -87,7 +87,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
                 <p className="truncate text-sm font-semibold text-text-primary">{timer.runningEntry.description || 'ไม่มีรายละเอียด'}</p>
               </div>
             </div>
-            <div className="flex w-full items-center gap-2 lg:min-w-[205px]">
+            <div className="flex w-full min-w-0 items-center gap-2 @min-[900px]:min-w-[205px]">
               <Button
                 variant="destructive"
                 className="h-[41px] flex-1 gap-2 whitespace-nowrap"
@@ -113,11 +113,12 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
           </div>
         ) : (
           <div className="w-full space-y-4">
-            <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(240px,1.6fr)_auto]">
-              <div className="grid gap-2">
+            <div className="grid min-w-0 grid-cols-1 items-end gap-3 @min-[520px]:grid-cols-2 @min-[900px]:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(240px,1.6fr)_auto]">
+              <div className="grid min-w-0 gap-2">
                 <Label htmlFor="timer-project">โปรเจกต์</Label>
                 <NativeSelect
                   id="timer-project"
+                  className="min-w-0"
                   value={timer.timerProjectId}
                   onOpenChange={(open) => { if (open) onProjectOptionsOpen?.() }}
                   onChange={(event) => {
@@ -130,10 +131,11 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
                   ))}
                 </NativeSelect>
               </div>
-              <div className="grid gap-2">
+              <div className="grid min-w-0 gap-2">
                 <Label htmlFor="timer-task">งาน</Label>
                 <NativeSelect
                   id="timer-task"
+                  className="min-w-0"
                   value={timer.selectedTask}
                   onChange={(event) => timer.setSelectedTask(event.target.value)}
                 >
@@ -143,7 +145,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
                   ))}
                 </NativeSelect>
               </div>
-              <div className="grid gap-2">
+              <div className="grid min-w-0 gap-2">
                 <Label htmlFor="timer-description">คำอธิบาย</Label>
                 <Input
                   id="timer-description"
@@ -154,7 +156,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
               </div>
               <Button
                 variant="default"
-                className="h-[41px] w-full gap-2 whitespace-nowrap lg:min-w-[165px]"
+                className="h-[41px] w-full min-w-0 gap-2 whitespace-nowrap @min-[900px]:min-w-[165px]"
                 type="button"
                 disabled={!timer.timerProjectId || pendingAction !== null}
                 onClick={() => void runTimerAction(timer.startTimer, 'starting')}
