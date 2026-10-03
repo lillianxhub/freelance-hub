@@ -80,7 +80,11 @@ function DashboardPage() {
     const result = []
     for (let date = new Date(from), count = 0; date <= to && count < 366; date = dateAtOffset(date, 1), count += 1) {
       const key = localDateKey(date)
-      result.push({ key, day: new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(date), total: Number((totalMinutes(completedEntries, key, key) / 60).toFixed(2)) })
+      result.push({
+        key,
+        day: new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(date),
+        totalSeconds: Math.round(totalMinutes(completedEntries, key, key) * 60),
+      })
     }
     return result
   })()
