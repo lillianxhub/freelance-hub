@@ -41,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public UserResponse register(RegisterRequest request) {
+    public AuthSessionResult register(RegisterRequest request) {
         String email = EmailNormalizer.normalize(request.getEmail());
         if (userRepository.existsByEmail(email)) {
             throw new EmailAlreadyExistsException(email);
@@ -55,7 +55,8 @@ public class AuthServiceImpl implements AuthService {
         user.setProfile(profile);
 
         User savedUser = userRepository.save(user);
-        return userMapper.toResponse(savedUser);
+        RefreshTokenService.IssuedToken refreshToken = refreshTokenService.issue(savedUser);
+        return new AuthSessionResult(createAuthResponse(savedUser), refreshToken.value(), refreshToken.expiresAt());
     }
 
     @Override

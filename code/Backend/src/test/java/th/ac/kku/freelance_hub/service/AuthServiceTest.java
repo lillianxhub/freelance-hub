@@ -122,17 +122,22 @@ class AuthServiceTest {
                 when(userRepository.save(any(User.class))).thenReturn(user);
                 when(userMapper.toResponse(user)).thenReturn(userResponse);
 
+                when(tokenProvider.generateToken(user.getEmail())).thenReturn("jwt-token");
+                when(tokenProvider.getExpirationTime()).thenReturn(900000L);
+                when(refreshTokenService.issue(user)).thenReturn(
+                                new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(3600)));
+
                 // When
-                UserResponse response = authService.register(registerRequest);
+                AuthSessionResult response = authService.register(registerRequest);
 
                 // Then
                 assertThat(response).isNotNull();
-                assertThat(response).isEqualTo(userResponse);
+                assertThat(response.response().getUser()).isEqualTo(userResponse);
 
                 verify(userRepository).existsByEmail(registerRequest.getEmail());
                 verify(passwordEncoder).encode(registerRequest.getPassword());
                 verify(userRepository).save(any(User.class));
-                verifyNoInteractions(tokenProvider, refreshTokenService);
+                verify(refreshTokenService).issue(user);
         }
 
         @Test

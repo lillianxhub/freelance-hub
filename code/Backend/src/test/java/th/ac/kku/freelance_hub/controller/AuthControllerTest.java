@@ -131,9 +131,10 @@ class AuthControllerTest {
                                 .andExpect(jsonPath("$.message").value("สมัครสมาชิกสำเร็จ"))
                                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
                                 .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()))
-                                .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                                .andExpect(jsonPath("$.data.displayName").value("Test User"))
-                                .andExpect(jsonPath("$.data.token").doesNotExist());
+                                .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
+                                .andExpect(jsonPath("$.data.user.displayName").value("Test User"))
+                                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")));
         }
 
         @Test
@@ -455,9 +456,9 @@ class AuthControllerTest {
                 var stored = refreshTokenRepository.findAll().stream()
                                 .filter(token -> token.getUser().getEmail().equals(registerRequest.getEmail()))
                                 .toList();
-                assertThat(stored).hasSize(2);
-                assertThat(stored.get(0).getFamilyId()).isEqualTo(stored.get(1).getFamilyId());
-                assertThat(stored.get(0).getExpiresAt()).isEqualTo(stored.get(1).getExpiresAt());
+                assertThat(stored).hasSize(3);
+                assertThat(stored).filteredOn(token -> token.getUsedAt() != null).hasSize(1);
+                assertThat(stored).filteredOn(token -> token.getRevokedAt() == null).hasSize(3);
                 mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(first))
                                 .andExpect(status().isUnauthorized());
                 mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(second))
@@ -484,14 +485,10 @@ class AuthControllerTest {
 
         private String registerAndGetToken() throws Exception {
                 loginRequest.setEmail(registerRequest.getEmail());
-                mockMvc.perform(post("/api/auth/register")
+                String body = mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(registerRequest)))
-                                .andExpect(status().isCreated());
-                String body = mockMvc.perform(post("/api/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(loginRequest)))
-                                .andExpect(status().isOk())
+                                .andExpect(status().isCreated())
                                 .andReturn().getResponse().getContentAsString();
                 return objectMapper.readTree(body).path("data").path("token").asText();
         }

@@ -236,7 +236,7 @@ REST API ใช้ prefix `/api` โดยไม่มี version segment แล
 
 | Method           | Endpoint                        | หน้าที่                                             |
 | ---------------- | ------------------------------- | --------------------------------------------------- |
-| POST             | `/api/auth/register`            | สมัครสมาชิก คืนข้อมูลผู้ใช้โดยไม่ออก token แล้วไปหน้า Login |
+| POST             | `/api/auth/register`            | สมัครสมาชิกและเริ่ม session คืน access/refresh token |
 | POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
 | POST             | `/api/auth/refresh`             | หมุน refresh token และออก access token ใหม่        |
 | POST             | `/api/auth/logout`              | เพิกถอน refresh-token family และล้าง cookie        |

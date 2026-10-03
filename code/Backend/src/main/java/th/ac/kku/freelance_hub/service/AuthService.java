@@ -6,7 +6,7 @@ import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 /** Authentication use cases exposed to the web layer. */
 public interface AuthService {
 
-    UserResponse register(RegisterRequest request);
+    AuthSessionResult register(RegisterRequest request);
 
     AuthSessionResult login(LoginRequest request, String remoteAddress);
 

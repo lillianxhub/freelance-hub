@@ -309,15 +309,10 @@ class UserAuthIntegrationTest {
         }
 
         private String register(String email, String displayName) throws Exception {
-                mockMvc.perform(post("/api/auth/register")
+                String body = mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper
                                                 .writeValueAsString(new Registration(email, PASSWORD, displayName))))
-                                .andExpect(status().isCreated());
-                String body = mockMvc.perform(post("/api/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(loginJson(email, PASSWORD)))
-                                .andExpect(status().isOk())
                                 .andReturn().getResponse().getContentAsString();
                 return objectMapper.readTree(body).path("data").path("token").asText();
         }

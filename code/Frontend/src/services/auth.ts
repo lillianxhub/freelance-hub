@@ -32,7 +32,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
 }
 
 export async function signUp(input: RegisterInput): Promise<void> {
-  await api.post<BackendUser>('/auth/register', {
+  await api.post<AuthResponse>('/auth/register', {
     displayName: input.displayName.trim(),
     firstName: input.firstName.trim(),
     lastName: input.lastName.trim(),

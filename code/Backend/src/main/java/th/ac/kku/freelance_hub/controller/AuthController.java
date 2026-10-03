@@ -43,12 +43,13 @@ public class AuthController {
         })
         @SecurityRequirements
         @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
-        public ResponseEntity<ApiResult<UserResponse>> register(
+        public ResponseEntity<ApiResult<AuthResponse>> register(
                         @Valid @RequestBody RegisterRequest request) {
-                UserResponse response = authService.register(request);
+                AuthSessionResult result = authService.register(request);
                 return ResponseEntity.status(HttpStatus.CREATED)
-                                .body(ApiResult.success("สมัครสมาชิกสำเร็จ",
-                                                response));
+                                .header(HttpHeaders.SET_COOKIE,
+                                                refreshTokenCookie.set(result.refreshToken(), result.refreshExpiresAt()))
+                                .body(ApiResult.success("สมัครสมาชิกสำเร็จ", result.response()));
         }
 
         @Operation(summary = "Login user", description = "Authenticate user with email and password")
