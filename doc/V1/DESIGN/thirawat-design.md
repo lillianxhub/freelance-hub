@@ -45,6 +45,7 @@ classDiagram
         +findProjectsForClientStatusChange(ownerId, clientId) List~Project~
         +findIncludedProjects(ownerId, clientId) List~IncludedProject~
         +findIncludedTasks(ownerId, clientId) List~IncludedTask~
+        +sumTrackedSecondsByClientIds(ownerId, clientIds) List~ClientTrackedSeconds~
         +sumCompletedTimeByClient(ownerId, fromInclusive, toExclusive) List~ClientTimeTotal~
     }
     class ClientMapper
@@ -63,7 +64,9 @@ classDiagram
         +changeStatus(nextStatus) void
     }
     class User
-    class ClientResponse
+    class ClientResponse {
+        +Long totalTrackedSeconds
+    }
     class ClientProjectSummaryResponse
     class ClientTaskSummaryResponse
     class ClientTimeTotalResponse
@@ -100,4 +103,5 @@ classDiagram
 - `DELETE` ที่สำเร็จคืน `204 No Content` จึงไม่มี `ApiResult` ใน response body
 - `include=projects` และ `include=projects.tasks` เป็นเพียงรูปแบบ path ที่ยืมจาก JSON:API; response ยังใช้ `ApiResult` ไม่ใช่ JSON:API เต็มรูปแบบ
 - `summarizeTimeByClient` เป็น method ภายใน ไม่ใช่ endpoint; รวมเฉพาะ Time Entry ที่จบแล้วตาม `startedAt` ในช่วง `[fromInclusive, toExclusive)` และไม่รวม Project ที่ไม่มี Client
+- `totalTrackedSeconds` ใน Client GET responses ใช้ aggregate projection แยกจาก method Analytics: นับ Time Entry ที่ active และจบแล้วตลอดช่วงเวลาที่มีข้อมูล รวมประวัติบน Project/Task ที่ archive หรือ soft delete ตามกติกา Time Entry summary; service ดึงยอดทีเดียวเฉพาะ Client IDs ในหน้าปัจจุบัน และใช้ `0` เมื่อไม่มีรายการ ฟิลด์นี้ไม่ได้เป็นคอลัมน์และไม่เติมใน write responses
 - ไม่อ้างว่า Client feature มี GoF Strategy/State/Observer เพื่อให้ครบจำนวน เพราะยังไม่มี implementation เหล่านั้นในส่วนนี้
