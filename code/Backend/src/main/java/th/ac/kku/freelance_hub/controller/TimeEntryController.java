@@ -25,19 +25,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryDetailResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryListItemResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryDetailResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
 @Tag(
         name = "Time Entries",
         description = "Manage time entries belonging to the authenticated user"

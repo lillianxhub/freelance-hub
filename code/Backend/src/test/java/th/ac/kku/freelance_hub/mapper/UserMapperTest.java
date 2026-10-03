@@ -9,9 +9,8 @@ import org.junit.jupiter.api.Test;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.domain.valueobject.Address;
-import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
-import th.ac.kku.freelance_hub.dto.response.UserResponse;
-
+import th.ac.kku.freelance_hub.dto.request.user.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 class UserMapperTest {
 
     private final UserMapper mapper = new UserMapper();

@@ -1,5 +1,4 @@
 package th.ac.kku.freelance_hub.controller;
-import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
 
 import java.net.URI;
 import java.util.UUID;
@@ -24,25 +23,16 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
-import th.ac.kku.freelance_hub.dto.request.ProjectFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.service.UserService;
-
-
-
-
-
-
-
-
-
-
+import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.ProjectFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
 @Tag(name = "Projects", description = "Manage projects belonging to the authenticated user")
 @RestController
 @RequestMapping("/api/projects")

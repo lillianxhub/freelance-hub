@@ -17,14 +17,15 @@ import type { DashboardChartPeriod, DashboardData } from '../../../types/dashboa
 import type { ProductivityPoint } from '../../../types/analytics'
 import type { TimerWorkspace } from '../../../types/timerWorkspace'
 import TimerPanel from '../../../TimeTracking/components/TimerPanel'
-import { formatDurationSeconds } from '../../../utils/formatters'
+import { formatDurationSeconds } from '../../../lib/formatters'
 import { activityChartPoints, weeklyChartPoints } from '../../../utils/dashboardChart'
 import ProductivityChart from '../../components/ProductivityChart'
-import SummaryCard from '../../components/SummaryCard'
+import SummaryCard from '../../../components/SummaryCard'
 
-function Trend({ value, label }: { value: number; label: string }) {
-  const positive = value >= 0
-  return <span className="inline-flex items-center gap-1"><span className={positive ? 'inline-flex items-center gap-1 font-semibold text-green' : 'inline-flex items-center gap-1 font-semibold text-destructive'}>{positive ? <FiTrendingUp aria-hidden="true" /> : <FiTrendingDown aria-hidden="true" />}{Math.abs(value)}%</span> {label}</span>
+function greetingForHour(hour: number): string {
+  if (hour < 12) return 'สวัสดีตอนเช้า'
+  if (hour < 18) return 'สวัสดีตอนบ่าย'
+  return 'สวัสดีตอนเย็น'
 }
 
 function DashboardPage() {

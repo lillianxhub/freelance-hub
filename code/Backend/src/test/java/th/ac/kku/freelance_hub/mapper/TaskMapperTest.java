@@ -13,8 +13,7 @@ import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
-
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 class TaskMapperTest {
 
     private final TaskMapper mapper = new TaskMapper();

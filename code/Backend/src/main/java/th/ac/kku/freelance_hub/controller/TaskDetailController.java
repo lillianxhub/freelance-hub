@@ -21,13 +21,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TaskService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @Tag(name = "Tasks", description = "Manage tasks within the authenticated user's projects")
 @RestController
 @RequestMapping("/api/tasks")

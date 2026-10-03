@@ -11,12 +11,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import th.ac.kku.freelance_hub.common.response.ApiResult;
-import th.ac.kku.freelance_hub.dto.request.DashboardActivityPeriod;
-import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityResponse;
-import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
 import th.ac.kku.freelance_hub.service.DashboardService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.dashboard.DashboardActivityPeriod;
+import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityResponse;
+import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor

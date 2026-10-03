@@ -23,7 +23,12 @@ import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
-import th.ac.kku.freelance_hub.dto.request.DashboardActivityPeriod;
+import th.ac.kku.freelance_hub.repository.ProjectRepository;
+import th.ac.kku.freelance_hub.repository.TaskRepository;
+import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
+import th.ac.kku.freelance_hub.service.DashboardService;
+import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.dto.request.dashboard.DashboardActivityPeriod;
 import th.ac.kku.freelance_hub.dto.response.dashboard.ActiveProjectResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DailyWorkResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityPointResponse;
@@ -31,12 +36,6 @@ import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardSummaryResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.OpenTaskResponse;
-import th.ac.kku.freelance_hub.repository.ProjectRepository;
-import th.ac.kku.freelance_hub.repository.TaskRepository;
-import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
-import th.ac.kku.freelance_hub.service.DashboardService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-
 @Service
 @Transactional(readOnly = true)
 public class DashboardServiceImpl implements DashboardService {

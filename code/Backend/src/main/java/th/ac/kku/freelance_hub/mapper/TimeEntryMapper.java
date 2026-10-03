@@ -8,8 +8,7 @@ import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 /** Converts time-entry entities into data returned by the API. */
 @Component
 public class TimeEntryMapper {
