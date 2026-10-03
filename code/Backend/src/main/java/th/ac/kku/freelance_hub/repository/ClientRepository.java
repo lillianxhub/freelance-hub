@@ -76,6 +76,21 @@ public interface ClientRepository
     List<IncludedTask> findIncludedTasks(
             @Param("ownerId") UUID ownerId, @Param("clientId") UUID clientId);
 
+    /** Match time entry summary rules, including history on archived projects and tasks. */
+    @Query("""
+            SELECT p.client.id AS clientId, SUM(t.durationSeconds) AS totalSeconds
+            FROM TimeEntry t
+            JOIN t.project p
+            WHERE t.owner.id = :ownerId
+              AND p.client.id IN :clientIds
+              AND t.isActive = true
+              AND t.endedAt IS NOT NULL
+              AND t.durationSeconds IS NOT NULL
+            GROUP BY p.client.id
+            """)
+    List<ClientTrackedSeconds> sumTrackedSecondsByClientIds(
+            @Param("ownerId") UUID ownerId, @Param("clientIds") List<UUID> clientIds);
+
     /** Aggregate completed, active time entries by their Project's Client. */
     @Query("""
             SELECT c.id AS clientId, c.name AS clientName,
@@ -120,6 +135,11 @@ public interface ClientRepository
     interface ClientTimeTotal {
         UUID getClientId();
         String getClientName();
+        Long getTotalSeconds();
+    }
+
+    interface ClientTrackedSeconds {
+        UUID getClientId();
         Long getTotalSeconds();
     }
 }
