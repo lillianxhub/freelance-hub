@@ -1,6 +1,13 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart'
 import type { ProductivityChartProps } from '../../types/analytics'
+import { formatChartDuration } from '../../utils/dashboardChart'
+
+function formatAxisDuration(totalSeconds: number): string {
+  if (totalSeconds >= 3600) return `${Number((totalSeconds / 3600).toFixed(1))} ชม.`
+  if (totalSeconds >= 60) return `${Number((totalSeconds / 60).toFixed(1))} นาที`
+  return `${Math.round(totalSeconds)} วิ`
+}
 
 export default function ProductivityChart({ data }: ProductivityChartProps) {
   return (

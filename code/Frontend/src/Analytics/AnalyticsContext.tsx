@@ -8,10 +8,9 @@ import type { AnalyticsData } from '../types/analytics'
 
 export interface AnalyticsContextValue extends AsyncDataState<AnalyticsData> {}
 export const AnalyticsContext = createContext<AnalyticsContextValue | null>(null)
-const emptyData: AnalyticsData = { clients: [], projects: [], tasks: [], time_entries: [] }
+export const emptyAnalyticsData: AnalyticsData = { clients: [], projects: [], tasks: [], time_entries: [] }
 
-export function AnalyticsProvider({ children }: PropsWithChildren) {
-  const load = useCallback(async (): Promise<AnalyticsData> => {
+export async function loadAnalyticsData(): Promise<AnalyticsData> {
     const [clients, projects, firstTimeEntryPage] = await Promise.all([
       listClientOptions(),
       listTimerProjects(),
@@ -28,7 +27,10 @@ export function AnalyticsProvider({ children }: PropsWithChildren) {
     ]
     const tasks = (await Promise.all(projects.map((project) => listTimerTasks(project.id)))).flat()
     return { clients, projects, tasks, time_entries }
-  }, [])
-  const value = useAsyncData(load, emptyData)
+}
+
+export function AnalyticsProvider({ children }: PropsWithChildren) {
+  const load = useCallback(loadAnalyticsData, [])
+  const value = useAsyncData(load, emptyAnalyticsData)
   return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>
 }

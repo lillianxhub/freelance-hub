@@ -11,7 +11,8 @@ import { Label } from '../../../components/ui/label'
 import { formatDuration } from '../../../lib/formatters'
 import { stopTimer } from '../../../services/timeTracking'
 import type { TimeEntry } from '../../../types/timeTracking'
-import { useAnalytics } from '../../useAnalytics'
+import { emptyAnalyticsData, loadAnalyticsData } from '../../AnalyticsContext'
+import { useAsyncData } from '../../../shared/useAsyncData'
 import DashboardProjectsTable from '../../components/DashboardProjectsTable'
 import DashboardTasksTable from '../../components/DashboardTasksTable'
 import DashboardTimerCard from '../../components/DashboardTimerCard'
@@ -42,7 +43,7 @@ function Trend({ value, label }: { value: number; label: string }) {
 }
 
 function DashboardPage() {
-  const { data: source, loading, error, refresh } = useAnalytics()
+  const { data: source, loading, error, refresh } = useAsyncData(loadAnalyticsData, emptyAnalyticsData)
   const now = useMemo(() => new Date(), [])
   const [dateFrom, setDateFrom] = useState(() => localDateKey(dateAtOffset(now, -6)))
   const [dateTo, setDateTo] = useState(() => localDateKey(now))
@@ -87,47 +88,28 @@ function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-screen-2xl space-y-6">
       <PageHeader eyebrow={new Intl.DateTimeFormat('th-TH', { dateStyle: 'full' }).format(now)} title="ภาพรวมการทำงาน" description="ติดตามเวลา โปรเจกต์ และงานสำคัญจากที่เดียว" />
-
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="สรุปการทำงาน">
         <SummaryCard label="ชั่วโมงที่บันทึกวันนี้" value={formatDuration(todayMinutes)} icon={<FiClock aria-hidden="true" />} accent="blue" compact foot={<Trend value={percentageChange(todayMinutes, yesterdayMinutes)} label="จากเมื่อวาน" />} />
         <SummaryCard label="ชั่วโมงสัปดาห์นี้" value={formatDuration(weekMinutes)} icon={<FiCalendar aria-hidden="true" />} accent="violet" compact foot={<Trend value={percentageChange(weekMinutes, previousWeekMinutes)} label="จากสัปดาห์ก่อน" />} />
         <SummaryCard label="โปรเจกต์ที่กำลังทำ" value={activeProjects.length} unit="โปรเจกต์" icon={<FiBriefcase aria-hidden="true" />} accent="orange" foot={`จากทั้งหมด ${source.projects.length} โปรเจกต์`} />
         <SummaryCard label="งานที่เสร็จแล้ว" value={`${completedTasks} / ${source.tasks.length}`} icon={<FiCheckSquare aria-hidden="true" />} accent="green" compact foot="จำนวนงานที่ดำเนินการเสร็จแล้ว" />
       </section>
-
       <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
         <Card>
           <CardHeader className="gap-4 sm:grid-cols-[1fr_auto]">
-            <div><CardTitle>ชั่วโมงทำงาน</CardTitle>
-              <CardDescription>เลือกช่วงวันที่เพื่อดูชั่วโมงที่บันทึก</CardDescription>
-            </div>
+            <div><CardTitle>ชั่วโมงทำงาน</CardTitle><CardDescription>เลือกช่วงวันที่เพื่อดูชั่วโมงที่บันทึก</CardDescription></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="dashboard-date-from">ตั้งแต่วันที่</Label>
-                <DatePicker id="dashboard-date-from" value={dateFrom} onChange={setDateFrom} className="min-w-36" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="dashboard-date-to">ถึงวันที่</Label>
-                <DatePicker id="dashboard-date-to" value={dateTo} onChange={setDateTo} className="min-w-36" />
-              </div>
+              <div className="grid gap-2"><Label htmlFor="dashboard-date-from">ตั้งแต่วันที่</Label><DatePicker id="dashboard-date-from" value={dateFrom} onChange={setDateFrom} className="min-w-36" /></div>
+              <div className="grid gap-2"><Label htmlFor="dashboard-date-to">ถึงวันที่</Label><DatePicker id="dashboard-date-to" value={dateTo} onChange={setDateTo} className="min-w-36" /></div>
             </div>
           </CardHeader>
           <CardContent>{chartData.length ? <ProductivityChart data={chartData} /> : <p className="grid h-72 place-items-center text-sm text-muted-foreground">กรุณาเลือกช่วงวันที่ให้ถูกต้อง</p>}</CardContent>
         </Card>
         <DashboardTimerCard entries={source.time_entries} projects={source.projects} tasks={source.tasks} onStop={handleStopTimer} />
       </section>
-
       <section className="grid items-start gap-6 2xl:grid-cols-2">
-        <DashboardProjectsTable
-          projects={source.projects}
-          clients={source.clients}
-          tasks={source.tasks}
-          entries={source.time_entries}
-        />
-        <DashboardTasksTable
-          tasks={source.tasks}
-          projects={source.projects}
-        />
+        <DashboardProjectsTable projects={source.projects} clients={source.clients} tasks={source.tasks} entries={source.time_entries} />
+        <DashboardTasksTable tasks={source.tasks} projects={source.projects} />
       </section>
     </div>
   )

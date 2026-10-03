@@ -17,8 +17,10 @@ function toClient(source: ApiClient): Client {
 
 function clientPayload(input: ClientInput) {
   const location = [input.sub_district ? `ตำบล/แขวง ${input.sub_district}` : '', input.district ? `อำเภอ/เขต ${input.district}` : '', input.province ? `จังหวัด ${input.province}` : '', input.postal_code ? `รหัสไปรษณีย์ ${input.postal_code}` : ''].filter(Boolean).join(' ')
-  return { name: input.name, companyName: input.company_name || undefined, email: input.email || undefined, phone: input.phone || undefined,
-    address: [input.address, location].filter(Boolean).join(', ') || undefined, taxId: input.tax_id || undefined, notes: input.notes || undefined }
+  return {
+    name: input.name, companyName: input.company_name || undefined, email: input.email || undefined, phone: input.phone || undefined,
+    address: [input.address, location].filter(Boolean).join(', ') || undefined, taxId: input.tax_id || undefined, notes: input.notes || undefined
+  }
 }
 
 export async function getClientById(id: string): Promise<Client> {
@@ -64,6 +66,17 @@ export async function saveClient(input: ClientInput): Promise<Client> {
 
 export async function updateClientStatus(id: string, isActive: boolean): Promise<Client> {
   return toClient((await api.patch<ApiClient>(`/clients/${encodeURIComponent(id)}/status`, { isActive })).data)
-}
+  export async function saveClient(input: ClientInput): Promise<Client> {
+    if (!input.id) return toClient((await api.post<ApiClient>('/clients', clientPayload(input))).data)
+    if (input.status === 'ARCHIVED') return updateClientStatus(input.id, false)
+    const updated = toClient((await api.patch<ApiClient>(`/clients/${input.id}`, clientPayload(input))).data)
+    return updated.status === 'ARCHIVED' ? updateClientStatus(input.id, true) : updated
+  }
 
-export async function deleteClient(id: string): Promise<void> { await updateClientStatus(id, false) }
+  export async function updateClientStatus(id: string, isActive: boolean): Promise<Client> {
+    return toClient((await api.patch<ApiClient>(`/clients/${encodeURIComponent(id)}/status`, { isActive })).data)
+  }
+
+  export async function deleteClient(id: string): Promise<void> { await updateClientStatus(id, false) }
+
+  export async function deleteClient(id: string): Promise<void> { await updateClientStatus(id, false) }
