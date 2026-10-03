@@ -17,3 +17,5 @@ export interface Client extends OwnedRecord {
   status: ClientStatus
   color: string
 }
+
+export type ClientInput = Omit<Client, keyof OwnedRecord> & Partial<OwnedRecord>

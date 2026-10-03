@@ -1,10 +1,15 @@
-import type { ReactNode } from 'react'
 import type { Project } from './project'
 import type { TimeEntry } from './timeTracking'
-import type { WorkspaceData } from './workspace'
+import type { Client } from './client'
+import type { Task } from './task'
 
-export type AnalyticsData = Pick<WorkspaceData, 'clients' | 'projects' | 'tasks' | 'time_entries' | 'invoices'>
-export type TimeSummaryEntry = Pick<TimeEntry, 'duration_minutes' | 'billable' | 'rate_snapshot' | 'invoice_id'>
+export interface AnalyticsData {
+  clients: Client[]
+  projects: Project[]
+  tasks: Task[]
+  time_entries: TimeEntry[]
+}
+export type TimeSummaryEntry = Pick<TimeEntry, 'duration_minutes' | 'billable' | 'rate_snapshot'>
 export type CsvValue = string | number | boolean | null | undefined
 
 export interface ProductivityPoint {
@@ -25,16 +30,6 @@ export interface ProjectTimePoint {
 
 export interface ProjectTimeChartProps {
   data: readonly ProjectTimePoint[]
-}
-
-export interface SummaryCardProps {
-  label: string
-  icon: ReactNode
-  value: ReactNode
-  unit?: string
-  foot: ReactNode
-  accent: 'blue' | 'green' | 'violet' | 'orange' | 'red'
-  compact?: boolean
 }
 
 export interface RecentActivityProps {

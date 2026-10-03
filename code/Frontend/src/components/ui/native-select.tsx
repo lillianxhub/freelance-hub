@@ -75,7 +75,11 @@ function NativeSelect({
       <SelectTrigger
         id={id}
         size={size}
-        className={cn(wrapperClassName, className)}
+        className={cn(
+          'rounded-lg border-input bg-white text-[var(--text)] text-[length:var(--font-size-base)]',
+          wrapperClassName,
+          className,
+        )}
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
         aria-label={ariaLabel}

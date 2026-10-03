@@ -18,8 +18,7 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @DisplayName("TimeEntry mapper tests")
 class TimeEntryMapperTest {
 

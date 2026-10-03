@@ -154,7 +154,7 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 | BR-04 | time entry ใน MVP ไม่คำนวณรายได้และไม่ต้องมี rate                                      |
 | BR-05 | time entry ใน MVP เก็บ duration และข้อมูลบริบทของงาน โดยไม่คำนวณรายได้                 |
 | BR-06 | การ archive ลูกค้าหรือโปรเจกต์ไม่ลบประวัติ และไม่อนุญาตให้เริ่ม timer ใหม่ในรายการนั้น |
-| BR-07 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC และแสดงผลตาม timezone ของผู้ใช้                 |
+| BR-07 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC เพื่อให้ timestamp ไม่กำกวม                    |
 | BR-08 | analytics ต้องไม่นับ timer ที่ยังไม่หยุดจนกว่าจะระบุเป็นข้อมูลประมาณการอย่างชัดเจน     |
 
 ---
@@ -178,7 +178,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-- ผู้ใช้เลือกช่วงวันที่และ timezone ได้
+- ผู้ใช้เลือกช่วงวันที่ได้
 - ระบบแสดง tracked hours, utilization และ project progress ของช่วงที่เลือก
 - ผลรวมใน dashboard ต้องตรงกับ time entries ภายใต้ตัวกรองเดียวกัน
 - กรณีไม่มีข้อมูลต้องแสดงค่า 0 และ empty state โดยไม่เกิดข้อผิดพลาด
@@ -417,7 +417,7 @@ flowchart LR
 - **Repository tests:** ownership filtering, date range, project/task และ time-entry queries
 - **Integration tests:** register/login, client/project CRUD, start-stop timer และ analytics summary
 - **Security tests:** ผู้ใช้ A ต้องไม่อ่านหรือแก้ข้อมูลของผู้ใช้ B แม้ทราบ resource ID
-- **Timezone tests:** time entry ที่ข้ามวัน UTC ต้องอยู่ในวันที่ถูกต้องตาม timezone ผู้ใช้
+- **Date-range tests:** time entry ที่อยู่ตรงขอบช่วงวันที่ต้องถูกรวมในผลลัพธ์อย่างถูกต้อง
 - **Concurrency tests:** การ start timer พร้อมกันต้องไม่สร้างรายการซ้ำ
 
 Definition of Done ของแต่ละ feature:
@@ -430,19 +430,14 @@ Definition of Done ของแต่ละ feature:
 
 ---
 
-## 13. Assumptions และคำถามที่ต้องยืนยันก่อน Production
+## 13. ข้อสรุปขอบเขตและการดำเนินงานของ MVP
 
-### Assumptions สำหรับ MVP
+### ขอบเขตที่ยืนยันแล้ว
 
-- ระบบเป็น single-user workspace: หนึ่งบัญชีมีเจ้าของคนเดียว
+- ระบบเป็น single-user workspace: หนึ่งบัญชีมีเจ้าของคนเดียว ยังไม่รองรับทีม/พนักงานหลายคนใน workspace เดียวกัน
 - MVP ใช้ time tracking เพื่อวิเคราะห์ชั่วโมงและ productivity เท่านั้น ไม่คำนวณรายได้และไม่ออก Invoice
-
-### คำถามที่ควรยืนยัน
-
-1. ต้องรองรับทีม/พนักงานหลายคนใน workspace ตั้งแต่รุ่นแรกหรือไม่
-2. ต้องการ timezone และรูปแบบวันเวลาใดเป็นค่าเริ่มต้น
-3. ต้องการ deploy provider ใดสำหรับ public URL
-4. ต้องการ retention period ของ time entries และ audit logs เท่าใด
+- Frontend deploy บน Vercel, Backend deploy บน Render และใช้ PostgreSQL บน Supabase
+- เก็บ time entries และ audit logs ไว้ตลอด โดยไม่มีการลบอัตโนมัติตามระยะเวลา (retention purge); การลบรายการเวลาที่ผู้ใช้สั่งยังเป็น soft delete ตามกฎของระบบ
 
 ---
 

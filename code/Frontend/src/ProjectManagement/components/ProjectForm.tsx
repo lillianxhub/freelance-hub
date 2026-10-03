@@ -2,6 +2,8 @@ import { Input } from '../../components/ui/input'
 import { NativeSelect } from '../../components/ui/native-select'
 import { Textarea } from '../../components/ui/textarea'
 import { Button } from '../../components/ui/button'
+import { DatePicker } from '../../components/ui/date-picker'
+import type { ChangeEvent } from 'react'
 import type { ProjectFormProps } from "../../types/projectsPage";
 import FormLabel from "../../components/FormLabel";
 
@@ -14,11 +16,15 @@ export default function ProjectForm({
   onSubmit,
   onCancel,
 }: ProjectFormProps) {
+  const handleDateChange = (name: 'start_date' | 'end_date', value: string) => {
+    onChange({ target: { name, value }, currentTarget: { name, value } } as ChangeEvent<HTMLInputElement>)
+  }
+
   return (
     <form onSubmit={onSubmit}>
-      {error && <p className="form-error">{error}</p>}
-      <div className="form-grid">
-        <div className="form-field">
+      {error && <p className="mb-4 rounded-lg bg-red-soft px-3 py-2 text-sm text-destructive">{error}</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="project-name" required>ชื่อโปรเจกต์</FormLabel>
           <Input
             id="project-name"
@@ -28,7 +34,7 @@ export default function ProjectForm({
             required
           />
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="project-client" required>ลูกค้า</FormLabel>
           <NativeSelect
             id="project-client"
@@ -49,7 +55,7 @@ export default function ProjectForm({
               ))}
           </NativeSelect>
         </div>
-        {/* <div className="form-field">
+        {/* <div className="flex flex-col gap-1.5">
           <label htmlFor="project-billing">รูปแบบราคา</label>
           <select
             id="project-billing"
@@ -62,7 +68,7 @@ export default function ProjectForm({
           </select>
         </div> */}
         {/* {value.billing_type === "HOURLY" ? (
-          <div className="form-field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="hourly-rate">อัตราต่อชั่วโมง</label>
             <input
               id="hourly-rate"
@@ -76,7 +82,7 @@ export default function ProjectForm({
             />
           </div>
         ) : (
-          <div className="form-field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="fixed-price">มูลค่างาน</label>
             <input
               id="fixed-price"
@@ -90,7 +96,7 @@ export default function ProjectForm({
             />
           </div>
         )} */}
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="budget-hours" required>จำนวนชั่วโมง</FormLabel>
           <Input
             id="budget-hours"
@@ -103,29 +109,27 @@ export default function ProjectForm({
             required
           />
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="start-date" required>วันที่เริ่ม</FormLabel>
-          <Input
+          <DatePicker
             id="start-date"
-            name="start_date"
-            type="date"
             value={value.start_date || ""}
-            onChange={onChange}
+            onChange={(nextValue) => handleDateChange('start_date', nextValue)}
             required
+            aria-label="วันที่เริ่ม"
           />
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="end-date" required>วันที่สิ้นสุด</FormLabel>
-          <Input
+          <DatePicker
             id="end-date"
-            name="end_date"
-            type="date"
             value={value.end_date || ""}
-            onChange={onChange}
+            onChange={(nextValue) => handleDateChange('end_date', nextValue)}
             required
+            aria-label="วันที่สิ้นสุด"
           />
         </div>
-        <div className="form-field">
+        <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="project-color" required>สีโปรเจกต์</FormLabel>
           <Input
             id="project-color"
@@ -136,7 +140,7 @@ export default function ProjectForm({
             required
           />
         </div>
-        {/* <div className="form-field">
+        {/* <div className="flex flex-col gap-1.5">
           <label htmlFor="project-currency">สกุลเงิน</label>
           <select
             id="project-currency"
@@ -149,7 +153,7 @@ export default function ProjectForm({
             <option value="EUR">EUR</option>
           </select>
         </div> */}
-        <div className="form-field full">
+        <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="project-description">รายละเอียด</FormLabel>
           <Textarea
             id="project-description"
@@ -159,16 +163,16 @@ export default function ProjectForm({
           />
         </div>
       </div>
-      <div className="form-actions">
+      <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
         <Button variant="outline"
-          className="button button-secondary"
+          className="h-10"
           type="button"
           onClick={onCancel}
         >
           ยกเลิก
         </Button>
         <Button variant="default"
-          className="button button-primary"
+          className="h-10"
           type="submit"
           disabled={saving}
         >

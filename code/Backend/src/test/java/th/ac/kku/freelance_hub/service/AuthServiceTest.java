@@ -14,10 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
-import th.ac.kku.freelance_hub.dto.request.LoginRequest;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
-import th.ac.kku.freelance_hub.dto.response.AuthResponse;
-import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.exception.EmailAlreadyExistsException;
 import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
@@ -35,7 +31,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
+import th.ac.kku.freelance_hub.dto.request.auth.LoginRequest;
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.response.auth.AuthResponse;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService Tests")
 class AuthServiceTest {

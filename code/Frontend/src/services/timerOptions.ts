@@ -2,7 +2,8 @@ import { api } from '../api/apiClient'
 import type { ApiProject, ApiTask } from '../types/api'
 import type { Project } from '../types/project'
 import type { Task } from '../types/task'
-import { toProject, toTask } from './workspace'
+import { toProject } from './project'
+import { toTask } from './task'
 
 const taskCache = new Map<string, Promise<Task[]>>()
 

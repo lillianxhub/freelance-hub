@@ -9,7 +9,7 @@ React + TypeScript frontend สำหรับจัดการลูกค้�
 3. จาก `code/Frontend` รัน `npm install` และ `npm run dev`
 4. เปิด `http://localhost:5173` และสมัครบัญชีใหม่
 
-Vite ส่งคำขอ `/api` ไปที่ backend ในเครื่องโดยอัตโนมัติ บน Vercel ให้ตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render staging ค่าเดียวกันทั้ง Preview และ Production ในช่วงทดสอบ (ไม่มี `/` ปิดท้าย) เพื่อให้ `vercel.ts` proxy `/api` แบบ same-origin ห้ามตั้ง `VITE_API_BASE_URL` เป็น backend URL ข้ามโดเมน เพราะ refresh cookie ใช้ `SameSite=Lax`
+กำหนด `VITE_API_BASE_URL` เป็น path บนโดเมนเว็บ เช่น `/api` ทั้ง Preview และ Production เพื่อให้ auth cookie ใช้ same-origin; ห้ามใส่ URL ข้ามโดเมนไว้ในค่านี้. Vite ใช้ path นี้เป็น proxy prefix และส่งคำขอไป backend ในเครื่องโดยอัตโนมัติ (หรือไปยัง `BACKEND_ORIGIN` เมื่อตั้งไว้). บน Vercel ให้ตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) ทั้ง Preview และ Production; `vercel.ts` proxy path `/api` ไป backend.
 
 การเข้าสู่ระบบใช้ `/api/auth/login`, การสมัครใช้ `/api/auth/register`, ต่ออายุ access token ผ่าน `/api/auth/refresh` และการตรวจผู้ใช้ใช้ `/api/users/me` Frontend เก็บ access token ในหน่วยความจำ; refresh token อยู่ใน HttpOnly cookie และไม่ได้เก็บใน Local Storage
 
