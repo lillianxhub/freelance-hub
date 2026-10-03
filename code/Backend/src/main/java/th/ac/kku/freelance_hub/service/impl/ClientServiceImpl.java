@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
@@ -178,6 +179,11 @@ public class ClientServiceImpl implements ClientService {
     @Transactional
     public ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive) {
         Client client = findOwnedClient(ownerId, clientId);
+        if (!isActive) {
+            // JPA persists these managed projects with the Client in this transaction.
+            clientRepository.findProjectsForClientStatusChange(ownerId, clientId)
+                    .forEach(project -> project.changeStatus(ProjectStatus.ARCHIVED));
+        }
         client.setActive(isActive);
         return clientMapper.toResponse(clientRepository.save(client));
     }
