@@ -197,7 +197,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.data[0].durationSeconds")
                         .value(1800))
                 .andExpect(jsonPath("$.data[0].description")
-                        .doesNotExist())
+                        .value("Listed work"))
                 .andExpect(jsonPath("$.meta.page").value(1))
                 .andExpect(jsonPath("$.meta.limit").value(5))
                 .andExpect(jsonPath("$.meta.total").value(6))

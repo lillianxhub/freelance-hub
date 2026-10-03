@@ -152,6 +152,14 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.data.endedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.durationSeconds").value(120));
 
+        mockMvc.perform(get("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id")
+                        .value(timerId.toString()))
+                .andExpect(jsonPath("$.data[0].description")
+                        .value("Work in progress"));
+
         mockMvc.perform(get("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
@@ -261,6 +269,8 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.data[0].endedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data[0].durationSeconds")
                         .value(5400))
+                .andExpect(jsonPath("$.data[0].description")
+                        .value("Updated design"))
                 .andExpect(jsonPath("$.meta.page").value(1))
                 .andExpect(jsonPath("$.meta.limit").value(20))
                 .andExpect(jsonPath("$.meta.total").value(1))
