@@ -53,6 +53,9 @@ class TimeEntryRepositoryTest {
     private TimeEntryService timeEntryService;
 
     @Autowired
+    private TimeEntryService timeEntryService;
+
+    @Autowired
     private EntityManager entityManager;
 
     @Test
