@@ -285,6 +285,50 @@ class ProjectServiceImplTest {
 
         assertThat(response.getStatus()).isEqualTo(ProjectStatus.ON_HOLD);
         verify(projectRepository).save(project);
+        verifyNoInteractions(timeEntryService);
+    }
+
+    @Test
+    void locksTimeEntriesWhenProjectBecomesCompleted() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.COMPLETED)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verify(timeEntryService).lockByProject(OWNER_ID, PROJECT_ID);
+        verify(projectRepository).save(project);
+    }
+
+    @Test
+    void doesNotRelockTimeEntriesWhenProjectIsAlreadyCompleted() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project.changeStatus(ProjectStatus.COMPLETED);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.COMPLETED)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verifyNoInteractions(timeEntryService);
     }
 
     @Test
