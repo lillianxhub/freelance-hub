@@ -1,6 +1,14 @@
+import { Card } from '../../../components/ui/card'
+import { Button } from '../../../components/ui/button'
+import { NativeSelect } from '../../../components/ui/native-select'
+import { Input } from '../../../components/ui/input'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
+import { Label } from '../../../components/ui/label'
+import { Textarea } from '../../../components/ui/textarea'
+import { Badge } from '../../../components/ui/badge'
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { FiClock, FiDollarSign, FiPlus, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
-import Modal from '../../../components/Modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog'
 import PageHeader from '../../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../../components/ViewState'
 import { useWorkspace } from '../../../Workspace/useWorkspace'
@@ -63,50 +71,53 @@ function FinancesPage() {
 
   return (
     <div className="page-view">
-      <PageHeader eyebrow="จัดการ / การเงิน" title="การเงิน" description="ติดตามกระแสเงินสด รายได้ ค่าใช้จ่าย และเงินที่รอเรียกเก็บ" actions={<button className="button button-primary" type="button" onClick={() => openForm()}><FiPlus aria-hidden="true" /> เพิ่มรายการ</button>} />
+      <PageHeader eyebrow="จัดการ / การเงิน" title="การเงิน" description="ติดตามกระแสเงินสด รายได้ ค่าใช้จ่าย และเงินที่รอเรียกเก็บ" actions={<Button variant="default" className="button button-primary" type="button" onClick={() => openForm()}><FiPlus aria-hidden="true" /> เพิ่มรายการ</Button>} />
 
       <div className="summary-grid">
-        <article className="metric-card accent-green"><div className="metric-top"><span>เงินรับแล้ว</span><span className="metric-icon"><FiTrendingUp aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(income + paidInvoices)}</div><div className="metric-foot">ใบแจ้งหนี้ ที่ชำระแล้ว + รายได้อื่น</div></article>
-        <article className="metric-card accent-red"><div className="metric-top"><span>ค่าใช้จ่าย</span><span className="metric-icon"><FiTrendingDown aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(expenses)}</div><div className="metric-foot">ค่าใช้จ่ายที่บันทึกทั้งหมด</div></article>
-        <article className="metric-card accent-orange"><div className="metric-top"><span>ยอดค้างรับ</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(outstanding)}</div><div className="metric-foot">ใบแจ้งหนี้ ที่ออกแล้วแต่ยังไม่ครบ</div></article>
-        <article className="metric-card accent-violet"><div className="metric-top"><span>เวลาที่ยังไม่วางบิล</span><span className="metric-icon"><FiDollarSign aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(unbilled)}</div><div className="metric-foot">มูลค่าจาก เวลาที่คิดค่าบริการ</div></article>
+        <Card asChild><article className="metric-card accent-green"><div className="metric-top"><span>เงินรับแล้ว</span><span className="metric-icon"><FiTrendingUp aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(income + paidInvoices)}</div><div className="metric-foot">ใบแจ้งหนี้ ที่ชำระแล้ว + รายได้อื่น</div></article></Card>
+        <Card asChild><article className="metric-card accent-red"><div className="metric-top"><span>ค่าใช้จ่าย</span><span className="metric-icon"><FiTrendingDown aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(expenses)}</div><div className="metric-foot">ค่าใช้จ่ายที่บันทึกทั้งหมด</div></article></Card>
+        <Card asChild><article className="metric-card accent-orange"><div className="metric-top"><span>ยอดค้างรับ</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(outstanding)}</div><div className="metric-foot">ใบแจ้งหนี้ ที่ออกแล้วแต่ยังไม่ครบ</div></article></Card>
+        <Card asChild><article className="metric-card accent-violet"><div className="metric-top"><span>เวลาที่ยังไม่วางบิล</span><span className="metric-icon"><FiDollarSign aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatMoney(unbilled)}</div><div className="metric-foot">มูลค่าจาก เวลาที่คิดค่าบริการ</div></article></Card>
       </div>
 
-      <section className="panel finance-overview">
+      <Card asChild><section className="panel finance-overview">
         <div><span>กำไรสุทธิโดยประมาณ</span><strong className={net >= 0 ? 'positive-money' : 'negative-money'}>{formatMoney(net)}</strong><small>คำนวณจากเงินที่รับแล้ว หักค่าใช้จ่ายที่บันทึก</small></div>
         <div className="finance-bars"><div><span>รายรับ</span><i><b style={{ width: `${Math.min(100, ((income + paidInvoices) / Math.max(1, income + paidInvoices + expenses)) * 100)}%` }} /></i></div><div><span>รายจ่าย</span><i className="expense"><b style={{ width: `${Math.min(100, (expenses / Math.max(1, income + paidInvoices + expenses)) * 100)}%` }} /></i></div></div>
-      </section>
+      </section></Card>
 
-      <section className="panel">
+      <Card asChild><section className="panel">
         <div className="panel-heading"><div><h2>รายรับและรายจ่าย</h2><p>รายการที่เพิ่มด้วยตนเอง แยกจากการรับชำระ ใบแจ้งหนี้</p></div><strong>{entries.length} รายการ</strong></div>
         <div className="entry-filters finance-filters">
-          <select value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value as FinanceFilters['type'] }))}><option value="ALL">ทุกประเภท</option><option value="INCOME">รายได้</option><option value="EXPENSE">ค่าใช้จ่าย</option></select>
-          <select value={filters.project} onChange={(event) => setFilters((current) => ({ ...current, project: event.target.value }))}><option value="ALL">ทุกโปรเจกต์</option>{data.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
-          <input type="date" value={filters.from} aria-label="จากวันที่" onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} />
-          <input type="date" value={filters.to} aria-label="ถึงวันที่" onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} />
+          <NativeSelect value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value as FinanceFilters['type'] }))}><option value="ALL">ทุกประเภท</option><option value="INCOME">รายได้</option><option value="EXPENSE">ค่าใช้จ่าย</option></NativeSelect>
+          <NativeSelect value={filters.project} onChange={(event) => setFilters((current) => ({ ...current, project: event.target.value }))}><option value="ALL">ทุกโปรเจกต์</option>{data.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</NativeSelect>
+          <Input type="date" value={filters.from} aria-label="จากวันที่" onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} />
+          <Input type="date" value={filters.to} aria-label="ถึงวันที่" onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} />
         </div>
         {entries.length === 0 ? <EmptyState icon={<FiDollarSign aria-hidden="true" />} title="ยังไม่มีรายการFinances" description="เพิ่มรายได้หรือค่าใช้จ่าย หรือเปลี่ยนตัวกรองเพื่อดูข้อมูล" /> : (
-          <div className="table-wrap"><table className="data-table"><thead><tr><th>รายการ</th><th>วันที่</th><th>โปรเจกต์</th><th>ประเภท</th><th>จำนวนเงิน</th><th /></tr></thead><tbody>{entries.map((entry) => {
+          <div className="table-wrap"><Table className="data-table"><TableHeader><TableRow><TableHead>รายการ</TableHead><TableHead>วันที่</TableHead><TableHead>โปรเจกต์</TableHead><TableHead>ประเภท</TableHead><TableHead>จำนวนเงิน</TableHead><TableHead /></TableRow></TableHeader><TableBody>{entries.map((entry) => {
             const project = data.projects.find((item) => item.id === entry.project_id)
-            return <tr key={entry.id}><td><div className="table-primary"><span className={`finance-icon ${entry.type.toLowerCase()}`}>{entry.type === 'INCOME' ? <FiTrendingUp aria-hidden="true" /> : <FiTrendingDown aria-hidden="true" />}</span><span><strong>{entry.category}</strong><small>{entry.notes || 'ไม่มีรายละเอียด'}</small></span></div></td><td>{formatDate(entry.entry_date)}</td><td>{project?.name || 'ทั่วไป'}</td><td><span className={`type-badge ${entry.type === 'INCOME' ? 'income' : 'expense'}`}>{entry.type === 'INCOME' ? 'รายได้' : 'ค่าใช้จ่าย'}</span></td><td><strong className={entry.type === 'INCOME' ? 'positive-money' : 'negative-money'}>{entry.type === 'INCOME' ? '+' : '−'}{formatMoney(entry.amount, entry.currency)}</strong></td><td><div className="table-actions"><button className="mini-button" type="button" onClick={() => openForm(entry)}>แก้ไข</button><button className="mini-button" type="button" onClick={() => remove('finance_entries', entry.id)}>ลบ</button></div></td></tr>
-          })}</tbody></table></div>
+            return <TableRow key={entry.id}><TableCell><div className="table-primary"><span className={`finance-icon ${entry.type.toLowerCase()}`}>{entry.type === 'INCOME' ? <FiTrendingUp aria-hidden="true" /> : <FiTrendingDown aria-hidden="true" />}</span><span><strong>{entry.category}</strong><small>{entry.notes || 'ไม่มีรายละเอียด'}</small></span></div></TableCell><TableCell>{formatDate(entry.entry_date)}</TableCell><TableCell>{project?.name || 'ทั่วไป'}</TableCell><TableCell><Badge variant={entry.type === 'INCOME' ? 'secondary' : 'destructive'} className={`type-badge ${entry.type === 'INCOME' ? 'income' : 'expense'}`}>{entry.type === 'INCOME' ? 'รายได้' : 'ค่าใช้จ่าย'}</Badge></TableCell><TableCell><strong className={entry.type === 'INCOME' ? 'positive-money' : 'negative-money'}>{entry.type === 'INCOME' ? '+' : '−'}{formatMoney(entry.amount, entry.currency)}</strong></TableCell><TableCell><div className="table-actions"><Button variant="ghost" className="mini-button" type="button" onClick={() => openForm(entry)}>แก้ไข</Button><Button variant="ghost" className="mini-button" type="button" onClick={() => remove('finance_entries', entry.id)}>ลบ</Button></div></TableCell></TableRow>
+          })}</TableBody></Table></div>
         )}
-      </section>
+      </section></Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? 'แก้ไขรายการ' : 'เพิ่มรายได้หรือค่าใช้จ่าย'}>
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
+        <DialogContent className="workspace-dialog">
+          <DialogHeader><DialogTitle>{form.id ? 'แก้ไขรายการ' : 'เพิ่มรายได้หรือค่าใช้จ่าย'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit}>
           {formError && <p className="form-error">{formError}</p>}
           <div className="form-grid">
-            <div className="form-field"><label htmlFor="finance-type">ประเภท</label><select id="finance-type" name="type" value={form.type} onChange={handleChange}><option value="INCOME">รายได้</option><option value="EXPENSE">ค่าใช้จ่าย</option></select></div>
-            <div className="form-field"><label htmlFor="finance-category">หมวดหมู่</label><input id="finance-category" name="category" value={form.category} onChange={handleChange} placeholder="เช่น Software, Consulting" required /></div>
-            <div className="form-field"><label htmlFor="finance-amount">จำนวนเงิน</label><input id="finance-amount" name="amount" type="number" min="0.01" step="0.01" value={form.amount} onChange={handleChange} required /></div>
-            <div className="form-field"><label htmlFor="finance-date">วันที่</label><input id="finance-date" name="entry_date" type="date" value={form.entry_date} onChange={handleChange} required /></div>
-            <div className="form-field full"><label htmlFor="finance-project">โปรเจกต์ (ไม่บังคับ)</label><select id="finance-project" name="project_id" value={form.project_id} onChange={handleChange}><option value="">รายการทั่วไป</option>{data.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></div>
-            <div className="form-field full"><label htmlFor="finance-notes">รายละเอียด</label><textarea id="finance-notes" name="notes" value={form.notes} onChange={handleChange} /></div>
+            <div className="form-field"><Label htmlFor="finance-type">ประเภท</Label><NativeSelect id="finance-type" name="type" value={form.type} onChange={handleChange}><option value="INCOME">รายได้</option><option value="EXPENSE">ค่าใช้จ่าย</option></NativeSelect></div>
+            <div className="form-field"><Label htmlFor="finance-category">หมวดหมู่</Label><Input id="finance-category" name="category" value={form.category} onChange={handleChange} placeholder="เช่น Software, Consulting" required /></div>
+            <div className="form-field"><Label htmlFor="finance-amount">จำนวนเงิน</Label><Input id="finance-amount" name="amount" type="number" min="0.01" step="0.01" value={form.amount} onChange={handleChange} required /></div>
+            <div className="form-field"><Label htmlFor="finance-date">วันที่</Label><Input id="finance-date" name="entry_date" type="date" value={form.entry_date} onChange={handleChange} required /></div>
+            <div className="form-field full"><Label htmlFor="finance-project">โปรเจกต์ (ไม่บังคับ)</Label><NativeSelect id="finance-project" name="project_id" value={form.project_id} onChange={handleChange}><option value="">รายการทั่วไป</option>{data.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</NativeSelect></div>
+            <div className="form-field full"><Label htmlFor="finance-notes">รายละเอียด</Label><Textarea id="finance-notes" name="notes" value={form.notes} onChange={handleChange} /></div>
           </div>
-          <div className="form-actions"><button className="button button-secondary" type="button" onClick={() => setModalOpen(false)}>ยกเลิก</button><button className="button button-primary" type="submit">บันทึกรายการ</button></div>
+          <div className="form-actions"><Button variant="outline" className="button button-secondary" type="button" onClick={() => setModalOpen(false)}>ยกเลิก</Button><Button variant="default" className="button button-primary" type="submit">บันทึกรายการ</Button></div>
         </form>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,20 +1,38 @@
+import { Card } from '../../components/ui/card'
+import { Badge } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
+import { Label } from '../../components/ui/label'
+import { NativeSelect } from '../../components/ui/native-select'
+import { Input } from '../../components/ui/input'
 import { formatTimer } from "../../utils/formatters";
 import { FiPlay, FiSquare } from "react-icons/fi";
 import { useTimer } from "../useTimer";
-import type { WorkspaceContextValue } from "../../types/workspaceContext";
+import type { TimerWorkspace } from "../../types/timerWorkspace";
+import { getErrorMessage } from '../../api/apiError'
+import { toast } from 'sonner'
 
 interface TimerPanelProps {
-  workspace: WorkspaceContextValue;
+  workspace: TimerWorkspace;
+  onProjectOptionsOpen?: () => void;
 }
 
-export default function TimerPanel({ workspace }: TimerPanelProps) {
-  const timer = useTimer(workspace);
+export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPanelProps) {
+  const timer = useTimer(workspace, { loadTaskOptions: true });
+  const runTimerAction = async (action: () => Promise<void>) => {
+    try {
+      await action()
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'ไม่สามารถดำเนินการกับตัวจับเวลาได้'))
+    }
+  }
+
   return (
-    <section className="panel big-timer-card">
-      <span className={`timer-pill${timer.runningEntry ? " live" : ""}`}>
+    <>
+    <Card asChild><section className="panel big-timer-card">
+      <Badge variant="secondary" className={`timer-pill${timer.runningEntry ? " live" : ""}`}>
         <i />
         {timer.runningEntry ? "Timer กำลังทำTask" : "พร้อมเริ่มTask"}
-      </span>
+      </Badge>
       <div className="big-timer">{formatTimer(timer.elapsedSeconds)}</div>
       {timer.runningEntry ? (
         <>
@@ -33,30 +51,31 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
             <span><small>รายละเอียด</small><strong>{timer.runningEntry.description || "ไม่มีรายละเอียด"}</strong></span>
           </div>
           <div className="timer-button-row">
-            <button
+            <Button variant="destructive"
               className="button button-danger wide"
               type="button"
-              onClick={timer.stopTimer}
+              onClick={() => void runTimerAction(timer.stopTimer)}
             >
               <FiSquare aria-hidden="true" /> หยุดและบันทึก
-            </button>
-            <button
+            </Button>
+            <Button variant="outline"
               className="button button-secondary"
               type="button"
-              onClick={timer.cancelTimer}
+              onClick={() => void runTimerAction(timer.cancelTimer)}
             >
               ยกเลิก
-            </button>
+            </Button>
           </div>
         </>
       ) : (
         <>
           <div className="timer-selects">
             <div className="form-field">
-              <label htmlFor="timer-project">โปรเจกต์</label>
-              <select
+              <Label htmlFor="timer-project">โปรเจกต์</Label>
+              <NativeSelect
                 id="timer-project"
                 value={timer.timerProjectId}
+                onOpenChange={(open) => { if (open) onProjectOptionsOpen?.() }}
                 onChange={(event) => {
                   timer.setSelectedProject(event.target.value);
                   timer.setSelectedTask("");
@@ -67,11 +86,11 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
                     {project.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="form-field">
-              <label htmlFor="timer-task">งาน</label>
-              <select
+              <Label htmlFor="timer-task">งาน</Label>
+              <NativeSelect
                 id="timer-task"
                 value={timer.selectedTask}
                 onChange={(event) => timer.setSelectedTask(event.target.value)}
@@ -82,15 +101,15 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
                     {task.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
           </div>
           {timer.optionsError && (
             <p className="form-message error">{timer.optionsError}</p>
           )}
           <div className="form-field">
-            <label htmlFor="timer-description">คำอธิบาย</label>
-            <input
+            <Label htmlFor="timer-description">คำอธิบาย</Label>
+            <Input
               id="timer-description"
               value={timer.description}
               onChange={(event) => timer.setDescription(event.target.value)}
@@ -105,16 +124,17 @@ export default function TimerPanel({ workspace }: TimerPanelProps) {
             />
             <span>เวลาที่คิดค่าบริการ</span>
           </label> */}
-          <button
+          <Button variant="default"
             className="button button-primary wide"
             type="button"
             disabled={!timer.timerProjectId}
-            onClick={timer.startTimer}
+            onClick={() => void runTimerAction(timer.startTimer)}
           >
             <FiPlay aria-hidden="true" /> เริ่มจับเวลา
-          </button>
+          </Button>
         </>
       )}
-    </section>
+    </section></Card>
+    </>
   );
 }

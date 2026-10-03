@@ -123,9 +123,16 @@ class ProjectControllerTest {
                 eq(ProjectStatus.ACTIVE),
                 eq(CLIENT_ID),
                 any(Pageable.class),
-                eq(false)
+                eq(false), eq(false)
         )).thenReturn(new PageImpl<>(
-            List.of(ProjectListItemResponse.builder().id(PROJECT_ID).build()),
+            List.of(ProjectListItemResponse.builder()
+                    .id(PROJECT_ID)
+                    .timeTracking(ProjectListItemResponse.TimeTracking.builder()
+                            .trackedSeconds(3600)
+                            .trackedHours(new BigDecimal("1.00"))
+                            .usagePercent(new BigDecimal("50.00"))
+                            .build())
+                    .build()),
             PageRequest.of(1, 5),
             6
         ));
@@ -139,6 +146,9 @@ class ProjectControllerTest {
                         .param("sortBy", "project_name")
                         .param("direction", "DESC"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].timeTracking.trackedSeconds").value(3600))
+                .andExpect(jsonPath("$.data[0].timeTracking.trackedHours").value(1.0))
+                .andExpect(jsonPath("$.data[0].timeTracking.usagePercent").value(50.0))
                 .andExpect(jsonPath("$.data[0].tasks").doesNotExist());
 
         verify(projectService).list(
@@ -153,7 +163,7 @@ class ProjectControllerTest {
                                         .getOrderFor("name")
                                         .isDescending()
                 ),
-                eq(false)
+                eq(false), eq(false)
         );
     }
 
@@ -163,7 +173,7 @@ class ProjectControllerTest {
                 .thenReturn(User.builder().id(OWNER_ID).build());
         when(projectService.list(
                 eq(OWNER_ID), eq(null), eq(null), eq(null),
-                any(Pageable.class), eq(true)
+                any(Pageable.class), eq(true), eq(false)
         )).thenReturn(new PageImpl<>(List.of(
                 ProjectListItemResponse.builder()
                         .id(PROJECT_ID)
@@ -177,8 +187,32 @@ class ProjectControllerTest {
 
         verify(projectService).list(
                 eq(OWNER_ID), eq(null), eq(null), eq(null),
-                any(Pageable.class), eq(true)
+                any(Pageable.class), eq(true), eq(false)
         );
+    }
+
+    @Test
+    void listAcceptsAllStatuses() throws Exception {
+        when(userService.getCurrentUserEntity())
+                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(projectService.list(
+                eq(OWNER_ID), eq(null), eq(null), eq(null),
+                any(Pageable.class), eq(false), eq(true)
+        )).thenReturn(new PageImpl<>(List.of(
+                ProjectListItemResponse.builder()
+                        .id(PROJECT_ID)
+                        .status(ProjectStatus.ARCHIVED)
+                        .build()
+        )));
+
+        mockMvc.perform(get("/api/projects")
+                        .param("page", "1")
+                        .param("limit", "10")
+                        .param("sortBy", "project_name")
+                        .param("direction", "ASC")
+                        .param("status", "ALL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("ARCHIVED"));
     }
 
     @Test
@@ -350,6 +384,11 @@ class ProjectControllerTest {
                         .taskProgress(ProjectListItemResponse.TaskProgress.builder()
                                 .totalTasks(2).completedTasks(1)
                                 .percent(new BigDecimal("50.00")).build())
+                        .timeTracking(ProjectListItemResponse.TimeTracking.builder()
+                                .trackedSeconds(36000)
+                                .trackedHours(new BigDecimal("10.00"))
+                                .usagePercent(new BigDecimal("27.78"))
+                                .build())
                         .build());
 
         mockMvc.perform(get("/api/projects/{id}", PROJECT_ID))
@@ -365,7 +404,9 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.taskProgress.totalTasks").value(2))
                 .andExpect(jsonPath("$.data.taskProgress.completedTasks").value(1))
                 .andExpect(jsonPath("$.data.taskProgress.percent").value(50.0))
-                .andExpect(jsonPath("$.data.timeTracking").value(nullValue()))
+                .andExpect(jsonPath("$.data.timeTracking.trackedSeconds").value(36000))
+                .andExpect(jsonPath("$.data.timeTracking.trackedHours").value(10.0))
+                .andExpect(jsonPath("$.data.timeTracking.usagePercent").value(27.78))
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error").value(nullValue()));
 

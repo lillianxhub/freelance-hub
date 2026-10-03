@@ -2,6 +2,7 @@ package th.ac.kku.freelance_hub.repository;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,6 +46,11 @@ public interface ProjectRepository
             UUID ownerId
     );
 
+    long countByOwnerIdAndStatusAndDeletedAtIsNull(
+            UUID ownerId,
+            ProjectStatus status
+    );
+
     Page<Project> findAllByOwnerId(
             UUID ownerId,
             Pageable pageable
@@ -61,4 +67,13 @@ public interface ProjectRepository
             UUID clientId,
             Pageable pageable
     );
+    @EntityGraph(attributePaths = "client")
+    @Query("""
+            SELECT p
+            FROM Project p
+            WHERE p.owner.id = :ownerId
+            AND p.deletedAt IS NULL
+            ORDER BY p.name, p.id
+            """)
+    List<Project> findVisibleByOwnerId(@Param("ownerId") UUID ownerId);
 }

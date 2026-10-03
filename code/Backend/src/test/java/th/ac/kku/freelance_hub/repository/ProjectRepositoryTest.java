@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.repository;
 import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.domain.entity.Client;
@@ -9,6 +10,7 @@ import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +45,45 @@ class ProjectRepositoryTest {
     private TaskRepository taskRepository;
 
     @Autowired
+    private TimeEntryRepository timeEntryRepository;
+
+    @Autowired
     private EntityManager entityManager;
+
+    @Test
+    void projectListAndDetailCountCompletedTimeButNotRunningTimer() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("project-time-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Time Client"));
+        Project project = new Project(owner, client, "Timed Project");
+        project.updateDetails("Timed Project", null, null, null, null, 120);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project = projectRepository.saveAndFlush(project);
+
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, null, "Finished work",
+                Instant.parse("2026-09-29T09:00:00Z"), 3600
+        ));
+        timeEntryRepository.saveAndFlush(TimeEntry.startTimer(
+                owner, project, null, "Running work",
+                Instant.parse("2026-09-30T09:00:00Z")
+        ));
+
+        var listed = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10)
+        ).getContent().get(0).getTimeTracking();
+        var detail = projectService.getById(owner.getId(), project.getId())
+                .getTimeTracking();
+
+        assertThat(listed.getTrackedSeconds()).isEqualTo(3600);
+        assertThat(listed.getTrackedHours()).isEqualByComparingTo("1.00");
+        assertThat(listed.getUsagePercent()).isEqualByComparingTo("50.00");
+        assertThat(detail.getTrackedSeconds()).isEqualTo(listed.getTrackedSeconds());
+        assertThat(detail.getTrackedHours()).isEqualByComparingTo(listed.getTrackedHours());
+        assertThat(detail.getUsagePercent()).isEqualByComparingTo(listed.getUsagePercent());
+    }
 
     @Test
     void filtersProjectsByOwnerStatusAndClient() {
@@ -111,6 +151,48 @@ class ProjectRepositoryTest {
         ).getContent())
                 .extracting(Project::getId)
                 .containsExactly(planned.getId());
+    }
+
+    @Test
+    void countsOnlyOwnedActiveAndCompletedProjectsThatAreNotDeleted() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("count-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "Count Client"));
+
+        Project active = new Project(owner, client, "Active");
+        active.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(active);
+
+        Project completed = new Project(owner, client, "Completed");
+        completed.changeStatus(ProjectStatus.ACTIVE);
+        completed.changeStatus(ProjectStatus.COMPLETED);
+        projectRepository.saveAndFlush(completed);
+
+        Project deleted = new Project(owner, client, "Deleted");
+        deleted.changeStatus(ProjectStatus.ACTIVE);
+        deleted.archive();
+        projectRepository.saveAndFlush(deleted);
+
+        projectRepository.saveAndFlush(new Project(owner, client, "Planned"));
+
+        User otherOwner = userRepository.saveAndFlush(User.builder()
+                .email("count-other-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client otherClient = clientRepository.saveAndFlush(
+                new Client(otherOwner, "Other Client"));
+        Project otherActive = new Project(otherOwner, otherClient, "Other Active");
+        otherActive.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(otherActive);
+
+        var counts = projectService.countActiveAndCompleted(owner.getId());
+
+        assertThat(counts.activeCount()).isEqualTo(1);
+        assertThat(counts.completedCount()).isEqualTo(1);
+        assertThat(counts.totalCount()).isEqualTo(2);
     }
 
         @Test
@@ -210,6 +292,15 @@ class ProjectRepositoryTest {
                 .extracting(response -> response.getId())
                 .containsExactlyInAnyOrder(planned.getId(), active.getId());
         assertThat(defaultList.getTotalElements()).isEqualTo(2);
+
+        var allStatusesList = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10),
+                false, true);
+        assertThat(allStatusesList.getContent())
+                .extracting(response -> response.getId())
+                .containsExactlyInAnyOrder(
+                        planned.getId(), active.getId(), archived.getId());
+        assertThat(allStatusesList.getTotalElements()).isEqualTo(3);
 
         var paginatedList = projectService.list(
                 owner.getId(), null, null, null, PageRequest.of(0, 1));

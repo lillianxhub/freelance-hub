@@ -1,8 +1,10 @@
 package th.ac.kku.freelance_hub.dto.response;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,4 +35,8 @@ public class ClientResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private Long version;
+
+    /** Absent unless the caller requests include=projects or include=projects.tasks. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<ClientProjectSummaryResponse> projects;
 }
