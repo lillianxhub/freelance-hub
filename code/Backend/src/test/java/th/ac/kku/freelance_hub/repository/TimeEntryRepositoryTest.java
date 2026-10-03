@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.IllegalTransactionStateException;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -24,6 +27,7 @@ import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -49,7 +53,76 @@ class TimeEntryRepositoryTest {
     private TimeEntryQueryService timeEntryQueryService;
 
     @Autowired
+    private TimeEntryService timeEntryService;
+
+    @Autowired
     private EntityManager entityManager;
+
+    @Test
+    void locksProjectEntriesIncludingDeletedEntriesAndPreservesExistingLocks() {
+        User owner = saveUser("project-lock-owner@example.com");
+        User otherOwner = saveUser("project-lock-other@example.com");
+        Project project = saveActiveProject(owner, "Lock Target");
+        Project otherProject = saveActiveProject(owner, "Other Project");
+        Project otherAccountProject = saveActiveProject(otherOwner, "Other Account");
+        Instant start = Instant.parse("2026-10-03T08:00:00Z");
+        TimeEntry manual = saveManualEntry(owner, project, null, "Manual", start);
+        TimeEntry deleted = saveManualEntry(owner, project, null, "Deleted", start);
+        deleted.softDelete(start.plusSeconds(3600));
+        TimeEntry existing = saveManualEntry(owner, project, null, "Locked", start);
+        Instant originalLock = start.plusSeconds(4000);
+        existing.lock(originalLock);
+        TimeEntry timer = TimeEntry.startTimer(owner, project, null, "Timer", start);
+        timer.stop(start.plusSeconds(90));
+        timeEntryRepository.saveAndFlush(timer);
+        TimeEntry unrelated = saveManualEntry(owner, otherProject, null, "Other", start);
+        TimeEntry otherAccount = saveManualEntry(
+                otherOwner, otherAccountProject, null, "Other account", start
+        );
+        timeEntryRepository.flush();
+        entityManager.clear();
+
+        assertThat(timeEntryRepository.findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(
+                otherOwner.getId(), project.getId()
+        )).isEmpty();
+        var candidates = timeEntryRepository.findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(
+                owner.getId(), project.getId()
+        );
+        assertThat(candidates).extracting(TimeEntry::getId)
+                .containsExactlyInAnyOrder(manual.getId(), deleted.getId(), timer.getId());
+        assertThat(candidates).allSatisfy(entry ->
+                assertThat(entityManager.getLockMode(entry))
+                        .isEqualTo(LockModeType.PESSIMISTIC_WRITE));
+
+        timeEntryService.lockByProject(owner.getId(), project.getId());
+        entityManager.clear();
+
+        Instant lockTime = timeEntryRepository.findById(manual.getId()).orElseThrow().getLockedAt();
+        assertThat(lockTime).isNotNull();
+        assertThat(timeEntryRepository.findById(deleted.getId()).orElseThrow().getLockedAt())
+                .isEqualTo(lockTime);
+        assertThat(timeEntryRepository.findById(timer.getId()).orElseThrow().getLockedAt())
+                .isEqualTo(lockTime);
+        assertThat(timeEntryRepository.findById(existing.getId()).orElseThrow().getLockedAt())
+                .isEqualTo(originalLock);
+        assertThat(timeEntryRepository.findById(unrelated.getId()).orElseThrow().getLockedAt())
+                .isNull();
+        assertThat(timeEntryRepository.findById(otherAccount.getId()).orElseThrow().getLockedAt())
+                .isNull();
+
+        timeEntryService.lockByProject(owner.getId(), project.getId());
+        entityManager.clear();
+        assertThat(timeEntryRepository.findById(manual.getId()).orElseThrow().getLockedAt())
+                .isEqualTo(lockTime);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void projectLockRequiresTheCallersTransaction() {
+        assertThatThrownBy(() -> timeEntryService.lockByProject(
+                java.util.UUID.randomUUID(), java.util.UUID.randomUUID()
+        )).isInstanceOf(IllegalTransactionStateException.class);
+    }
 
     @Test
     void findsEntryOnlyForItsOwner() {

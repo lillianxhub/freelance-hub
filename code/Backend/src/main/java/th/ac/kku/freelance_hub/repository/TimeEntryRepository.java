@@ -63,6 +63,16 @@ public interface TimeEntryRepository
     Page<TimeEntry> findAllByOwnerId(UUID ownerId, Pageable pageable);
 
     /**
+     * Loads every unlocked entry for a project, including soft-deleted entries
+     * and running timers. Requires a transaction; row locks last until it ends.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<TimeEntry> findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(
+            UUID ownerId,
+            UUID projectId
+    );
+
+    /**
      * Finds entries in a half-open UTC range: start inclusive, end exclusive.
      */
     Page<TimeEntry> findAllByOwnerIdAndStartedAtGreaterThanEqualAndStartedAtLessThan(
