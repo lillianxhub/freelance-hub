@@ -28,20 +28,18 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.service.UserService;
 
-import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
 import static org.hamcrest.Matchers.nullValue;
-
-import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
-
+import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @ExtendWith(MockitoExtension.class)
 class ProjectControllerTest {
 

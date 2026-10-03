@@ -33,16 +33,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
-import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 import th.ac.kku.freelance_hub.exception.ClientExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 @ExtendWith(MockitoExtension.class)
 class ClientControllerTest {
 

@@ -19,15 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.Predicate;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.Project;
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
 /** Read-only detail, list, and aggregate queries for time entries. */
 @Service
 @Transactional(readOnly = true)

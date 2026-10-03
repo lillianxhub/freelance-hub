@@ -2,6 +2,7 @@ import type { CurrencyCode, OwnedRecord } from './common'
 
 export interface TimeEntry extends OwnedRecord {
   project_id: string
+  project_name?: string
   task_id: string | null
   task_name?: string
   description: string
@@ -12,8 +13,9 @@ export interface TimeEntry extends OwnedRecord {
   billable: boolean
   rate_snapshot: number
   currency: CurrencyCode
-  invoice_id: string | null
 }
+
+export type TimeEntryInput = Omit<TimeEntry, keyof OwnedRecord> & Partial<OwnedRecord>
 
 export interface ManualTimeEntryPayload {
   projectId: string

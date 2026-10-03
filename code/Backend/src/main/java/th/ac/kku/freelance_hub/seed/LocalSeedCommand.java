@@ -9,7 +9,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import th.ac.kku.freelance_hub.FreelanceHubApplication;
 
-/** One-shot local development seeder. Not part of normal application startup. */
+/**
+ * One-shot local development seeder. Not part of normal application startup.
+ */
 public final class LocalSeedCommand {
 
     private static final Set<String> LOCAL_DATABASE_HOSTS = Set.of("localhost", "127.0.0.1", "postgres");
@@ -18,6 +20,7 @@ public final class LocalSeedCommand {
     }
 
     public static void main(String[] args) {
+
         if (!"true".equalsIgnoreCase(System.getenv("LOCAL_SEED_RUN"))) {
             throw new IllegalStateException("Set LOCAL_SEED_RUN=true explicitly to use the local seeder.");
         }
@@ -35,10 +38,10 @@ public final class LocalSeedCommand {
                 .initializers(applicationContext -> requireLocalDatabase(
                         applicationContext.getEnvironment().getProperty("spring.datasource.url")))
                 .run(args)) {
-            String email = System.getenv().getOrDefault("LOCAL_SEED_EMAIL", "seed.local@example.test");
-            LocalSeedService.SeedResult result = context.getBean(LocalSeedService.class).seed(email, password);
-            System.out.printf("Local seed ready: user=%s client=%s project=%s task=%s%n",
-                    result.userId(), result.clientId(), result.projectId(), result.taskId());
+            String email = System.getenv().getOrDefault("LOCAL_SEED_EMAIL", "local.seed@example.test");
+            boolean runningTimer = "true".equalsIgnoreCase(System.getenv("LOCAL_SEED_RUNNING_TIMER"));
+            LocalSeedService.SeedResult result = context.getBean(LocalSeedService.class).seed(email, password, runningTimer);
+            System.out.printf("Local seed owner id=%s%n", result.userId());
         }
     }
 
@@ -48,7 +51,8 @@ public final class LocalSeedCommand {
         }
         URI uri = URI.create(jdbcUrl.substring("jdbc:".length()));
         if (!LOCAL_DATABASE_HOSTS.contains(uri.getHost()) || uri.getUserInfo() != null) {
-            throw new IllegalStateException("Local seed may connect only to localhost or the local Docker postgres service.");
+            throw new IllegalStateException(
+                    "Local seed may connect only to localhost or the local Docker postgres service.");
         }
     }
 }

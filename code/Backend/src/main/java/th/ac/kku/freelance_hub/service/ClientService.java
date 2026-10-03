@@ -5,13 +5,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
-
-import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
-import th.ac.kku.freelance_hub.dto.response.ClientResponse;
-import th.ac.kku.freelance_hub.dto.response.ClientTimeTotalResponse;
-
+import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
+import th.ac.kku.freelance_hub.dto.response.client.ClientTimeTotalResponse;
 /** Business operations for clients owned by the authenticated freelancer. */
 public interface ClientService {
 

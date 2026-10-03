@@ -30,14 +30,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.service.TaskService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @ExtendWith(MockitoExtension.class)
 class TaskDetailControllerTest {
 

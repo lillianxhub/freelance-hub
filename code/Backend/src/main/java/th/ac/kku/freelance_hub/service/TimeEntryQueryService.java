@@ -5,11 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
-
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
 /** Read operations for time entries owned by the authenticated user. */
 public interface TimeEntryQueryService {
 
