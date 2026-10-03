@@ -70,7 +70,7 @@ class ProjectServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private TimeEntryQueryService timeEntryQueryService;
+    private TimeEntryService timeEntryService;
 
     private ProjectServiceImpl service;
     private User owner;
@@ -85,7 +85,7 @@ class ProjectServiceImplTest {
                 new ProjectMapper(),
                 taskRepository,
                 new TaskMapper(),
-                timeEntryQueryService
+                timeEntryService
         );
 
         owner = User.builder().id(OWNER_ID).build();
@@ -184,7 +184,7 @@ class ProjectServiceImplTest {
         project.updateDetails("Website", null, null, null, null, 100);
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
                 .thenReturn(Optional.of(project));
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 argThat(filter -> PROJECT_ID.equals(filter.getProjectId()))
         )).thenReturn(TimeEntrySummaryResponse.builder()
@@ -205,7 +205,7 @@ class ProjectServiceImplTest {
         Project project = new Project(owner, client, "No target");
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
                 .thenReturn(Optional.of(project));
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 argThat(filter -> PROJECT_ID.equals(filter.getProjectId()))
         )).thenReturn(TimeEntrySummaryResponse.builder()
@@ -228,7 +228,7 @@ class ProjectServiceImplTest {
 
         assertThatThrownBy(() -> service.getProgress(OWNER_ID, PROJECT_ID))
                 .isInstanceOf(ProjectNotFoundException.class);
-        verifyNoInteractions(timeEntryQueryService);
+        verifyNoInteractions(timeEntryService);
     }
 
     @Test
@@ -542,7 +542,7 @@ class ProjectServiceImplTest {
     }
 
     private void givenTrackedSeconds(UUID projectId, long seconds) {
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 argThat(filter -> projectId.equals(filter.getProjectId()))
         )).thenReturn(TimeEntrySummaryResponse.builder()

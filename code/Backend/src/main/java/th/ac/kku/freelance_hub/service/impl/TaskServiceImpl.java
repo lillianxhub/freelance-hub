@@ -25,7 +25,7 @@ import th.ac.kku.freelance_hub.mapper.TaskMapper;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.service.TaskService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.task.CreateTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.task.ReorderTaskRequest;
@@ -45,20 +45,20 @@ public class TaskServiceImpl implements TaskService {
     private final ProjectRepository projectRepository;
     private final TaskMapper taskMapper;
     private final EntityManager entityManager;
-    private final TimeEntryQueryService timeEntryQueryService;
+    private final TimeEntryService timeEntryService;
 
     public TaskServiceImpl(
             TaskRepository taskRepository,
             ProjectRepository projectRepository,
             TaskMapper taskMapper,
             EntityManager entityManager,
-            TimeEntryQueryService timeEntryQueryService
+            TimeEntryService timeEntryService
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.taskMapper = taskMapper;
         this.entityManager = entityManager;
-        this.timeEntryQueryService = timeEntryQueryService;
+        this.timeEntryService = timeEntryService;
     }
 
     @Override
@@ -137,7 +137,7 @@ public class TaskServiceImpl implements TaskService {
                 .direction(Sort.Direction.DESC)
                 .build();
 
-        return timeEntryQueryService.list(ownerId, filter).stream()
+        return timeEntryService.list(ownerId, filter).stream()
                 .findFirst()
                 .map(TimeEntryResponse::getTaskName);
     }

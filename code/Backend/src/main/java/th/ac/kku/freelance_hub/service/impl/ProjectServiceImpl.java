@@ -28,7 +28,7 @@ import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ProjectService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
-    private final TimeEntryQueryService timeEntryQueryService;
+    private final TimeEntryService timeEntryService;
 
 
 
@@ -72,7 +72,7 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectMapper projectMapper,
         TaskRepository taskRepository,
         TaskMapper taskMapper,
-        TimeEntryQueryService timeEntryQueryService
+        TimeEntryService timeEntryService
     ) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
@@ -80,7 +80,7 @@ public class ProjectServiceImpl implements ProjectService {
         this.projectMapper = projectMapper;
         this.taskRepository = taskRepository;
         this.taskMapper = taskMapper;
-        this.timeEntryQueryService = timeEntryQueryService;
+        this.timeEntryService = timeEntryService;
     }
 
     @Override
@@ -381,7 +381,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private long trackedSeconds(UUID ownerId, UUID projectId) {
-        return timeEntryQueryService.summarize(
+        return timeEntryService.summarize(
                 ownerId,
                 TimeEntryFilterRequest.builder().projectId(projectId).build()
         ).getTotalSeconds();

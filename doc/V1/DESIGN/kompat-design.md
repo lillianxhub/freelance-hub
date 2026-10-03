@@ -8,8 +8,8 @@
 | Pattern / รูปแบบ | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ |
 |---|---|---|
 | Observer (GoF ในรูปแบบ Spring Application Event) | ให้การหยุด timer แจ้งส่วนอื่นได้โดย `TimerServiceImpl` ไม่ต้องเรียก service คำนวณความคืบหน้าหรือ notification โดยตรง | `service/impl/TimerServiceImpl.java`, `event/TimerStoppedEvent.java` |
-| Service Layer และ Interface Segregation | แยกวงจรชีวิต timer, คำสั่งสร้าง/แก้/ลบ/ล็อก Time Entry และงานอ่าน/รวมเวลาออกจากกัน; การล็อกอยู่ใน command service เดิม | `service/TimerService.java`, `service/TimeEntryService.java`, `service/TimeEntryQueryService.java` และ implementation ทั้งสาม |
-| Repository และ Specification | แยก data access ออกจาก service และประกอบตัวกรองรายการตาม owner, Project, Task และช่วงเวลา | `repository/TimeEntryRepository.java`, `service/impl/TimeEntryQueryServiceImpl.java` |
+| Service Layer | แยกวงจรชีวิต timer ไว้ใน TimerService ส่วน TimeEntryService รวมงานอ่าน สร้าง แก้ ลบ ล็อก และรวมเวลาไว้ด้วยกัน | `service/TimerService.java`, `service/TimeEntryService.java` และ implementation ทั้งสอง |
+| Repository และ Specification | แยก data access ออกจาก service และประกอบตัวกรองรายการตาม owner, Project, Task และช่วงเวลา | `repository/TimeEntryRepository.java`, `service/impl/TimeEntryServiceImpl.java` |
 | DTO + Mapper | ไม่ส่ง JPA entity ออก API โดยตรง และแยกข้อมูล request/response จาก domain | `dto/request/StartTimerRequest.java`, `dto/request/ManualTimeEntryRequest.java`, `dto/request/UpdateTimeEntryRequest.java`, `dto/response/TimeEntryResponse.java`, `mapper/TimeEntryMapper.java` |
 | Dependency Injection ของเวลา | ใช้เวลาจริงใน production และกำหนดเวลาคงที่ใน test ได้โดยไม่เปลี่ยน business logic | `config/TimeConfiguration.java`, `service/impl/TimerServiceImpl.java`, `service/impl/TimeEntryServiceImpl.java` |
 | Concurrency control | ป้องกัน timer ซ้อน การหยุด/ยกเลิกพร้อมกัน และล็อกแถว Time Entry ระหว่างตั้ง `lockedAt` ตาม Project | `repository/TimeEntryRepository.java`, `service/impl/TimerServiceImpl.java`, `service/impl/TimeEntryServiceImpl.java`, `db/migration/V6__create_time_entries_table.sql` |
@@ -33,9 +33,6 @@ classDiagram
         +update(ownerId, entryId, request) TimeEntryResponse
         +delete(ownerId, entryId) void
         +lockByProject(ownerId, projectId) void
-    }
-    class TimeEntryQueryService {
-        <<interface>>
         +getById(ownerId, entryId) TimeEntryResponse
         +list(ownerId, filter) Page~TimeEntryResponse~
         +summarize(ownerId, filter) TimeEntrySummaryResponse
@@ -45,7 +42,6 @@ classDiagram
     }
     class TimerServiceImpl
     class TimeEntryServiceImpl
-    class TimeEntryQueryServiceImpl
     class TimeEntryRepository {
         <<interface>>
     }
@@ -54,16 +50,12 @@ classDiagram
 
     TimerController --> TimerService
     TimeEntryController --> TimeEntryService
-    TimeEntryController --> TimeEntryQueryService
     TimerServiceImpl ..|> TimerService
     TimeEntryServiceImpl ..|> TimeEntryService
-    TimeEntryQueryServiceImpl ..|> TimeEntryQueryService
     TimerServiceImpl --> TimeEntryRepository
     TimeEntryServiceImpl --> TimeEntryRepository
-    TimeEntryQueryServiceImpl --> TimeEntryRepository
     TimerServiceImpl --> TimeEntry
     TimeEntryServiceImpl --> TimeEntry
-    TimeEntryQueryServiceImpl --> TimeEntry
     TimerServiceImpl ..> TimerStoppedEvent : publish เมื่อหยุด
 ```
 
@@ -99,5 +91,6 @@ flowchart TD
 - `TimeEntryService.lockByProject(ownerId, projectId)` เป็นคำสั่งภายใน Backend ที่ต้องเรียกใน transaction ของการเปลี่ยนสถานะ Project (`Propagation.MANDATORY`) ผู้เรียกตรวจ owner และการเปลี่ยนเป็น `COMPLETED`; ปัจจุบัน `ProjectServiceImpl` ยังไม่มีจุดเรียก จึงยังไม่เกิดการล็อกอัตโนมัติจากการเปลี่ยนสถานะ
 - คำสั่งล็อกอ่านรายการที่ `lockedAt IS NULL` รวม soft-deleted ด้วย derived query และ `PESSIMISTIC_WRITE` ตรวจว่าไม่มี running timer แล้วตั้ง `lockedAt` ผ่าน `TimeEntry.lock()` ด้วยเวลาเดียวกันจาก `Clock`; รายการที่ล็อกแล้วรักษาเวลาเดิมและไม่มีคำสั่ง unlock
 - การล็อกแถวฐานข้อมูลปลดเมื่อ transaction จบ ส่วน `lockedAt` เป็นค่าถาวรสำหรับห้ามแก้ไข/ลบ; row lock ไม่ป้องกันการสร้างหรือย้ายรายการใหม่เข้า Project ผู้รับผิดชอบการเชื่อมต่อจึงต้องจัดการกรณีนี้เพิ่มเติม
+- เมธอดอ่านของ `TimeEntryServiceImpl` กำหนด `@Transactional(readOnly = true)` รายเมธอด ส่วน create/update/delete ใช้ write transaction และ `lockByProject` ใช้ `Propagation.MANDATORY`; การรวม service ไม่เปลี่ยน endpoint หรือ response format
 
-**หลักฐานการทดสอบ:** `TimerServiceImplTest`, `TimeEntryServiceImplTest`, `TimeEntryQueryServiceImplTest`, `TimeEntryRepositoryTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
+**หลักฐานการทดสอบ:** `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
