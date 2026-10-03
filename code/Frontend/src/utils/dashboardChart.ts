@@ -1,6 +1,6 @@
 import type { ProductivityPoint } from '../types/analytics'
 import type { DashboardDailyWork } from '../types/dashboard'
-import { splitDurationSeconds } from './formatters'
+import { splitDurationSeconds } from '../lib/formatters'
 
 export function formatChartDuration(totalSeconds: number): string {
   const { hours, minutes, seconds } = splitDurationSeconds(totalSeconds)

@@ -1,11 +1,8 @@
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
 import { NativeSelect } from '../../../components/ui/native-select'
-import { Progress } from '../../../components/ui/progress'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { FiBriefcase, FiPlus, FiSearch } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { FiBriefcase, FiPlus } from "react-icons/fi";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import PageHeader from "../../../components/PageHeader";
 import {
@@ -22,10 +19,11 @@ import type {
   ProjectSort,
 } from "../../../types/projectsPage";
 import ProjectForm from "../../components/ProjectForm";
+import ProjectCard from "../../components/ProjectCard";
+import FilterBar from '../../../components/FilterBar'
 import { getErrorMessage } from "../../../api/apiError";
-import { formatDuration } from "../../../utils/formatters";
 import { changeProjectStatus } from "../../../services/project";
-import { listProjectsPage, type ProjectListFilters } from "../../../services/workspace";
+import { listProjectsPage, type ProjectListFilters } from "../../../services/project";
 import type { NotificationMessage } from "../../../types/notification";
 import { toast } from 'sonner';
 import type { ApiMeta } from "../../../types/api";
@@ -38,22 +36,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "../../../components/ui/pagination";
-
-const projectStatusLabels: Record<ProjectStatus, string> = {
-  PLANNED: "วางแผน",
-  ACTIVE: "กำลังดำเนินการ",
-  ON_HOLD: "พักงาน",
-  COMPLETED: "เสร็จสิ้น",
-  ARCHIVED: "เก็บถาวร",
-};
-
-const allowedStatusTransitions: Record<ProjectStatus, readonly ProjectStatus[]> = {
-  PLANNED: ["PLANNED", "ACTIVE", "ARCHIVED"],
-  ACTIVE: ["ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"],
-  ON_HOLD: ["ON_HOLD", "ACTIVE", "ARCHIVED"],
-  COMPLETED: ["COMPLETED", "ARCHIVED"],
-  ARCHIVED: ["ARCHIVED", "PLANNED", "ACTIVE"],
-};
 
 const emptyForm: ProjectDraft = {
   name: "",
@@ -94,8 +76,9 @@ function getPaginationItems(currentPage: number, totalPages: number): Array<numb
 }
 
 function ProjectsPage() {
-  const { data, loading, error, refresh, save } = useProjects();
+  const { data, loading, error, refresh, saveProject } = useProjects();
   const [query, setQuery] = useState("");
+  const [clientId, setClientId] = useState("ALL");
   const [status, setStatus] = useState<ProjectFilter>("ALL");
   const [sortBy, setSortBy] = useState<ProjectSort>("UPDATED_DESC");
   const [page, setPage] = useState(1);
@@ -124,6 +107,7 @@ function ProjectsPage() {
     setPageError("");
     try {
       const result = await listProjectsPage(requestedPage, projectPageLimit, {
+        clientId: clientId === 'ALL' ? undefined : clientId,
         search: query,
         status: status === 'ALL' ? undefined : status,
         ...projectSortParams[sortBy],
@@ -142,7 +126,7 @@ function ProjectsPage() {
     } finally {
       if (requestId === latestRequest.current) setPageLoading(false);
     }
-  }, [query, sortBy, status]);
+  }, [clientId, query, sortBy, status]);
 
   useEffect(() => {
     void loadProjectPage(page);
@@ -207,7 +191,7 @@ function ProjectsPage() {
     setSaving(true);
     setFormError("");
     try {
-      await save("projects", {
+      await saveProject({
         ...form,
         name: form.name.trim(),
         hourly_rate:
@@ -260,14 +244,12 @@ function ProjectsPage() {
   }
 
   return (
-    <div className="page-view">
+    <div className="mx-auto w-full max-w-screen-2xl">
       <PageHeader
-        eyebrow="พื้นที่ทำงาน / โปรเจกต์"
-        title="Projectsของคุณ"
-        description="ติดตามขอบเขตTask งบประมาณ Task และการส่งมอบในมุมมองเดียว"
+        title="โปรเจกต์ของคุณ"
         actions={
           <Button variant="default"
-            className="button button-primary"
+            className="h-10"
             type="button"
             onClick={openCreate}
           >
@@ -276,20 +258,31 @@ function ProjectsPage() {
         }
       />
 
-      <div className="filter-row">
-        <div className="search-box">
-          <span><FiSearch aria-hidden="true" /></span>
-          <Input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(1);
-            }}
-            placeholder="ค้นหาProjectsหรือClients"
-          />
-        </div>
+      <FilterBar
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setPage(1);
+        }}
+        placeholder="ค้นหาโปรเจกต์หรือลูกค้า"
+        searchAriaLabel="ค้นหาโปรเจกต์หรือลูกค้า"
+      >
         <NativeSelect
-          className="select-button"
+          value={clientId}
+          onChange={(event) => {
+            setClientId(event.target.value);
+            setPage(1);
+          }}
+          aria-label="กรองตามลูกค้า"
+        >
+          <option value="ALL">ทุกลูกค้า</option>
+          {data.clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.company_name || client.name}
+            </option>
+          ))}
+        </NativeSelect>
+        <NativeSelect
           value={status}
           onChange={(event) => {
             setStatus(event.target.value as ProjectFilter);
@@ -303,20 +296,7 @@ function ProjectsPage() {
           <option value="COMPLETED">เสร็จสิ้น</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </NativeSelect>
-        {/* <select
-          className="select-button"
-          value={billingType}
-          onChange={(event) => {
-            setBillingType(event.target.value as BillingFilter);
-            setPage(1);
-          }}
-        >
-          <option value="ALL">ทุกรูปแบบราคา</option>
-          <option value="HOURLY">รายชั่วโมง</option>
-          <option value="FIXED_PRICE">เหมาจ่าย</option>
-        </select> */}
         <NativeSelect
-          className="select-button"
           value={sortBy}
           onChange={(event) => {
             setSortBy(event.target.value as ProjectSort);
@@ -327,17 +307,18 @@ function ProjectsPage() {
           <option value="NAME_ASC">ชื่อ A–Z</option>
           <option value="END_ASC">กำหนดส่งใกล้สุด</option>
         </NativeSelect>
-      </div>
+      </FilterBar>
 
       {projects.length === 0 ? (
-        <Card asChild><section className="panel">
+        <Card asChild>
+          <section className="rounded-xl border border-border bg-surface p-5 shadow-soft ring-0">
           <EmptyState
             icon={<FiBriefcase aria-hidden="true" />}
-            title="ยังไม่พบProjects"
-            description="สร้างProjectsแรกหรือปรับตัวกรอง"
+            title="ยังไม่พบโปรเจกต์"
+            description="สร้างโปรเจกต์แรกหรือปรับตัวกรอง"
             action={
               <Button variant="default"
-                className="button button-primary"
+                className="h-10"
                 type="button"
                 onClick={openCreate}
               >
@@ -347,101 +328,20 @@ function ProjectsPage() {
           />
         </section></Card>
       ) : (
-        <div className="card-grid project-card-grid">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {projects.map((project) => {
             const client = data.clients.find(
               (item) => item.id === project.client_id,
             );
-            const totalTasks = project.task_progress?.total_tasks ?? 0;
-            const completedTasks = project.task_progress?.completed_tasks ?? 0;
-            const taskPercent = project.task_progress?.percent ?? 0;
-            const trackedMinutes = project.time_tracking
-              ? Math.round(project.time_tracking.tracked_seconds / 60)
-              : null;
-            const budgetPercent = project.time_tracking?.usage_percent ?? null;
             const clientName = project.client_name || client?.company_name || client?.name || "ไม่พบลูกค้า";
-            return (
-              <Card asChild key={project.id}><article
-                className="project-card"
-                style={{ "--project-color": project.color }}
-              >
-                <Link
-                  className="card-link"
-                  to={`/projects/${project.id}`}
-                  aria-label={`เปิด ${project.name}`}
-                />
-                <div className="card-top">
-                  <span
-                    className="color-dot project-dot"
-                    style={{ "--dot-color": project.color }}
-                  />
-                  <div className="card-menu">
-                    <Button variant="ghost"
-                      className="mini-button"
-                      type="button"
-                      onClick={() => openEdit(project)}
-                    >
-                      แก้ไข
-                    </Button>
-                  </div>
-                </div>
-                <h2>{project.name}</h2>
-                <p>
-                  {clientName} · {totalTasks} งาน
-                </p>
-                <div className="card-metrics">
-                  <span>
-                    <strong>
-                      {completedTasks}
-                      <small> / {totalTasks} เสร็จแล้ว</small>
-                    </strong>
-                    ความคืบหน้างาน
-                  </span>
-                  <span>
-                    <strong>{trackedMinutes === null ? "—" : formatDuration(trackedMinutes)}</strong>เวลาที่บันทึก
-                  </span>
-                </div>
-                <div className="progress-label">
-                  <span>ความคืบหน้างาน</span>
-                  <strong>{taskPercent}%</strong>
-                </div>
-                <Progress className="progress-track" value={taskPercent} indicatorColor={project.color} />
-                {project.budget_hours && budgetPercent !== null && (
-                  <div
-                    className={`budget-note${budgetPercent >= 100 ? " danger" : budgetPercent >= 80 ? " warning" : ""}`}
-                  >
-                    ใช้เวลา {budgetPercent}% ของงบ {project.budget_hours}{" "}
-                    ชั่วโมง
-                  </div>
-                )}
-                <div className="card-footer">
-                  <NativeSelect
-                    className={`status-badge project-status-select status-${project.status.toLowerCase()}`}
-                    wrapperClassName="w-fit project-status-wrapper"
-                    value={project.status}
-                    aria-label={`สถานะของโปรเจกต์ ${project.name}`}
-                    disabled={changingProjectId === project.id}
-                    onChange={(event) => {
-                      void updateProjectStatus(
-                        project,
-                        event.target.value as ProjectStatus,
-                      );
-                    }}
-                  >
-                    {allowedStatusTransitions[project.status].map((projectStatus) => (
-                      <option key={projectStatus} value={projectStatus}>
-                        {projectStatusLabels[projectStatus]}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  {/* <span>
-                    {project.billing_type === "HOURLY"
-                      ? `${formatMoney(project.hourly_rate, project.currency)}/ชม.`
-                      : formatMoney(project.fixed_price, project.currency)}
-                  </span> */}
-                </div>
-              </article></Card>
-            );
+            return <ProjectCard
+              key={project.id}
+              project={project}
+              clientName={clientName}
+              changing={changingProjectId === project.id}
+              onEdit={openEdit}
+              onStatusChange={(nextProject, status) => { void updateProjectStatus(nextProject, status) }}
+            />;
           })}
         </div>
       )}
@@ -494,8 +394,8 @@ function ProjectsPage() {
       </Pagination>
 
       <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
-        <DialogContent className="workspace-dialog workspace-dialog-large">
-          <DialogHeader><DialogTitle>{form.id ? "แก้ไขProjects" : "เพิ่มProjects"}</DialogTitle></DialogHeader>
+        <DialogContent className="!max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
+          <DialogHeader><DialogTitle>{form.id ? "แก้ไขโปรเจกต์" : "เพิ่มโปรเจกต์"}</DialogTitle></DialogHeader>
           <ProjectForm
           value={form}
           clients={data.clients}

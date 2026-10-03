@@ -1,26 +1,80 @@
 import { Card } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { Link } from 'react-router-dom'
+import { FiArchive, FiEdit2, FiRotateCcw } from 'react-icons/fi'
 import type { ClientCardProps } from '../../types/clientsPage'
-import { formatDuration, formatMoney, initials } from '../../utils/formatters'
+import { formatDuration, initials } from '../../lib/formatters'
 import ClientStatus from './ClientStatus'
 
-export default function ClientCard({ client, projectCount, minutes, revenue, onEdit, onArchive }: ClientCardProps) {
-  const displayName = client.company_name || client.name
+const avatarColors = ['bg-primary', 'bg-brand-secondary', 'bg-green', 'bg-orange', 'bg-red'] as const
+
+function getAvatarColor(seed: string) {
+  const hash = [...seed].reduce((total, character) => total + character.charCodeAt(0), 0)
+  return avatarColors[hash % avatarColors.length]
+}
+
+export default function ClientCard({ client, projectCount, minutes, onEdit, onArchive }: ClientCardProps) {
+  const displayName = client.name || 'ไม่ระบุชื่อ'
+  const companyName = client.company_name || 'ไม่มีชื่อบริษัท'
+  const avatarColor = getAvatarColor(client.id || displayName)
+
   return (
-    <Card asChild><article className="client-card">
-      <Link className="card-link" to={`/clients/${client.id}`} aria-label={`เปิด ${displayName}`} />
-      <div className="card-top">
-        <span className="client-avatar" style={{ background: client.color }}>{initials(displayName)}</span>
-        <div className="card-menu">
-          <Button variant="ghost" className="mini-button" type="button" onClick={() => onEdit(client)}>แก้ไข</Button>
-          <Button variant="ghost" className="mini-button" type="button" onClick={() => onArchive(client)}>{client.status === 'ARCHIVED' ? 'นำกลับ' : 'เก็บถาวร'}</Button>
+    <Card asChild>
+      <article className="relative p-5 transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(30,48,83,0.1)]">
+        <Link className="absolute inset-0 z-0 rounded-[inherit]" to={`/clients/${client.id}`} aria-label={`เปิด ${displayName}`} />
+
+        <div className="pointer-events-none relative z-10 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className={`grid size-[42px] shrink-0 place-items-center rounded-xl text-base font-bold text-white ${avatarColor}`}>
+              {initials(displayName)}
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold text-text-primary">{displayName}</h2>
+              <p className="truncate text-sm text-text-secondary">{companyName}</p>
+            </div>
+          </div>
+          <ClientStatus status={client.status} />
         </div>
-      </div>
-      <h2>{displayName}</h2>
-      <p>{client.email || 'ยังไม่มีอีเมล'}</p>
-      <div className="client-stats"><span><strong>{projectCount}</strong>โปรเจกต์</span><span><strong>{formatDuration(minutes)}</strong>เวลารวม</span></div>
-      <div className="card-footer"><ClientStatus status={client.status} /><span>{formatMoney(revenue)}</span></div>
-    </article></Card>
+
+        <div className="pointer-events-none relative z-10 grid gap-1 text-sm text-text-secondary">
+          <p className="truncate">{client.email || 'ยังไม่มีอีเมล'}</p>
+          <p className="truncate">{client.phone || 'ยังไม่มีเบอร์โทรศัพท์'}</p>
+        </div>
+
+        <div className="pointer-events-none relative z-10 grid grid-cols-2 gap-2 border-y border-border py-3 text-xs text-text-secondary">
+          <span className="grid gap-0.5">
+            <strong className="text-base font-semibold text-text-primary">{projectCount}</strong>
+            โปรเจกต์
+          </span>
+          <span className="grid gap-0.5">
+            <strong className="text-base font-semibold text-text-primary">{formatDuration(minutes)}</strong>
+            เวลารวม
+          </span>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:bg-muted hover:text-text-primary"
+            type="button"
+            onClick={() => onEdit(client)}
+          >
+            <FiEdit2 aria-hidden="true" />
+            แก้ไข
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:bg-red-soft hover:text-destructive"
+            type="button"
+            onClick={() => onArchive(client)}
+          >
+            {client.status === 'ARCHIVED' ? <FiRotateCcw aria-hidden="true" /> : <FiArchive aria-hidden="true" />}
+            {client.status === 'ARCHIVED' ? 'นำกลับ' : 'เก็บถาวร'}
+          </Button>
+        </div>
+      </article>
+    </Card>
   )
 }

@@ -12,8 +12,7 @@ import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
-
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
 class ProjectMapperTest {
 
     private final ProjectMapper mapper = new ProjectMapper();

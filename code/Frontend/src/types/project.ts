@@ -33,3 +33,5 @@ export interface Project extends OwnedRecord {
   task_progress?: ProjectTaskProgress
   time_tracking?: ProjectTimeTracking | null
 }
+
+export type ProjectInput = Omit<Project, keyof OwnedRecord> & Partial<OwnedRecord>

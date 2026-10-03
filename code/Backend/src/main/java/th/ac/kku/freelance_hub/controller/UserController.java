@@ -6,12 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import th.ac.kku.freelance_hub.dto.request.ChangePasswordRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
-import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.auth.ChangePasswordRequest;
+import th.ac.kku.freelance_hub.dto.request.user.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 /**
  * REST Controller for user endpoints
  */

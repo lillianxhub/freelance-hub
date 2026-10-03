@@ -1,10 +1,10 @@
 import { useContext, useMemo } from 'react'
 import { AnalyticsContext } from './AnalyticsContext'
-import { summarizeTime } from '../utils/analytics'
+import { summarizeTime } from '../lib/analytics'
 
 export function useAnalytics() {
-  const workspace = useContext(AnalyticsContext)
-  if (!workspace) throw new Error('useAnalytics must be used inside AnalyticsProvider')
-  const summary = useMemo(() => summarizeTime(workspace.data.time_entries), [workspace.data.time_entries])
-  return { ...workspace, summary }
+  const context = useContext(AnalyticsContext)
+  if (!context) throw new Error('useAnalytics must be used inside AnalyticsProvider')
+  const summary = useMemo(() => summarizeTime(context.data.time_entries), [context.data.time_entries])
+  return { ...context, summary }
 }

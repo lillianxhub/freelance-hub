@@ -9,10 +9,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.progress.ProjectProgressThresholds;
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 @Component
 public class TimerStoppedProgressListener {
 

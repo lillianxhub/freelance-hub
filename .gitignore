@@ -35,7 +35,7 @@ build/
 resource/
 
 # Local UI prototypes (keep out of the repository)
-.Demo/
+.demo/
 
 ### Local environment ###
 .env

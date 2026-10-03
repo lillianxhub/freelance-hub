@@ -19,9 +19,8 @@ import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.response.ClientTimeTotalResponse;
 import th.ac.kku.freelance_hub.service.ClientService;
-
+import th.ac.kku.freelance_hub.dto.response.client.ClientTimeTotalResponse;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

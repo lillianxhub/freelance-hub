@@ -1,8 +1,76 @@
 import { api } from '../api/apiClient'
-import type { ApiCurrentTimer, ApiTimeEntry } from '../types/api'
-import type { ResourceInput } from '../types/workspace'
+import type { ApiCurrentTimer, ApiMeta, ApiTimeEntry } from '../types/api'
+import type { TimeEntryInput } from '../types/timeTracking'
 import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
-import { toTimeEntry } from './workspace'
+
+function emptyString(value: string | null | undefined): string { return value ?? '' }
+
+export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
+  return { id: source.id, owner_id: '', project_id: source.projectId ?? source.project?.id ?? '',
+    project_name: source.projectName ?? source.project?.name, task_id: source.taskId ?? source.task?.id ?? null,
+    task_name: source.taskName ?? source.task?.title, description: emptyString(source.description), started_at: source.startedAt,
+    ended_at: source.endedAt || null, duration_minutes: source.durationMinutes ?? (source.durationSeconds === undefined ? null : source.durationSeconds / 60),
+    duration_seconds: source.durationSeconds ?? (source.durationMinutes === undefined ? null : source.durationMinutes * 60),
+    billable: true, rate_snapshot: 0, currency: 'THB', created_at: source.createdAt, updated_at: source.updatedAt }
+}
+
+export interface TimeEntryListQuery {
+  clientId?: string
+  projectId?: string
+  taskId?: string
+  from?: string
+  to?: string
+  page?: number
+  limit?: number
+}
+
+export interface TimeEntryPage {
+  entries: TimeEntry[]
+  meta: ApiMeta
+}
+
+export interface TimeEntrySummary {
+  entryCount: number
+  totalSeconds: number
+}
+
+export async function listTimeEntriesPage(query: TimeEntryListQuery = {}): Promise<TimeEntryPage> {
+  const params = new URLSearchParams({
+    page: String(query.page ?? 1),
+    limit: String(query.limit ?? 5),
+    sortBy: 'startedAt',
+    direction: 'DESC',
+  })
+  if (query.clientId) params.set('clientId', query.clientId)
+  if (query.projectId) params.set('projectId', query.projectId)
+  if (query.taskId) params.set('taskId', query.taskId)
+  if (query.from) params.set('from', query.from)
+  if (query.to) params.set('to', query.to)
+
+  const response = await api.get<ApiTimeEntry[]>(`/time-entries?${params.toString()}`)
+  const entries = response.data.map(toTimeEntry)
+  return {
+    entries,
+    meta: response.meta ?? {
+      page: query.page ?? 1,
+      limit: query.limit ?? 5,
+      total: entries.length,
+      totalPages: entries.length ? 1 : 0,
+    },
+  }
+}
+
+export async function summarizeTimeEntries(query: TimeEntryListQuery = {}): Promise<TimeEntrySummary> {
+  const params = new URLSearchParams()
+  if (query.clientId) params.set('clientId', query.clientId)
+  if (query.projectId) params.set('projectId', query.projectId)
+  if (query.taskId) params.set('taskId', query.taskId)
+  if (query.from) params.set('from', query.from)
+  if (query.to) params.set('to', query.to)
+
+  const response = await api.get<TimeEntrySummary>(`/time-entries/summary?${params.toString()}`)
+  return response.data
+}
 
 export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> {
   const query = new URLSearchParams({ page: '1', limit: '10', sortBy: 'startedAt', direction: 'DESC' })
@@ -11,7 +79,7 @@ export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> 
   return response.data.map(toTimeEntry)
 }
 
-export async function saveTimeEntry(entry: ResourceInput<'time_entries'>): Promise<TimeEntry> {
+export async function saveTimeEntry(entry: TimeEntryInput): Promise<TimeEntry> {
   if (!entry.project_id) throw new Error('รายการเวลาต้องระบุโปรเจกต์')
   if (entry.id) {
     return updateTimeEntry(entry.id, {
