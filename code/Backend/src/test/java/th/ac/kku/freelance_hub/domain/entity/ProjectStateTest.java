@@ -69,6 +69,29 @@ class ProjectStateTest {
     }
 
     @Test
+    void cannotRestoreArchivedProjectWhenClientIsArchivedOrDeleted() {
+        for (ProjectStatus nextStatus : new ProjectStatus[] {
+                ProjectStatus.ACTIVE, ProjectStatus.PLANNED
+        }) {
+            for (boolean softDeleted : new boolean[] {false, true}) {
+                Project project = newProject();
+                project.changeStatus(ProjectStatus.ARCHIVED);
+                if (softDeleted) {
+                    project.getClient().softDelete();
+                } else {
+                    project.getClient().setActive(false);
+                }
+
+                assertThatThrownBy(() -> project.changeStatus(nextStatus))
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining("ลูกค้าถูกจัดเก็บ");
+                assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+                assertThat(project.getIsActive()).isFalse();
+            }
+        }
+    }
+
+    @Test
     void acceptsTheCurrentStatusAgain() {
         Project project = newProject();
 
