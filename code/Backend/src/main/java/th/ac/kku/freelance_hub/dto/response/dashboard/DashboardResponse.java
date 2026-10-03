@@ -8,5 +8,6 @@ public record DashboardResponse(
         DashboardSummaryResponse summary,
         List<DailyWorkResponse> dailyWork,
         List<ActiveProjectResponse> activeProjects,
-        List<OpenTaskResponse> openTasks
+        List<OpenTaskResponse> openTasks,
+        List<RecentTimeEntryResponse> recentTimeEntries
 ) {}

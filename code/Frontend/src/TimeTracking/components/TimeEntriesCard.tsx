@@ -89,8 +89,8 @@ export default function TimeEntriesCard({
         </CardHeader>
 
         <CardContent className="p-6 pt-0">
-          <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="flex flex-col gap-1.5">
+          <div className="mb-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="time-filter-client">ลูกค้า</Label>
               <NativeSelect
                 id="time-filter-client"
@@ -100,13 +100,13 @@ export default function TimeEntriesCard({
                 <option value="ALL">ทุกลูกค้า</option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
-                    {client.company_name || client.name}
+                    {client.name}
                   </option>
                 ))}
               </NativeSelect>
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="time-filter-project">โปรเจกต์</Label>
               <NativeSelect
                 id="time-filter-project"
@@ -124,7 +124,7 @@ export default function TimeEntriesCard({
               </NativeSelect>
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="time-filter-task">งาน</Label>
               <NativeSelect
                 id="time-filter-task"
@@ -141,7 +141,7 @@ export default function TimeEntriesCard({
               </NativeSelect>
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="time-filter-from">ตั้งแต่วันที่</Label>
               <DatePicker
                 id="time-filter-from"
@@ -151,7 +151,7 @@ export default function TimeEntriesCard({
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2 xl:col-span-1">
               <Label htmlFor="time-filter-to">ถึงวันที่</Label>
               <DatePicker
                 id="time-filter-to"

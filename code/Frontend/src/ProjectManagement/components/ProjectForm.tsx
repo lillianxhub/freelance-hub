@@ -11,6 +11,7 @@ export default function ProjectForm({
   value,
   clients,
   error,
+  dateErrors,
   saving,
   onChange,
   onSubmit,
@@ -50,7 +51,7 @@ export default function ProjectForm({
               )
               .map((client) => (
                 <option key={client.id} value={client.id}>
-                  {client.company_name || client.name}
+                  {client.name}
                 </option>
               ))}
           </NativeSelect>
@@ -117,7 +118,10 @@ export default function ProjectForm({
             onChange={(nextValue) => handleDateChange('start_date', nextValue)}
             required
             aria-label="วันที่เริ่ม"
+            aria-invalid={Boolean(dateErrors.start_date)}
+            aria-describedby={dateErrors.start_date ? 'start-date-error' : undefined}
           />
+          {dateErrors.start_date && <p id="start-date-error" className="text-sm text-destructive" role="alert">{dateErrors.start_date}</p>}
         </div>
         <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="end-date" required>วันที่สิ้นสุด</FormLabel>
@@ -127,7 +131,10 @@ export default function ProjectForm({
             onChange={(nextValue) => handleDateChange('end_date', nextValue)}
             required
             aria-label="วันที่สิ้นสุด"
+            aria-invalid={Boolean(dateErrors.end_date)}
+            aria-describedby={dateErrors.end_date ? 'end-date-error' : undefined}
           />
+          {dateErrors.end_date && <p id="end-date-error" className="text-sm text-destructive" role="alert">{dateErrors.end_date}</p>}
         </div>
         <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="project-color" required>สีโปรเจกต์</FormLabel>

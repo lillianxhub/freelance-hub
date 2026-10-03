@@ -18,6 +18,7 @@ export interface ProjectFormProps {
   value: ProjectDraft
   clients: readonly Client[]
   error: string
+  dateErrors: Partial<Record<'start_date' | 'end_date', string>>
   saving: boolean
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void

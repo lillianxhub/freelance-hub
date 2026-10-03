@@ -73,6 +73,7 @@ function toClientForm(value: Partial<ClientInput> = {}): ClientInput {
 
 function ClientsPage() {
   const { data, loading, error, refresh, saveClient, archiveClient } = useClients()
+  const [searchInput, setSearchInput] = useState('')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<ClientFilter>('ACTIVE')
   const [sortBy, setSortBy] = useState<ClientSort>('UPDATED_DESC')
@@ -188,8 +189,12 @@ function ClientsPage() {
       />
 
       <FilterBar
-        value={query}
-        onChange={(event) => { setQuery(event.target.value); setPage(1) }}
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        onSearch={() => {
+          setQuery(searchInput.trim())
+          setPage(1)
+        }}
         placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร"
         searchAriaLabel="ค้นหาClients"
       >
@@ -207,10 +212,8 @@ function ClientsPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleClients.map((client) => {
             const clientProjects = data.projects.filter((project) => project.client_id === client.id)
-            const projectIds = new Set(clientProjects.map((project) => project.id))
-            const minutes = data.time_entries.filter((entry) => projectIds.has(entry.project_id)).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-            const revenue = data.time_entries.filter((entry) => projectIds.has(entry.project_id) && entry.billable).reduce((sum, entry) => sum + ((entry.duration_minutes || 0) / 60) * (entry.rate_snapshot || 0), 0)
-            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={revenue} onEdit={openEdit} onArchive={archiveClients} />
+            const minutes = clientProjects.reduce((sum, project) => sum + (project.time_tracking?.tracked_seconds ?? 0) / 60, 0)
+            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={0} onEdit={openEdit} onArchive={archiveClients} />
           })}
         </div>
       )}

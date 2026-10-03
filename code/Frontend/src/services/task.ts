@@ -26,6 +26,13 @@ export async function saveTask(input: TaskInput): Promise<Task> {
   return toTask((await api.patch<ApiTask>(`${path}/reorder`, { sortOrder: input.sort_order ?? task.sortOrder })).data)
 }
 
+export async function changeTaskStatus(id: string, status: 'TODO' | 'DONE'): Promise<Task> {
+  const response = await api.patch<ApiTask>(`/tasks/${encodeURIComponent(id)}/status`, {
+    status: status === 'DONE' ? 'COMPLETED' : 'OPEN',
+  })
+  return toTask(response.data)
+}
+
 export async function deleteTask(projectId: string, taskId: string): Promise<void> {
   await api.delete(`/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`)
 }
