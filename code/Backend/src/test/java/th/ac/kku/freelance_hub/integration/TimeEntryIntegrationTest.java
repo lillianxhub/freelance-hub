@@ -379,14 +379,18 @@ class TimeEntryIntegrationTest {
     }
 
     private String registerAndGetToken(String email) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of(
                                 "email", email,
                                 "password", "password123",
                                 "displayName", "Time entry integration user"
                         ))))
-                .andExpect(status().isCreated())
+                .andExpect(status().isCreated());
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of("email", email, "password", "password123"))))
+                .andExpect(status().isOk())
                 .andReturn();
         return responseJson(result).path("data").path("token").asText();
     }

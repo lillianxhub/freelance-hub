@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import th.ac.kku.freelance_hub.repository.RefreshTokenRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
+import th.ac.kku.freelance_hub.common.response.RequestTraceFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -42,6 +43,9 @@ class AuthControllerTest {
         private RefreshTokenRepository refreshTokenRepository;
 
         @Autowired
+        private RequestTraceFilter requestTraceFilter;
+
+        @Autowired
         private JwtTokenProvider tokenProvider;
 
         private final ObjectMapper objectMapper = new ObjectMapper();
@@ -57,8 +61,8 @@ class AuthControllerTest {
                                 .andReturn().getResponse().getContentAsString();
                 JsonNode root = objectMapper.readTree(document);
 
-                for (String path : new String[] { "/api/auth/register", "/api/auth/login", "/api/auth/refresh" }) {
-                        String statusCode = path.endsWith("register") ? "201" : "200";
+                for (String path : new String[] { "/api/auth/login", "/api/auth/refresh" }) {
+                        String statusCode = "200";
                         JsonNode schema = root.path("paths").path(path).path("post")
                                         .path("responses").path(statusCode).path("content")
                                         .path("application/json").path("schema");
@@ -75,9 +79,27 @@ class AuthControllerTest {
                 }
         }
 
+        @Test
+        void openApiDocumentsFailureOnlyForBadRequestsAndUserForRegistration() throws Exception {
+                JsonNode root = objectMapper.readTree(mockMvc.perform(get("/v3/api-docs"))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString());
+                JsonNode badRequest = root.path("paths").path("/api/auth/register").path("post")
+                                .path("responses").path("400").path("content")
+                                .path("application/json").path("schema");
+                assertThat(badRequest.path("allOf").get(1).path("properties").path("success")
+                                .path("enum").get(0).asBoolean()).isFalse();
+                assertThat(root.path("paths").path("/api/auth/register").path("post")
+                                .path("responses").path("201").path("content")
+                                .path("application/json").path("schema").path("$ref").asText())
+                                .startsWith("#/components/schemas/ApiResult");
+                assertThat(badRequest.toString()).doesNotContain("HTTP_400");
+        }
+
         @BeforeEach
         void setUp() {
                 mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                                .addFilters(requestTraceFilter)
                                 .apply(springSecurity())
                                 .build();
 
@@ -109,10 +131,9 @@ class AuthControllerTest {
                                 .andExpect(jsonPath("$.message").value("สมัครสมาชิกสำเร็จ"))
                                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
                                 .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.nullValue()))
-                                .andExpect(jsonPath("$.data.token").exists())
-                                .andExpect(jsonPath("$.data.expiresIn").exists())
-                                .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
-                                .andExpect(jsonPath("$.data.user.displayName").value("Test User"));
+                                .andExpect(jsonPath("$.data.email").value("test@example.com"))
+                                .andExpect(jsonPath("$.data.displayName").value("Test User"))
+                                .andExpect(jsonPath("$.data.token").doesNotExist());
         }
 
         @Test
@@ -131,7 +152,7 @@ class AuthControllerTest {
                                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
                                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
                                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                                .andExpect(jsonPath("$.error.details.email").value("รูปแบบอีเมลไม่ถูกต้อง"));
+                                .andExpect(jsonPath("$.error.fieldErrors.email").value("รูปแบบอีเมลไม่ถูกต้อง"));
         }
 
         @Test
@@ -212,7 +233,7 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
-                                .andExpect(jsonPath("$.error.details.email").value("กรุณาระบุอีเมล"));
+                                .andExpect(jsonPath("$.error.fieldErrors.email").value("กรุณาระบุอีเมล"));
         }
 
         @Test
@@ -375,11 +396,16 @@ class AuthControllerTest {
                                         .contentType(MediaType.APPLICATION_JSON).content(badLogin))
                                         .andExpect(status().isUnauthorized());
                 }
-                mockMvc.perform(post("/api/auth/login")
+                var throttled = mockMvc.perform(post("/api/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON).content(badLogin))
                                 .andExpect(status().isTooManyRequests())
                                 .andExpect(header().exists("Retry-After"))
-                                .andExpect(jsonPath("$.error.code").value("LOGIN_RATE_LIMITED"));
+                                .andExpect(jsonPath("$.error.code").value("LOGIN_RATE_LIMITED"))
+                                .andExpect(jsonPath("$.error.status").value(429))
+                                .andReturn().getResponse();
+                JsonNode error = objectMapper.readTree(throttled.getContentAsString()).path("error");
+                assertThat(error.path("traceId").asText()).isEqualTo(throttled.getHeader("X-Request-ID"));
+                java.time.Instant.parse(error.path("timestamp").asText());
         }
 
         @Test
@@ -414,7 +440,10 @@ class AuthControllerTest {
         @Test
         @DisplayName("POST /api/auth/refresh rotates cookie and detects replay")
         void shouldRotateAndRejectReplayedRefreshToken() throws Exception {
-                registerAndGetToken();
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(registerRequest)))
+                                .andExpect(status().isCreated());
                 Cookie first = loginAndGetCookie();
                 var rotated = mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(first))
                                 .andExpect(status().isOk())
@@ -423,7 +452,9 @@ class AuthControllerTest {
                                 .andReturn();
                 Cookie second = cookieFrom(rotated.getResponse().getHeader("Set-Cookie"));
                 assertThat(second.getValue()).isNotEqualTo(first.getValue());
-                var stored = refreshTokenRepository.findAll();
+                var stored = refreshTokenRepository.findAll().stream()
+                                .filter(token -> token.getUser().getEmail().equals(registerRequest.getEmail()))
+                                .toList();
                 assertThat(stored).hasSize(2);
                 assertThat(stored.get(0).getFamilyId()).isEqualTo(stored.get(1).getFamilyId());
                 assertThat(stored.get(0).getExpiresAt()).isEqualTo(stored.get(1).getExpiresAt());
@@ -431,7 +462,9 @@ class AuthControllerTest {
                                 .andExpect(status().isUnauthorized());
                 mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(second))
                                 .andExpect(status().isUnauthorized());
-                assertThat(refreshTokenRepository.findAll()).allSatisfy(token ->
+                assertThat(refreshTokenRepository.findAll().stream()
+                                .filter(token -> token.getUser().getEmail().equals(registerRequest.getEmail()))
+                                .toList()).allSatisfy(token ->
                                 assertThat(token.getTokenHash()).isNotEqualTo(first.getValue()));
         }
 
@@ -450,10 +483,15 @@ class AuthControllerTest {
         }
 
         private String registerAndGetToken() throws Exception {
-                String body = mockMvc.perform(post("/api/auth/register")
+                loginRequest.setEmail(registerRequest.getEmail());
+                mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(registerRequest)))
-                                .andExpect(status().isCreated())
+                                .andExpect(status().isCreated());
+                String body = mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(loginRequest)))
+                                .andExpect(status().isOk())
                                 .andReturn().getResponse().getContentAsString();
                 return objectMapper.readTree(body).path("data").path("token").asText();
         }

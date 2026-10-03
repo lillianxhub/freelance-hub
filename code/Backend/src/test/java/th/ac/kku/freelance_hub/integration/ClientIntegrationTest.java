@@ -79,7 +79,7 @@ class ClientIntegrationTest {
                         .value("Page of clients returned"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description")
                         .value("Client not found"))
-                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema['$ref']")
+                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema.allOf[0]['$ref']")
                         .value(org.hamcrest.Matchers.hasItem("#/components/schemas/ApiResult")))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description")
                         .value("Client updated"))
@@ -276,7 +276,7 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details.name").exists());
+                .andExpect(jsonPath("$.error.fieldErrors.name").exists());
 
         mockMvc.perform(get("/api/clients/{id}", UUID.randomUUID())
                 .header("Authorization", bearer(token)))
@@ -429,10 +429,15 @@ class ClientIntegrationTest {
                 .password("password123")
                 .displayName("Client integration user")
                 .build();
-        String body = mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isCreated());
+        String body = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                        java.util.Map.of("email", email, "password", "password123"))))
+                .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).path("data").path("token").asText();
     }

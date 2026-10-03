@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,12 +11,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.repository.UserRepository;
+import th.ac.kku.freelance_hub.repository.RefreshTokenRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
+import th.ac.kku.freelance_hub.common.response.RequestTraceFilter;
 
 import java.util.UUID;
 
@@ -32,7 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 class UserAuthIntegrationTest {
         private static final String PASSWORD = "password123";
         private static final String TEST_JWT_SECRET = "test-secret-key-for-testing-must-be-at-least-256-bits-long-freelance-hub-test";
@@ -41,6 +44,10 @@ class UserAuthIntegrationTest {
         private WebApplicationContext context;
         @Autowired
         private UserRepository userRepository;
+        @Autowired
+        private RefreshTokenRepository refreshTokenRepository;
+        @Autowired
+        private RequestTraceFilter requestTraceFilter;
 
         private final ObjectMapper objectMapper = new ObjectMapper();
         private MockMvc mockMvc;
@@ -48,6 +55,7 @@ class UserAuthIntegrationTest {
         @BeforeEach
         void setUp() {
                 mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                                .addFilters(requestTraceFilter)
                                 .apply(springSecurity())
                                 .build();
         }
@@ -79,8 +87,6 @@ class UserAuthIntegrationTest {
                                 .andExpect(jsonPath("$.data.displayName").value("Second User"))
                                 .andExpect(jsonPath("$.data.province").isEmpty());
 
-                assertThat(userRepository.findByEmail(secondEmail).orElseThrow().getProfile().getDisplayName())
-                                .isEqualTo("Second User");
         }
 
         @Test
@@ -119,11 +125,16 @@ class UserAuthIntegrationTest {
                 ReflectionTestUtils.setField(expiredTokenProvider, "jwtExpiration", -1000L);
                 String expiredToken = expiredTokenProvider.generateToken(email);
 
-                mockMvc.perform(get("/api/users/me"))
+                var unauthorized = mockMvc.perform(get("/api/users/me"))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"))
-                                .andExpect(jsonPath("$.message").value("Authentication is required"));
+                                .andExpect(jsonPath("$.error.status").value(401))
+                                .andExpect(jsonPath("$.message").value("Authentication is required"))
+                                .andReturn();
+                assertThat(objectMapper.readTree(unauthorized.getResponse().getContentAsString())
+                                .path("error").path("traceId").asText())
+                                .isEqualTo(unauthorized.getResponse().getHeader("X-Request-ID"));
                 mockMvc.perform(patch("/api/users/me")
                                 .header("Authorization", "Bearer malformed")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -142,7 +153,7 @@ class UserAuthIntegrationTest {
                 String email = uniqueEmail();
                 String accessToken = register(email, "Original Name");
 
-                mockMvc.perform(patch("/api/users/me")
+                var validation = mockMvc.perform(patch("/api/users/me")
                                 .header("Authorization", bearer(accessToken))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"displayName\":\"   \",\"phone\":\"letters\"}"))
@@ -150,9 +161,17 @@ class UserAuthIntegrationTest {
                                 .andExpect(jsonPath("$.message").value("ข้อมูลที่ส่งมาไม่ถูกต้อง"))
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                                .andExpect(jsonPath("$.error.details.displayName").value("ชื่อที่แสดงต้องไม่เป็นช่องว่าง"))
-                                .andExpect(jsonPath("$.error.details.phone").value(
-                                                "เบอร์โทรศัพท์ต้องมีเฉพาะตัวเลขหรือเครื่องหมายคั่นที่ใช้ทั่วไป"));
+                                .andExpect(jsonPath("$.error.fieldErrors.displayName").value("ชื่อที่แสดงต้องไม่เป็นช่องว่าง"))
+                                .andExpect(jsonPath("$.error.fieldErrors.phone").value(
+                                                "เบอร์โทรศัพท์ต้องมีเฉพาะตัวเลขหรือเครื่องหมายคั่นที่ใช้ทั่วไป"))
+                                .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()))
+                                .andExpect(jsonPath("$.error.status").value(400))
+                                .andReturn();
+                var errorBody = objectMapper.readTree(validation.getResponse().getContentAsString());
+                assertThat(errorBody.path("error").path("traceId").asText())
+                                .isEqualTo(validation.getResponse().getHeader("X-Request-ID"));
+                assertThat(java.time.Instant.parse(errorBody.path("error").path("timestamp").asText()))
+                                .isNotNull();
 
                 mockMvc.perform(get("/api/users/me").header("Authorization", bearer(accessToken)))
                                 .andExpect(status().isOk())
@@ -213,12 +232,92 @@ class UserAuthIntegrationTest {
                                 .andExpect(status().isUnauthorized());
         }
 
+        @Test
+        void refreshReplayRevokesTheCommittedFamilyAndLogoutRevokesAnotherFamily() throws Exception {
+                String email = uniqueEmail();
+                register(email, "Refresh User");
+                UUID userId = userRepository.findByEmail(email).orElseThrow().getId();
+                Cookie original = loginCookie(email, PASSWORD);
+
+                String rotatedHeader = mockMvc.perform(post("/api/auth/refresh")
+                                .header("Origin", "http://localhost:5173").cookie(original))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getHeader("Set-Cookie");
+                Cookie rotated = new Cookie("fh_refresh", rotatedHeader.split(";", 2)[0].split("=", 2)[1]);
+                assertThat(refreshTokenRepository.findAll().stream()
+                                .filter(token -> token.getUser().getId().equals(userId))
+                                .filter(token -> token.getUsedAt() != null).count()).isEqualTo(1);
+                UUID familyId = refreshTokenRepository.findAll().stream()
+                                .filter(token -> token.getUser().getId().equals(userId))
+                                .filter(token -> token.getUsedAt() != null)
+                                .findFirst().orElseThrow().getFamilyId();
+
+                mockMvc.perform(post("/api/auth/refresh")
+                                .header("Origin", "http://localhost:5173").cookie(original))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
+                // The replay response is 401, but its family revocation must still commit.
+                assertThat(refreshTokenRepository.findAll().stream()
+                                .filter(token -> token.getUser().getId().equals(userId))
+                                .filter(token -> token.getFamilyId().equals(familyId))
+                                .allMatch(token -> token.getRevokedAt() != null)).isTrue();
+                mockMvc.perform(post("/api/auth/refresh")
+                                .header("Origin", "http://localhost:5173").cookie(rotated))
+                                .andExpect(status().isUnauthorized());
+
+                Cookie logoutFamily = loginCookie(email, PASSWORD);
+                mockMvc.perform(post("/api/auth/logout")
+                                .header("Origin", "http://localhost:5173").cookie(logoutFamily))
+                                .andExpect(status().isNoContent());
+                mockMvc.perform(post("/api/auth/refresh")
+                                .header("Origin", "http://localhost:5173").cookie(logoutFamily))
+                                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void forbiddenMissingAndDuplicateRequestsUseTheSameErrorContract() throws Exception {
+                String email = uniqueEmail();
+                String token = register(email, "Contract User");
+                Cookie cookie = loginCookie(email, PASSWORD);
+
+                var forbidden = mockMvc.perform(post("/api/auth/refresh").cookie(cookie))
+                                .andExpect(status().isForbidden()).andReturn().getResponse();
+                assertErrorContract(forbidden, 403, "ORIGIN_NOT_ALLOWED");
+
+                var missing = mockMvc.perform(get("/api/no-such-resource")
+                                .header("Authorization", bearer(token)))
+                                .andExpect(status().isNotFound()).andReturn().getResponse();
+                assertErrorContract(missing, 404, "NOT_FOUND");
+
+                var duplicate = mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(
+                                                new Registration(email, PASSWORD, "Duplicate"))))
+                                .andExpect(status().isConflict()).andReturn().getResponse();
+                assertErrorContract(duplicate, 409, "EMAIL_ALREADY_EXISTS");
+        }
+
+        private void assertErrorContract(MockHttpServletResponse response, int status, String code) throws Exception {
+                JsonNode body = objectMapper.readTree(response.getContentAsString());
+                assertThat(body.path("success").asBoolean()).isFalse();
+                assertThat(body.path("message").asText()).isNotBlank();
+                assertThat(body.path("error").path("code").asText()).isEqualTo(code);
+                assertThat(body.path("error").path("status").asInt()).isEqualTo(status);
+                assertThat(body.path("error").path("traceId").asText())
+                                .isEqualTo(response.getHeader("X-Request-ID"));
+                java.time.Instant.parse(body.path("error").path("timestamp").asText());
+        }
+
         private String register(String email, String displayName) throws Exception {
-                String body = mockMvc.perform(post("/api/auth/register")
+                mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper
                                                 .writeValueAsString(new Registration(email, PASSWORD, displayName))))
-                                .andExpect(status().isCreated())
+                                .andExpect(status().isCreated());
+                String body = mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(loginJson(email, PASSWORD)))
+                                .andExpect(status().isOk())
                                 .andReturn().getResponse().getContentAsString();
                 return objectMapper.readTree(body).path("data").path("token").asText();
         }

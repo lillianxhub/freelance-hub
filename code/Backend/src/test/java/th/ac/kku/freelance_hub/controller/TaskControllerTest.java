@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -61,7 +63,7 @@ class TaskControllerTest {
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new TaskController(taskService, userService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new GlobalExceptionHandler(new ApiErrorFactory()))
                 .setValidator(validator)
                 .setCustomArgumentResolvers(
                         new PageableHandlerMethodArgumentResolver()
@@ -384,8 +386,8 @@ class TaskControllerTest {
                 .andExpect(status().isConflict());
     }
     private void stubCurrentUser() {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
     }
 
     private TaskResponse response(String name, TaskStatus taskStatus) {
