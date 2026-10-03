@@ -1,188 +1,119 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { FiActivity, FiBriefcase, FiCheckSquare, FiClock, FiPlus, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
+import { useMemo, useState } from 'react'
+import { FiBriefcase, FiCalendar, FiCheckSquare, FiClock, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
 import { toast } from 'sonner'
-import { Button } from '../../../components/ui/button'
-import { Card } from '../../../components/ui/card'
-import { NativeSelect } from '../../../components/ui/native-select'
-import { Progress } from '../../../components/ui/progress'
-import PageHeader from '../../../components/PageHeader'
-import StatusBadge from '../../../components/StatusBadge'
-import { ErrorState, LoadingState } from '../../../components/ViewState'
-import { useAuth } from '../../../Authentication/useAuthentication'
 import { getErrorMessage } from '../../../api/apiError'
-import { getDashboard, getDashboardActivity } from '../../../services/dashboard'
-import { listTimerProjects } from '../../../services/timerOptions'
-import type { DashboardChartPeriod, DashboardData } from '../../../types/dashboard'
-import type { ProductivityPoint } from '../../../types/analytics'
-import type { TimerWorkspace } from '../../../types/timerWorkspace'
-import TimerPanel from '../../../TimeTracking/components/TimerPanel'
-import { formatDurationSeconds } from '../../../lib/formatters'
-import { activityChartPoints, weeklyChartPoints } from '../../../utils/dashboardChart'
-import ProductivityChart from '../../components/ProductivityChart'
+import PageHeader from '../../../components/PageHeader'
 import SummaryCard from '../../../components/SummaryCard'
+import { ErrorState, LoadingState } from '../../../components/ViewState'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
+import { DatePicker } from '../../../components/ui/date-picker'
+import { Label } from '../../../components/ui/label'
+import { formatDuration } from '../../../lib/formatters'
+import { stopTimer } from '../../../services/timeTracking'
+import type { TimeEntry } from '../../../types/timeTracking'
+import { emptyAnalyticsData, loadAnalyticsData } from '../../AnalyticsContext'
+import { useAsyncData } from '../../../shared/useAsyncData'
+import DashboardProjectsTable from '../../components/DashboardProjectsTable'
+import DashboardTasksTable from '../../components/DashboardTasksTable'
+import DashboardTimerCard from '../../components/DashboardTimerCard'
+import ProductivityChart from '../../components/ProductivityChart'
 
-function greetingForHour(hour: number): string {
-  if (hour < 12) return 'สวัสดีตอนเช้า'
-  if (hour < 18) return 'สวัสดีตอนบ่าย'
-  return 'สวัสดีตอนเย็น'
+function localDateKey(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
+}
+
+function dateAtOffset(date: Date, offset: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + offset)
+  return result
+}
+
+function totalMinutes(entries: readonly TimeEntry[], from: string, to: string): number {
+  return entries.filter((entry) => entry.ended_at && entry.started_at.slice(0, 10) >= from && entry.started_at.slice(0, 10) <= to).reduce((sum, entry) => sum + Number(entry.duration_minutes || 0), 0)
+}
+
+function percentageChange(current: number, previous: number): number {
+  if (!previous) return current ? 100 : 0
+  return Math.round(((current - previous) / previous) * 100)
+}
+
+function Trend({ value, label }: { value: number; label: string }) {
+  const positive = value >= 0
+  return <span className="inline-flex items-center gap-1"><span className={positive ? 'inline-flex items-center gap-1 font-semibold text-green' : 'inline-flex items-center gap-1 font-semibold text-destructive'}>{positive ? <FiTrendingUp aria-hidden="true" /> : <FiTrendingDown aria-hidden="true" />}{Math.abs(value)}%</span> {label}</span>
 }
 
 function DashboardPage() {
-  const { user } = useAuth()
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [chartPeriod, setChartPeriod] = useState<DashboardChartPeriod>('WEEK')
-  const [rangePoints, setRangePoints] = useState<ProductivityPoint[]>([])
-  const [chartLoading, setChartLoading] = useState(false)
-  const [chartError, setChartError] = useState('')
-  const [chartRequestKey, setChartRequestKey] = useState(0)
-  const [timerProjects, setTimerProjects] = useState<TimerWorkspace['data']['projects'] | null>(null)
-  const timerProjectsLoading = useRef(false)
+  const { data: source, loading, error, refresh } = useAsyncData(loadAnalyticsData, emptyAnalyticsData)
+  const now = useMemo(() => new Date(), [])
+  const [dateFrom, setDateFrom] = useState(() => localDateKey(dateAtOffset(now, -6)))
+  const [dateTo, setDateTo] = useState(() => localDateKey(now))
+  const completedEntries = source.time_entries.filter((entry) => entry.ended_at)
+  const today = localDateKey(now)
+  const yesterday = localDateKey(dateAtOffset(now, -1))
+  const weekday = now.getDay() || 7
+  const weekStart = localDateKey(dateAtOffset(now, 1 - weekday))
+  const previousWeekStart = localDateKey(dateAtOffset(now, 1 - weekday - 7))
+  const previousWeekEnd = localDateKey(dateAtOffset(now, -weekday))
+  const todayMinutes = totalMinutes(completedEntries, today, today)
+  const yesterdayMinutes = totalMinutes(completedEntries, yesterday, yesterday)
+  const weekMinutes = totalMinutes(completedEntries, weekStart, today)
+  const previousWeekMinutes = totalMinutes(completedEntries, previousWeekStart, previousWeekEnd)
+  const activeProjects = source.projects.filter((project) => project.status === 'ACTIVE')
+  const completedTasks = source.tasks.filter((task) => task.status === 'DONE').length
 
-  const refresh = useCallback(async () => {
+  if (loading) return <LoadingState label="กำลังโหลดข้อมูลภาพรวม..." />
+  if (error) return <ErrorState message={error} onRetry={refresh} />
+
+  async function handleStopTimer() {
     try {
-      setDashboard(await getDashboard())
-      setError('')
+      await stopTimer()
+      await refresh()
     } catch (reason: unknown) {
-      setError(getErrorMessage(reason, 'ไม่สามารถโหลดข้อมูลภาพรวมได้'))
-    } finally {
-      setLoading(false)
+      toast.error(getErrorMessage(reason, 'ไม่สามารถหยุดตัวจับเวลาได้'))
     }
-  }, [])
+  }
 
-  useEffect(() => { void refresh() }, [refresh])
-
-  const loadTimerProjects = useCallback(() => {
-    if (timerProjects || timerProjectsLoading.current) return
-    timerProjectsLoading.current = true
-    void listTimerProjects()
-      .then((projects) => setTimerProjects(projects))
-      .catch((reason: unknown) => toast.error(getErrorMessage(reason, 'ไม่สามารถโหลดโปรเจกต์สำหรับจับเวลาได้')))
-      .finally(() => { timerProjectsLoading.current = false })
-  }, [timerProjects])
-
-  useEffect(() => {
-    if (dashboard && dashboard.activeProjects.length === 0) loadTimerProjects()
-  }, [dashboard, loadTimerProjects])
-
-  useEffect(() => {
-    if (!dashboard || chartPeriod === 'WEEK') return
-    let active = true
-    const period = chartPeriod
-    setChartLoading(true)
-    setChartError('')
-    setRangePoints([])
-    void getDashboardActivity(period)
-      .then((activity) => {
-        if (active) setRangePoints(activityChartPoints(period, activity.points))
+  const chartData = (() => {
+    const from = new Date(`${dateFrom}T12:00:00`)
+    const to = new Date(`${dateTo}T12:00:00`)
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) return []
+    const result = []
+    for (let date = new Date(from), count = 0; date <= to && count < 366; date = dateAtOffset(date, 1), count += 1) {
+      const key = localDateKey(date)
+      result.push({
+        key,
+        day: new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(date),
+        totalSeconds: Math.round(totalMinutes(completedEntries, key, key) * 60),
       })
-      .catch((reason: unknown) => {
-        if (active) setChartError(getErrorMessage(reason, 'ไม่สามารถโหลดข้อมูลกราฟได้'))
-      })
-      .finally(() => {
-        if (active) setChartLoading(false)
-      })
-    return () => { active = false }
-  }, [chartPeriod, chartRequestKey, dashboard])
-
-  const timerWorkspace = useMemo<TimerWorkspace>(() => ({
-    data: {
-      projects: timerProjects ?? (dashboard?.activeProjects ?? []).map((project) => ({
-        id: project.id,
-        name: project.name,
-        color: project.color || '#4F6BFF',
-        status: project.status,
-      })),
-      tasks: [],
-      time_entries: [],
-    },
-    refresh,
-  }), [dashboard?.activeProjects, refresh, timerProjects])
-
-  if (loading) return <LoadingState label="กำลังสรุปภาพรวม..." />
-  if (error || !dashboard) return <ErrorState message={error || 'ไม่สามารถโหลดข้อมูลภาพรวมได้'} onRetry={refresh} />
-
-  const now = new Date()
-  const { summary } = dashboard
-  const weekTrend = summary.weekTrendPercent
-  const chartData = chartPeriod === 'WEEK' ? weeklyChartPoints(dashboard.dailyWork) : rangePoints
+    }
+    return result
+  })()
 
   return (
-    <div className="page-view dashboard-page">
-      <PageHeader
-        eyebrow={new Intl.DateTimeFormat('th-TH', { dateStyle: 'full' }).format(now)}
-        title={`${greetingForHour(now.getHours())}, ${user?.user_metadata.full_name || 'ฟรีแลนซ์'}`}
-        description="ติดตามเวลาทำงาน โปรเจกต์ และงานที่ต้องทำต่อได้จากที่เดียว"
-        actions={<Button asChild variant="default"><Link className="button button-primary" to="/projects"><FiPlus aria-hidden="true" /> เพิ่มโปรเจกต์</Link></Button>}
-      />
-
-      <section className="summary-grid dashboard-summary-grid" aria-label="สรุปการทำงาน">
-        <SummaryCard label="ชั่วโมงที่บันทึกสัปดาห์นี้" icon={<FiClock aria-hidden="true" />} value={formatDurationSeconds(summary.weekTrackedSeconds)} accent="blue" compact
-          foot={weekTrend === null ? 'ยังไม่มีข้อมูลสัปดาห์ก่อน' : <><span className={weekTrend >= 0 ? 'trend-positive' : 'negative-money'}>{weekTrend >= 0 ? <FiTrendingUp aria-hidden="true" /> : <FiTrendingDown aria-hidden="true" />} {Math.abs(weekTrend)}%</span> เทียบสัปดาห์ก่อน</>} />
-        <SummaryCard label="การใช้ชั่วโมงเป้าหมาย" icon={<FiActivity aria-hidden="true" />} value={Math.round(summary.targetUsagePercent ?? 0)} unit="%" accent="green"
-          foot={summary.activeProjectTargetSeconds ? `${formatDurationSeconds(summary.activeProjectTrackedSeconds)} จากเป้าหมาย ${formatDurationSeconds(summary.activeProjectTargetSeconds)}` : 'ยังไม่ได้กำหนดชั่วโมงเป้าหมาย'} />
-        <SummaryCard label="โปรเจกต์ที่กำลังทำ" icon={<FiBriefcase aria-hidden="true" />} value={summary.activeProjectCount} unit="โปรเจกต์" accent="violet" foot="สถานะกำลังดำเนินการ" />
-        <SummaryCard label="งานที่เสร็จแล้ว" icon={<FiCheckSquare aria-hidden="true" />} value={`${summary.completedTaskCount}/${summary.totalTaskCount}`} accent="orange" compact
-          foot={`${Math.round(summary.completedTaskPercent)}% ของงานทั้งหมด`} />
+    <div className="mx-auto w-full max-w-screen-2xl space-y-6">
+      <PageHeader eyebrow={new Intl.DateTimeFormat('th-TH', { dateStyle: 'full' }).format(now)} title="ภาพรวมการทำงาน" description="ติดตามเวลา โปรเจกต์ และงานสำคัญจากที่เดียว" />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="สรุปการทำงาน">
+        <SummaryCard label="ชั่วโมงที่บันทึกวันนี้" value={formatDuration(todayMinutes)} icon={<FiClock aria-hidden="true" />} accent="blue" compact foot={<Trend value={percentageChange(todayMinutes, yesterdayMinutes)} label="จากเมื่อวาน" />} />
+        <SummaryCard label="ชั่วโมงสัปดาห์นี้" value={formatDuration(weekMinutes)} icon={<FiCalendar aria-hidden="true" />} accent="violet" compact foot={<Trend value={percentageChange(weekMinutes, previousWeekMinutes)} label="จากสัปดาห์ก่อน" />} />
+        <SummaryCard label="โปรเจกต์ที่กำลังทำ" value={activeProjects.length} unit="โปรเจกต์" icon={<FiBriefcase aria-hidden="true" />} accent="orange" foot={`จากทั้งหมด ${source.projects.length} โปรเจกต์`} />
+        <SummaryCard label="งานที่เสร็จแล้ว" value={`${completedTasks} / ${source.tasks.length}`} icon={<FiCheckSquare aria-hidden="true" />} accent="green" compact foot="จำนวนงานที่ดำเนินการเสร็จแล้ว" />
       </section>
-
-      <section className="dashboard-grid dashboard-main-grid">
-        <Card asChild><section className="panel chart-panel dashboard-activity-panel">
-          <div className="panel-heading">
-            <div><h2>ภาพรวมกิจกรรม</h2><p>ชั่วโมงทำงานรวม{chartPeriod === 'WEEK' ? 'ใน 7 วันล่าสุด' : chartPeriod === 'MONTH' ? 'ในเดือนนี้' : 'ในปีนี้'}</p></div>
-            <NativeSelect
-              aria-label="เลือกช่วงเวลาของกราฟ"
-              className="w-36"
-              value={chartPeriod}
-              onChange={(event) => {
-                const value = event.target.value
-                if (value === 'WEEK' || value === 'MONTH' || value === 'YEAR') setChartPeriod(value)
-              }}
-            >
-              <option value="WEEK">สัปดาห์</option>
-              <option value="MONTH">เดือน</option>
-              <option value="YEAR">ปี</option>
-            </NativeSelect>
-          </div>
-          {chartLoading && chartPeriod !== 'WEEK' ? <p className="inline-empty">กำลังโหลดข้อมูลกราฟ...</p>
-            : chartError && chartPeriod !== 'WEEK' ? <div className="inline-empty"><p>{chartError}</p><Button variant="outline" onClick={() => setChartRequestKey((key) => key + 1)}>ลองอีกครั้ง</Button></div>
-              : <ProductivityChart data={chartData} />}
-        </section></Card>
-        <TimerPanel workspace={timerWorkspace} onProjectOptionsOpen={loadTimerProjects} />
+      <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
+        <Card>
+          <CardHeader className="gap-4 sm:grid-cols-[1fr_auto]">
+            <div><CardTitle>ชั่วโมงทำงาน</CardTitle><CardDescription>เลือกช่วงวันที่เพื่อดูชั่วโมงที่บันทึก</CardDescription></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2"><Label htmlFor="dashboard-date-from">ตั้งแต่วันที่</Label><DatePicker id="dashboard-date-from" value={dateFrom} onChange={setDateFrom} className="min-w-36" /></div>
+              <div className="grid gap-2"><Label htmlFor="dashboard-date-to">ถึงวันที่</Label><DatePicker id="dashboard-date-to" value={dateTo} onChange={setDateTo} className="min-w-36" /></div>
+            </div>
+          </CardHeader>
+          <CardContent>{chartData.length ? <ProductivityChart data={chartData} /> : <p className="grid h-72 place-items-center text-sm text-muted-foreground">กรุณาเลือกช่วงวันที่ให้ถูกต้อง</p>}</CardContent>
+        </Card>
+        <DashboardTimerCard entries={source.time_entries} projects={source.projects} tasks={source.tasks} onStop={handleStopTimer} />
       </section>
-
-      <section className="dashboard-grid dashboard-work-grid">
-        <Card asChild><section className="panel">
-          <div className="panel-heading"><div><h2>โปรเจกต์ที่กำลังทำ</h2><p>ติดตามความคืบหน้าจากงานที่เสร็จแล้ว</p></div>
-            <Button asChild variant="ghost"><Link className="mini-button text-link" to="/projects">ดูทั้งหมด</Link></Button></div>
-          <div className="dashboard-projects">
-            {dashboard.activeProjects.length ? dashboard.activeProjects.map((project) => (
-              <Link to={`/projects/${project.id}`} key={project.id}>
-                <span className="project-dot" style={{ background: project.color || '#4F6BFF' }} />
-                <span><strong>{project.name}</strong><small>{project.clientName || 'ไม่ระบุลูกค้า'}</small>
-                  <Progress className="progress-track" value={project.taskProgressPercent} indicatorColor={project.color || '#4F6BFF'} /></span>
-                <span className="dashboard-project-meta"><StatusBadge status={project.status} />
-                  <small>{Math.round(project.taskProgressPercent)}% · {project.completedTaskCount}/{project.totalTaskCount} งาน</small></span>
-              </Link>
-            )) : <p className="inline-empty">ยังไม่มีโปรเจกต์ที่กำลังทำ</p>}
-          </div>
-        </section></Card>
-
-        <Card asChild><section className="panel">
-          <div className="panel-heading"><div><h2>งานที่ยังไม่เสร็จ</h2><p>งานล่าสุดที่รอดำเนินการ</p></div>
-            <Button asChild variant="ghost"><Link className="mini-button text-link" to="/projects">ดูโปรเจกต์ทั้งหมด</Link></Button></div>
-          <div className="dashboard-tasks">
-            {dashboard.openTasks.length ? dashboard.openTasks.map((task) => (
-              <Link to={`/projects/${task.projectId}`} key={task.id}>
-                <span className="task-state-dot" />
-                <span><strong>{task.name}</strong><small>{task.projectName || 'ไม่ระบุโปรเจกต์'}</small></span>
-                <span><StatusBadge status={task.status === 'OPEN' ? 'TODO' : task.status === 'COMPLETED' ? 'DONE' : 'IN_PROGRESS'} /></span>
-              </Link>
-            )) : <p className="inline-empty">ไม่มีงานค้างอยู่</p>}
-          </div>
-        </section></Card>
+      <section className="grid items-start gap-6 2xl:grid-cols-2">
+        <DashboardProjectsTable projects={source.projects} clients={source.clients} tasks={source.tasks} entries={source.time_entries} />
+        <DashboardTasksTable tasks={source.tasks} projects={source.projects} />
       </section>
     </div>
   )
