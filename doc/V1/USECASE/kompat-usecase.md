@@ -32,11 +32,11 @@
 2. Controller validate `StartTimerRequest` และอ่าน owner ID จากผู้ใช้ที่เข้าสู่ระบบ
 3. Service ตรวจว่า User และ Project มีอยู่จริง โดย Project ต้องเป็นของ owner
 4. หากส่ง Task ระบบตรวจว่า Task อยู่ใน Project และเป็นของ owner คนเดียวกัน
-5. Entity ตรวจว่า Project และ Client อยู่ในสถานะ `ACTIVE` และใช้เวลาจาก server ผ่าน `Clock`
+5. Entity ตรวจว่า Project สามารถจับเวลาได้ (`canTrackTime()`) และ Client มี `isActive = true` โดยใช้เวลาจาก server ผ่าน `Clock`
 6. Service ตรวจว่า owner ยังไม่มี running timer แล้วบันทึกรายการชนิด `TIMER`
 7. Controller คืน `201 Created`, `ApiResult<TimeEntryResponse>` และ `Location: /api/time-entries/{id}`
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project หรือ Client ไม่อยู่ในสถานะ `ACTIVE` = `409`; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`  
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่สามารถจับเวลาได้หรือ Client มี `isActive` ไม่ใช่ `true` = `409`; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`\
 **Postcondition:** มี Time Entry ชนิด `TIMER` ที่มี `startedAt` แต่ยังไม่มี `endedAt` และ `durationSeconds`; owner มี running timer ได้ไม่เกินหนึ่งรายการ
 
 ## UC-TIME-02 View Current Timer
@@ -54,7 +54,7 @@
 1. Freelancer เรียก `POST /api/timer/stop`
 2. Service ค้นหา running timer ของ owner ด้วย pessimistic write lock ภายใน transaction
 3. Entity กำหนด `endedAt` จาก server clock และคำนวณ `durationSeconds` เป็นจำนวนวินาทีเต็มโดยไม่ปัดขึ้นเป็นนาที
-4. Service เผยแพร่ `TimerStoppedEvent`
+4. Service เผยแพร่ `TimerStoppedEvent`; หลัง transaction commit แล้ว `TimerStoppedProgressListener` จึงตรวจเกณฑ์ความคืบหน้าโปรเจกต์และเผยแพร่ `ProjectProgressThresholdEvent` หากถึง 80% หรือ 100%
 5. Controller คืน `200` พร้อม `StoppedTimerResponse` ใน `ApiResult.data`
 
 **Alternative flow:** ไม่มี JWT = `401`; ไม่มี running timer = `404`  
