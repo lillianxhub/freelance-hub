@@ -42,6 +42,7 @@ classDiagram
     }
     class TimerServiceImpl
     class TimeEntryServiceImpl
+    class ProjectServiceImpl
     class TimeEntryRepository {
         <<interface>>
     }
@@ -50,6 +51,7 @@ classDiagram
 
     TimerController --> TimerService
     TimeEntryController --> TimeEntryService
+    ProjectServiceImpl --> TimeEntryService : lockByProject เมื่อ COMPLETED
     TimerServiceImpl ..|> TimerService
     TimeEntryServiceImpl ..|> TimeEntryService
     TimerServiceImpl --> TimeEntryRepository
@@ -88,9 +90,9 @@ flowchart TD
 - `Specification` เป็น API ของ Spring Data JPA สำหรับประกอบ query ไม่ใช่ GoF Strategy ที่ทีมสร้างหลาย implementation
 - `@Lock(PESSIMISTIC_WRITE)` และ unique index ของ running timer เป็นกลไก concurrency ไม่ใช่ GoF pattern; การตรวจว่ามี timer อยู่แล้วก่อนบันทึกช่วยคืน error ที่เข้าใจง่าย แต่ unique index ปิดช่องแข่งกันของคำขอพร้อมกัน
 - เอกสารนี้ไม่อ้างว่ามี API สำหรับสั่ง lock Time Entry หรือส่ง notification ถึงผู้ใช้; การลบ completed entry เป็น soft delete ส่วนการยกเลิก running timer ลบรายการนั้นจริง
-- `TimeEntryService.lockByProject(ownerId, projectId)` เป็นคำสั่งภายใน Backend ที่ต้องเรียกใน transaction ของการเปลี่ยนสถานะ Project (`Propagation.MANDATORY`) ผู้เรียกตรวจ owner และการเปลี่ยนเป็น `COMPLETED`; ปัจจุบัน `ProjectServiceImpl` ยังไม่มีจุดเรียก จึงยังไม่เกิดการล็อกอัตโนมัติจากการเปลี่ยนสถานะ
+- `TimeEntryService.lockByProject(ownerId, projectId)` เป็นคำสั่งภายใน Backend ที่ใช้ transaction ของการเปลี่ยนสถานะ Project  
 - คำสั่งล็อกอ่านรายการที่ `lockedAt IS NULL` รวม soft-deleted ด้วย derived query และ `PESSIMISTIC_WRITE` ตรวจว่าไม่มี running timer แล้วตั้ง `lockedAt` ผ่าน `TimeEntry.lock()` ด้วยเวลาเดียวกันจาก `Clock`; รายการที่ล็อกแล้วรักษาเวลาเดิมและไม่มีคำสั่ง unlock
 - การล็อกแถวฐานข้อมูลปลดเมื่อ transaction จบ ส่วน `lockedAt` เป็นค่าถาวรสำหรับห้ามแก้ไข/ลบ; row lock ไม่ป้องกันการสร้างหรือย้ายรายการใหม่เข้า Project ผู้รับผิดชอบการเชื่อมต่อจึงต้องจัดการกรณีนี้เพิ่มเติม
 - เมธอดอ่านของ `TimeEntryServiceImpl` กำหนด `@Transactional(readOnly = true)` รายเมธอด ส่วน create/update/delete ใช้ write transaction และ `lockByProject` ใช้ `Propagation.MANDATORY`; การรวม service ไม่เปลี่ยน endpoint หรือ response format
 
-**หลักฐานการทดสอบ:** `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
+**หลักฐานการทดสอบ:** `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest`, `ProjectServiceImplTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`; integration test ตรวจการเปลี่ยนสถานะผ่าน API การบันทึก `lockedAt` และการคืน `409 TIME_ENTRY_LOCKED` เมื่อแก้ไข/ลบ

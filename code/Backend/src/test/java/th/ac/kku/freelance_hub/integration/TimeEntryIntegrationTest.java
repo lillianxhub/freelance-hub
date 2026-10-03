@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -40,6 +41,9 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.persistence.EntityManager;
+import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
+
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -56,6 +60,12 @@ class TimeEntryIntegrationTest {
 
     @Autowired
     private AdjustableClock clock;
+
+    @Autowired
+    private TimeEntryRepository timeEntryRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -151,6 +161,14 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.data.startedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.endedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.durationSeconds").value(120));
+
+        mockMvc.perform(get("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id")
+                        .value(timerId.toString()))
+                .andExpect(jsonPath("$.data[0].description")
+                        .value("Work in progress"));
 
         mockMvc.perform(get("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
@@ -261,6 +279,8 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.data[0].endedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data[0].durationSeconds")
                         .value(5400))
+                .andExpect(jsonPath("$.data[0].description")
+                        .value("Updated design"))
                 .andExpect(jsonPath("$.meta.page").value(1))
                 .andExpect(jsonPath("$.meta.limit").value(20))
                 .andExpect(jsonPath("$.meta.total").value(1))
@@ -298,6 +318,53 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.meta.limit").value(20))
                 .andExpect(jsonPath("$.meta.total").value(0))
                 .andExpect(jsonPath("$.meta.totalPages").value(0));
+    }
+
+    @Test
+    void completingProjectLocksItsTimeEntryAndRejectsChanges() throws Exception {
+        String token = registerAndGetToken("project-lock-flow@example.com");
+        UUID projectId = createActiveProject(token, "Lock project");
+
+        MvcResult created = mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(manualEntryJson(projectId, "Completed work")))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID entryId = responseId(created);
+        assertThat(timeEntryRepository.findById(entryId).orElseThrow().getLockedAt())
+                .isNull();
+
+        mockMvc.perform(patch("/api/projects/{id}/status", projectId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of("status", "COMPLETED"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        entityManager.clear();
+        assertThat(timeEntryRepository.findById(entryId).orElseThrow().getLockedAt())
+                .isEqualTo(clock.instant());
+
+        mockMvc.perform(put("/api/time-entries/{id}", entryId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(manualEntryJson(projectId, "Changed work")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("TIME_ENTRY_LOCKED"));
+
+        mockMvc.perform(delete("/api/time-entries/{id}", entryId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("TIME_ENTRY_LOCKED"));
+
+        mockMvc.perform(get("/api/time-entries/{id}", entryId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.description")
+                        .value("Completed work"));
+        assertThat(timeEntryRepository.findById(entryId).orElseThrow().getLockedAt())
+                .isEqualTo(clock.instant());
     }
 
     @Test
