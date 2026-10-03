@@ -17,6 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import th.ac.kku.freelance_hub.domain.entity.Project;
@@ -27,7 +28,7 @@ import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.service.DashboardService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.dto.request.dashboard.DashboardActivityPeriod;
 import th.ac.kku.freelance_hub.dto.response.dashboard.ActiveProjectResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DailyWorkResponse;
@@ -36,6 +37,7 @@ import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardSummaryResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.OpenTaskResponse;
+import th.ac.kku.freelance_hub.dto.response.dashboard.RecentTimeEntryResponse;
 @Service
 @Transactional(readOnly = true)
 public class DashboardServiceImpl implements DashboardService {
@@ -45,20 +47,20 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final TimeEntryRepository timeEntryRepository;
-    private final TimeEntryQueryService timeEntryQueryService;
+    private final TimeEntryService timeEntryService;
     private final Clock clock;
 
     public DashboardServiceImpl(
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             TimeEntryRepository timeEntryRepository,
-            TimeEntryQueryService timeEntryQueryService,
+            TimeEntryService timeEntryService,
             Clock clock
     ) {
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.timeEntryRepository = timeEntryRepository;
-        this.timeEntryQueryService = timeEntryQueryService;
+        this.timeEntryService = timeEntryService;
         this.clock = clock;
     }
 
@@ -74,15 +76,15 @@ public class DashboardServiceImpl implements DashboardService {
         );
         LocalDate previousWeekStart = weekStart.minusWeeks(1);
 
-        long weekSeconds = timeEntryQueryService.sumCompletedSeconds(
+        long weekSeconds = timeEntryService.sumCompletedSeconds(
                 ownerId, weekStart, tomorrow
         );
-        long previousWeekSeconds = timeEntryQueryService.sumCompletedSeconds(
+        long previousWeekSeconds = timeEntryService.sumCompletedSeconds(
                 ownerId, previousWeekStart, weekStart
         );
 
         List<DailyWorkResponse> dailyWork =
-                timeEntryQueryService.sumDailySeconds(
+                timeEntryService.sumDailySeconds(
                         ownerId, today.minusDays(6), tomorrow
                 ).stream()
                 .map(day -> new DailyWorkResponse(
@@ -192,8 +194,22 @@ public class DashboardServiceImpl implements DashboardService {
                 ))
                 .toList();
 
+        List<RecentTimeEntryResponse> recentTimeEntries =
+                timeEntryRepository.findRecentCompletedForDashboard(
+                        ownerId, PageRequest.of(0, 2)
+                ).stream()
+                .map(entry -> new RecentTimeEntryResponse(
+                        entry.getId(),
+                        entry.getProject().getName(),
+                        entry.getTask() == null ? null : entry.getTask().getName(),
+                        entry.getDescription(),
+                        entry.getStartedAt(),
+                        entry.getDurationSeconds()
+                ))
+                .toList();
+
         return new DashboardResponse(
-                now, summary, dailyWork, visibleProjects, openTasks
+                now, summary, dailyWork, visibleProjects, openTasks, recentTimeEntries
         );
     }
 
@@ -217,8 +233,8 @@ public class DashboardServiceImpl implements DashboardService {
             case YEAR -> from.plusYears(1);
         };
 
-        List<TimeEntryQueryService.DailySeconds> daily =
-                timeEntryQueryService.sumDailySeconds(ownerId, from, to);
+        List<TimeEntryService.DailySeconds> daily =
+                timeEntryService.sumDailySeconds(ownerId, from, to);
 
         if (period != DashboardActivityPeriod.YEAR) {
             return new DashboardActivityResponse(
@@ -235,7 +251,7 @@ public class DashboardServiceImpl implements DashboardService {
         for (LocalDate month = from; month.isBefore(to); month = month.plusMonths(1)) {
             monthly.put(month, 0L);
         }
-        for (TimeEntryQueryService.DailySeconds day : daily) {
+        for (TimeEntryService.DailySeconds day : daily) {
             monthly.merge(day.day().withDayOfMonth(1), day.totalSeconds(), Long::sum);
         }
         return new DashboardActivityResponse(

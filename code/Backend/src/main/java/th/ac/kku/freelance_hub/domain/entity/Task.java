@@ -186,7 +186,14 @@ public class Task {
             case OPEN -> throw new IllegalStateException(
                     "cannot change task status from " + status + " to OPEN"
             );
-            case IN_PROGRESS -> start();
+            case IN_PROGRESS -> {
+                if (status == TaskStatus.COMPLETED) {
+                    this.completedAt = null;
+                    status = TaskStatus.IN_PROGRESS;
+                } else {
+                    start();
+                }
+            }
             case COMPLETED -> complete(completedAt);
         }
     }

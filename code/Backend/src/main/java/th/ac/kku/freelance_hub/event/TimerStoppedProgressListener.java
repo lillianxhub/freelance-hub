@@ -10,22 +10,22 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.progress.ProjectProgressThresholds;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 @Component
 public class TimerStoppedProgressListener {
 
     private final ProjectRepository projectRepository;
-    private final TimeEntryQueryService timeEntryQueryService;
+    private final TimeEntryService timeEntryService;
     private final ApplicationEventPublisher eventPublisher;
 
     public TimerStoppedProgressListener(
             ProjectRepository projectRepository,
-            TimeEntryQueryService timeEntryQueryService,
+            TimeEntryService timeEntryService,
             ApplicationEventPublisher eventPublisher
     ) {
         this.projectRepository = projectRepository;
-        this.timeEntryQueryService = timeEntryQueryService;
+        this.timeEntryService = timeEntryService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -40,7 +40,7 @@ public class TimerStoppedProgressListener {
             return;
         }
 
-        long currentSeconds = timeEntryQueryService.summarize(
+        long currentSeconds = timeEntryService.summarize(
                 event.ownerId(),
                 TimeEntryFilterRequest.builder()
                         .projectId(event.projectId())

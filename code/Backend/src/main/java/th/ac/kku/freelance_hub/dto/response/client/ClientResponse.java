@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +36,12 @@ public class ClientResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private Long version;
+
+    /** Calculated for GET responses; omitted from write responses. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "All-time completed time entry seconds, using the time entry summary rules; returned by Client GET endpoints",
+            example = "5400", accessMode = Schema.AccessMode.READ_ONLY)
+    private Long totalTrackedSeconds;
 
     /** Absent unless the caller requests include=projects or include=projects.tasks. */
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import th.ac.kku.freelance_hub.domain.entity.Client;
+import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
@@ -36,6 +37,18 @@ public interface ClientRepository
         Pageable pageable
     );
 
+    /** Managed projects for the Client status cascade; soft-deleted projects are excluded. */
+    @Query("""
+            SELECT p
+            FROM Project p
+            WHERE p.owner.id = :ownerId
+              AND p.client.id = :clientId
+              AND p.deletedAt IS NULL
+            ORDER BY p.id
+            """)
+    List<Project> findProjectsForClientStatusChange(
+            @Param("ownerId") UUID ownerId, @Param("clientId") UUID clientId);
+
     /** Select only fields needed when a Client detail explicitly includes projects. */
     @Query("""
             SELECT p.id AS id, p.name AS name, p.color AS color,
@@ -62,6 +75,21 @@ public interface ClientRepository
             """)
     List<IncludedTask> findIncludedTasks(
             @Param("ownerId") UUID ownerId, @Param("clientId") UUID clientId);
+
+    /** Match time entry summary rules, including history on archived projects and tasks. */
+    @Query("""
+            SELECT p.client.id AS clientId, SUM(t.durationSeconds) AS totalSeconds
+            FROM TimeEntry t
+            JOIN t.project p
+            WHERE t.owner.id = :ownerId
+              AND p.client.id IN :clientIds
+              AND t.isActive = true
+              AND t.endedAt IS NOT NULL
+              AND t.durationSeconds IS NOT NULL
+            GROUP BY p.client.id
+            """)
+    List<ClientTrackedSeconds> sumTrackedSecondsByClientIds(
+            @Param("ownerId") UUID ownerId, @Param("clientIds") List<UUID> clientIds);
 
     /** Aggregate completed, active time entries by their Project's Client. */
     @Query("""
@@ -107,6 +135,11 @@ public interface ClientRepository
     interface ClientTimeTotal {
         UUID getClientId();
         String getClientName();
+        Long getTotalSeconds();
+    }
+
+    interface ClientTrackedSeconds {
+        UUID getClientId();
         Long getTotalSeconds();
     }
 }

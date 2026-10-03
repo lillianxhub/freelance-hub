@@ -2,6 +2,7 @@ import type { Project } from './project'
 import type { TimeEntry } from './timeTracking'
 import type { Client } from './client'
 import type { Task } from './task'
+import type { ProjectStatus } from './project'
 
 export interface AnalyticsData {
   clients: Client[]
@@ -35,4 +36,61 @@ export interface ProjectTimeChartProps {
 export interface RecentActivityProps {
   entries: readonly TimeEntry[]
   projects: readonly Project[]
+}
+
+export interface ReportSummaryQuery {
+  from: string
+  to: string
+  clientId?: string
+  projectId?: string
+}
+
+export interface ReportFilterOption {
+  id: string
+  name: string
+}
+
+export interface ReportProjectOption extends ReportFilterOption {
+  clientId: string
+}
+
+export interface ReportSummaryKpi {
+  totalTrackedSeconds: number
+  trackedTimeTrendPercent: number
+  timeEntryCount: number
+  projectsWithTime: number
+  totalProjects: number
+  clientsWithTime: number
+  totalClients: number
+}
+
+export interface ReportClientTime {
+  clientId: string
+  clientName: string
+  trackedSeconds: number
+  percent: number
+}
+
+export interface ReportProjectUsage {
+  projectId: string
+  projectName: string
+  clientId: string
+  clientName: string
+  color: string
+  targetSeconds: number | null
+  trackedSeconds: number
+  usagePercent: number | null
+  taskProgressPercent: number
+  status: ProjectStatus
+}
+
+export interface ReportSummaryData {
+  generatedAt: string
+  filters: {
+    clients: ReportFilterOption[]
+    projects: ReportProjectOption[]
+  }
+  summary: ReportSummaryKpi
+  timeByClient: ReportClientTime[]
+  projectUsage: ReportProjectUsage[]
 }

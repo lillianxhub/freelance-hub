@@ -28,8 +28,7 @@ import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-import th.ac.kku.freelance_hub.service.CurrentUserProvider;
+import th.ac.kku.freelance_hub.service.UserService;
 import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
@@ -48,8 +47,7 @@ import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
 public class TimeEntryController {
 
     private final TimeEntryService timeEntryService;
-    private final TimeEntryQueryService timeEntryQueryService;
-    private final CurrentUserProvider userService;
+    private final UserService userService;
 
     @Operation(summary = "Create a manual time entry")
     @ApiResponse(
@@ -100,7 +98,7 @@ public class TimeEntryController {
     > list(
             @ParameterObject @Valid @ModelAttribute TimeEntryFilterRequest filter
     ) {
-        Page<TimeEntryResponse> page = timeEntryQueryService.list(
+        Page<TimeEntryResponse> page = timeEntryService.list(
                 currentOwnerId(),
                 filter
         );
@@ -135,7 +133,7 @@ public class TimeEntryController {
     public ResponseEntity<
             ApiResult<TimeEntryDetailResponse>
     > getById(@PathVariable("id") UUID id) {
-        TimeEntryResponse response = timeEntryQueryService.getById(
+        TimeEntryResponse response = timeEntryService.getById(
                 currentOwnerId(),
                 id
         );
@@ -159,7 +157,7 @@ public class TimeEntryController {
         return ResponseEntity.ok(
                 ApiResult.success(
                         "สรุปรายการเวลาเรียบร้อยแล้ว",
-                        timeEntryQueryService.summarize(currentOwnerId(), filter)
+                        timeEntryService.summarize(currentOwnerId(), filter)
                 )
         );
     }

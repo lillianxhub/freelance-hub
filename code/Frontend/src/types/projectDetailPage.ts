@@ -14,6 +14,7 @@ export interface TaskFormProps {
 
 export interface TaskListProps {
   tasks: readonly Task[]
+  changingTaskId?: string | null
   onToggle: (task: Task) => void
   onMove: (task: Task, direction: -1 | 1) => void
   onEdit: (task: Task) => void

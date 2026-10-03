@@ -26,7 +26,6 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
 
 @SpringBootTest
@@ -49,8 +48,6 @@ class TimeEntryRepositoryTest {
     @Autowired
     private TimeEntryRepository timeEntryRepository;
 
-    @Autowired
-    private TimeEntryQueryService timeEntryQueryService;
 
     @Autowired
     private TimeEntryService timeEntryService;
@@ -436,13 +433,13 @@ class TimeEntryRepositoryTest {
         projectRepository.flush();
         entityManager.clear();
 
-        var result = timeEntryQueryService.sumSecondsByProject(
+        var result = timeEntryService.sumSecondsByProject(
                 owner.getId(), LocalDate.of(2026, 9, 29), LocalDate.of(2026, 9, 30)
         );
 
         assertThat(result).containsExactly(
-                new TimeEntryQueryService.ProjectSeconds(project.getId(), project.getName(), 3600),
-                new TimeEntryQueryService.ProjectSeconds(emptyProject.getId(), emptyProject.getName(), 0)
+                new TimeEntryService.ProjectSeconds(project.getId(), project.getName(), 3600),
+                new TimeEntryService.ProjectSeconds(emptyProject.getId(), emptyProject.getName(), 0)
         );
     }
 

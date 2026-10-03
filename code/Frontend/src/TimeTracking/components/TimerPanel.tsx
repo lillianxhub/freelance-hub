@@ -15,11 +15,12 @@ import { useTimer } from '../useTimer'
 interface TimerPanelProps {
   workspace: TimerWorkspace
   onProjectOptionsOpen?: () => void
+  onTimerChanged?: () => void | Promise<void>
 }
 
 type TimerAction = 'starting' | 'stopping' | 'cancelling'
 
-export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPanelProps) {
+export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerChanged }: TimerPanelProps) {
   const timer = useTimer(workspace, { loadTaskOptions: true })
   const formattedTimer = formatTimer(timer.elapsedSeconds)
   const [timerLeading, timerSeconds] = formattedTimer.split(/:(?=[^:]+$)/)
@@ -29,6 +30,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
     setPendingAction(actionType)
     try {
       await action()
+      await onTimerChanged?.()
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'ไม่สามารถดำเนินการกับตัวจับเวลาได้'))
     } finally {
@@ -81,7 +83,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
                 <p className="truncate text-sm font-semibold text-text-primary">{timer.runningTask?.name || 'ไม่ระบุงาน'}</p>
               </div>
             </div>
-            <div className="grid min-w-0 gap-2">
+            <div className="grid min-w-0 gap-2 md:col-span-2 xl:col-span-1">
               <p className="text-xs text-text-secondary">คำอธิบาย</p>
               <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
                 <p className="truncate text-sm font-semibold text-text-primary">{timer.runningEntry.description || 'ไม่มีรายละเอียด'}</p>
