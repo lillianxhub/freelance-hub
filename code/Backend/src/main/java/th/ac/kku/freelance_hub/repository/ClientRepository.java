@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import th.ac.kku.freelance_hub.domain.entity.Client;
+import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
@@ -35,6 +36,18 @@ public interface ClientRepository
         Boolean isActive,
         Pageable pageable
     );
+
+    /** Managed projects for the Client status cascade; soft-deleted projects are excluded. */
+    @Query("""
+            SELECT p
+            FROM Project p
+            WHERE p.owner.id = :ownerId
+              AND p.client.id = :clientId
+              AND p.deletedAt IS NULL
+            ORDER BY p.id
+            """)
+    List<Project> findProjectsForClientStatusChange(
+            @Param("ownerId") UUID ownerId, @Param("clientId") UUID clientId);
 
     /** Select only fields needed when a Client detail explicitly includes projects. */
     @Query("""
