@@ -10,7 +10,8 @@ public record TimeEntryListItemResponse(
         TaskSummary task,
         Instant startedAt,
         Instant endedAt,
-        Long durationSeconds
+        Long durationSeconds,
+        String description
 ) {
 
     public static TimeEntryListItemResponse from(TimeEntryResponse source) {
@@ -28,7 +29,8 @@ public record TimeEntryListItemResponse(
                 task,
                 source.getStartedAt(),
                 source.getEndedAt(),
-                source.getDurationSeconds()
+                source.getDurationSeconds(),
+                source.getDescription()
         );
     }
 
