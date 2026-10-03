@@ -29,14 +29,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.ChangeClientStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
-import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.client.ChangeClientStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 @Tag(name = "Clients", description = "Manage clients belonging to the authenticated user")
 @RestController
 @RequestMapping("/api/clients")

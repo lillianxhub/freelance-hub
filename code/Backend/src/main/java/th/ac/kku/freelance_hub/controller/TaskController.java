@@ -28,16 +28,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.ProjectTaskReorderRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TaskService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.project.ProjectTaskReorderRequest;
+import th.ac.kku.freelance_hub.dto.request.task.CreateTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.ReorderTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @Tag(name = "Tasks", description = "Manage tasks within the authenticated user's projects")
 @RestController
 @RequestMapping("/api/projects/{projectId}/tasks")

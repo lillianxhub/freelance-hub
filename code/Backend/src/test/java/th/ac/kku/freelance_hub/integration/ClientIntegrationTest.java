@@ -25,9 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
-
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.request.user.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

@@ -8,16 +8,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
-import th.ac.kku.freelance_hub.dto.request.ChangePasswordRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
-import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.exception.InvalidCredentialsException;
 import th.ac.kku.freelance_hub.exception.UserNotFoundException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.RefreshTokenService;
 import java.util.UUID;
-
+import th.ac.kku.freelance_hub.dto.request.auth.ChangePasswordRequest;
+import th.ac.kku.freelance_hub.dto.request.user.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 /**
  * Service for user operations
  */

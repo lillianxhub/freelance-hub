@@ -1,22 +1,21 @@
+import { useState } from 'react'
+import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
+import { toast } from 'sonner'
+import { getErrorMessage } from '../../api/apiError'
 import { Card } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { NativeSelect } from '../../components/ui/native-select'
-import { Input } from '../../components/ui/input'
 import { formatTimer } from '../../lib/formatters'
-import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
-import { useState } from 'react'
-import { useTimer } from '../useTimer'
 import type { TimerWorkspace } from '../../types/timerWorkspace'
-import { getErrorMessage } from '../../api/apiError'
-import { toast } from 'sonner'
+import { useTimer } from '../useTimer'
 
 interface TimerPanelProps {
   workspace: TimerWorkspace
   onProjectOptionsOpen?: () => void
 }
-
 type TimerAction = 'starting' | 'stopping' | 'cancelling'
 
 export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPanelProps) {
@@ -69,27 +68,24 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
 
         {timer.runningEntry ? (
           <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(240px,1.6fr)_auto]">
-            <div className="contents">
-              <div className="grid min-w-0 gap-2">
-                <p className="text-xs text-text-secondary">โปรเจกต์</p>
-                <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                  <p className="truncate text-sm font-semibold text-text-primary">{timer.runningProject?.name || 'ไม่ระบุโปรเจกต์'}</p>
-                </div>
-              </div>
-              <div className="grid min-w-0 gap-2">
-                <p className="text-xs text-text-secondary">งาน</p>
-                <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                  <p className="truncate text-sm font-semibold text-text-primary">{timer.runningTask?.name || 'ไม่ระบุงาน'}</p>
-                </div>
-              </div>
-              <div className="grid min-w-0 gap-2">
-                <p className="text-xs text-text-secondary">คำอธิบาย</p>
-                <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                  <p className="truncate text-sm font-semibold text-text-primary">{timer.runningEntry.description || 'ไม่มีรายละเอียด'}</p>
-                </div>
+            <div className="grid min-w-0 gap-2">
+              <p className="text-xs text-text-secondary">โปรเจกต์</p>
+              <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
+                <p className="truncate text-sm font-semibold text-text-primary">{timer.runningProject?.name || 'ไม่ระบุโปรเจกต์'}</p>
               </div>
             </div>
-
+            <div className="grid min-w-0 gap-2">
+              <p className="text-xs text-text-secondary">งาน</p>
+              <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
+                <p className="truncate text-sm font-semibold text-text-primary">{timer.runningTask?.name || 'ไม่ระบุงาน'}</p>
+              </div>
+            </div>
+            <div className="grid min-w-0 gap-2">
+              <p className="text-xs text-text-secondary">คำอธิบาย</p>
+              <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
+                <p className="truncate text-sm font-semibold text-text-primary">{timer.runningEntry.description || 'ไม่มีรายละเอียด'}</p>
+              </div>
+            </div>
             <div className="flex w-full items-center gap-2 lg:min-w-[205px]">
               <Button
                 variant="destructive"
@@ -129,9 +125,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
                   }}
                 >
                   {timer.activeProjects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
+                    <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
                 </NativeSelect>
               </div>
@@ -144,37 +138,30 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen }: TimerPan
                 >
                   <option value="">ไม่ระบุงาน</option>
                   {timer.selectedTasks.map((task) => (
-                    <option key={task.id} value={task.id}>
-                      {task.name}
-                    </option>
+                    <option key={task.id} value={task.id}>{task.name}</option>
                   ))}
                 </NativeSelect>
               </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="timer-description">คำอธิบาย</Label>
-              <Input
-                id="timer-description"
-                value={timer.description}
-                onChange={(event) => timer.setDescription(event.target.value)}
-                placeholder="กำลังทำอะไรอยู่?"
-              />
+              <div className="grid gap-2">
+                <Label htmlFor="timer-description">คำอธิบาย</Label>
+                <Input
+                  id="timer-description"
+                  value={timer.description}
+                  onChange={(event) => timer.setDescription(event.target.value)}
+                  placeholder="กำลังทำอะไรอยู่?"
+                />
+              </div>
+              <Button
+                variant="default"
+                className="h-[41px] w-full gap-2 whitespace-nowrap lg:min-w-[165px]"
+                type="button"
+                disabled={!timer.timerProjectId || pendingAction !== null}
+                onClick={() => void runTimerAction(timer.startTimer, 'starting')}
+              >
+                <FiPlay aria-hidden="true" /> เริ่มจับเวลา
+              </Button>
             </div>
-
-            <Button
-              variant="default"
-              className="h-[41px] w-full gap-2 whitespace-nowrap lg:min-w-[165px]"
-              type="button"
-              disabled={!timer.timerProjectId || pendingAction !== null}
-              onClick={() => void runTimerAction(timer.startTimer, 'starting')}
-            >
-              <FiPlay aria-hidden="true" /> เริ่มจับเวลา
-            </Button>
-            </div>
-
-            {timer.optionsError && (
-              <p className="text-sm text-destructive">{timer.optionsError}</p>
-            )}
+            {timer.optionsError && <p className="text-sm text-destructive">{timer.optionsError}</p>}
           </div>
         )}
       </section>
