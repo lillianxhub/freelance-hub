@@ -37,4 +37,4 @@
 1. หลักฐาน OCP เป็นจุดต่อขยายผ่าน event เท่านั้น; การเพิ่มเงื่อนไข filter ใหม่ยังต้องแก้ `buildSpecification()` ใน `TimeEntryServiceImpl`
 2. หลักฐาน LSP ข้างต้นแสดงเพียงการเรียกผ่าน interface และการ implement contract ปัจจุบัน; แต่ละ service มี production implementation เพียงตัวเดียว จึงยังยืนยันไม่ได้ว่า implementation ใหม่จะทดแทนกันได้โดยไม่เปลี่ยนพฤติกรรม เช่น การตรวจ owner, ข้อผิดพลาด และผลลัพธ์ที่คืน
 3. `TimeTrackingExceptionHandler` ครอบคลุมเฉพาะ Timer และ Time Entry; authentication error และ URL ที่ไม่ตรง endpoint ยังผ่านกลไกส่วนกลางของ Backend
-4. `ProjectServiceImpl` ยังไม่เรียก `lockByProject`; เมธอดนี้ไม่ได้ตรวจสถานะ Project เอง ผู้เรียกต้องตรวจ owner/การเปลี่ยนเป็น `COMPLETED` และป้องกัน concurrent creation/reassignment การมี service contract ยังไม่ใช่หลักฐานว่าล็อกอัตโนมัติครบทั้ง flow แล้ว
+4. `ProjectServiceImpl.changeStatus()` เรียก `lockByProject` เมื่อเปลี่ยนเป็น `COMPLETED` แล้ว และมี integration test ยืนยันการตั้ง `lockedAt` กับการปฏิเสธ update/delete; เมธอดล็อกไม่ได้ตรวจสถานะ Project เอง และการล็อกเฉพาะรายการที่มีอยู่ยังไม่ครอบคลุม concurrent creation/reassignment
