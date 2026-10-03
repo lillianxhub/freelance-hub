@@ -1,31 +1,34 @@
 # SOLID Analysis: Project และ Task Management
 
 **เจ้าของ feature:** `kantavit_673380027-4_01`  
-**ขอบเขต:** Project และ Task API รวมถึง business logic สำหรับผู้ใช้ที่เข้าสู่ระบบ
+**ขอบเขต:** Project/Task API, business logic, Project State และ listener ความคืบหน้าเวลา
+**วิธีอ้างอิง:** `ไฟล์:บรรทัด` ด้านล่างนับจาก `code/Backend/src/main/java/th/ac/kku/freelance_hub/` ณ เวอร์ชันที่อัปเดตเอกสารนี้
 
-เลขบรรทัดอ้างอิง implementation ปัจจุบันภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/` และควรตรวจซ้ำเมื่อรวมเข้าเอกสารหลักหรือแก้โค้ด
-
-| Principle | ไฟล์/คลาสและบรรทัด | เหตุผลและขอบเขตหลักฐาน |
+| Principle | หลักฐานในโค้ด | เหตุผลและขอบเขต |
 |---|---|---|
-| Single Responsibility | `controller/ProjectController.java:33-157`, `controller/TaskController.java:39-223` | Controller รับ request, ตรวจ DTO, อ่านผู้ใช้ปัจจุบัน และคืน HTTP response; ไม่เข้าถึง repository โดยตรง |
-| Single Responsibility | `mapper/ProjectMapper.java:9-26`, `mapper/TaskMapper.java:9-24` | Mapper แปลง entity เป็น response DTO โดยไม่จัดการ HTTP หรือ persistence |
-| Single Responsibility | `domain/entity/Project.java:171-196`, `domain/state/ProjectState.java:5-14`, `domain/state/ProjectStates.java:13-24`, `domain/entity/Task.java:141-170` | `Project` เก็บสถานะและประสานการเปลี่ยนสถานะ ส่วนคลาส State แต่ละตัวรับผิดชอบกฎของสถานะนั้น และ `Task` จัดการวงจรสถานะของตนเอง |
-| Open/Closed | `domain/state/ProjectState.java:5-14`, `domain/state/ProjectStates.java:13-24`, `domain/state/PlannedState.java`, `domain/state/ActiveState.java`, `domain/state/OnHoldState.java`, `domain/state/CompletedState.java`, `domain/state/ArchivedState.java` | การปรับกฎของสถานะเดิมทำในคลาส State ของสถานะนั้น โดยไม่ต้องแก้ Controller หรือ TaskService; หากเพิ่มสถานะใหม่ ยังต้องเพิ่มค่าใน `ProjectStatus` และ mapping ใน `ProjectStates.from()` จึงเป็น OCP บางส่วน |
-| Liskov Substitution | `service/impl/ProjectServiceImpl.java:35-36,59-202`, `service/impl/TaskServiceImpl.java:35-36,62-217` | Implementation ทำ operation ตาม interface และ Controller เรียกผ่าน interface ได้ แต่แต่ละ interface มี production implementation เดียว จึงยังไม่มีการพิสูจน์การแทนที่ระหว่าง implementation หลายตัว |
-| Interface Segregation | `service/ProjectService.java:15-42`, `service/TaskService.java:13-40` | แยก contract ของ Project กับ Task; Controller ของแต่ละ feature ไม่ต้องพึ่งเมธอดของอีก feature |
-| Dependency Inversion | `controller/ProjectController.java:35-36`, `controller/TaskController.java:41-42`, `service/impl/ProjectServiceImpl.java:41-57`, `service/impl/TaskServiceImpl.java:42-60` | Controller รับ service interface และ service รับ repository interface ผ่าน constructor แทนการสร้าง dependency เอง; mapper และ `UserService` ยังเป็น concrete class จึงเป็นการใช้ DIP บางส่วน |
+| Single Responsibility | `controller/ProjectController.java:95`, `controller/TaskController.java:82`, `controller/TaskDetailController.java:51` | Controller รับ request, อ่าน owner ปัจจุบัน และจัด HTTP/`ApiResult`; ไม่ทำ query ฐานข้อมูลโดยตรง |
+| Single Responsibility | `mapper/ProjectMapper.java:16,33`, `mapper/TaskMapper.java:11` | Mapper แปลง entity เป็น DTO; ProjectMapper สร้าง Client summary, Task progress และชั่วโมงเป้าหมาย ส่วน Service เติมเวลาใช้งานจริง |
+| Single Responsibility | `domain/state/ProjectState.java:5`, `domain/entity/Project.java:185`, `domain/entity/Task.java:179,194` | State แต่ละคลาสถือกฎของสถานะ Project; Project ประสานการเปลี่ยนสถานะ; Task จัดการ transition และ soft delete ของตัวเอง |
+| Single Responsibility | `domain/progress/ProjectProgressThresholds.java:5,40`, `event/TimerStoppedProgressListener.java:34`, `event/ProjectProgressThresholdListener.java:14` | แยกการคำนวณเกณฑ์ การตอบสนองต่อ timer stop และการเขียน log เป็นคนละหน้าที่ |
+| Open/Closed | `domain/state/ProjectState.java:5`, `domain/state/ProjectStates.java:13`, `domain/state/ArchivedState.java:18` | เปลี่ยนกฎของสถานะเดิมใน State นั้นได้โดยไม่ต้องแก้ Controller; การเพิ่มสถานะใหม่ยังต้องแก้ enum และ `ProjectStates.from()` จึงเป็น OCP บางส่วน |
+| Open/Closed | `event/ProjectProgressThresholdEvent.java:5`, `event/ProjectProgressThresholdListener.java:14` | เพิ่ม listener ที่รับ threshold event ได้โดยไม่ต้องแก้ตัวเผยแพร่ event แต่กฎเกณฑ์ 80/100 ยังอยู่ใน `ProjectProgressThresholds` |
+| Liskov Substitution | `service/ProjectService.java:19`, `service/TaskService.java:17`, `service/impl/ProjectServiceImpl.java:51`, `service/impl/TaskServiceImpl.java:38` | Controller เรียกผ่าน service interface และ implementation ทำตาม contract; แต่ละ interface มี production implementation เดียว จึงยังไม่ใช่หลักฐานว่ามีหลาย implementation ที่แทนกันได้จริง |
+| Interface Segregation | `service/ProjectService.java:19-93`, `service/TaskService.java:17-55` | แยก Project กับ Task contract จึงไม่บังคับ ProjectController ให้พึ่ง TaskService; อย่างไรก็ดี ProjectService รวม CRUD, รายการ และ method สรุปสำหรับ Dashboard จึงไม่ได้แยก interface ย่อยตามผู้ใช้ทุกกลุ่ม |
+| Dependency Inversion | `controller/ProjectController.java:52`, `controller/TaskController.java:47`, `controller/TaskDetailController.java:38` | Controller พึ่ง `ProjectService`/`TaskService` interface และรับ dependency จาก Spring |
+| Dependency Inversion | `service/impl/ProjectServiceImpl.java:55-76`, `service/impl/TaskServiceImpl.java:45-65`, `event/TimerStoppedProgressListener.java:19-32` | Service และ listener รับ repository/`TimeEntryQueryService`/`ApplicationEventPublisher` ผ่าน constructor; mapper, JPA `EntityManager` และ `UserService` ยังเป็น concrete dependency จึงไม่อ้างว่า DIP ครอบคลุมทุกจุด |
 
-## Evidence จาก Project และ Task flow
+## หลักฐานตามการทำงานจริง
 
-- Owner ID มาจากผู้ใช้ที่เข้าสู่ระบบ ไม่รับจาก request: `controller/ProjectController.java:155-157`, `controller/TaskController.java:222-224`
-- การอ่าน Project รายตัวใช้ `projectId` ร่วมกับ `ownerId`; การอ่าน Task ใช้ `taskId`, `projectId` และเจ้าของโปรเจกต์: `service/impl/ProjectServiceImpl.java:204-210`, `service/impl/TaskServiceImpl.java:246-261`
-- Service โหลดและบันทึก Project; `Project.changeStatus()` ให้ State ปัจจุบันตรวจ transition ผ่าน `ProjectStates.from(status)`: `service/impl/ProjectServiceImpl.java:183-193`, `domain/entity/Project.java:171-196`, `domain/state/ProjectStates.java:13-24`
-- การเริ่ม timer ใช้ `Project.canTrackTime()` และการเปลี่ยนข้อมูล Task ใช้ `Project.canEditTasks()` ซึ่งมอบการตัดสินใจให้ State: `domain/entity/TimeEntry.java:125,262-269`, `service/impl/TaskServiceImpl.java:226-241`, `domain/entity/Project.java:191-196`
-- การเริ่ม Task ตรวจสถานะ `OPEN` ใน entity ส่วน service ประสานการค้นหาและบันทึก: `domain/entity/Task.java:141-149`, `service/impl/TaskServiceImpl.java:130-140`
-- การลบ Task ตรวจ Time Entry ก่อนลบ และจัดลำดับ Task ที่เหลือใหม่: `service/impl/TaskServiceImpl.java:191-216`
+- `ProjectController.java:95-155` ใช้ `ProjectFilterRequest` และส่งการค้นหาให้ Service; `status=ALL` รวม `ARCHIVED` ส่วนไม่ส่ง status จะซ่อน `ARCHIVED` โดยยังตัด `deletedAt` ออก (`dto/request/ProjectFilterRequest.java:24-30`, `service/impl/ProjectServiceImpl.java:203-222`)
+- `ProjectServiceImpl.java:116-130,269-319,371-389` ประกอบ Client/Task progress และ `timeTracking` จาก Time Entry ที่จบแล้วให้ทั้ง Project detail และ list; เมื่อไม่มี `targetMinutes`, `usagePercent` เป็น `null`
+- `ProjectServiceImpl.java:135-179` มี `countActiveAndCompleted()` กับ `getProgress()` สำหรับ Dashboard; `TaskServiceImpl.java:131-144` มี `getLatestTimeEntryTaskName()` ทั้งหมดเป็น service method ไม่ใช่ HTTP endpoint ใหม่
+- `Project.java:185-219` ให้ State ปัจจุบันตัดสิน transition, สิทธิ์จับเวลา และสิทธิ์แก้ Task; `ARCHIVED` ย้อนเป็น `ACTIVE` หรือ `PLANNED` ได้ถ้าเป็นการเปลี่ยนสถานะปกติ ส่วน `Project.archive()` ตั้ง `deletedAt` สำหรับ soft delete
+- `TaskServiceImpl.java:67-103,179-199,232-290,303-311` ตรวจเจ้าของ/State ก่อนแก้ Task, จัดลำดับ และใช้ `Task.softDelete()` แทนลบแถว (`Task.java:194-199`)
+- `TimerStoppedProgressListener.java:34-70` รับ `TimerStoppedEvent` หลัง commit, คำนวณเกณฑ์ใหม่ แล้วเผยแพร่ `ProjectProgressThresholdEvent`; `ProjectProgressThresholdListener.java:14-22` เขียน log ยังไม่มี notification ถึงผู้ใช้
 
-## ข้อสังเกตสำหรับรวมเอกสารหลัก
+## ข้อจำกัดของการวิเคราะห์
 
-1. ตัวอย่าง OCP/LSP แสดงจุดขยายผ่าน interface แต่ไม่ควรอ้างว่ามีหลาย production implementation แล้ว
-2. DIP ยังไม่ครอบคลุมทุก dependency เพราะ mapper และ `UserService` เป็น concrete class
-3. ตรวจเลขบรรทัดอีกครั้งหลัง code freeze ก่อนนำตารางนี้ไปรวมใน `doc/solid-analysis.md`
+1. `ProjectServiceImpl` รวมหลาย operation ของ Project เพื่อรองรับ feature ปัจจุบัน จึงไม่ควรกล่าวว่าแต่ละคลาสมีหน้าที่เดียวอย่างสมบูรณ์ เพียงแต่แยก HTTP, mapping, domain rule และ event handling ออกจากกันแล้ว
+2. `TaskStatus` เป็น enum พร้อมกฎใน `Task.changeStatus()` ไม่ใช่ GoF State pattern ชุดเดียวกับ Project
+3. ตัวอย่าง LSP/DIP เป็นหลักฐานเชิงโครงสร้าง ไม่ใช่ข้อพิสูจน์ว่าเปลี่ยน implementation ใด ๆ ได้โดยไม่กระทบพฤติกรรม
+4. เลขบรรทัดควรตรวจซ้ำหลัง merge ก่อนนำไปคัดลอกลงเอกสารหลักของทีม

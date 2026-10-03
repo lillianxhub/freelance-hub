@@ -1,176 +1,124 @@
 # Use Cases: Project และ Task Management
 
 **เจ้าของ feature:** `kantavit_673380027-4_01`  
-**ขอบเขต:** จัดการโปรเจกต์ของผู้ใช้ที่เข้าสู่ระบบ และจัดการ Task ภายในโปรเจกต์นั้น  
-**อ้างอิง requirement:** `FR-PRJ-01` ถึง `FR-PRJ-05` ใน `REQUIREMENTS.md`
+**ขอบเขต:** Project และ Task ของผู้ใช้ที่เข้าสู่ระบบ รวมข้อมูลสรุปที่ส่งให้ Dashboard
+**อ้างอิง requirement:** `FR-PRJ-01` ถึง `FR-PRJ-07` ใน `REQUIREMENTS.md`
 
-## Actor และเงื่อนไขร่วม
+## Actor และกติกาที่ใช้ร่วมกัน
 
-**Actor หลัก:** Freelancer ที่เข้าสู่ระบบ
+**Actor หลัก:** Freelancer ที่เข้าสู่ระบบ ระบบอ่าน `ownerId` จากผู้ใช้ปัจจุบัน ไม่รับจาก request และตรวจความเป็นเจ้าของก่อนอ่านหรือแก้ Project/Task โดย ID ที่ส่งผ่าน API เป็น UUID
 
-ทุก request ต้องมีการยืนยันตัวตน ระบบอ่าน `ownerId` จากผู้ใช้ที่เข้าสู่ระบบ ไม่รับ `ownerId` จาก request การอ่านหรือแก้ Project ต้องตรวจทั้ง `projectId` และ `ownerId` ส่วน Task ต้องตรวจ `taskId`, `projectId` และเจ้าของโปรเจกต์
+เส้น Project และ Task หลักคืนรูปแบบ `ApiResult` (`success`, `message`, `data`, `meta`, `error`) รายการที่แบ่งหน้าจะใส่ `page`, `limit`, `total`, `totalPages` ใน `meta` ส่วนเส้น Task แบบซ้อนบางเส้นที่ยังเปิดใช้อยู่คืน `TaskResponse` ตรง ๆ ตามโค้ดปัจจุบัน
 
 ## Use Case Summary
 
-| ID | Use Case | Endpoint | ผลลัพธ์สำเร็จ |
+| ID | Use Case | Endpoint หลัก | ผลลัพธ์ |
 |---|---|---|---|
-| UC-PRJ-01 | สร้าง Project | `POST /api/projects` | `201 Created` พร้อม Project และ `Location` |
-| UC-PRJ-02 | ค้นหา/แสดงรายการ Project | `GET /api/projects` | `200 OK` พร้อมรายการแบบแบ่งหน้า |
-| UC-PRJ-03 | ดู Project รายตัว | `GET /api/projects/{id}` | `200 OK` |
-| UC-PRJ-04 | แก้ไขรายละเอียด Project | `PATCH /api/projects/{id}` | `200 OK` |
-| UC-PRJ-05 | เปลี่ยนสถานะ Project | `PATCH /api/projects/{id}/status` | `200 OK` |
-| UC-PRJ-06 | Archive Project | `DELETE /api/projects/{id}` | `204 No Content` |
-| UC-TSK-01 | สร้าง Task | `POST /api/projects/{projectId}/tasks` | `201 Created` พร้อม Task และ `Location` |
-| UC-TSK-02 | แสดงรายการ Task | `GET /api/projects/{projectId}/tasks` | `200 OK` พร้อมรายการแบบแบ่งหน้า |
-| UC-TSK-03 | ดู Task รายตัว | `GET /api/projects/{projectId}/tasks/{taskId}` | `200 OK` |
-| UC-TSK-04 | แก้ไข Task | `PATCH /api/projects/{projectId}/tasks/{taskId}` | `200 OK` |
-| UC-TSK-05 | เริ่ม Task | `PATCH /api/projects/{projectId}/tasks/{taskId}/start` | `200 OK` |
-| UC-TSK-06 | ปิด Task | `PATCH /api/projects/{projectId}/tasks/{taskId}/complete` | `200 OK` |
-| UC-TSK-07 | เปลี่ยนลำดับ Task | `PATCH /api/projects/{projectId}/tasks/{taskId}/reorder` | `200 OK` |
-| UC-TSK-08 | ลบ Task | `DELETE /api/projects/{projectId}/tasks/{taskId}` | `204 No Content` |
+| UC-PRJ-01 | สร้าง Project | `POST /api/projects` | `201`, `ApiResult<ProjectResponse>` และ `Location` |
+| UC-PRJ-02 | ค้นหา/แสดงรายการ Project | `GET /api/projects` | `200`, รายการ `ProjectListItemResponse` และ `meta` |
+| UC-PRJ-03 | ดู Project รายตัว | `GET /api/projects/{id}` | `200`, `ProjectListItemResponse` |
+| UC-PRJ-04 | แก้รายละเอียด Project | `PUT /api/projects/{id}` | `200`, `ProjectResponse` |
+| UC-PRJ-05 | เปลี่ยนสถานะ Project | `PATCH /api/projects/{id}/status` | `200`, `ProjectResponse` |
+| UC-PRJ-06 | ลบ Project แบบ soft delete | `DELETE /api/projects/{id}` | `200`, `ApiResult` |
+| UC-TSK-01 | สร้าง Task ใน Project | `POST /api/projects/{projectId}/tasks` | `201`, `TaskResponse` และ `Location` |
+| UC-TSK-02 | แสดงรายการ Task ใน Project | `GET /api/projects/{projectId}/tasks` | `200`, รายการ `TaskResponse` และ `meta` |
+| UC-TSK-03 | ดู Task รายตัว | `GET /api/tasks/{taskId}` | `200`, `TaskResponse` |
+| UC-TSK-04 | แก้ Task | `PUT /api/tasks/{taskId}` | `200`, `TaskResponse` |
+| UC-TSK-05 | เปลี่ยนสถานะ Task | `PATCH /api/tasks/{taskId}/status` | `200`, `TaskResponse` |
+| UC-TSK-06 | เรียงลำดับ Task | `PATCH /api/projects/{projectId}/tasks/reorder` | `200`, `TaskResponse` |
+| UC-TSK-07 | ลบ Task แบบ soft delete | `DELETE /api/tasks/{taskId}` | `200`, `ApiResult` |
 
 ## Project use cases
 
 ### UC-PRJ-01 สร้าง Project
 
-1. Freelancer ส่ง `clientId`, ชื่อโปรเจกต์ และรายละเอียดอื่นที่ต้องการ
-2. Controller ตรวจข้อมูล request และอ่าน `ownerId` จากผู้ใช้ที่เข้าสู่ระบบ
-3. Service ตรวจว่า Client ที่เลือกเป็นของผู้ใช้นั้น
-4. ระบบสร้าง Project โดยมีสถานะเริ่มต้น `PLANNED` แล้วบันทึก
-5. คืน `201 Created`, `ProjectResponse` และ `Location: /api/projects/{id}`
+1. ส่ง `clientId` และ `name` (บังคับ) พร้อม `description`, `startDate`, `endDate`, `color` รูปแบบ `#RRGGBB` และ `targetMinutes` (ถ้ามี)
+2. Service ตรวจว่า Client เป็นของผู้ใช้ สร้าง Project ด้วยสถานะเริ่มต้น `PLANNED` แล้วบันทึก
+3. คืน `201 Created` พร้อม `Location: /api/projects/{id}` และ `ApiResult<ProjectResponse>`
 
-**Alternative flow:** ข้อมูลไม่ถูกต้อง = `400`; ไม่ได้เข้าสู่ระบบ = `401`; ไม่พบ Client หรือ Client ไม่ใช่ของผู้ใช้ = `404`  
-**Postcondition:** มี Project ใหม่ที่ผูกกับเจ้าของและ Client ที่เลือก
+**ทางเลือก:** request ไม่ถูกต้อง = `400`; ไม่พบ Client ของผู้ใช้ = `404`
 
 ### UC-PRJ-02 ค้นหา/แสดงรายการ Project
 
-1. Freelancer เรียก `GET /api/projects` พร้อมตัวเลือก `search`, `status`, `clientId`, การแบ่งหน้า และการเรียงลำดับ
-2. Service จำกัดผลลัพธ์ให้เป็น Project ของผู้ใช้ก่อน แล้วจึงใช้ตัวกรองที่ระบุ
-3. ระบบคืน `200 OK` พร้อม `Page<ProjectResponse>`; หากไม่ระบุการเรียงลำดับ จะเรียงตาม `createdAt` จากใหม่ไปเก่า
+1. เรียก `GET /api/projects` พร้อม `search` (ชื่อ Project หรือ Client), `clientId`, `status`, `page`, `limit`, `sortBy`, `direction` หรือ `include=tasks`
+2. `page` เริ่มที่ 1 ค่าเริ่มต้นคือหน้า 1 ครั้งละ 20 รายการ เรียง `project_name` แบบ `ASC`; `sortBy` รับ `project_name`, `update_at`, `end_date`
+3. ไม่ส่ง `status` จะไม่แสดง `ARCHIVED`; `status=ARCHIVED` แสดงเฉพาะสถานะนั้น; `status=ALL` แสดงทุกสถานะรวม `ARCHIVED` แต่ทุกกรณียังตัด Project ที่ `deletedAt` ไม่เป็น null ออก
+4. `include=tasks` จะแนบเฉพาะ Task ที่ยังใช้งานของแต่ละ Project; `taskProgress` สรุปจำนวน Task และเปอร์เซ็นต์ที่เสร็จ ส่วน `timeTracking` ส่ง `trackedSeconds`, `trackedHours`, `usagePercent` จาก Time Entry ที่บันทึกเวลาจบแล้วให้อัตโนมัติ ไม่ต้องส่ง `include` เพื่อขอเวลา
+5. คืน `ApiResult<List<ProjectListItemResponse>>` พร้อม `meta` สำหรับการแบ่งหน้า
 
-**Alternative flow:** ไม่มีผลลัพธ์ = page ว่าง; ตัวเลือกค้นหา/แบ่งหน้า/เรียงลำดับไม่ถูกต้อง = `400`; ไม่ได้เข้าสู่ระบบ = `401`  
-**Postcondition:** ไม่มีข้อมูลเปลี่ยนแปลง และไม่แสดง Project ของผู้ใช้อื่น
+ตัวอย่าง: `GET /api/projects?page=1&limit=10&sortBy=project_name&direction=ASC&status=ALL&include=tasks`
+
+**ทางเลือก:** ไม่มีผลลัพธ์ = `data` เป็นรายการว่าง; ตัวกรองหรือ pagination ไม่ถูกต้อง = `400`
+**Postcondition:** ไม่แก้ข้อมูลและไม่แสดง Project ของผู้ใช้อื่น
 
 ### UC-PRJ-03 ดู Project รายตัว
 
-1. Freelancer ส่ง UUID ของ Project
-2. Service ค้น Project ด้วย `projectId` และ `ownerId`
-3. ระบบคืน `200 OK` พร้อม `ProjectResponse`
+1. ส่ง UUID ของ Project; Service ค้นด้วย `projectId` และ `ownerId` โดยไม่คืนรายการที่ soft delete แล้ว
+2. คืน `ProjectListItemResponse` พร้อมข้อมูล Client, `taskProgress` และ `timeTracking` แบบเดียวกับรายการ Project; ไม่มี `recentTimeEntries` ใน response นี้
 
-**Alternative flow:** ไม่พบ Project หรือเป็นของผู้ใช้อื่น = `404`; ไม่ได้เข้าสู่ระบบ = `401`  
-**Postcondition:** ไม่มีข้อมูลเปลี่ยนแปลง
+**ทางเลือก:** ไม่พบ Project หรือไม่ใช่เจ้าของ = `404`
 
-### UC-PRJ-04 แก้ไขรายละเอียด Project
+### UC-PRJ-04 แก้รายละเอียด Project
 
-1. Freelancer ส่ง UUID ของ Project และข้อมูลใหม่
-2. Controller ตรวจ request; ปัจจุบัน request นี้ **ต้องมี `clientId` และ `name`** แม้ใช้ HTTP `PATCH`
-3. Service ตรวจว่า Project และ Client เป็นของผู้ใช้ แล้วแก้รายละเอียดและบันทึก
-4. ระบบคืน `200 OK` พร้อม Project ล่าสุด
+1. ส่ง `PUT /api/projects/{id}` โดย request ต้องมี `clientId` และ `name`; ส่งรายละเอียดอื่นได้เหมือนตอนสร้าง
+2. Service ตรวจ Project/Client ของผู้ใช้ อัปเดตรายละเอียดและคืน `ApiResult<ProjectResponse>`
 
-**Alternative flow:** ข้อมูลไม่ถูกต้อง = `400`; ไม่พบ Project/Client หรือไม่ใช่เจ้าของ = `404`; ไม่ได้เข้าสู่ระบบ = `401`  
-**Postcondition:** รายละเอียด Project ถูกอัปเดต โดยการเปลี่ยนสถานะเป็น use case แยกต่างหาก
+**ทางเลือก:** request ไม่ถูกต้อง = `400`; ไม่พบ Project/Client ของผู้ใช้ = `404`
+**Postcondition:** รายละเอียดเปลี่ยน แต่การเปลี่ยนสถานะเป็น use case แยก
 
 ### UC-PRJ-05 เปลี่ยนสถานะ Project
 
-1. Freelancer ส่งสถานะใหม่ไปที่ `/status`
-2. Service โหลด Project ของผู้ใช้; `Project.changeStatus()` เลือก State จากสถานะปัจจุบันผ่าน `ProjectStates.from()` แล้วตรวจ `canTransitionTo()`
-3. เมื่อผ่านกติกา ระบบบันทึกสถานะและคืน `200 OK`
+1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่
+2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; ส่งสถานะเดิมซ้ำได้
+3. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
 
-**กติกาปัจจุบัน:** `PLANNED → ACTIVE/ARCHIVED`; `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`; `ON_HOLD → ACTIVE/ARCHIVED`; `COMPLETED → ARCHIVED` ส่วน `ARCHIVED` ไม่เปลี่ยนไปสถานะอื่น การส่งสถานะเดิมซ้ำทำได้
+**ทางเลือก:** สถานะไม่ถูกต้อง = `400`; ไม่พบ Project = `404`; transition ผิดกฎ = `409`
 
-**Alternative flow:** request ไม่ถูกต้อง = `400`; ไม่พบ Project หรือไม่ใช่เจ้าของ = `404`; เปลี่ยนสถานะผิดกติกา = `409`  
-**Postcondition:** Project มีสถานะใหม่เมื่อการเปลี่ยนสถานะได้รับอนุญาต
+### UC-PRJ-06 ลบ Project แบบ soft delete
 
-### UC-PRJ-06 Archive Project
+1. ส่ง `DELETE /api/projects/{id}`; Service ตรวจเจ้าของแล้วเรียก `Project.archive()`
+2. Entity ตั้งสถานะ `ARCHIVED`, `isActive=false` และ `deletedAt` แล้วคืน `200 ApiResult` โดย `data=null`
 
-1. Freelancer ส่ง UUID ของ Project
-2. Service ตรวจเจ้าของและเรียก `Project.archive()`
-3. ระบบเปลี่ยนสถานะเป็น `ARCHIVED` และคืน `204 No Content`
-
-**Alternative flow:** ไม่พบ Project หรือไม่ใช่เจ้าของ = `404`; ไม่ได้เข้าสู่ระบบ = `401`  
-**Postcondition:** ข้อมูล Project ยังอยู่ในฐานข้อมูล ไม่ใช่การลบแถวจริง
+**Postcondition:** แถวยังอยู่ในฐานข้อมูล แต่ไม่ปรากฏใน Project list แม้ส่ง `status=ALL`
 
 ## Task use cases
 
 ### UC-TSK-01 สร้าง Task
 
-1. Freelancer ส่งชื่อ คำอธิบาย และตำแหน่ง `sortOrder` ภายใน Project
-2. Service ตรวจว่า Project เป็นของผู้ใช้และเรียก `project.canEditTasks()` ซึ่งให้ State ปัจจุบันตัดสินว่าแก้ Task ได้หรือไม่
-3. ระบบแทรก Task ในตำแหน่งที่ระบุ โดยตำแหน่งเริ่มนับจาก `0` และจัดลำดับ Task ที่เหลือใหม่
-4. คืน `201 Created`, `TaskResponse` และ `Location` ของ Task ใหม่
-
-**Alternative flow:** ชื่อหรือตำแหน่งไม่ถูกต้อง = `400`; ไม่พบ Project หรือไม่ใช่เจ้าของ = `404`; Project แก้ Task ไม่ได้ = `409`  
-**Postcondition:** มี Task ใหม่ใน Project โดยลำดับไม่ซ้ำกัน
+ส่ง `name`, `sortOrder` (เริ่มที่ 0) และ `description` ถ้ามี Service ตรวจเจ้าของ Project และ `project.canEditTasks()` จากนั้นแทรก Task ในตำแหน่งที่ระบุ จัดลำดับ Task ที่ยังใช้งาน แล้วคืน `201 ApiResult<TaskResponse>` พร้อม `Location: /api/tasks/{taskId}` หากตำแหน่งไม่ถูกต้องได้ `400`; หากสถานะ Project ห้ามแก้ Task ได้ `409`
 
 ### UC-TSK-02 แสดงรายการ Task
 
-1. Freelancer ระบุ `projectId` พร้อมตัวเลือกแบ่งหน้า/เรียงลำดับ
-2. Service ตรวจเจ้าของ Project แล้วอ่าน Task ภายใน Project นั้น
-3. คืน `200 OK` พร้อม `Page<TaskResponse>`; หากไม่ระบุการเรียงลำดับ จะเรียงตาม `sortOrder` จากน้อยไปมาก
-
-**Alternative flow:** ไม่พบ Project หรือไม่ใช่เจ้าของ = `404`; ตัวเลือกแบ่งหน้าหรือเรียงลำดับไม่ถูกต้อง = `400`  
-**Postcondition:** ไม่มีข้อมูลเปลี่ยนแปลง
+`GET /api/projects/{projectId}/tasks` รับ `is_active` (ค่าเริ่มต้น `true`), `page` (เริ่มที่ 1), `limit` และ `sort` คืน `ApiResult<List<TaskResponse>>` พร้อม `meta` หากไม่กำหนด sort จะเรียง `sortOrder` จากน้อยไปมาก
 
 ### UC-TSK-03 ดู Task รายตัว
 
-1. Freelancer ระบุ `projectId` และ `taskId`
-2. Service ค้น Task โดยตรวจ Project และเจ้าของร่วมกัน
-3. คืน `200 OK` พร้อม `TaskResponse`
+`GET /api/tasks/{taskId}` ตรวจเจ้าของผ่าน Project แล้วคืน `ApiResult<TaskResponse>`; route เก่า `GET /api/projects/{projectId}/tasks/{taskId}` ถูกคอมเมนต์ปิดแล้ว
 
-**Alternative flow:** ไม่พบ Task/Project หรือไม่ใช่เจ้าของ = `404`  
-**Postcondition:** ไม่มีข้อมูลเปลี่ยนแปลง
+### UC-TSK-04 แก้ Task
 
-### UC-TSK-04 แก้ไข Task
+`PUT /api/tasks/{taskId}` รับ `name` และ `description` ตรวจ `project.canEditTasks()` แล้วคืน `ApiResult<TaskResponse>` หาก Project เป็น `COMPLETED` หรือ `ARCHIVED` จะไม่อนุญาตให้แก้ (`409`)
 
-1. Freelancer ส่งชื่อและคำอธิบายใหม่
-2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนแก้ Task
-3. ระบบแก้ไข Task แล้วคืน `200 OK`
+### UC-TSK-05 เปลี่ยนสถานะ Task
 
-**Alternative flow:** ชื่อไม่ถูกต้อง = `400`; ไม่พบ Project/Task หรือไม่ใช่เจ้าของ = `404`; Project แก้ Task ไม่ได้ = `409`  
-**Postcondition:** ชื่อและคำอธิบาย Task ถูกอัปเดต
+`PATCH /api/tasks/{taskId}/status` ใช้ enum ของ Task เอง (`OPEN`, `IN_PROGRESS`, `COMPLETED`) ไม่ใช้ `ProjectStatus`: `OPEN → IN_PROGRESS/COMPLETED`, `IN_PROGRESS → COMPLETED`; `COMPLETED` ย้อนกลับไม่ได้ และส่งสถานะเดิมซ้ำจะไม่เปลี่ยนข้อมูล การทำงานต้องผ่าน `project.canEditTasks()` ด้วย
 
-### UC-TSK-05 เริ่ม Task
+### UC-TSK-06 เรียงลำดับ Task
 
-1. Freelancer ขอเริ่ม Task
-2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนเริ่ม Task
-3. `Task.start()` ยอมรับเฉพาะ Task สถานะ `OPEN` แล้วเปลี่ยนเป็น `IN_PROGRESS`
-4. คืน `200 OK` พร้อม Task ล่าสุด
+`PATCH /api/projects/{projectId}/tasks/reorder` รับ `taskId` กับ `sortOrder` ซึ่งเริ่มจาก 0 Service ตรวจเจ้าของและสิทธิ์แก้ Task ย้ายตำแหน่งเฉพาะ Task ที่ยังใช้งาน แล้วคืน `ApiResult<TaskResponse>`
 
-**Alternative flow:** ไม่พบ Project/Task หรือไม่ใช่เจ้าของ = `404`; Task ไม่ใช่ `OPEN` หรือ Project แก้ Task ไม่ได้ = `409`  
-**Postcondition:** Task อยู่ในสถานะ `IN_PROGRESS`
+### UC-TSK-07 ลบ Task แบบ soft delete
 
-### UC-TSK-06 ปิด Task
+`DELETE /api/tasks/{taskId}` ตรวจเจ้าของและ `project.canEditTasks()` ก่อนตั้ง `isActive=false`, `deletedAt` และจัดลำดับ Task ที่เหลือใหม่ โดยเก็บ Time Entry เดิมไว้ คืน `200 ApiResult` โดย `data=null`
 
-1. Freelancer ขอปิด Task
-2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนปิด Task
-3. ระบบบันทึกเวลา `completedAt` และเปลี่ยน Task เป็น `COMPLETED`
-4. คืน `200 OK` พร้อม Task ล่าสุด
+**เส้นเดิมที่ยังเปิดอยู่:** `PATCH /api/projects/{projectId}/tasks/{taskId}` (แก้), `PATCH /api/projects/{projectId}/tasks/{taskId}/complete` (ปิด), `PATCH /api/projects/{projectId}/tasks/{taskId}/reorder` (ย้าย) และ `DELETE /api/projects/{projectId}/tasks/{taskId}` ยังทำงาน แต่บางเส้นคืน `TaskResponse` ตรง ๆ หรือ `204` ต่างจากเส้นหลักด้านบน ส่วน route `/start` ถูกคอมเมนต์ปิดแล้ว
 
-**Alternative flow:** ไม่พบ Project/Task หรือไม่ใช่เจ้าของ = `404`; Task ปิดไปแล้วหรือ Project แก้ Task ไม่ได้ = `409`  
-**Postcondition:** Task อยู่ในสถานะ `COMPLETED` พร้อมเวลาปิดงาน
+## ข้อมูลสำหรับ Dashboard และความคืบหน้าเวลา
 
-**หมายเหตุ:** โค้ดปัจจุบันอนุญาตให้ปิด Task จาก `OPEN` หรือ `IN_PROGRESS`; ไม่ได้บังคับว่าต้องเริ่มก่อน
-
-### UC-TSK-07 เปลี่ยนลำดับ Task
-
-1. Freelancer ส่ง `sortOrder` ใหม่ โดยนับจาก `0`
-2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` แล้วโหลด Task ตามลำดับปัจจุบัน
-3. ระบบย้าย Task ไปตำแหน่งใหม่และบันทึกลำดับของ Task ทั้งชุด
-4. คืน `200 OK` พร้อม Task ที่ย้าย
-
-**Alternative flow:** ตำแหน่งเกินช่วงที่มี = `400`; ไม่พบ Project/Task หรือไม่ใช่เจ้าของ = `404`; Project แก้ Task ไม่ได้ = `409`  
-**Postcondition:** Task ภายใน Project มีลำดับต่อเนื่องโดยไม่ซ้ำกัน
-
-### UC-TSK-08 ลบ Task
-
-1. Freelancer ขอให้ลบ Task
-2. Service ตรวจเจ้าของและเรียก `project.canEditTasks()` ก่อนลบ Task
-3. ระบบตรวจว่า Task ไม่มี Time Entry ที่บันทึกไว้
-4. เมื่อลบได้ ระบบ **ลบ Task จริง** และจัดลำดับ Task ที่เหลือใหม่
-5. คืน `204 No Content`
-
-**Alternative flow:** ไม่พบ Project/Task หรือไม่ใช่เจ้าของ = `404`; Project แก้ Task ไม่ได้หรือ Task มี Time Entry = `409`  
-**Postcondition:** Task ถูกลบ ส่วน Task ที่เหลือมีลำดับต่อเนื่อง
+- `ProjectService.countActiveAndCompleted(ownerId)` คืนจำนวน `ACTIVE`, `COMPLETED` และผลรวมผ่าน `totalCount()`; เป็น service method ไม่ใช่ endpoint ใหม่
+- `ProjectService.getProgress(ownerId, projectId)` คืน `targetMinutes`, `trackedSeconds`, `progressPercent` และระดับ `NO_TARGET`, `BELOW_80`, `REACHED_80`, `REACHED_100`; ถ้าไม่มีเป้าหมายยังคืนเวลาที่บันทึกได้ แต่เปอร์เซ็นต์เป็น `null`
+- `TaskService.getLatestTimeEntryTaskName(ownerId)` อ่านชื่อ Task ของ Time Entry ล่าสุดตาม `startedAt` และคืน `Optional.empty()` หากไม่มีรายการหรือรายการล่าสุดไม่ผูก Task; เป็น service method ไม่ใช่ endpoint ใหม่
+- เมื่อหยุด timer ระบบรับ `TimerStoppedEvent` หลัง transaction commit แล้วตรวจว่าข้ามเกณฑ์ 80%/100% หรือไม่ จากนั้นเผยแพร่ `ProjectProgressThresholdEvent`; listener ปัจจุบัน **บันทึก log เท่านั้น** ยังไม่มี notification ที่ส่งถึงผู้ใช้หรือเก็บลงฐานข้อมูล
 
 ## Sequence: เปลี่ยนสถานะ Project
 
@@ -178,47 +126,31 @@
 sequenceDiagram
     actor F as Freelancer
     participant C as ProjectController
-    participant U as UserService
     participant S as ProjectServiceImpl
     participant R as ProjectRepository
     participant P as Project
-    participant PS as ProjectStates
-    participant ST as ProjectState
+    participant ST as ProjectStates / ProjectState
     participant H as GlobalExceptionHandler
-
     F->>C: PATCH /api/projects/{id}/status + JWT
-    C->>U: getCurrentUserEntity().getId()
-    U-->>C: ownerId
     C->>S: changeStatus(ownerId, id, request)
     S->>R: findByIdAndOwnerId(id, ownerId)
-    alt พบ Project ของผู้ใช้
-        R-->>S: Project
-        S->>P: changeStatus(nextStatus)
-        P->>PS: from(currentStatus)
-        PS-->>P: State ของสถานะปัจจุบัน
-        P->>ST: canTransitionTo(nextStatus)
-        ST-->>P: true หรือ false
-        alt เปลี่ยนสถานะได้
-            P-->>S: อัปเดต ProjectStatus
-            S->>R: save(Project)
-            R-->>S: Project
-            S-->>C: ProjectResponse
-            C-->>F: 200 OK
-        else ผิดกติกาสถานะ
-            P-->>S: IllegalStateException
-            S-->>C: ส่งต่อ IllegalStateException
-            C-->>H: Spring ส่งให้ exception handler
-            H-->>F: 409 Conflict
-        end
-    else ไม่พบหรือเป็นของผู้อื่น
-        R-->>H: ProjectNotFoundExceptio n
-        H-->>F: 404 Not Found
+    R-->>S: Project หรือไม่พบ
+    S->>P: changeStatus(nextStatus)
+    P->>ST: from(status), canTransitionTo(nextStatus)
+    ST-->>P: อนุญาตหรือปฏิเสธ
+    alt อนุญาต
+        P-->>S: อัปเดต status และ isActive
+        S->>R: save(Project)
+        S-->>C: ProjectResponse
+        C-->>F: 200 ApiResult
+    else ปฏิเสธ
+        P-->>S: IllegalStateException
+        S-->>H: Spring ส่ง exception ให้ handler
+        H-->>F: 409 Conflict
     end
 ```
 
-## ขอบเขตที่ยังไม่เสร็จ
+## ขอบเขตปัจจุบัน
 
-- `FR-PRJ-06` เรื่องเวลาที่ใช้เทียบกับเป้าหมายยังไม่ปรากฏใน `ProjectResponse` หรือ Project API ปัจจุบัน แม้ `Project` มีเมธอดคำนวณ progress ภายใน
-- `FR-PRJ-07` การแจ้งเตือนที่ 80%/100% ยังไม่มี implementation ในส่วนนี้
-- เอกสารนี้บันทึกพฤติกรรมจากโค้ดปัจจุบัน ควรตรวจเทียบกับ Use Case Diagram ฉบับทีมก่อนส่งงาน
-- มีไฟล์ทดสอบ Controller และ Service ของ Project/Task แล้ว แต่เอกสารนี้ไม่ได้ยืนยันผลการรันทดสอบรอบล่าสุด
+- เอกสารนี้อธิบาย Project/Task และ listener ความคืบหน้าที่เกี่ยวกับ Project เท่านั้น ไม่อธิบายการทำงานทั้งหมดของ Timer, Time Entry หรือ Dashboard
+- `FR-PRJ-07` มีการตรวจเกณฑ์และเผยแพร่ event แล้ว แต่การแจ้งเตือนถึงผู้ใช้จริงยังไม่ปรากฏในส่วนนี้
