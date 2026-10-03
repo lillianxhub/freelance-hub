@@ -76,7 +76,12 @@ export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> 
   const query = new URLSearchParams({ page: '1', limit: '10', sortBy: 'startedAt', direction: 'DESC' })
   if (projectId) query.set('projectId', projectId)
   const response = await api.get<ApiTimeEntry[]>(`/time-entries?${query.toString()}`)
-  return response.data.map(toTimeEntry)
+  return response.data.map((source) => {
+    const entry = toTimeEntry(source)
+    return projectId && !entry.project_id
+      ? { ...entry, project_id: projectId }
+      : entry
+  })
 }
 
 export async function saveTimeEntry(entry: TimeEntryInput): Promise<TimeEntry> {

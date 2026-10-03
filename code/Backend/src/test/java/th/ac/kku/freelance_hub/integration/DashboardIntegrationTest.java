@@ -83,6 +83,10 @@ class DashboardIntegrationTest {
         assertThat(result.activeProjects().get(0).name()).isEqualTo("Website");
         assertThat(result.activeProjects().get(0).taskProgressPercent()).isEqualByComparingTo("50.00");
         assertThat(result.openTasks()).extracting(task -> task.name()).containsExactly("Build");
+        assertThat(result.recentTimeEntries()).hasSize(2);
+        assertThat(result.recentTimeEntries().get(0).description()).isEqualTo("Unassigned work");
+        assertThat(result.recentTimeEntries().get(0).durationSeconds()).isEqualTo(3600);
+        assertThat(result.recentTimeEntries().get(1).taskName()).isEqualTo("Design");
     }
 
     @Test
@@ -98,6 +102,7 @@ class DashboardIntegrationTest {
         assertThat(result.dailyWork()).hasSize(7);
         assertThat(result.activeProjects()).isEmpty();
         assertThat(result.openTasks()).isEmpty();
+        assertThat(result.recentTimeEntries()).isEmpty();
     }
 
     @Test

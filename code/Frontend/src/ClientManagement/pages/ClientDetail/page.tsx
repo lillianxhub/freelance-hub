@@ -3,13 +3,27 @@ import { Progress } from '../../../components/ui/progress'
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../../components/ui/pagination'
 import { Link, useParams } from 'react-router-dom'
 import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock, FiList } from 'react-icons/fi'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import PageHeader from '../../../components/PageHeader'
 import SummaryCard from '../../../components/SummaryCard'
 import StatusBadge from '../../../components/StatusBadge'
 import { ErrorState, LoadingState } from '../../../components/ViewState'
-import { useClients } from '../../useClients'
-import { formatDuration } from '../../../lib/formatters'
+import { formatDurationSeconds } from '../../../lib/formatters'
+import { useAsyncData } from '../../../shared/useAsyncData'
+import { getClientById } from '../../../services/client'
+import { listAllProjects } from '../../../services/project'
+import { summarizeTimeEntries } from '../../../services/timeTracking'
+import type { Client } from '../../../types/client'
+import type { Project } from '../../../types/project'
+
+interface ClientDetailData {
+  client: Client | null
+  projects: Project[]
+  totalSeconds: number
+  entryCount: number
+}
+
+const emptyData: ClientDetailData = { client: null, projects: [], totalSeconds: 0, entryCount: 0 }
 
 function getPaginationItems(currentPage: number, totalPages: number): Array<number | 'ellipsis'> {
   if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1)
@@ -25,19 +39,25 @@ function getPaginationItems(currentPage: number, totalPages: number): Array<numb
 
 function ClientDetailPage() {
   const { clientId } = useParams()
-  const { data, loading, error, refresh } = useClients()
+  const load = useCallback(async (): Promise<ClientDetailData> => {
+    if (!clientId) throw new Error('ไม่พบรหัสลูกค้า')
+    const [client, projects, summary] = await Promise.all([
+      getClientById(clientId),
+      listAllProjects({ clientId, status: 'ALL' }),
+      summarizeTimeEntries({ clientId }),
+    ])
+    return { client, projects, totalSeconds: summary.totalSeconds, entryCount: summary.entryCount }
+  }, [clientId])
+  const { data, loading, error, refresh } = useAsyncData(load, emptyData, clientId)
   const [projectPage, setProjectPage] = useState(1)
 
   if (loading) return <LoadingState label="กำลังโหลดข้อมูลลูกค้า..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
 
-  const client = data.clients.find((item) => item.id === clientId)
+  const client = data.client
   if (!client) return <ErrorState message="ไม่พบClientsที่ต้องการ" />
 
-  const projects = data.projects.filter((project) => project.client_id === client.id)
-  const projectIds = new Set(projects.map((project) => project.id))
-  const entries = data.time_entries.filter((entry) => projectIds.has(entry.project_id))
-  const totalMinutes = entries.reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
+  const projects = data.projects
   const projectPageSize = 4
   const projectTotalPages = Math.max(1, Math.ceil(projects.length / projectPageSize))
   const safeProjectPage = Math.min(projectPage, projectTotalPages)
@@ -64,7 +84,7 @@ function ClientDetailPage() {
         <SummaryCard
           label="เวลาที่บันทึก"
           icon={<FiClock aria-hidden="true" />}
-          value={formatDuration(totalMinutes)}
+          value={formatDurationSeconds(data.totalSeconds)}
           foot="รวมทุกโปรเจกต์"
           accent="green"
           compact
@@ -72,7 +92,7 @@ function ClientDetailPage() {
         <SummaryCard
           label="รายการเวลา"
           icon={<FiList aria-hidden="true" />}
-          value={entries.length}
+          value={data.entryCount}
           foot="รายการที่บันทึกทั้งหมด"
           accent="violet"
         />
@@ -88,10 +108,7 @@ function ClientDetailPage() {
             <CardContent className="p-6 pt-0">
               <div className="flex flex-col">
                 {visibleProjects.map((project) => {
-                  const minutes = entries.filter((entry) => entry.project_id === project.id).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-                  const trackedMinutes = project.time_tracking?.tracked_seconds == null
-                    ? minutes
-                    : project.time_tracking.tracked_seconds / 60
+                  const trackedSeconds = project.time_tracking?.tracked_seconds ?? 0
                   const totalTasks = project.task_progress?.total_tasks ?? 0
                   const completedTasks = project.task_progress?.completed_tasks ?? 0
                   const taskProgress = Math.max(0, Math.min(100, Math.round(project.task_progress?.percent ?? 0)))
@@ -109,7 +126,7 @@ function ClientDetailPage() {
                         <Progress className="mt-2 h-1.5 w-full bg-border sm:w-3/5" value={taskProgress} indicatorColor={project.color} />
                       </div>
                       <div className="col-start-2 flex min-w-0 items-center justify-end gap-2 sm:col-start-auto sm:min-w-64 sm:gap-3">
-                        <strong className="whitespace-nowrap text-sm font-bold tabular-nums text-text-primary">{formatDuration(trackedMinutes)}</strong>
+                        <strong className="whitespace-nowrap text-sm font-bold tabular-nums text-text-primary">{formatDurationSeconds(trackedSeconds)}</strong>
                         <StatusBadge status={project.status} />
                         <FiArrowRight className="shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
                       </div>

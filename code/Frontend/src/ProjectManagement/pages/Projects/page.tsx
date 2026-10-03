@@ -77,6 +77,7 @@ function getPaginationItems(currentPage: number, totalPages: number): Array<numb
 
 function ProjectsPage() {
   const { data, loading, error, refresh, saveProject } = useProjects();
+  const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [clientId, setClientId] = useState("ALL");
   const [status, setStatus] = useState<ProjectFilter>("ALL");
@@ -94,6 +95,7 @@ function ProjectsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
+  const [dateErrors, setDateErrors] = useState<Partial<Record<'start_date' | 'end_date', string>>>({});
   const [saving, setSaving] = useState(false);
   const [changingProjectId, setChangingProjectId] = useState<string | null>(null);
   const showToast = ({ success, message }: NotificationMessage) => {
@@ -109,7 +111,7 @@ function ProjectsPage() {
       const result = await listProjectsPage(requestedPage, projectPageLimit, {
         clientId: clientId === 'ALL' ? undefined : clientId,
         search: query,
-        status: status === 'ALL' ? undefined : status,
+        status,
         ...projectSortParams[sortBy],
       });
       if (requestId !== latestRequest.current) return;
@@ -144,6 +146,7 @@ function ProjectsPage() {
         data.clients.find((client) => client.status === "ACTIVE")?.id || "",
     });
     setFormError("");
+    setDateErrors({});
     setModalOpen(true);
   };
 
@@ -157,6 +160,7 @@ function ProjectsPage() {
       budget_amount: project.budget_amount ?? "",
     });
     setFormError("");
+    setDateErrors({});
     setModalOpen(true);
   };
 
@@ -167,14 +171,13 @@ function ProjectsPage() {
   ) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
+    if (name === 'start_date' || name === 'end_date') {
+      setDateErrors((current) => ({ ...current, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.client_id) {
-      setFormError("กรุณาระบุชื่อโปรเจกต์และลูกค้า");
-      return;
-    }
     // if (form.billing_type === "HOURLY" && Number(form.hourly_rate) <= 0) {
     //   setFormError("โปรเจกต์รายชั่วโมงต้องมีอัตราต่อชั่วโมงมากกว่า 0");
     //   return;
@@ -183,8 +186,16 @@ function ProjectsPage() {
     //   setFormError("โปรเจกต์เหมาจ่ายต้องมีมูลค่างานมากกว่า 0");
     //   return;
     // }
+    const nextDateErrors: Partial<Record<'start_date' | 'end_date', string>> = {};
+    if (!form.start_date) nextDateErrors.start_date = 'กรุณาเลือกวันที่เริ่ม';
+    if (!form.end_date) nextDateErrors.end_date = 'กรุณาเลือกวันที่สิ้นสุด';
     if (form.start_date && form.end_date && form.end_date < form.start_date) {
-      setFormError("วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่ม");
+      nextDateErrors.end_date = 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่ม';
+    }
+    setDateErrors(nextDateErrors);
+    const missingProjectInfo = !form.name.trim() || !form.client_id;
+    setFormError(missingProjectInfo ? 'กรุณาระบุชื่อโปรเจกต์และลูกค้า' : '');
+    if (missingProjectInfo || Object.keys(nextDateErrors).length > 0) {
       return;
     }
 
@@ -259,9 +270,10 @@ function ProjectsPage() {
       />
 
       <FilterBar
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        onSearch={() => {
+          setQuery(searchInput.trim());
           setPage(1);
         }}
         placeholder="ค้นหาโปรเจกต์หรือลูกค้า"
@@ -278,7 +290,7 @@ function ProjectsPage() {
           <option value="ALL">ทุกลูกค้า</option>
           {data.clients.map((client) => (
             <option key={client.id} value={client.id}>
-              {client.company_name || client.name}
+              {client.name}
             </option>
           ))}
         </NativeSelect>
@@ -400,6 +412,7 @@ function ProjectsPage() {
           value={form}
           clients={data.clients}
           error={formError}
+          dateErrors={dateErrors}
           saving={saving}
           onChange={handleChange}
           onSubmit={handleSubmit}
