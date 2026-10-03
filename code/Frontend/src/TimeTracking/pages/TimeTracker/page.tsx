@@ -1,5 +1,6 @@
 import { Button } from '../../../components/ui/button'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -67,6 +68,10 @@ function TimeTrackerPage() {
   const [timeEntriesError, setTimeEntriesError] = useState('');
   const [timeEntriesRequestKey, setTimeEntriesRequestKey] = useState(0);
   const [timeEntrySummary, setTimeEntrySummary] = useState({ entryCount: 0, totalSeconds: 0 });
+
+  const reloadTimeEntryData = useCallback(() => {
+    setTimeEntriesRequestKey((current) => current + 1);
+  }, []);
 
   const activeProjects = useMemo(
     () =>
@@ -257,13 +262,14 @@ function TimeTrackerPage() {
         });
       }
       await refresh();
+      reloadTimeEntryData();
       setManualOpen(false);
     } catch (saveError: unknown) {
       setFormError(getErrorMessage(saveError, "บันทึกรายการเวลาไม่สำเร็จ"));
     }
   };
 
-  const duplicateEntry = (entry: TimeEntry) => {
+  const duplicateEntry = async (entry: TimeEntry) => {
     const duplicate = {
       ...entry,
       id: undefined,
@@ -272,7 +278,8 @@ function TimeTrackerPage() {
         Date.now() + (entry.duration_minutes ?? 0) * 60000,
       ).toISOString(),
     };
-    void saveTimeEntry(duplicate);
+    await saveTimeEntry(duplicate);
+    reloadTimeEntryData();
   };
 
   const applyRange = (preset: RangePreset) => {
@@ -316,7 +323,7 @@ function TimeTrackerPage() {
       />
 
       <div className="mb-4 grid grid-cols-[minmax(0,1fr)] items-stretch gap-4">
-        <TimerPanel workspace={workspace} />
+        <TimerPanel workspace={workspace} onProjectOptionsOpen={() => { void refresh() }} onTimerChanged={reloadTimeEntryData} />
       </div>
 
       <TimeEntriesCard
@@ -357,9 +364,12 @@ function TimeTrackerPage() {
           setRangePreset('')
           setFilters((current) => ({ ...current, [field]: value }))
         }}
-        onRetry={() => setTimeEntriesRequestKey((current) => current + 1)}
+        onRetry={reloadTimeEntryData}
         onEdit={openManual}
-        onDelete={(entry) => deleteTimeEntry(entry.id)}
+        onDelete={async (entry) => {
+          await deleteTimeEntry(entry.id);
+          reloadTimeEntryData();
+        }}
         onDuplicate={duplicateEntry}
       />
 
