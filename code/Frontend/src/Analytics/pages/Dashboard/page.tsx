@@ -17,10 +17,10 @@ import type { DashboardChartPeriod, DashboardData } from '../../../types/dashboa
 import type { ProductivityPoint } from '../../../types/analytics'
 import type { TimerWorkspace } from '../../../types/timerWorkspace'
 import TimerPanel from '../../../TimeTracking/components/TimerPanel'
-import { formatDurationSeconds } from '../../../utils/formatters'
+import { formatDurationSeconds } from '../../../lib/formatters'
 import { activityChartPoints, weeklyChartPoints } from '../../../utils/dashboardChart'
 import ProductivityChart from '../../components/ProductivityChart'
-import SummaryCard from '../../components/SummaryCard'
+import SummaryCard from '../../../components/SummaryCard'
 
 function greetingForHour(hour: number): string {
   if (hour < 12) return 'สวัสดีตอนเช้า'

@@ -3,13 +3,11 @@ package th.ac.kku.freelance_hub.mapper;
 import org.springframework.stereotype.Component;
 
 import th.ac.kku.freelance_hub.domain.entity.Project;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
-import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
-
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
 @Component
 public class ProjectMapper {
 

@@ -1,11 +1,9 @@
 package th.ac.kku.freelance_hub.service;
 
 import java.util.UUID;
-
-import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 /**
  * Business operations for time entries owned by the authenticated user.
  *

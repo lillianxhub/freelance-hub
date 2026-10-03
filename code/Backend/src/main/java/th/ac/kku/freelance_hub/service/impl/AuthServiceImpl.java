@@ -8,10 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
-import th.ac.kku.freelance_hub.dto.request.LoginRequest;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
-import th.ac.kku.freelance_hub.dto.response.AuthResponse;
-import th.ac.kku.freelance_hub.dto.response.UserResponse;
 import th.ac.kku.freelance_hub.exception.EmailAlreadyExistsException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
@@ -21,7 +17,10 @@ import th.ac.kku.freelance_hub.service.AuthService;
 import th.ac.kku.freelance_hub.service.AuthSessionResult;
 import th.ac.kku.freelance_hub.service.RefreshTokenService;
 import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
-
+import th.ac.kku.freelance_hub.dto.request.auth.LoginRequest;
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.response.auth.AuthResponse;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {

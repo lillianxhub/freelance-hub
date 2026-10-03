@@ -24,12 +24,7 @@ import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
@@ -39,7 +34,11 @@ import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-
+import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.task.CreateTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.ReorderTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

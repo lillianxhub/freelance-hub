@@ -4,10 +4,9 @@ import org.springframework.stereotype.Component;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.domain.valueobject.Address;
-import th.ac.kku.freelance_hub.dto.request.UpdateUserProfileRequest;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
-import th.ac.kku.freelance_hub.dto.response.UserResponse;
-
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.request.user.UpdateUserProfileRequest;
+import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
 /**
  * Mapper for User and UserProfile entities
  */

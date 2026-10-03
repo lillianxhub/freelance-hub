@@ -1,15 +1,32 @@
-import { Card } from '../../../components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
+import { Progress } from '../../../components/ui/progress'
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../../components/ui/pagination'
 import { Link, useParams } from 'react-router-dom'
-import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock } from 'react-icons/fi'
+import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock, FiList } from 'react-icons/fi'
+import { useState } from 'react'
 import PageHeader from '../../../components/PageHeader'
+import SummaryCard from '../../../components/SummaryCard'
 import StatusBadge from '../../../components/StatusBadge'
 import { ErrorState, LoadingState } from '../../../components/ViewState'
 import { useClients } from '../../useClients'
-import { formatDuration } from '../../../utils/formatters'
+import { formatDuration } from '../../../lib/formatters'
+
+function getPaginationItems(currentPage: number, totalPages: number): Array<number | 'ellipsis'> {
+  if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1)
+
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
+  return [...pages]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((first, second) => first - second)
+    .flatMap((page, index, items) =>
+      index > 0 && page - items[index - 1] > 1 ? ['ellipsis' as const, page] : [page],
+    )
+}
 
 function ClientDetailPage() {
   const { clientId } = useParams()
   const { data, loading, error, refresh } = useClients()
+  const [projectPage, setProjectPage] = useState(1)
 
   if (loading) return <LoadingState label="กำลังโหลดข้อมูลลูกค้า..." />
   if (error) return <ErrorState message={error} onRetry={refresh} />
@@ -21,52 +38,170 @@ function ClientDetailPage() {
   const projectIds = new Set(projects.map((project) => project.id))
   const entries = data.time_entries.filter((entry) => projectIds.has(entry.project_id))
   const totalMinutes = entries.reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
+  const projectPageSize = 4
+  const projectTotalPages = Math.max(1, Math.ceil(projects.length / projectPageSize))
+  const safeProjectPage = Math.min(projectPage, projectTotalPages)
+  const visibleProjects = projects.slice(
+    (safeProjectPage - 1) * projectPageSize,
+    safeProjectPage * projectPageSize,
+  )
+  const projectPaginationItems = getPaginationItems(safeProjectPage, projectTotalPages)
   const displayName = client.company_name || client.name
 
   return (
-    <div className="page-view">
-      <Link className="back-link" to="/clients"><FiArrowLeft aria-hidden="true" /> กลับไปหน้าลูกค้า</Link>
-      <PageHeader eyebrow="พื้นที่ทำงาน / ลูกค้า" title={displayName} description={`${client.name || 'ไม่ระบุผู้ติดต่อ'} · ${client.email || 'ไม่มีอีเมล'}`} actions={<StatusBadge status={client.status} />} />
+    <div className="mx-auto w-full max-w-screen-2xl">
+      <Link className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary no-underline hover:text-primary-dark" to="/clients"><FiArrowLeft aria-hidden="true" /> กลับไปหน้าลูกค้า</Link>
+      <PageHeader title={displayName} description={`${client.name || 'ไม่ระบุผู้ติดต่อ'} · ${client.email || 'ไม่มีอีเมล'}`} actions={<StatusBadge status={client.status} />} />
 
-      <div className="summary-grid">
-        <Card asChild><article className="metric-card accent-blue"><div className="metric-top"><span>โปรเจกต์</span><span className="metric-icon"><FiBriefcase aria-hidden="true" /></span></div><div className="metric-value">{projects.length}</div><div className="metric-foot">ทั้งหมดของลูกค้ารายนี้</div></article></Card>
-        <Card asChild><article className="metric-card accent-green"><div className="metric-top"><span>เวลาที่บันทึก</span><span className="metric-icon"><FiClock aria-hidden="true" /></span></div><div className="metric-value metric-compact">{formatDuration(totalMinutes)}</div><div className="metric-foot">รวมทุกโปรเจกต์</div></article></Card>
-        {/* <article className="metric-card accent-violet"><div className="metric-top"><span>รายได้เกิดขึ้น</span><span className="metric-icon">฿</span></div><div className="metric-value metric-compact">{formatMoney(revenue)}</div><div className="metric-foot">จากเวลา คิดค่าบริการ</div></article>
-        <article className="metric-card accent-orange"><div className="metric-top"><span>ใบแจ้งหนี้</span><span className="metric-icon">▤</span></div><div className="metric-value">{invoices.length}</div><div className="metric-foot">ยอดรวม {formatMoney(invoices.reduce((sum, invoice) => sum + invoice.total, 0))}</div></article> */}
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SummaryCard
+          label="โปรเจกต์"
+          icon={<FiBriefcase aria-hidden="true" />}
+          value={projects.length}
+          foot="ทั้งหมดของลูกค้ารายนี้"
+          accent="blue"
+        />
+        <SummaryCard
+          label="เวลาที่บันทึก"
+          icon={<FiClock aria-hidden="true" />}
+          value={formatDuration(totalMinutes)}
+          foot="รวมทุกโปรเจกต์"
+          accent="green"
+          compact
+        />
+        <SummaryCard
+          label="รายการเวลา"
+          icon={<FiList aria-hidden="true" />}
+          value={entries.length}
+          foot="รายการที่บันทึกทั้งหมด"
+          accent="violet"
+        />
       </div>
 
-      <div className="detail-grid">
-        <div className="section-stack">
-          <Card asChild><section className="panel">
-            <div className="panel-heading"><div><h2>โปรเจกต์</h2><p>โปรเจกต์ทั้งหมดของลูกค้ารายนี้</p></div></div>
-            <div className="list-stack">
-              {projects.map((project) => {
-                const minutes = entries.filter((entry) => entry.project_id === project.id).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-                return <Link className="list-item" key={project.id} to={`/projects/${project.id}`}><span className="color-dot" style={{ '--dot-color': project.color }} /><span><strong>{project.name}</strong><small>{formatDuration(minutes)}</small></span><StatusBadge status={project.status} /><span><FiArrowRight aria-hidden="true" /></span></Link>
-              })}
-              {projects.length === 0 && <p className="inline-empty">ยังไม่มีโปรเจกต์</p>}
-            </div>
+      <div className="grid items-start gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:col-span-2">
+          <Card asChild><section className="!p-0">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle>โปรเจกต์</CardTitle>
+              <CardDescription>โปรเจกต์ทั้งหมดของลูกค้ารายนี้</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 pt-0">
+              <div className="flex flex-col">
+                {visibleProjects.map((project) => {
+                  const minutes = entries.filter((entry) => entry.project_id === project.id).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
+                  const trackedMinutes = project.time_tracking?.tracked_seconds == null
+                    ? minutes
+                    : project.time_tracking.tracked_seconds / 60
+                  const totalTasks = project.task_progress?.total_tasks ?? 0
+                  const completedTasks = project.task_progress?.completed_tasks ?? 0
+                  const taskProgress = Math.max(0, Math.min(100, Math.round(project.task_progress?.percent ?? 0)))
+
+                  return (
+                    <Link
+                      className="group grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-3 rounded-xl border-b border-border p-3 transition-colors last:border-b-0 hover:bg-secondary sm:grid-cols-[auto_minmax(0,1fr)_minmax(16rem,auto)] sm:items-center sm:gap-3"
+                      key={project.id}
+                      to={`/projects/${project.id}`}
+                    >
+                      <span className="mt-1.5 size-2.5 shrink-0 rounded-full sm:mt-0" style={{ backgroundColor: project.color }} aria-hidden="true" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-text-primary">{project.name}</p>
+                        <p className="truncate text-sm text-text-secondary">งานเสร็จ {completedTasks}/{totalTasks}</p>
+                        <Progress className="mt-2 h-1.5 w-full bg-border sm:w-3/5" value={taskProgress} indicatorColor={project.color} />
+                      </div>
+                      <div className="col-start-2 flex min-w-0 items-center justify-end gap-2 sm:col-start-auto sm:min-w-64 sm:gap-3">
+                        <strong className="whitespace-nowrap text-sm font-bold tabular-nums text-text-primary">{formatDuration(trackedMinutes)}</strong>
+                        <StatusBadge status={project.status} />
+                        <FiArrowRight className="shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+                      </div>
+                    </Link>
+                  )
+                })}
+                {projects.length === 0 && <p className="m-0 py-8 text-center text-sm text-text-secondary">ยังไม่มีโปรเจกต์</p>}
+              </div>
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href={`?projectPage=${Math.max(1, safeProjectPage - 1)}`}
+                      text="ก่อนหน้า"
+                      aria-disabled={safeProjectPage === 1}
+                      className={safeProjectPage === 1 ? 'pointer-events-none opacity-50' : undefined}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        if (safeProjectPage > 1) setProjectPage(safeProjectPage - 1)
+                      }}
+                    />
+                  </PaginationItem>
+                  {projectPaginationItems.map((pageNumber, index) => (
+                    <PaginationItem key={`${pageNumber}-${index}`}>
+                      {pageNumber === 'ellipsis' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          href={`?projectPage=${pageNumber}`}
+                          isActive={pageNumber === safeProjectPage}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            setProjectPage(pageNumber)
+                          }}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      href={`?projectPage=${Math.min(projectTotalPages, safeProjectPage + 1)}`}
+                      text="ถัดไป"
+                      aria-disabled={safeProjectPage === projectTotalPages}
+                      className={safeProjectPage === projectTotalPages ? 'pointer-events-none opacity-50' : undefined}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        if (safeProjectPage < projectTotalPages) setProjectPage(safeProjectPage + 1)
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </CardContent>
           </section></Card>
 
-          {/* <section className="panel">
-            <div className="panel-heading"><div><h2>ใบแจ้งหนี้</h2><p>ประวัติการเรียกเก็บเงิน</p></div></div>
-            <div className="table-wrap"><table className="data-table"><thead><tr><th>เลขที่</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>ยอดรวม</th><th>สถานะ</th></tr></thead><tbody>
-              {invoices.map((invoice) => <tr key={invoice.id}><td><Link to={`/invoices/${invoice.id}`}><strong>{invoice.invoice_number}</strong></Link></td><td>{formatDate(invoice.issue_date)}</td><td>{formatDate(invoice.due_date)}</td><td>{formatMoney(invoice.total, invoice.currency)}</td><td><StatusBadge status={invoice.status} /></td></tr>)}
-              {invoices.length === 0 && <tr><td colSpan={5}>ยังไม่มี ใบแจ้งหนี้</td></tr>}
-            </tbody></table></div>
-          </section> */}
         </div>
 
-        <Card asChild><aside className="panel">
-          <div className="panel-heading"><div><h2>ข้อมูลลูกค้า</h2><p>ข้อมูลสำหรับติดต่อ</p></div></div>
-          <div className="detail-list">
-            <div className="detail-item"><span>ผู้ติดต่อ</span><strong>{client.name || '—'}</strong></div>
-            <div className="detail-item"><span>อีเมล</span><strong>{client.email || '—'}</strong></div>
-            <div className="detail-item"><span>โทรศัพท์</span><strong>{client.phone || '—'}</strong></div>
-            {/* <div className="detail-item"><span>เลขผู้เสียภาษี</span><strong>{client.tax_id || '—'}</strong></div> */}
-            <div className="detail-item"><span>ที่อยู่</span><p>{client.address || '—'}</p></div>
-            <div className="detail-item"><span>หมายเหตุ</span><p>{client.notes || '—'}</p></div>
-          </div>
+        <Card asChild><aside className="!p-0">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle>ข้อมูลลูกค้า</CardTitle>
+            <CardDescription>ข้อมูลสำหรับติดต่อ</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="grid gap-4">
+              <div className="grid gap-1.5">
+                <span className="text-xs text-text-secondary">ผู้ติดต่อ</span>
+                <strong className="text-sm leading-relaxed text-text-primary">{client.name || '—'}</strong>
+              </div>
+              <div className="grid gap-1.5">
+                <span className="text-xs text-text-secondary">อีเมล</span>
+                <strong className="text-sm leading-relaxed text-text-primary">{client.email || '—'}</strong>
+              </div>
+              <div className="grid gap-1.5">
+                <span className="text-xs text-text-secondary">โทรศัพท์</span>
+                <strong className="text-sm leading-relaxed text-text-primary">{client.phone || '—'}</strong>
+              </div>
+              <div className="grid gap-1.5">
+                <span className="text-xs text-text-secondary">เลขผู้เสียภาษี</span>
+                <strong className="text-sm leading-relaxed text-text-primary">{client.tax_id || '—'}</strong>
+              </div>
+              <div className="grid gap-1.5">
+                <span className="text-xs text-text-secondary">ที่อยู่</span>
+                <p className="m-0 text-sm leading-relaxed text-text-primary">{client.address || '—'}</p>
+              </div>
+              <div className="grid gap-1.5">
+                <span className="text-xs text-text-secondary">หมายเหตุ</span>
+                <p className="m-0 text-sm leading-relaxed text-text-primary">{client.notes || '—'}</p>
+              </div>
+            </div>
+          </CardContent>
         </aside></Card>
       </div>
     </div>

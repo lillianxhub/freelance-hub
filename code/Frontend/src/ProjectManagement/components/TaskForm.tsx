@@ -13,9 +13,9 @@ export default function TaskForm({
 }: TaskFormProps) {
   return (
     <form onSubmit={onSubmit}>
-      {error && <p className="form-error">{error}</p>}
-      <div className="form-grid">
-        <div className="form-field full">
+      {error && <p className="mb-4 rounded-lg bg-red-soft px-3 py-2 text-sm text-destructive">{error}</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="task-name" required>ชื่องาน</FormLabel>
           <Input
             id="task-name"
@@ -26,7 +26,7 @@ export default function TaskForm({
             required
           />
         </div>
-        {/* <div className="form-field">
+        {/* <div className="flex flex-col gap-1.5">
           <label htmlFor="task-status">สถานะ</label>
           <select
             id="task-status"
@@ -41,18 +41,7 @@ export default function TaskForm({
             <option value="DONE">เสร็จแล้ว</option>
           </select>
         </div> */}
-        {/* <div className="form-field">
-          <label htmlFor="task-due">กำหนดส่ง</label>
-          <input
-            id="task-due"
-            type="date"
-            value={value.due_date || ""}
-            onChange={(event) =>
-              onChange({ ...value, due_date: event.target.value })
-            }
-          />
-        </div> */}
-        <div className="form-field full">
+        <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="task-description">รายละเอียด</FormLabel>
           <Textarea
             id="task-description"
@@ -63,15 +52,15 @@ export default function TaskForm({
           />
         </div>
       </div>
-      <div className="form-actions">
+      <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
         <Button variant="outline"
-          className="button button-secondary"
+          className="h-10"
           type="button"
           onClick={onCancel}
         >
           ยกเลิก
         </Button>
-        <Button variant="default" className="button button-primary" type="submit">
+        <Button variant="default" className="h-10" type="submit">
           บันทึก งาน
         </Button>
       </div>
