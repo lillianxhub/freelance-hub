@@ -17,8 +17,10 @@ function toClient(source: ApiClient): Client {
 
 function clientPayload(input: ClientInput) {
   const location = [input.sub_district ? `ตำบล/แขวง ${input.sub_district}` : '', input.district ? `อำเภอ/เขต ${input.district}` : '', input.province ? `จังหวัด ${input.province}` : '', input.postal_code ? `รหัสไปรษณีย์ ${input.postal_code}` : ''].filter(Boolean).join(' ')
-  return { name: input.name, companyName: input.company_name || undefined, email: input.email || undefined, phone: input.phone || undefined,
-    address: [input.address, location].filter(Boolean).join(', ') || undefined, taxId: input.tax_id || undefined, notes: input.notes || undefined }
+  return {
+    name: input.name, companyName: input.company_name || undefined, email: input.email || undefined, phone: input.phone || undefined,
+    address: [input.address, location].filter(Boolean).join(', ') || undefined, taxId: input.tax_id || undefined, notes: input.notes || undefined
+  }
 }
 
 export async function getClientById(id: string): Promise<Client> {
@@ -46,7 +48,13 @@ export async function listClientsPage(page = 1, limit = 10, filters: ClientListF
 }
 
 export async function listClientOptions(): Promise<Client[]> {
-  return (await api.get<ApiClient[]>('/clients?sortBy=name&direction=ASC')).data.map(toClient)
+  const firstPage = await listClientsPage(1, 100)
+  const remainingPages = await Promise.all(
+    Array.from({ length: Math.max(0, firstPage.meta.totalPages - 1) }, (_, index) =>
+      listClientsPage(index + 2, 100),
+    ),
+  )
+  return [...firstPage.clients, ...remainingPages.flatMap((page) => page.clients)]
 }
 
 export async function saveClient(input: ClientInput): Promise<Client> {

@@ -23,8 +23,9 @@
 | UC-TIME-08 | Update Time Entry | `PUT /api/time-entries/{id}` | แทนข้อมูลรายการที่ไม่ถูกล็อกและคืน `200` พร้อม `TimeEntryDetailResponse` | FR-TIME-05 |
 | UC-TIME-09 | Delete Time Entry | `DELETE /api/time-entries/{id}` | soft delete completed entry ที่ไม่ถูกล็อกและคืน `200` พร้อม `data: null` | FR-TIME-05 |
 | UC-TIME-10 | View Time Entry Detail | `GET /api/time-entries/{id}` | คืน `200` พร้อม `TimeEntryDetailResponse` ของ owner | FR-TIME-06 |
+| UC-TIME-11 | Lock Project Time Entries | ไม่มี endpoint; เรียก `TimeEntryService.lockByProject(ownerId, projectId)` ภายใน Backend | ตั้ง `lockedAt` ถาวรให้รายการของ Project รวม soft-deleted โดยรักษาเวลาล็อกเดิม | กติกาการล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` |
 
-ทุก endpoint ข้างต้นคืน `ApiResult` รูปแบบ `{success, message, data, meta, error}` โดย `message` ของ Time Tracking เป็นภาษาไทย; `meta` มีข้อมูล pagination เฉพาะ list ส่วน error ที่ controller จัดการคืน `success: false` และรหัสใน `error.code` ยกเว้น `401` ซึ่งจัดการโดยระบบ authentication ส่วนกลาง
+ทุก endpoint ใน UC-TIME-01 ถึง UC-TIME-10 คืน `ApiResult` รูปแบบ `{success, message, data, meta, error}` โดย `message` ของ Time Tracking เป็นภาษาไทย; `meta` มีข้อมูล pagination เฉพาะ list ส่วน error ที่ controller จัดการคืน `success: false` และรหัสใน `error.code` ยกเว้น `401` ซึ่งจัดการโดยระบบ authentication ส่วนกลาง; UC-TIME-11 เป็นคำสั่งภายใน Backend จึงไม่มี HTTP response ของตัวเอง
 
 ## UC-TIME-01 Start Timer
 
@@ -32,11 +33,11 @@
 2. Controller validate `StartTimerRequest` และอ่าน owner ID จากผู้ใช้ที่เข้าสู่ระบบ
 3. Service ตรวจว่า User และ Project มีอยู่จริง โดย Project ต้องเป็นของ owner
 4. หากส่ง Task ระบบตรวจว่า Task อยู่ใน Project และเป็นของ owner คนเดียวกัน
-5. Entity ตรวจว่า Project และ Client อยู่ในสถานะ `ACTIVE` และใช้เวลาจาก server ผ่าน `Clock`
+5. Entity ตรวจว่า Project สามารถจับเวลาได้ (`canTrackTime()`) และ Client มี `isActive = true` โดยใช้เวลาจาก server ผ่าน `Clock`
 6. Service ตรวจว่า owner ยังไม่มี running timer แล้วบันทึกรายการชนิด `TIMER`
 7. Controller คืน `201 Created`, `ApiResult<TimeEntryResponse>` และ `Location: /api/time-entries/{id}`
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project หรือ Client ไม่อยู่ในสถานะ `ACTIVE` = `409`; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`  
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่สามารถจับเวลาได้หรือ Client มี `isActive` ไม่ใช่ `true` = `409`; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`\
 **Postcondition:** มี Time Entry ชนิด `TIMER` ที่มี `startedAt` แต่ยังไม่มี `endedAt` และ `durationSeconds`; owner มี running timer ได้ไม่เกินหนึ่งรายการ
 
 ## UC-TIME-02 View Current Timer
@@ -54,7 +55,7 @@
 1. Freelancer เรียก `POST /api/timer/stop`
 2. Service ค้นหา running timer ของ owner ด้วย pessimistic write lock ภายใน transaction
 3. Entity กำหนด `endedAt` จาก server clock และคำนวณ `durationSeconds` เป็นจำนวนวินาทีเต็มโดยไม่ปัดขึ้นเป็นนาที
-4. Service เผยแพร่ `TimerStoppedEvent`
+4. Service เผยแพร่ `TimerStoppedEvent`; หลัง transaction commit แล้ว `TimerStoppedProgressListener` จึงตรวจเกณฑ์ความคืบหน้าโปรเจกต์และเผยแพร่ `ProjectProgressThresholdEvent` หากถึง 80% หรือ 100%
 5. Controller คืน `200` พร้อม `StoppedTimerResponse` ใน `ApiResult.data`
 
 **Alternative flow:** ไม่มี JWT = `401`; ไม่มี running timer = `404`  
@@ -133,6 +134,20 @@
 **Alternative flow:** ไม่พบ เป็นของผู้ใช้อื่น หรือถูก soft delete = `404`; ไม่มี JWT = `401`
 **Postcondition:** ไม่มีการเปลี่ยนข้อมูล
 
+## UC-TIME-11 Lock Project Time Entries
+
+1. ฝั่ง Project ต้องตรวจสิทธิ์เจ้าของและการเปลี่ยนสถานะเป็น `COMPLETED` แล้วเรียก `TimeEntryService.lockByProject(ownerId, projectId)` ใน transaction เดียวกับการเปลี่ยนสถานะ โดยไม่รับคำสั่ง lock จากหน้าบ้าน
+2. `TimeEntryServiceImpl` ใช้ `@Transactional(propagation = Propagation.MANDATORY)` เพื่อบังคับว่าผู้เรียกต้องเปิด transaction ไว้แล้ว
+3. Repository ใช้ `findLockedByOwnerIdAndProjectIdAndLockedAtIsNull` พร้อม `PESSIMISTIC_WRITE` เพื่อดึงเฉพาะรายการที่ยังไม่ล็อกของ owner/Project ที่ระบุ รวมรายการที่ soft delete และ timer ที่ยังวิ่งอยู่
+4. Service ตรวจทุกรายการก่อนแก้ข้อมูล; หากพบ running timer จะโยน `IllegalStateException` โดยไม่หยุด timer อัตโนมัติและไม่ตั้ง `lockedAt` ให้รายการใด
+5. หากไม่มี running timer ระบบอ่านเวลาจาก `Clock` ครั้งเดียว แล้วเรียก `TimeEntry.lock(lockedAt)` กับทุกรายการที่พบและ flush ภายใน transaction ของผู้เรียก
+6. รายการที่ล็อกอยู่แล้วไม่ถูกแก้และรักษา `lockedAt` เดิม; ไม่มีรายการที่ต้องล็อกสามารถจบการทำงานได้
+
+**Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `IllegalStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
+**Postcondition:** เมื่อ transaction commit รายการที่ถูกเลือกมี `lockedAt` ถาวรและไม่สามารถแก้ไขหรือ soft delete ผ่าน Entity/service ปกติได้; การล็อกแถวฐานข้อมูลสิ้นสุดเมื่อ transaction จบ แต่ค่า `lockedAt` ยังอยู่
+
+**สถานะการเชื่อมต่อ:** เมธอดฝั่ง Time Tracking พร้อมแล้ว แต่ `ProjectServiceImpl.changeStatus()` ปัจจุบันยังไม่เรียกเมธอดนี้ จึงยังไม่ล็อกอัตโนมัติเมื่อ Project เปลี่ยนสถานะ; ผู้รับผิดชอบ Project ต้องเพิ่มจุดเรียกและการป้องกันรายการใหม่เข้ามาระหว่างปิด Project
+
 ## Sequence: Start และ Stop Timer
 
 ```mermaid
@@ -173,7 +188,10 @@ sequenceDiagram
 - `GET /api/time-entries/summary` มีอยู่ใน implementation แต่ไม่อยู่ใน API contract ที่ได้รับมา; ยังต้องยืนยันกับทีมว่าจะเก็บ endpoint นี้ไว้หรือไม่
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
-- Entity รองรับ `lockedAt` และ service ป้องกันการแก้หรือลบรายการที่ล็อก แต่ยังไม่มี API ใน Time Tracking สำหรับสั่ง lock รายการ
+- มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ยังรอฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันและจัดการ concurrent creation/reassignment
+- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; ปัจจุบันยังไม่มีการล็อกอัตโนมัติสำหรับ manual entry ที่สร้างใหม่หรือรายการที่ย้ายเข้ามาภายหลังใน Project ที่ `COMPLETED`
 - Audit event สำหรับการแก้ไข Time Entry ตาม non-functional requirement ยังไม่ได้แสดงใน implementation นี้
 
 **หลักฐานการทดสอบ:** `TimerControllerTest`, `TimeEntryControllerTest`, `TimerServiceImplTest`, `TimeEntryServiceImplTest`, `TimeEntryQueryServiceImplTest`, `TimeEntryRepositoryTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
+
+การล็อกมี 4 unit test cases ใน `TimeEntryServiceImplTest` สำหรับ manual/completed timer/soft-deleted ด้วย server clock, ปฏิเสธ running timer ก่อนล็อก, ไม่มีรายการ และ ID ที่จำเป็น; อีก 2 cases ใน `TimeEntryRepositoryTest` ตรวจการบันทึกจริง การแยก owner/Project การรักษาเวลาล็อกเดิมและเรียกซ้ำ รวมถึงการปฏิเสธเมื่อไม่มี transaction โดยใช้ฐานข้อมูล H2 ใน test profile ยังไม่ได้ทดสอบ flow เปลี่ยนสถานะ Project แล้วล็อกผ่าน API
