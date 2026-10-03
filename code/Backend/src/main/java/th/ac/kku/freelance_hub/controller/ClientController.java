@@ -140,7 +140,7 @@ public class ClientController {
                 "อัปเดตข้อมูลลูกค้าสำเร็จ", clientService.update(ownerId, id, request)));
     }
 
-    @Operation(summary = "Change client status", description = "Activate or deactivate a client by updating only its is_active flag")
+    @Operation(summary = "Change client status", description = "Deactivate a client and archive its non-deleted projects without soft deletion; reactivating the client does not restore project statuses")
     @ApiResponse(responseCode = "200", description = "Client status updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))

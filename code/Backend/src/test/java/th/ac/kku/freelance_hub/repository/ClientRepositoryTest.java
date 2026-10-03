@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
+
+import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.dto.response.client.ClientTimeTotalResponse;
 @SpringBootTest
@@ -43,6 +47,9 @@ class ClientRepositoryTest {
 
     @Autowired
     private ClientService clientService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void ownerScopedLookupAndPagesNeverReturnAnotherUsersClients() {
@@ -141,6 +148,99 @@ class ClientRepositoryTest {
                 .isEmpty();
         assertThatThrownBy(() -> clientService.summarizeTimeByClient(owner.getId(), to, from))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void archivingClientArchivesOnlyItsNonDeletedProjectsAndPreservesHistory() {
+        User owner = saveUser("cascade-owner@example.com");
+        User otherOwner = saveUser("cascade-other-owner@example.com");
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Archived Client"));
+        Client otherClient = clientRepository.saveAndFlush(new Client(owner, "Other Client"));
+        Client foreignClient = clientRepository.saveAndFlush(new Client(otherOwner, "Foreign Client"));
+        Project planned = projectRepository.saveAndFlush(new Project(owner, client, "Planned"));
+        Project active = saveActiveProject(owner, client, "Active");
+        Project onHold = saveActiveProject(owner, client, "On Hold");
+        onHold.changeStatus(ProjectStatus.ON_HOLD);
+        Project completed = saveActiveProject(owner, client, "Completed");
+        completed.changeStatus(ProjectStatus.COMPLETED);
+        Project archived = saveActiveProject(owner, client, "Already Archived");
+        archived.changeStatus(ProjectStatus.ARCHIVED);
+        Project deleted = saveActiveProject(owner, client, "Deleted");
+        deleted.archive();
+        entityManager.flush();
+        entityManager.refresh(deleted);
+        Instant deletedAt = deleted.getDeletedAt();
+        Project otherProject = saveActiveProject(owner, otherClient, "Other Project");
+        Project foreignProject = saveActiveProject(otherOwner, foreignClient, "Foreign Project");
+        Task task = taskRepository.saveAndFlush(new Task(active, "Keep Task", 0));
+        TimeEntry entry = saveManualEntry(owner, active, Instant.parse("2026-10-03T00:00:00Z"), 3600);
+
+        clientService.changeStatus(owner.getId(), client.getId(), false);
+        entityManager.flush();
+        entityManager.clear();
+
+        Client storedClient = clientRepository.findById(client.getId()).orElseThrow();
+        assertThat(storedClient.getIsActive()).isFalse();
+        assertThat(storedClient.getDeletedAt()).isNull();
+        for (Project project : List.of(planned, active, onHold, completed, archived)) {
+            Project stored = projectRepository.findById(project.getId()).orElseThrow();
+            assertThat(stored.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+            assertThat(stored.getIsActive()).isFalse();
+            assertThat(stored.getDeletedAt()).isNull();
+        }
+        assertThat(projectRepository.findById(deleted.getId()).orElseThrow().getDeletedAt())
+                .isEqualTo(deletedAt);
+        for (Project project : List.of(otherProject, foreignProject)) {
+            Project stored = projectRepository.findById(project.getId()).orElseThrow();
+            assertThat(stored.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+            assertThat(stored.getIsActive()).isTrue();
+            assertThat(stored.getDeletedAt()).isNull();
+        }
+        Task storedTask = taskRepository.findById(task.getId()).orElseThrow();
+        assertThat(storedTask.getIsActive()).isTrue();
+        assertThat(storedTask.getDeletedAt()).isNull();
+        TimeEntry storedEntry = timeEntryRepository.findById(entry.getId()).orElseThrow();
+        assertThat(storedEntry.getDurationSeconds()).isEqualTo(3600L);
+        assertThat(storedEntry.getIsActive()).isTrue();
+        assertThat(storedEntry.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void reactivatingClientDoesNotRestoreItsProjectsAndRepeatedArchiveIsAllowed() {
+        User owner = saveUser("cascade-reactivate@example.com");
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Reactivate Client"));
+        Project project = saveActiveProject(owner, client, "Keep Archived");
+
+        clientService.changeStatus(owner.getId(), client.getId(), false);
+        entityManager.flush();
+        entityManager.clear();
+        clientService.changeStatus(owner.getId(), client.getId(), false);
+        clientService.changeStatus(owner.getId(), client.getId(), true);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(clientRepository.findById(client.getId()).orElseThrow().getIsActive()).isTrue();
+        Project stored = projectRepository.findById(project.getId()).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+        assertThat(stored.getIsActive()).isFalse();
+        assertThat(stored.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void anotherOwnerCannotArchiveClientOrItsProjects() {
+        User owner = saveUser("cascade-protected@example.com");
+        User otherOwner = saveUser("cascade-denied@example.com");
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Protected Client"));
+        Project project = saveActiveProject(owner, client, "Protected Project");
+
+        assertThatThrownBy(() -> clientService.changeStatus(otherOwner.getId(), client.getId(), false))
+                .isInstanceOf(ClientNotFoundException.class);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(clientRepository.findById(client.getId()).orElseThrow().getIsActive()).isTrue();
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getStatus())
+                .isEqualTo(ProjectStatus.ACTIVE);
     }
 
     private Project saveActiveProject(User owner, Client client, String name) {
