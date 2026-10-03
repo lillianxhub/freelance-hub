@@ -50,6 +50,7 @@ import org.springframework.data.jpa.domain.Specification;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
 import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
 import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @ExtendWith(MockitoExtension.class)
@@ -534,6 +535,46 @@ class ProjectServiceImplTest {
         assertThat(project.getIsActive()).isFalse();
 
         verify(projectRepository).save(project);
+    }
+
+    @Test
+    void cannotUpdateArchivedProject() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ARCHIVED);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+
+        UpdateProjectRequest request = UpdateProjectRequest.builder()
+                .clientId(CLIENT_ID)
+                .name("Updated website")
+                .build();
+
+        assertThatThrownBy(() -> service.update(OWNER_ID, PROJECT_ID, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("โปรเจกต์ที่จัดเก็บแล้ว");
+        assertThat(project.getName()).isEqualTo("Website");
+        verifyNoInteractions(clientRepository);
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void cannotRestoreArchivedProjectWhileClientIsArchived() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ARCHIVED);
+        client.setActive(false);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.ACTIVE)
+                        .build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ลูกค้าถูกจัดเก็บ");
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+        verify(projectRepository, never()).save(any(Project.class));
     }
 
     @Test

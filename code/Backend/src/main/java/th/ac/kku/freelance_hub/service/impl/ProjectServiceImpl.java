@@ -333,6 +333,9 @@ public class ProjectServiceImpl implements ProjectService {
         Objects.requireNonNull(request, "request is required");
 
         Project project = findOwnedProject(ownerId, projectId);
+        if (project.getStatus() == ProjectStatus.ARCHIVED) {
+            throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
+        }
         Client client = findOwnedClient(ownerId, request.getClientId());
 
         project.changeClient(client);

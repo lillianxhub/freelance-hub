@@ -195,6 +195,13 @@ public class Project {
             );
         }
 
+        if (status == ProjectStatus.ARCHIVED
+                && nextStatus != ProjectStatus.ARCHIVED
+                && (!Boolean.TRUE.equals(client.getIsActive())
+                        || client.getDeletedAt() != null)) {
+            throw new IllegalStateException("ไม่สามารถคืนสถานะโปรเจกต์ได้ เพราะลูกค้าถูกจัดเก็บอยู่");
+        }
+
         status = nextStatus;
 
         if (nextStatus == ProjectStatus.ARCHIVED) {
