@@ -3,6 +3,7 @@ import test from 'node:test'
 
 test('Vercel rewrites API requests to the configured staging backend', async () => {
   process.env.BACKEND_ORIGIN = 'https://staging.example.com'
+  process.env.VITE_API_BASE_URL = '/api'
   const { config } = await import('../../vercel')
 
   assert.deepEqual(config.rewrites, [

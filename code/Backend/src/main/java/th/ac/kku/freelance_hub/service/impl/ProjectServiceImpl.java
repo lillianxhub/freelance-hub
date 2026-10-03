@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -18,10 +20,6 @@ import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.UserNotFoundException;
@@ -30,7 +28,24 @@ import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ProjectService;
+import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+import th.ac.kku.freelance_hub.mapper.TaskMapper;
+import th.ac.kku.freelance_hub.repository.TaskRepository;
+import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
@@ -39,21 +54,33 @@ public class ProjectServiceImpl implements ProjectService {
             "targetMinutes", "createdAt", "updatedAt"
     );
 
+
     private final ProjectRepository projectRepository;
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
     private final ProjectMapper projectMapper;
+    private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
+    private final TimeEntryQueryService timeEntryQueryService;
+
+
 
     public ProjectServiceImpl(
-            ProjectRepository projectRepository,
-            ClientRepository clientRepository,
-            UserRepository userRepository,
-            ProjectMapper projectMapper
+        ProjectRepository projectRepository,
+        ClientRepository clientRepository,
+        UserRepository userRepository,
+        ProjectMapper projectMapper,
+        TaskRepository taskRepository,
+        TaskMapper taskMapper,
+        TimeEntryQueryService timeEntryQueryService
     ) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.projectMapper = projectMapper;
+        this.taskRepository = taskRepository;
+        this.taskMapper = taskMapper;
+        this.timeEntryQueryService = timeEntryQueryService;
     }
 
     @Override
@@ -85,20 +112,82 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProjectResponse getById(UUID ownerId, UUID projectId) {
-        return projectMapper.toResponse(
-                findOwnedProject(ownerId, projectId)
+    public ProjectListItemResponse getById(UUID ownerId, UUID projectId) {
+        Project project = findOwnedProject(ownerId, projectId);
+        List<TaskRepository.TaskProgressSummary> summaries =
+                taskRepository.summarizeProgressByProjectIds(
+                        ownerId, List.of(projectId), TaskStatus.COMPLETED
+                );
+
+        long totalTasks = summaries.isEmpty() ? 0 : summaries.get(0).getTotalTasks();
+        long completedTasks = summaries.isEmpty() ? 0 : summaries.get(0).getCompletedTasks();
+
+        ProjectListItemResponse response = projectMapper.toListItemResponse(
+                project, totalTasks, completedTasks
+        );
+        response.setTimeTracking(timeTracking(ownerId, project));
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectStatusCounts countActiveAndCompleted(UUID ownerId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+
+        long activeCount = projectRepository
+                .countByOwnerIdAndStatusAndDeletedAtIsNull(
+                        ownerId, ProjectStatus.ACTIVE
+                );
+        long completedCount = projectRepository
+                .countByOwnerIdAndStatusAndDeletedAtIsNull(
+                        ownerId, ProjectStatus.COMPLETED
+                );
+
+        return new ProjectStatusCounts(activeCount, completedCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectProgress getProgress(UUID ownerId, UUID projectId) {
+        Project project = findOwnedProject(ownerId, projectId);
+        long trackedSeconds = trackedSeconds(ownerId, projectId);
+
+        Integer targetMinutes = project.getTargetMinutes();
+        if (targetMinutes == null) {
+            return new ProjectProgress(
+                    projectId, null, trackedSeconds, null, ProgressLevel.NO_TARGET
+            );
+        }
+
+        BigDecimal target = BigDecimal.valueOf(targetMinutes.longValue() * 60);
+        BigDecimal tracked = BigDecimal.valueOf(trackedSeconds);
+        BigDecimal percent = usagePercent(targetMinutes, trackedSeconds);
+
+        ProgressLevel level;
+        if (tracked.compareTo(target) >= 0) {
+            level = ProgressLevel.REACHED_100;
+        } else if (tracked.multiply(BigDecimal.valueOf(5))
+                .compareTo(target.multiply(BigDecimal.valueOf(4))) >= 0) {
+            level = ProgressLevel.REACHED_80;
+        } else {
+            level = ProgressLevel.BELOW_80;
+        }
+
+        return new ProjectProgress(
+                projectId, targetMinutes, trackedSeconds, percent, level
         );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> list(
+    public Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
             ProjectStatus status,
             UUID clientId,
-            Pageable pageable
+            Pageable pageable,
+            boolean includeTasks,
+            boolean allStatuses
     ) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         Pageable checkedPageable = checkPageable(pageable);
@@ -111,15 +200,23 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         Specification<Project> specification = (root, query, cb) -> {
-            Predicate predicate = cb.equal(
+            Predicate predicate = cb.and(
+                cb.equal(
                     root.get("owner").get("id"),
                     ownerId
+                ),
+                cb.isNull(root.get("deletedAt"))
             );
 
             if (status != null) {
                 predicate = cb.and(
                         predicate,
                         cb.equal(root.get("status"), status)
+                );
+            } else if (!allStatuses) {
+                predicate = cb.and(
+                        predicate,
+                        cb.notEqual(root.get("status"), ProjectStatus.ARCHIVED)
                 );
             }
 
@@ -135,12 +232,23 @@ public class ProjectServiceImpl implements ProjectService {
                         + escapeLike(searchTerm.toLowerCase(Locale.ROOT))
                         + "%";
 
+                Predicate projectNameMatches = cb.like(
+                        cb.lower(root.get("name")),
+                        pattern,
+                        '\\'
+                );
+
+                Predicate clientNameMatches = cb.like(
+                        cb.lower(root.get("client").get("name")),
+                        pattern,
+                        '\\'
+                );
+
                 predicate = cb.and(
                         predicate,
-                        cb.like(
-                                cb.lower(root.get("name")),
-                                pattern,
-                                '\\'
+                        cb.or(
+                                projectNameMatches,
+                                clientNameMatches
                         )
                 );
             }
@@ -148,9 +256,67 @@ public class ProjectServiceImpl implements ProjectService {
             return predicate;
         };
 
-        return projectRepository
-                .findAll(specification, checkedPageable)
-                .map(projectMapper::toResponse);
+        Page<Project> projects = projectRepository.findAll(
+            specification,
+            checkedPageable
+        );
+
+        Map<UUID, TaskRepository.TaskProgressSummary> progressByProject =
+                new HashMap<>();
+        Map<UUID, List<TaskResponse>> tasksByProject = new HashMap<>();
+
+        if (projects.hasContent()) {
+            List<UUID> projectIds = projects.getContent()
+                    .stream()
+                    .map(Project::getId)
+                    .toList();
+
+            List<TaskRepository.TaskProgressSummary> summaries =
+                    taskRepository.summarizeProgressByProjectIds(
+                            ownerId,
+                            projectIds,
+                            TaskStatus.COMPLETED
+                    );
+
+            for (TaskRepository.TaskProgressSummary summary : summaries) {
+                progressByProject.put(summary.getProjectId(), summary);
+            }
+
+            if (includeTasks) {
+                for (Task task : taskRepository.findActiveByProjectIds(
+                        ownerId, projectIds)) {
+                    tasksByProject.computeIfAbsent(
+                            task.getProject().getId(), ignored -> new ArrayList<>()
+                    ).add(taskMapper.toResponse(task));
+                }
+            }
+        }
+
+        return projects.map(project -> {
+            TaskRepository.TaskProgressSummary summary =
+                    progressByProject.get(project.getId());
+
+            long totalTasks = summary == null
+                    ? 0
+                    : summary.getTotalTasks();
+
+            long completedTasks = summary == null
+                    ? 0
+                    : summary.getCompletedTasks();
+
+            ProjectListItemResponse response = projectMapper.toListItemResponse(
+                    project,
+                    totalTasks,
+                    completedTasks
+            );
+            response.setTimeTracking(timeTracking(ownerId, project));
+            if (includeTasks) {
+                response.setTasks(tasksByProject.getOrDefault(
+                        project.getId(), List.of()
+                ));
+            }
+            return response;
+        });
     }
 
     @Override
@@ -199,6 +365,36 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findOwnedProject(ownerId, projectId);
         project.archive();
         projectRepository.save(project);
+    }
+
+    private ProjectListItemResponse.TimeTracking timeTracking(
+            UUID ownerId,
+            Project project
+    ) {
+        long seconds = trackedSeconds(ownerId, project.getId());
+        return ProjectListItemResponse.TimeTracking.builder()
+                .trackedSeconds(seconds)
+                .trackedHours(BigDecimal.valueOf(seconds)
+                        .divide(BigDecimal.valueOf(3600), 2, RoundingMode.HALF_UP))
+                .usagePercent(usagePercent(project.getTargetMinutes(), seconds))
+                .build();
+    }
+
+    private long trackedSeconds(UUID ownerId, UUID projectId) {
+        return timeEntryQueryService.summarize(
+                ownerId,
+                TimeEntryFilterRequest.builder().projectId(projectId).build()
+        ).getTotalSeconds();
+    }
+
+    private static BigDecimal usagePercent(Integer targetMinutes, long seconds) {
+        if (targetMinutes == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(seconds)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(targetMinutes.longValue() * 60),
+                        2, RoundingMode.HALF_UP);
     }
 
     private Project findOwnedProject(UUID ownerId, UUID projectId) {

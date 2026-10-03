@@ -10,13 +10,12 @@ import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.domain.valueobject.Address;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
-import th.ac.kku.freelance_hub.dto.response.ClientResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 class ClientMapperTest {
 
     private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000007");
@@ -140,6 +139,7 @@ class ClientMapperTest {
         assertThat(response.getId()).isEqualTo(id);
         assertThat(response.getName()).isEqualTo("Alice");
         assertThat(response.getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(response.getIsActive()).isTrue();
         assertThat(response.getCreatedAt()).isEqualTo(createdAt);
         assertThat(response.getUpdatedAt()).isEqualTo(updatedAt);
         assertThat(response.getVersion()).isEqualTo(2L);

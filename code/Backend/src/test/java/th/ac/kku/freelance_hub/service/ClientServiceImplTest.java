@@ -22,15 +22,14 @@ import org.springframework.data.jpa.domain.Specification;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
-import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.impl.ClientServiceImpl;
-
+import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
 @ExtendWith(MockitoExtension.class)
 class ClientServiceImplTest {
 
@@ -94,13 +93,90 @@ class ClientServiceImplTest {
     }
 
     @Test
-    void archivePreservesClientAndChangesStatus() {
+    void replaceClearsUnspecifiedOptionalFields() {
+        client.updateDetails("Existing Client", "Acme", "old@example.com", null, null, null, null);
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+        when(clientRepository.save(client)).thenReturn(client);
+
+        service.replace(OWNER_ID, clientId, CreateClientRequest.builder().name("New Name").build());
+
+        assertThat(client.getName()).isEqualTo("New Name");
+        assertThat(client.getCompanyName()).isNull();
+        assertThat(client.getEmail()).isNull();
+        verify(clientRepository).save(client);
+    }
+
+    @Test
+    void replaceCannotChangeAnotherOwnersClient() {
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.replace(OWNER_ID, clientId,
+            CreateClientRequest.builder().name("New Name").build()))
+            .isInstanceOf(ClientNotFoundException.class);
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
+    void softDeletePreservesClientStatus() {
         when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
 
-        service.archive(OWNER_ID, clientId);
+        service.softDelete(OWNER_ID, clientId);
 
-        assertThat(client.getStatus()).isEqualTo(ClientStatus.ARCHIVED);
+        assertThat(client.getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(client.getIsActive()).isTrue();
+        assertThat(client.getDeletedAt()).isNotNull();
         verify(clientRepository).save(client);
+    }
+
+    @Test
+    void softDeleteAlsoPreservesInactiveStatus() {
+        client.setActive(false);
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+
+        service.softDelete(OWNER_ID, clientId);
+
+        assertThat(client.getIsActive()).isFalse();
+        assertThat(client.getDeletedAt()).isNotNull();
+        verify(clientRepository).save(client);
+    }
+
+    @Test
+    void changeStatusDoesNotSoftDeleteClient() {
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+        when(clientRepository.save(client)).thenReturn(client);
+
+        var archived = service.changeStatus(OWNER_ID, clientId, false);
+        assertThat(archived.getStatus()).isEqualTo(ClientStatus.ARCHIVED);
+        assertThat(client.getIsActive()).isFalse();
+        assertThat(client.getDeletedAt()).isNull();
+
+        var active = service.changeStatus(OWNER_ID, clientId, true);
+        assertThat(active.getStatus()).isEqualTo(ClientStatus.ACTIVE);
+        assertThat(client.getIsActive()).isTrue();
+        assertThat(client.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void deletedClientCannotBeReadOrChanged() {
+        client.softDelete();
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.of(client));
+
+        assertThatThrownBy(() -> service.getById(OWNER_ID, clientId))
+            .isInstanceOf(ClientNotFoundException.class);
+        assertThatThrownBy(() -> service.changeStatus(OWNER_ID, clientId, false))
+            .isInstanceOf(ClientNotFoundException.class);
+        assertThatThrownBy(() -> service.softDelete(OWNER_ID, clientId))
+            .isInstanceOf(ClientNotFoundException.class);
+        verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
+    void changeStatusCannotModifyAnotherOwnersClient() {
+        when(clientRepository.findByIdAndOwnerId(clientId, OWNER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeStatus(OWNER_ID, clientId, false))
+            .isInstanceOf(ClientNotFoundException.class);
+        verify(clientRepository, never()).save(any(Client.class));
     }
 
     @Test
@@ -113,7 +189,19 @@ class ClientServiceImplTest {
         assertThat(result.getContent()).hasSize(1);
         verify(clientRepository).findAll(any(Specification.class),
             org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
-                pageable.getPageNumber() == 1 && pageable.getPageSize() == 5));
+                pageable.getPageNumber() == 0 && pageable.getPageSize() == 5));
+    }
+
+    @Test
+    void listUsesLimitInsteadOfLegacySizeWhenBothAreProvided() {
+        when(clientRepository.findAll(any(Specification.class), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(java.util.List.of(client)));
+
+        service.list(OWNER_ID, ClientFilterRequest.builder().page(1).size(5).limit(7).build());
+
+        verify(clientRepository).findAll(any(Specification.class),
+            org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
+                pageable.getPageNumber() == 0 && pageable.getPageSize() == 7));
     }
 
     @Test

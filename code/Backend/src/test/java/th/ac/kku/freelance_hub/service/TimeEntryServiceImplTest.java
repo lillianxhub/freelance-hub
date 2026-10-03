@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,8 +29,6 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
 import th.ac.kku.freelance_hub.exception.TimeEntryLockedException;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
@@ -38,7 +37,8 @@ import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.impl.TimeEntryServiceImpl;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
 @ExtendWith(MockitoExtension.class)
 class TimeEntryServiceImplTest {
 
@@ -445,6 +445,71 @@ class TimeEntryServiceImplTest {
         verify(timeEntryRepository, never()).delete(any(TimeEntry.class));
     }
 
+
+    @Test
+    void locksManualCompletedTimerAndSoftDeletedEntryWithTheSameServerTime() {
+        TimeEntry manual = manualEntry(project, null);
+        TimeEntry timer = TimeEntry.startTimer(
+                owner, project, null, "Timer", NOW.minusSeconds(120)
+        );
+        timer.stop(NOW.minusSeconds(30));
+        TimeEntry deleted = manualEntry(project, null);
+        deleted.softDelete(NOW.minusSeconds(10));
+        when(timeEntryRepository.findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(
+                OWNER_ID, PROJECT_ID
+        )).thenReturn(List.of(manual, timer, deleted));
+
+        service.lockByProject(OWNER_ID, PROJECT_ID);
+
+        assertThat(List.of(manual, timer, deleted)).allSatisfy(entry -> {
+            assertThat(entry.getLockedAt()).isEqualTo(NOW);
+            assertThat(entry.isLocked()).isTrue();
+        });
+        assertThat(deleted.getIsActive()).isFalse();
+        assertThat(deleted.getDeletedAt()).isEqualTo(NOW.minusSeconds(10));
+        assertThatThrownBy(() -> manual.updateTimeRangeWithDurationSeconds(NOW, 60))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> manual.softDelete(NOW))
+                .isInstanceOf(IllegalStateException.class);
+        verify(timeEntryRepository).flush();
+    }
+
+    @Test
+    void rejectsRunningTimerBeforeLockingAnyOtherEntry() {
+        TimeEntry manual = manualEntry(project, null);
+        TimeEntry running = TimeEntry.startTimer(owner, project, null, "Timer", NOW);
+        when(timeEntryRepository.findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(
+                OWNER_ID, PROJECT_ID
+        )).thenReturn(List.of(manual, running));
+
+        assertThatThrownBy(() -> service.lockByProject(OWNER_ID, PROJECT_ID))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(manual.getLockedAt()).isNull();
+        assertThat(running.isRunning()).isTrue();
+        assertThat(running.getLockedAt()).isNull();
+        verify(timeEntryRepository, never()).flush();
+    }
+
+    @Test
+    void doesNothingWhenNoUnlockedEntriesRemain() {
+        when(timeEntryRepository.findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(
+                OWNER_ID, PROJECT_ID
+        )).thenReturn(List.of());
+
+        service.lockByProject(OWNER_ID, PROJECT_ID);
+
+        verify(timeEntryRepository, never()).flush();
+    }
+
+    @Test
+    void requiresOwnerAndProjectIdsBeforeLockQuery() {
+        assertThatThrownBy(() -> service.lockByProject(null, PROJECT_ID))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> service.lockByProject(OWNER_ID, null))
+                .isInstanceOf(NullPointerException.class);
+        verifyNoInteractions(timeEntryRepository);
+    }
 
     private void stubOwnedUserAndProject() {
         when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));

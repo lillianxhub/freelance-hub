@@ -3,8 +3,7 @@ package th.ac.kku.freelance_hub.mapper;
 import org.springframework.stereotype.Component;
 
 import th.ac.kku.freelance_hub.domain.entity.Task;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
-
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @Component
 public class TaskMapper {
 

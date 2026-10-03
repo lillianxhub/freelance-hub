@@ -1,18 +1,28 @@
 package th.ac.kku.freelance_hub.repository;
+import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
+import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
+import th.ac.kku.freelance_hub.service.ProjectService;
+import th.ac.kku.freelance_hub.domain.entity.Client;
+import th.ac.kku.freelance_hub.domain.entity.Project;
+import th.ac.kku.freelance_hub.domain.entity.User;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import th.ac.kku.freelance_hub.domain.entity.Client;
-import th.ac.kku.freelance_hub.domain.entity.Project;
-import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import jakarta.persistence.EntityManager;
+
+
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -27,6 +37,53 @@ class ProjectRepositoryTest {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+        @Autowired
+    private ProjectService projectService;
+
+    @Autowired
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private TimeEntryRepository timeEntryRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Test
+    void projectListAndDetailCountCompletedTimeButNotRunningTimer() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("project-time-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Time Client"));
+        Project project = new Project(owner, client, "Timed Project");
+        project.updateDetails("Timed Project", null, null, null, null, 120);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project = projectRepository.saveAndFlush(project);
+
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, null, "Finished work",
+                Instant.parse("2026-09-29T09:00:00Z"), 3600
+        ));
+        timeEntryRepository.saveAndFlush(TimeEntry.startTimer(
+                owner, project, null, "Running work",
+                Instant.parse("2026-09-30T09:00:00Z")
+        ));
+
+        var listed = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10)
+        ).getContent().get(0).getTimeTracking();
+        var detail = projectService.getById(owner.getId(), project.getId())
+                .getTimeTracking();
+
+        assertThat(listed.getTrackedSeconds()).isEqualTo(3600);
+        assertThat(listed.getTrackedHours()).isEqualByComparingTo("1.00");
+        assertThat(listed.getUsagePercent()).isEqualByComparingTo("50.00");
+        assertThat(detail.getTrackedSeconds()).isEqualTo(listed.getTrackedSeconds());
+        assertThat(detail.getTrackedHours()).isEqualByComparingTo(listed.getTrackedHours());
+        assertThat(detail.getUsagePercent()).isEqualByComparingTo(listed.getUsagePercent());
+    }
 
     @Test
     void filtersProjectsByOwnerStatusAndClient() {
@@ -94,5 +151,243 @@ class ProjectRepositoryTest {
         ).getContent())
                 .extracting(Project::getId)
                 .containsExactly(planned.getId());
+    }
+
+    @Test
+    void countsOnlyOwnedActiveAndCompletedProjectsThatAreNotDeleted() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("count-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "Count Client"));
+
+        Project active = new Project(owner, client, "Active");
+        active.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(active);
+
+        Project completed = new Project(owner, client, "Completed");
+        completed.changeStatus(ProjectStatus.ACTIVE);
+        completed.changeStatus(ProjectStatus.COMPLETED);
+        projectRepository.saveAndFlush(completed);
+
+        Project deleted = new Project(owner, client, "Deleted");
+        deleted.changeStatus(ProjectStatus.ACTIVE);
+        deleted.archive();
+        projectRepository.saveAndFlush(deleted);
+
+        projectRepository.saveAndFlush(new Project(owner, client, "Planned"));
+
+        User otherOwner = userRepository.saveAndFlush(User.builder()
+                .email("count-other-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client otherClient = clientRepository.saveAndFlush(
+                new Client(otherOwner, "Other Client"));
+        Project otherActive = new Project(otherOwner, otherClient, "Other Active");
+        otherActive.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(otherActive);
+
+        var counts = projectService.countActiveAndCompleted(owner.getId());
+
+        assertThat(counts.activeCount()).isEqualTo(1);
+        assertThat(counts.completedCount()).isEqualTo(1);
+        assertThat(counts.totalCount()).isEqualTo(2);
+    }
+
+        @Test
+    void softDeletePreservesDataAndHidesDeletedProjectFromApiQueries() {
+        User owner = userRepository.saveAndFlush(
+                User.builder()
+                        .email("soft-delete-owner@example.com")
+                        .passwordHash("test-hash")
+                        .build()
+        );
+
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "My Client")
+        );
+
+        Project archivedProject = new Project(
+                owner,
+                client,
+                "Archived but not deleted"
+        );
+        archivedProject.changeStatus(ProjectStatus.ARCHIVED);
+        archivedProject = projectRepository.saveAndFlush(archivedProject);
+
+        Project deletedProject = projectRepository.saveAndFlush(
+                new Project(owner, client, "Project to delete")
+        );
+
+        Task task = taskRepository.saveAndFlush(
+                new Task(deletedProject, "Existing Task", 0)
+        );
+
+        projectService.archive(owner.getId(), deletedProject.getId());
+
+        projectRepository.flush();
+        entityManager.clear();
+
+        // โหลดใหม่จากฐานข้อมูล เพื่อยืนยันว่าข้อมูลยังอยู่
+        Project storedProject = projectRepository
+                .findById(deletedProject.getId())
+                .orElseThrow();
+
+        assertThat(storedProject.getStatus())
+                .isEqualTo(ProjectStatus.ARCHIVED);
+        assertThat(storedProject.getIsActive()).isFalse();
+        assertThat(storedProject.getDeletedAt()).isNotNull();
+
+        assertThat(taskRepository.findById(task.getId())).isPresent();
+
+        // การค้นหาสำหรับ API ต้องไม่พบ Project ที่ลบแล้ว
+        assertThat(projectRepository.findByIdAndOwnerId(
+                deletedProject.getId(),
+                owner.getId()
+        )).isEmpty();
+
+        assertThatThrownBy(() -> projectService.getById(
+                owner.getId(),
+                deletedProject.getId()
+        )).isInstanceOf(ProjectNotFoundException.class);
+
+        // ARCHIVED ที่ยังไม่ถูกลบต้องยังปรากฏในรายการ
+        var result = projectService.list(
+                owner.getId(),
+                null,
+                ProjectStatus.ARCHIVED,
+                null,
+                PageRequest.of(0, 10)
+        );
+
+        assertThat(result.getContent())
+                .extracting(response -> response.getId())
+                .containsExactly(archivedProject.getId());
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void listHidesArchivedProjectsUnlessStatusIsExplicitlyFiltered() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("archived-list-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "Archived List Client"));
+
+        Project planned = projectRepository.saveAndFlush(
+                new Project(owner, client, "Planned"));
+        Project active = new Project(owner, client, "Active");
+        active.changeStatus(ProjectStatus.ACTIVE);
+        active = projectRepository.saveAndFlush(active);
+        Project archived = new Project(owner, client, "Archived");
+        archived.changeStatus(ProjectStatus.ARCHIVED);
+        archived = projectRepository.saveAndFlush(archived);
+
+        var defaultList = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10));
+        assertThat(defaultList.getContent())
+                .extracting(response -> response.getId())
+                .containsExactlyInAnyOrder(planned.getId(), active.getId());
+        assertThat(defaultList.getTotalElements()).isEqualTo(2);
+
+        var allStatusesList = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10),
+                false, true);
+        assertThat(allStatusesList.getContent())
+                .extracting(response -> response.getId())
+                .containsExactlyInAnyOrder(
+                        planned.getId(), active.getId(), archived.getId());
+        assertThat(allStatusesList.getTotalElements()).isEqualTo(3);
+
+        var paginatedList = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 1));
+        assertThat(paginatedList.getContent()).hasSize(1);
+        assertThat(paginatedList.getTotalElements()).isEqualTo(2);
+        assertThat(paginatedList.getTotalPages()).isEqualTo(2);
+
+        var archivedList = projectService.list(
+                owner.getId(), null, ProjectStatus.ARCHIVED,
+                null, PageRequest.of(0, 10));
+        assertThat(archivedList.getContent())
+                .extracting(response -> response.getId())
+                .containsExactly(archived.getId());
+        assertThat(archivedList.getTotalElements()).isEqualTo(1);
+
+        var activeList = projectService.list(
+                owner.getId(), null, ProjectStatus.ACTIVE,
+                null, PageRequest.of(0, 10));
+        assertThat(activeList.getContent())
+                .extracting(response -> response.getId())
+                .containsExactly(active.getId());
+    }
+
+    @Test
+    void includedTasksBelongToVisibleProjectsAndExcludeDeletedTasks() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("include-tasks-owner@example.com")
+                .passwordHash("test-hash")
+                .build());
+        Client client = clientRepository.saveAndFlush(
+                new Client(owner, "Include Tasks Client"));
+        Project project = projectRepository.saveAndFlush(
+                new Project(owner, client, "Include Tasks Project"));
+
+        taskRepository.saveAndFlush(new Task(project, "Visible Task", 0));
+        Task deleted = taskRepository.saveAndFlush(
+                new Task(project, "Deleted Task", 1));
+        deleted.softDelete();
+        taskRepository.saveAndFlush(deleted);
+
+        var result = projectService.list(
+                owner.getId(), null, null, null, PageRequest.of(0, 10), true
+        );
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTasks())
+                .extracting(task -> task.getName())
+                .containsExactly("Visible Task");
+    }
+
+    @Test
+    void projectDetailCountsOnlyItsActiveTasksAndChecksOwnership() {
+        User owner = userRepository.saveAndFlush(User.builder()
+                .email("detail-owner@example.com").passwordHash("test-hash").build());
+        Client client = clientRepository.saveAndFlush(new Client(owner, "Detail Client"));
+        Project project = new Project(owner, client, "Detail Project");
+        project.updateDetails("Detail Project", "Description", null, null, null, 2160);
+        project = projectRepository.saveAndFlush(project);
+        UUID projectId = project.getId();
+
+        taskRepository.saveAndFlush(new Task(project, "Open Task", 0));
+        Task completed = new Task(project, "Completed Task", 1);
+        completed.complete(java.time.Instant.now());
+        taskRepository.saveAndFlush(completed);
+        Task deleted = new Task(project, "Deleted Completed Task", 2);
+        deleted.complete(java.time.Instant.now());
+        deleted.softDelete();
+        taskRepository.saveAndFlush(deleted);
+
+        Project otherProject = projectRepository.saveAndFlush(
+                new Project(owner, client, "Other Project"));
+        Task otherTask = new Task(otherProject, "Other Completed Task", 0);
+        otherTask.complete(java.time.Instant.now());
+        taskRepository.saveAndFlush(otherTask);
+
+        entityManager.clear();
+        var result = projectService.getById(owner.getId(), projectId);
+        assertThat(result.getId()).isEqualTo(projectId);
+        assertThat(result.getClient().getId()).isEqualTo(client.getId());
+        assertThat(result.getClient().getName()).isEqualTo("Detail Client");
+        assertThat(result.getTargetHours()).isEqualByComparingTo("36");
+        assertThat(result.getTaskProgress().getTotalTasks()).isEqualTo(2);
+        assertThat(result.getTaskProgress().getCompletedTasks()).isEqualTo(1);
+        assertThat(result.getTaskProgress().getPercent()).isEqualByComparingTo("50");
+        assertThat(result.getCreatedAt()).isNotNull();
+        assertThat(result.getUpdatedAt()).isNotNull();
+        assertThatThrownBy(() -> projectService.getById(java.util.UUID.randomUUID(), projectId))
+                .isInstanceOf(ProjectNotFoundException.class);
     }
 }

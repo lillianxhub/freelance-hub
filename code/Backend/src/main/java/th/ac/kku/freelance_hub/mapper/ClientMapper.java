@@ -6,10 +6,9 @@ import org.springframework.stereotype.Component;
 
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
-import th.ac.kku.freelance_hub.dto.response.ClientResponse;
-
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 /** Converts between Client entities and API request/response DTOs. */
 @Component
 public class ClientMapper {
@@ -20,6 +19,15 @@ public class ClientMapper {
             request.getPhone(), request.getAddress(), request.getSubdistrict(), request.getDistrict(),
             request.getProvince(), request.getPostalCode(), request.getTaxId(), request.getNotes());
         return client;
+    }
+
+    /** Replaces all editable fields; omitted optional values are cleared. */
+    public void replaceEntity(CreateClientRequest request, Client client) {
+        Objects.requireNonNull(request, "request is required");
+        Objects.requireNonNull(client, "client is required");
+        client.updateDetailsWithAddress(request.getName(), request.getCompanyName(), request.getEmail(),
+            request.getPhone(), request.getAddress(), request.getSubdistrict(), request.getDistrict(),
+            request.getProvince(), request.getPostalCode(), request.getTaxId(), request.getNotes());
     }
 
     public void updateEntity(UpdateClientRequest request, Client client) {
@@ -46,7 +54,8 @@ public class ClientMapper {
             .email(client.getEmail()).phone(client.getPhone()).address(client.getAddress())
             .subdistrict(client.getSubdistrict()).district(client.getDistrict()).province(client.getProvince())
             .postalCode(client.getPostalCode()).taxId(client.getTaxId()).notes(client.getNotes())
-            .status(client.getStatus()).createdAt(client.getCreatedAt()).updatedAt(client.getUpdatedAt())
+            .status(client.getStatus()).isActive(client.getIsActive())
+            .createdAt(client.getCreatedAt()).updatedAt(client.getUpdatedAt())
             .version(client.getVersion()).build();
     }
 

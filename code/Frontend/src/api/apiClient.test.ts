@@ -39,8 +39,8 @@ test('401 rotates the refresh cookie once and retries with the new access token'
   setApiToken('expired-access')
   globalThis.fetch = async (input, init) => {
     calls++
+    assert.equal(init?.credentials, 'same-origin')
     if (input === '/api/auth/refresh') {
-      assert.equal(init?.credentials, 'same-origin')
       return new Response(JSON.stringify({ data: { token: 'renewed-access' } }), { status: 200 })
     }
     const authorization = new Headers(init?.headers).get('Authorization')

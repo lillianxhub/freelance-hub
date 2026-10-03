@@ -31,7 +31,6 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.StartTimerRequest;
 import th.ac.kku.freelance_hub.event.TimerStoppedEvent;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.RunningTimerNotFoundException;
@@ -44,7 +43,7 @@ import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.impl.TimerServiceImpl;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.StartTimerRequest;
 @ExtendWith(MockitoExtension.class)
 class TimerServiceImplTest {
 
@@ -226,7 +225,7 @@ class TimerServiceImplTest {
 
     @Test
     void rejectsTimerForArchivedClient() {
-        project.getClient().archive();
+        project.getClient().setActive(false);
         stubOwnedUserAndProject();
 
         assertThatThrownBy(() -> timerService.startTimer(

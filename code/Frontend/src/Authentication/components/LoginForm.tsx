@@ -1,3 +1,4 @@
+import { Button } from '../../components/ui/button'
 import AuthenticationLayout from "./AuthenticationLayout";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -35,7 +36,7 @@ function LoginForm() {
     <AuthenticationLayout>
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-brand">
-          <span>FH</span>
+          <img src="/logo-light.svg" alt="" />
           <strong>freelance hub</strong>
         </div>
         <h1>เข้าสู่ระบบ</h1>
@@ -57,13 +58,13 @@ function LoginForm() {
           onChange={handleChange}
         />
 
-        <button
-          className="button button-primary wide"
+        <Button variant="default"
+          className="h-10 w-full"
           type="submit"
           disabled={loading}
         >
           {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-        </button>
+        </Button>
 
         <p className="auth-footer">
           ยังไม่มีบัญชี? <Link to="/register">สมัครสมาชิก</Link>

@@ -1,9 +1,7 @@
 package th.ac.kku.freelance_hub.service;
-
-import th.ac.kku.freelance_hub.dto.request.LoginRequest;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
-import th.ac.kku.freelance_hub.dto.response.AuthResponse;
-
+import th.ac.kku.freelance_hub.dto.request.auth.LoginRequest;
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.response.auth.AuthResponse;
 /** Authentication use cases exposed to the web layer. */
 public interface AuthService {
 

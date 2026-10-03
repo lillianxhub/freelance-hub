@@ -48,4 +48,3 @@
 - [ ] Self-review completed
 - [ ] Necessary tests added or updated
 - [ ] No new warnings or errors introduced
-

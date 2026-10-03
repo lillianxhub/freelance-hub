@@ -1,6 +1,10 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -14,18 +18,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntrySummaryResponse;
+import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
+import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-
-/** Read-only list and summary queries for time entries. */
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
+/** Read-only detail, list, and aggregate queries for time entries. */
 @Service
 @Transactional(readOnly = true)
 public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
+
+    private static final ZoneId THAILAND_ZONE = ZoneId.of("Asia/Bangkok");
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "startedAt",
@@ -36,13 +43,16 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
     );
 
     private final TimeEntryRepository timeEntryRepository;
+    private final ProjectRepository projectRepository;
     private final TimeEntryMapper timeEntryMapper;
 
     public TimeEntryQueryServiceImpl(
             TimeEntryRepository timeEntryRepository,
+            ProjectRepository projectRepository,
             TimeEntryMapper timeEntryMapper
     ) {
         this.timeEntryRepository = timeEntryRepository;
+        this.projectRepository = projectRepository;
         this.timeEntryMapper = timeEntryMapper;
     }
 
@@ -110,6 +120,125 @@ public class TimeEntryQueryServiceImpl implements TimeEntryQueryService {
                 .entryCount(entryCount)
                 .totalSeconds(totalSeconds)
                 .build();
+    }
+
+    @Override
+    public long sumCompletedSeconds(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive
+    ) {
+        return findCompleted(
+                ownerId,
+                fromInclusive,
+                toExclusive,
+                TimeEntryRepository.AllocationView.class
+        ).stream()
+                .filter(TimeEntryQueryServiceImpl::isVisibleAllocation)
+                .mapToLong(TimeEntryRepository.AllocationView::getDurationSeconds)
+                .sum();
+    }
+
+    @Override
+    public List<DailySeconds> sumDailySeconds(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive
+    ) {
+        List<TimeEntryRepository.AllocationView> entries = findCompleted(
+                ownerId,
+                fromInclusive,
+                toExclusive,
+                TimeEntryRepository.AllocationView.class
+        );
+
+        Map<LocalDate, Long> totals = new LinkedHashMap<>();
+        for (LocalDate day = fromInclusive; day.isBefore(toExclusive); day = day.plusDays(1)) {
+            totals.put(day, 0L);
+        }
+        for (TimeEntryRepository.AllocationView entry : entries) {
+            if (!isVisibleAllocation(entry)) {
+                continue;
+            }
+            LocalDate day = entry.getStartedAt()
+                    .atZone(THAILAND_ZONE)
+                    .toLocalDate();
+            totals.merge(day, entry.getDurationSeconds(), Long::sum);
+        }
+
+        return totals.entrySet().stream()
+                .map(item -> new DailySeconds(item.getKey(), item.getValue()))
+                .toList();
+    }
+
+    @Override
+    public List<ProjectSeconds> sumSecondsByProject(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive
+    ) {
+        List<TimeEntryRepository.AllocationView> entries = findCompleted(
+                ownerId, fromInclusive, toExclusive,
+                TimeEntryRepository.AllocationView.class
+        );
+        Specification<Project> visibleOwnedProjects = (root, query, cb) -> cb.and(
+                cb.equal(root.get("owner").get("id"), ownerId),
+                cb.isTrue(root.get("isActive"))
+        );
+        List<Project> projects = projectRepository.findAll(
+                visibleOwnedProjects, Sort.by("name", "id")
+        );
+        Map<UUID, Long> totals = new LinkedHashMap<>();
+        for (Project project : projects) {
+            totals.put(project.getId(), 0L);
+        }
+        for (TimeEntryRepository.AllocationView entry : entries) {
+            if (isVisibleAllocation(entry)
+                    && totals.containsKey(entry.getProject().getId())) {
+                totals.merge(entry.getProject().getId(),
+                        entry.getDurationSeconds(), Long::sum);
+            }
+        }
+        return projects.stream()
+                .map(project -> new ProjectSeconds(
+                        project.getId(), project.getName(), totals.get(project.getId())
+                ))
+                .toList();
+    }
+
+    private static boolean isVisibleAllocation(
+            TimeEntryRepository.AllocationView entry
+    ) {
+        TimeEntryRepository.ProjectView project = entry.getProject();
+        if (project == null || !Boolean.TRUE.equals(project.getIsActive())) {
+            return false;
+        }
+        TimeEntryRepository.TaskView task = entry.getTask();
+        return task == null || Boolean.TRUE.equals(task.getIsActive());
+    }
+
+    private <T> List<T> findCompleted(
+            UUID ownerId,
+            LocalDate fromInclusive,
+            LocalDate toExclusive,
+            Class<T> projectionType
+    ) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(fromInclusive, "fromInclusive is required");
+        Objects.requireNonNull(toExclusive, "toExclusive is required");
+        if (!fromInclusive.isBefore(toExclusive)) {
+            throw new IllegalArgumentException(
+                    "fromInclusive must be before toExclusive"
+            );
+        }
+
+        return timeEntryRepository
+                .findByOwnerIdAndIsActiveTrueAndEndedAtIsNotNullAndDurationSecondsIsNotNullAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+                        ownerId,
+                        fromInclusive.atStartOfDay(THAILAND_ZONE).toInstant(),
+                        toExclusive.atStartOfDay(THAILAND_ZONE).toInstant(),
+                        projectionType
+                );
     }
 
     private static Specification<TimeEntry> buildSpecification(

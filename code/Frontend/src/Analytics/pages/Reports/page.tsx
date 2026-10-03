@@ -1,11 +1,17 @@
+import { Card } from '../../../components/ui/card'
+import { Button } from '../../../components/ui/button'
+import { Label } from '../../../components/ui/label'
+import { DatePicker } from '../../../components/ui/date-picker'
+import { NativeSelect } from '../../../components/ui/native-select'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../../components/ui/chart'
+import { Progress } from '../../../components/ui/progress'
 import { useMemo, useState } from "react";
 import { FiActivity, FiAward, FiBarChart2, FiClock, FiDownload, FiSun, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -17,8 +23,8 @@ import {
   groupTimeBy,
   inDateRange,
   summarizeTime,
-} from "../../../utils/analytics";
-import { formatDuration } from "../../../utils/formatters";
+} from "../../../lib/analytics";
+import { formatDuration } from "../../../lib/formatters";
 
 const reportNow = new Date();
 const reportTo = new Date(
@@ -154,92 +160,46 @@ function ReportsPage() {
         ];
       }),
     ]);
-  /* const exportRevenue = () =>
-    downloadCsv(`revenue-report-${range.from}-${range.to}.csv`, [
-      [
-        "เลขที่ใบแจ้งหนี้",
-        "ลูกค้า",
-        "วันที่ออกเอกสาร",
-        "วันครบกำหนด",
-        "สถานะ",
-        "ยอดก่อนภาษี",
-        "ภาษี",
-        "ยอดรวม",
-        "รับเงินแล้ว",
-        "ยอดคงเหลือ",
-        "สกุลเงิน",
-      ],
-      ...filteredInvoices.map((invoice) => {
-        const client = data.clients.find(
-          (item) => item.id === invoice.client_id,
-        );
-        return [
-          invoice.invoice_number,
-          client?.company_name || client?.name,
-          invoice.issue_date,
-          invoice.due_date,
-          invoice.status,
-          invoice.subtotal,
-          invoice.tax_amount,
-          invoice.total,
-          invoice.amount_paid,
-          Number(invoice.total) - Number(invoice.amount_paid || 0),
-          invoice.currency,
-        ];
-      }),
-    ]); */
-
   return (
-    <div className="page-view">
+    <div className="mx-auto w-full max-w-auto">
       <PageHeader
         eyebrow="จัดการ / รายงาน"
         title="รายงานและข้อมูลสรุป"
         description="ดูเวลาและประสิทธิภาพจากข้อมูลจริง"
         actions={
           <>
-            <button
-              className="button button-secondary"
+            <Button variant="outline"
+              className="h-10"
               type="button"
               onClick={exportTime}
             >
               <FiDownload aria-hidden="true" /> เวลา CSV
-            </button>
-            {/* <button
-              className="button button-primary"
-              type="button"
-              onClick={exportRevenue}
-            >
-              <FiDownload aria-hidden="true" /> ดาวน์โหลดรายรับ CSV
-            </button> */}
+            </Button>
           </>
         }
       />
-      <section className="panel report-controls">
-        <div className="form-field">
-          <label htmlFor="report-from">จากวันที่</label>
-          <input
+      <Card asChild><section className="panel report-controls">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="report-from">จากวันที่</Label>
+          <DatePicker
             id="report-from"
-            type="date"
             value={range.from}
-            onChange={(event) =>
-              setRange((current) => ({ ...current, from: event.target.value }))
-            }
+            onChange={(value) => setRange((current) => ({ ...current, from: value }))}
+            aria-label="จากวันที่"
           />
         </div>
-        <div className="form-field">
-          <label htmlFor="report-to">ถึงวันที่</label>
-          <input
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="report-to">ถึงวันที่</Label>
+          <DatePicker
             id="report-to"
-            type="date"
             value={range.to}
-            onChange={(event) =>
-              setRange((current) => ({ ...current, to: event.target.value }))
-            }
+            onChange={(value) => setRange((current) => ({ ...current, to: value }))}
+            aria-label="ถึงวันที่"
           />
         </div>
-        <div className="form-field">
-          <label htmlFor="report-client">ลูกค้า</label>
-          <select
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="report-client">ลูกค้า</Label>
+          <NativeSelect
             id="report-client"
             value={clientId}
             onChange={(event) => {
@@ -251,18 +211,18 @@ function ReportsPage() {
             {data.clients.map((client) => (
               <option value={client.id} key={client.id}>{client.company_name || client.name}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
-        <div className="form-field">
-          <label htmlFor="report-project">โปรเจกต์</label>
-          <select id="report-project" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="report-project">โปรเจกต์</Label>
+          <NativeSelect id="report-project" value={projectId} onChange={(event) => setProjectId(event.target.value)}>
             <option value="ALL">โปรเจกต์ทั้งหมด</option>
             {availableProjects.map((project) => (
               <option value={project.id} key={project.id}>{project.name}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
-        {/* <div className="form-field">
+        {/* <div className="flex flex-col gap-1.5">
           <label htmlFor="report-currency">สกุลเงิน</label>
           <select
             id="report-currency"
@@ -277,9 +237,9 @@ function ReportsPage() {
           </select>
         </div> */}
         {/* <p>จำนวนเงินจะแยกตามสกุลเงินเพื่อป้องกันการรวมยอดที่ผิดพลาด</p> */}
-      </section>
+      </section></Card>
       <div className="summary-grid">
-        <article className="metric-card accent-blue">
+        <Card asChild><article className="metric-card accent-blue">
           <div className="metric-top">
             <span>ชั่วโมงที่บันทึกทั้งหมด</span>
             <span className="metric-icon"><FiClock aria-hidden="true" /></span>
@@ -291,8 +251,8 @@ function ReportsPage() {
           <div className="metric-foot">
             จาก {filteredTime.length} รายการเวลา
           </div>
-        </article>
-        <article className="metric-card accent-violet">
+        </article></Card>
+        <Card asChild><article className="metric-card accent-violet">
           <div className="metric-top">
             <span>ชั่วโมงเฉลี่ยต่อวัน</span>
             <span className="metric-icon"><FiBarChart2 aria-hidden="true" /></span>
@@ -304,26 +264,26 @@ function ReportsPage() {
           <div className="metric-foot">
             คำนวณจาก {rangeDays} วันในช่วงที่เลือก
           </div>
-        </article>
-        <article className="metric-card accent-orange">
+        </article></Card>
+        <Card asChild><article className="metric-card accent-orange">
           <div className="metric-top">
             <span>โปรเจกต์ที่ใช้เวลาสูงสุด</span>
             <span className="metric-icon"><FiAward aria-hidden="true" /></span>
           </div>
           <div className="metric-value metric-compact">{topProjects?.name || "—"}</div>
           <div className="metric-foot">{topProjects ? `${topProjects.hours.toFixed(1)} ชั่วโมง` : "ยังไม่มีข้อมูล"}</div>
-        </article>
-        <article className="metric-card accent-green">
+        </article></Card>
+        <Card asChild><article className="metric-card accent-green">
           <div className="metric-top">
             <span>แนวโน้มประสิทธิภาพ</span>
             <span className="metric-icon">{productivityTrend >= 0 ? <FiTrendingUp aria-hidden="true" /> : <FiTrendingDown aria-hidden="true" />}</span>
           </div>
           <div className="metric-value">{productivityTrend >= 0 ? "+" : ""}{productivityTrend.toFixed(0)}<span className="metric-unit">%</span></div>
           <div className="metric-foot">เทียบกับช่วงเวลาก่อนหน้าที่มีจำนวนวันเท่ากัน</div>
-        </article>
+        </article></Card>
       </div>
       <div className="dashboard-grid report-chart-grid">
-        <section className="panel chart-panel">
+        <Card asChild><section className="panel chart-panel">
           <div className="panel-heading">
             <div>
               <h2>แนวโน้มชั่วโมงทำงาน</h2>
@@ -331,7 +291,7 @@ function ReportsPage() {
             </div>
           </div>
           {daily.length ? (
-            <ResponsiveContainer width="100%" height={270}>
+            <ChartContainer className="h-[270px] w-full aspect-auto" config={{ hours: { label: 'ชั่วโมง', color: '#4F6BFF' } }}>
               <BarChart data={daily}>
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -349,20 +309,20 @@ function ReportsPage() {
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip />
+                <ChartTooltip content={<ChartTooltipContent />} />
                 <Bar
                   dataKey="hours"
                   name="ชั่วโมง"
-                  fill="#4F6BFF"
+                  fill="var(--color-hours)"
                   radius={[5, 5, 0, 0]}
                 />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           ) : (
             <p className="inline-empty">ไม่มีข้อมูลในช่วงวันที่นี้</p>
           )}
-        </section>
-        <section className="panel chart-panel">
+        </section></Card>
+        <Card asChild><section className="panel chart-panel">
           <div className="panel-heading">
             <div>
               <h2>สัดส่วนเวลาตามลูกค้าและโปรเจกต์</h2>
@@ -387,10 +347,10 @@ function ReportsPage() {
               </div>
             </div>
           </div>
-        </section>
+        </section></Card>
       </div>
       <div className="lower-grid">
-        <section className="panel">
+        <Card asChild><section className="panel">
           <div className="panel-heading">
             <div>
               <h2>วิเคราะห์โปรเจกต์</h2>
@@ -398,17 +358,17 @@ function ReportsPage() {
             </div>
           </div>
           <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>โปรเจกต์</th>
-                  <th>ชั่วโมงที่บันทึก</th>
-                  <th>ชั่วโมงเป้าหมาย</th>
-                  <th>ความคืบหน้า</th>
-                  <th>สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="data-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>โปรเจกต์</TableHead>
+                  <TableHead>ชั่วโมงที่บันทึก</TableHead>
+                  <TableHead>ชั่วโมงเป้าหมาย</TableHead>
+                  <TableHead>ความคืบหน้า</TableHead>
+                  <TableHead>สถานะ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {projectGroups.map((group) => {
                   const project = data.projects.find(
                     (item) => item.id === group.key,
@@ -416,8 +376,8 @@ function ReportsPage() {
                   const targetHours = Number(project?.budget_hours || 0);
                   const progress = targetHours ? (group.hours / targetHours) * 100 : 0;
                   return (
-                    <tr key={group.key}>
-                      <td>
+                    <TableRow key={group.key}>
+                      <TableCell>
                         <div className="table-primary">
                           <span
                             className="color-dot"
@@ -425,21 +385,21 @@ function ReportsPage() {
                           />
                           <strong>{group.name}</strong>
                         </div>
-                      </td>
-                      <td>{group.hours.toFixed(1)} ชม.</td>
-                      <td>{targetHours ? `${targetHours.toFixed(1)} ชม.` : "ไม่กำหนด"}</td>
-                      <td>
-                        <div className="table-progress"><span><i style={{ width: `${Math.min(100, progress)}%` }} /></span><strong>{targetHours ? `${progress.toFixed(0)}%` : "—"}</strong></div>
-                      </td>
-                      <td>{targetHours ? progress >= 100 ? "ถึงเป้าหมายแล้ว" : progress >= 80 ? "ใกล้ถึงเป้าหมาย" : "กำลังดำเนินการ" : "ยังไม่มีเป้าหมาย"}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>{group.hours.toFixed(1)} ชม.</TableCell>
+                      <TableCell>{targetHours ? `${targetHours.toFixed(1)} ชม.` : "ไม่กำหนด"}</TableCell>
+                      <TableCell>
+                        <div className="table-progress"><Progress value={progress} /><strong>{targetHours ? `${progress.toFixed(0)}%` : "—"}</strong></div>
+                      </TableCell>
+                      <TableCell>{targetHours ? progress >= 100 ? "ถึงเป้าหมายแล้ว" : progress >= 80 ? "ใกล้ถึงเป้าหมาย" : "กำลังดำเนินการ" : "ยังไม่มีเป้าหมาย"}</TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
-        </section>
-        <section className="panel insight-card">
+        </section></Card>
+        <Card asChild><section className="panel insight-card">
           <div className="panel-heading">
             <div>
               <h2>รูปแบบการทำงาน</h2>
@@ -475,7 +435,7 @@ function ReportsPage() {
               </p>
             </div>
           </div>
-        </section>
+        </section></Card>
       </div>
     </div>
   );

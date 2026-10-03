@@ -2,19 +2,18 @@ package th.ac.kku.freelance_hub.service.impl;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.dto.request.ManualTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequest;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.exception.TimeEntryLockedException;
@@ -26,7 +25,9 @@ import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 /** Commands that create, edit, or delete completed time entries. */
 @Service
 public class TimeEntryServiceImpl implements TimeEntryService {
@@ -154,6 +155,31 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         }
 
         entry.softDelete(Instant.now(clock));
+        timeEntryRepository.flush();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockByProject(UUID ownerId, UUID projectId) {
+        Objects.requireNonNull(ownerId, "ownerId is required");
+        Objects.requireNonNull(projectId, "projectId is required");
+
+        List<TimeEntry> entries = timeEntryRepository
+                .findLockedByOwnerIdAndProjectIdAndLockedAtIsNull(ownerId, projectId);
+
+        // Validate the entire batch before changing any entry.
+        if (entries.stream().anyMatch(TimeEntry::isRunning)) {
+            throw new IllegalStateException(
+                    "กรุณาหยุดตัวจับเวลาก่อนล็อกรายการเวลาของโปรเจกต์"
+            );
+        }
+        if (entries.isEmpty()) {
+            return;
+        }
+
+        Instant lockedAt = Instant.now(clock);
+        entries.forEach(entry -> entry.lock(lockedAt));
+        // Managed entities are persisted in the caller's transaction.
         timeEntryRepository.flush();
     }
 

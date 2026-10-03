@@ -49,22 +49,42 @@ export interface ApiClient {
   email?: string
   phone?: string
   address?: string
+  subdistrict?: string
+  district?: string
+  province?: string
+  postalCode?: string
   taxId?: string
   notes?: string
   status: 'ACTIVE' | 'ARCHIVED'
+  isActive?: boolean
   createdAt?: string
   updatedAt?: string
 }
 
 export interface ApiProject {
   id: string
-  clientId: string
+  clientId?: string
   name: string
   description?: string
   startDate?: string
   endDate?: string
   color?: string
   targetMinutes?: number
+  targetHours?: number | null
+  client?: {
+    id: string
+    name: string
+  }
+  taskProgress?: {
+    totalTasks: number
+    completedTasks: number
+    percent: number
+  }
+  timeTracking?: {
+    trackedSeconds: number
+    trackedHours: number
+    usagePercent: number
+  } | null
   status: 'PLANNED' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED'
   createdAt?: string
   updatedAt?: string
@@ -85,18 +105,44 @@ export interface ApiTimeEntry {
   id: string
   clientId?: string
   clientName?: string
-  projectId: string
+  projectId?: string
   projectName?: string
   taskId?: string
   taskName?: string
+  project?: {
+    id: string
+    name: string
+  }
+  task?: {
+    id: string
+    title: string
+  } | null
   description?: string
-  entryType: 'TIMER' | 'MANUAL'
+  entryType?: 'TIMER' | 'MANUAL'
   startedAt: string
   endedAt?: string
   durationMinutes?: number
+  durationSeconds?: number
   lockedAt?: string
   running: boolean
   locked: boolean
   createdAt?: string
   updatedAt?: string
+}
+
+export interface ApiCurrentTimer {
+  running: boolean
+  timeEntry: {
+    id: string
+    project: {
+      id: string
+      name: string
+    }
+    task: {
+      id: string
+      title: string
+    } | null
+    startedAt: string
+    description: string | null
+  } | null
 }

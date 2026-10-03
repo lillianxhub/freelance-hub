@@ -1,3 +1,6 @@
+import { Input } from '../../components/ui/input'
+import { Textarea } from '../../components/ui/textarea'
+import { Button } from '../../components/ui/button'
 import FormLabel from "../../components/FormLabel";
 import type { TaskFormProps } from "../../types/projectDetailPage";
 
@@ -10,11 +13,11 @@ export default function TaskForm({
 }: TaskFormProps) {
   return (
     <form onSubmit={onSubmit}>
-      {error && <p className="form-error">{error}</p>}
-      <div className="form-grid">
-        <div className="form-field full">
+      {error && <p className="mb-4 rounded-lg bg-red-soft px-3 py-2 text-sm text-destructive">{error}</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="task-name" required>ชื่องาน</FormLabel>
-          <input
+          <Input
             id="task-name"
             value={value.name}
             onChange={(event) =>
@@ -23,7 +26,7 @@ export default function TaskForm({
             required
           />
         </div>
-        {/* <div className="form-field">
+        {/* <div className="flex flex-col gap-1.5">
           <label htmlFor="task-status">สถานะ</label>
           <select
             id="task-status"
@@ -38,20 +41,9 @@ export default function TaskForm({
             <option value="DONE">เสร็จแล้ว</option>
           </select>
         </div> */}
-        {/* <div className="form-field">
-          <label htmlFor="task-due">กำหนดส่ง</label>
-          <input
-            id="task-due"
-            type="date"
-            value={value.due_date || ""}
-            onChange={(event) =>
-              onChange({ ...value, due_date: event.target.value })
-            }
-          />
-        </div> */}
-        <div className="form-field full">
+        <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="task-description">รายละเอียด</FormLabel>
-          <textarea
+          <Textarea
             id="task-description"
             value={value.description}
             onChange={(event) =>
@@ -60,17 +52,17 @@ export default function TaskForm({
           />
         </div>
       </div>
-      <div className="form-actions">
-        <button
-          className="button button-secondary"
+      <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
+        <Button variant="outline"
+          className="h-10"
           type="button"
           onClick={onCancel}
         >
           ยกเลิก
-        </button>
-        <button className="button button-primary" type="submit">
+        </Button>
+        <Button variant="default" className="h-10" type="submit">
           บันทึก งาน
-        </button>
+        </Button>
       </div>
     </form>
   );

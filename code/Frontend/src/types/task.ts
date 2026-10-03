@@ -10,3 +10,5 @@ export interface Task extends OwnedRecord {
   sort_order: number
   due_date: string
 }
+
+export type TaskInput = Omit<Task, keyof OwnedRecord> & Partial<OwnedRecord>

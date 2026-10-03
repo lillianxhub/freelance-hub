@@ -3,6 +3,7 @@ import type { CurrencyCode } from './common'
 import type { Project } from './project'
 import type { Task } from './task'
 import type { TimeEntry } from './timeTracking'
+import type { TablePaginationProps } from '../components/ui/table'
 
 export type ManualMode = 'RANGE' | 'DURATION'
 export type ManualTimeFieldName = 'project_id' | 'task_id' | 'entry_date' | 'manual_mode' | 'start_time' | 'end_time' | 'duration_minutes'
@@ -24,7 +25,6 @@ export interface ManualTimeForm {
   billable: boolean
   rate_snapshot: number | string
   currency: CurrencyCode
-  invoice_id?: string | null
 }
 
 export type RangePreset = 'DAY' | 'WEEK' | 'ALL'
@@ -34,7 +34,6 @@ export interface TimeFilters {
   project: string
   task: string
   billable: 'ALL' | 'true' | 'false'
-  invoice: 'ALL' | 'UNBILLED' | 'INVOICED'
   from: string
   to: string
 }
@@ -52,7 +51,8 @@ export interface TimeEntryFormProps {
 export interface TimeEntryTableProps {
   entries: readonly TimeEntry[]
   projects: readonly Project[]
-  tasks: readonly Task[]
+  tasks?: readonly Task[]
+  pagination?: TablePaginationProps
   onEdit: (entry: TimeEntry) => void
   onDelete: (entry: TimeEntry) => void
   onDuplicate: (entry: TimeEntry) => void

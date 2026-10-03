@@ -1,9 +1,10 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { FiArrowLeft, FiArrowRight, FiBriefcase, FiPlus, FiSearch } from "react-icons/fi";
-import { Link } from "react-router-dom";
-import Modal from "../../../components/Modal";
+import { Card } from '../../../components/ui/card'
+import { Button } from '../../../components/ui/button'
+import { NativeSelect } from '../../../components/ui/native-select'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { FiBriefcase, FiPlus } from "react-icons/fi";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import PageHeader from "../../../components/PageHeader";
-import Toast from "../../../components/Toast";
 import {
   EmptyState,
   ErrorState,
@@ -18,26 +19,23 @@ import type {
   ProjectSort,
 } from "../../../types/projectsPage";
 import ProjectForm from "../../components/ProjectForm";
+import ProjectCard from "../../components/ProjectCard";
+import FilterBar from '../../../components/FilterBar'
 import { getErrorMessage } from "../../../api/apiError";
-import { formatDuration } from "../../../utils/formatters";
 import { changeProjectStatus } from "../../../services/project";
-import type { ToastMessage } from "../../../types/toast";
-
-const projectStatusLabels: Record<ProjectStatus, string> = {
-  PLANNED: "วางแผน",
-  ACTIVE: "กำลังดำเนินการ",
-  ON_HOLD: "พักงาน",
-  COMPLETED: "เสร็จสิ้น",
-  ARCHIVED: "เก็บถาวร",
-};
-
-const allowedStatusTransitions: Record<ProjectStatus, readonly ProjectStatus[]> = {
-  PLANNED: ["PLANNED", "ACTIVE", "ARCHIVED"],
-  ACTIVE: ["ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"],
-  ON_HOLD: ["ON_HOLD", "ACTIVE", "ARCHIVED"],
-  COMPLETED: ["COMPLETED", "ARCHIVED"],
-  ARCHIVED: ["ARCHIVED", "PLANNED", "ACTIVE"],
-};
+import { listProjectsPage, type ProjectListFilters } from "../../../services/project";
+import type { NotificationMessage } from "../../../types/notification";
+import { toast } from 'sonner';
+import type { ApiMeta } from "../../../types/api";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../../components/ui/pagination";
 
 const emptyForm: ProjectDraft = {
   name: "",
@@ -55,51 +53,89 @@ const emptyForm: ProjectDraft = {
   end_date: "",
 };
 
+const projectPageLimit = 10;
+
+const projectSortParams: Record<ProjectSort, Pick<ProjectListFilters, 'sortBy' | 'direction'>> = {
+  UPDATED_DESC: { sortBy: 'update_at', direction: 'DESC' },
+  NAME_ASC: { sortBy: 'project_name', direction: 'ASC' },
+  END_ASC: { sortBy: 'end_date', direction: 'ASC' },
+};
+
+function getPaginationItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  return [...pages]
+    .filter((item) => item >= 1 && item <= totalPages)
+    .sort((a, b) => a - b)
+    .flatMap((item, index, items) =>
+      index > 0 && item - items[index - 1] > 1 ? ["ellipsis" as const, item] : [item],
+    );
+}
+
 function ProjectsPage() {
-  const { data, loading, error, refresh, save } = useProjects();
+  const { data, loading, error, refresh, saveProject } = useProjects();
   const [query, setQuery] = useState("");
+  const [clientId, setClientId] = useState("ALL");
   const [status, setStatus] = useState<ProjectFilter>("ALL");
   const [sortBy, setSortBy] = useState<ProjectSort>("UPDATED_DESC");
   const [page, setPage] = useState(1);
+  const [pageProjects, setPageProjects] = useState<Project[]>([]);
+  const [pageMeta, setPageMeta] = useState<ApiMeta>({
+    page: 1,
+    limit: projectPageLimit,
+    total: 0,
+    totalPages: 1,
+  });
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [changingProjectId, setChangingProjectId] = useState<string | null>(null);
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const showToast = ({ success, message }: NotificationMessage) => {
+    toast[success ? 'success' : 'error'](message);
+  };
+  const latestRequest = useRef(0);
 
-  const projects = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return (data?.projects || [])
-      .filter((project) => status === "ALL" || project.status === status)
-      .filter((project) => {
-        const client = data.clients.find(
-          (item) => item.id === project.client_id,
-        );
-        return (
-          !normalized ||
-          [
-            project.name,
-            project.description,
-            client?.company_name,
-            client?.name,
-          ].some((value) => value?.toLowerCase().includes(normalized))
-        );
-      })
-      .sort((a, b) => {
-        if (sortBy === "NAME_ASC") return a.name.localeCompare(b.name);
-        if (sortBy === "END_ASC")
-          return (a.end_date || "9999").localeCompare(b.end_date || "9999");
-        return Date.parse(b.updated_at ?? "") - Date.parse(a.updated_at ?? "");
+  const loadProjectPage = useCallback(async (requestedPage: number) => {
+    const requestId = ++latestRequest.current;
+    setPageLoading(true);
+    setPageError("");
+    try {
+      const result = await listProjectsPage(requestedPage, projectPageLimit, {
+        clientId: clientId === 'ALL' ? undefined : clientId,
+        search: query,
+        status: status === 'ALL' ? undefined : status,
+        ...projectSortParams[sortBy],
       });
-  }, [data, query, sortBy, status]);
-  const pageSize = 6;
-  const totalPages = Math.max(1, Math.ceil(projects.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const visibleProjects = projects.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
-  );
+      if (requestId !== latestRequest.current) return;
+      if (requestedPage > Math.max(1, result.meta.totalPages)) {
+        setPage(Math.max(1, result.meta.totalPages));
+        return;
+      }
+      setPageProjects(result.projects);
+      setPageMeta(result.meta);
+    } catch (loadError) {
+      if (requestId === latestRequest.current) {
+        setPageError(getErrorMessage(loadError, "ไม่สามารถโหลดโปรเจกต์ได้"));
+      }
+    } finally {
+      if (requestId === latestRequest.current) setPageLoading(false);
+    }
+  }, [clientId, query, sortBy, status]);
+
+  useEffect(() => {
+    void loadProjectPage(page);
+  }, [loadProjectPage, page]);
+
+  const projects = pageProjects;
+  const totalPages = Math.max(1, pageMeta.totalPages);
+  const safePage = Math.min(pageMeta.page, totalPages);
+  const paginationItems = getPaginationItems(safePage, totalPages);
 
   const openCreate = () => {
     setForm({
@@ -155,7 +191,7 @@ function ProjectsPage() {
     setSaving(true);
     setFormError("");
     try {
-      await save("projects", {
+      await saveProject({
         ...form,
         name: form.name.trim(),
         hourly_rate:
@@ -168,6 +204,8 @@ function ProjectsPage() {
           form.budget_amount === "" ? null : Number(form.budget_amount),
       });
       setModalOpen(false);
+      if (page === 1) await loadProjectPage(1);
+      else setPage(1);
     } catch (err) {
       setFormError(getErrorMessage(err, "บันทึกโปรเจกต์ไม่สำเร็จ"));
     } finally {
@@ -180,10 +218,10 @@ function ProjectsPage() {
     setChangingProjectId(project.id);
     try {
       await changeProjectStatus(project.id, nextStatus);
-      await refresh();
-      setToast({ success: true, message: "อัปเดตสถานะโปรเจกต์เรียบร้อยแล้ว" });
+      await loadProjectPage(safePage);
+      showToast({ success: true, message: "อัปเดตสถานะโปรเจกต์เรียบร้อยแล้ว" });
     } catch (statusError) {
-      setToast({
+      showToast({
         success: false,
         message: getErrorMessage(statusError, "ไม่สามารถอัปเดตสถานะโปรเจกต์ได้"),
       });
@@ -192,40 +230,59 @@ function ProjectsPage() {
     }
   };
 
-  if (loading) return <LoadingState label="LoadingProjects..." />;
-  if (error) return <ErrorState message={error} onRetry={refresh} />;
+  if (loading || pageLoading) return <LoadingState label="กำลังโหลดโปรเจกต์..." />;
+  if (error || pageError) {
+    return (
+      <ErrorState
+        message={error || pageError}
+        onRetry={async () => {
+          await refresh();
+          await loadProjectPage(page);
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="page-view">
+    <div className="mx-auto w-full max-w-screen-2xl">
       <PageHeader
-        eyebrow="พื้นที่ทำงาน / โปรเจกต์"
-        title="Projectsของคุณ"
-        description="ติดตามขอบเขตTask งบประมาณ Task และการส่งมอบในมุมมองเดียว"
+        title="โปรเจกต์ของคุณ"
         actions={
-          <button
-            className="button button-primary"
+          <Button variant="default"
+            className="h-10"
             type="button"
             onClick={openCreate}
           >
             <FiPlus aria-hidden="true" /> เพิ่มโปรเจกต์
-          </button>
+          </Button>
         }
       />
 
-      <div className="filter-row">
-        <div className="search-box">
-          <span><FiSearch aria-hidden="true" /></span>
-          <input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(1);
-            }}
-            placeholder="ค้นหาProjectsหรือClients"
-          />
-        </div>
-        <select
-          className="select-button"
+      <FilterBar
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setPage(1);
+        }}
+        placeholder="ค้นหาโปรเจกต์หรือลูกค้า"
+        searchAriaLabel="ค้นหาโปรเจกต์หรือลูกค้า"
+      >
+        <NativeSelect
+          value={clientId}
+          onChange={(event) => {
+            setClientId(event.target.value);
+            setPage(1);
+          }}
+          aria-label="กรองตามลูกค้า"
+        >
+          <option value="ALL">ทุกลูกค้า</option>
+          {data.clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.company_name || client.name}
+            </option>
+          ))}
+        </NativeSelect>
+        <NativeSelect
           value={status}
           onChange={(event) => {
             setStatus(event.target.value as ProjectFilter);
@@ -238,21 +295,8 @@ function ProjectsPage() {
           <option value="ON_HOLD">พักงาน</option>
           <option value="COMPLETED">เสร็จสิ้น</option>
           <option value="ARCHIVED">เก็บถาวร</option>
-        </select>
-        {/* <select
-          className="select-button"
-          value={billingType}
-          onChange={(event) => {
-            setBillingType(event.target.value as BillingFilter);
-            setPage(1);
-          }}
-        >
-          <option value="ALL">ทุกรูปแบบราคา</option>
-          <option value="HOURLY">รายชั่วโมง</option>
-          <option value="FIXED_PRICE">เหมาจ่าย</option>
-        </select> */}
-        <select
-          className="select-button"
+        </NativeSelect>
+        <NativeSelect
           value={sortBy}
           onChange={(event) => {
             setSortBy(event.target.value as ProjectSort);
@@ -262,172 +306,97 @@ function ProjectsPage() {
           <option value="UPDATED_DESC">อัปเดตล่าสุด</option>
           <option value="NAME_ASC">ชื่อ A–Z</option>
           <option value="END_ASC">กำหนดส่งใกล้สุด</option>
-        </select>
-      </div>
+        </NativeSelect>
+      </FilterBar>
 
       {projects.length === 0 ? (
-        <section className="panel">
+        <Card asChild>
+          <section className="rounded-xl border border-border bg-surface p-5 shadow-soft ring-0">
           <EmptyState
             icon={<FiBriefcase aria-hidden="true" />}
-            title="ยังไม่พบProjects"
-            description="สร้างProjectsแรกหรือปรับตัวกรอง"
+            title="ยังไม่พบโปรเจกต์"
+            description="สร้างโปรเจกต์แรกหรือปรับตัวกรอง"
             action={
-              <button
-                className="button button-primary"
+              <Button variant="default"
+                className="h-10"
                 type="button"
                 onClick={openCreate}
               >
                 เพิ่มโปรเจกต์
-              </button>
+              </Button>
             }
           />
-        </section>
+        </section></Card>
       ) : (
-        <div className="card-grid project-card-grid">
-          {visibleProjects.map((project) => {
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {projects.map((project) => {
             const client = data.clients.find(
               (item) => item.id === project.client_id,
             );
-            const tasks = data.tasks.filter(
-              (task) => task.project_id === project.id,
-            );
-            const completedTasks = tasks.filter(
-              (task) => task.status === "DONE",
-            ).length;
-            const taskPercent = tasks.length
-              ? Math.round((completedTasks / tasks.length) * 100)
-              : 0;
-            const minutes = data.time_entries
-              .filter((entry) => entry.project_id === project.id)
-              .reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0);
-            const budgetPercent = project.budget_hours
-              ? Math.round((minutes / 60 / project.budget_hours) * 100)
-              : 0;
-            return (
-              <article
-                className="project-card"
-                key={project.id}
-                style={{ "--project-color": project.color }}
-              >
-                <Link
-                  className="card-link"
-                  to={`/projects/${project.id}`}
-                  aria-label={`เปิด ${project.name}`}
-                />
-                <div className="card-top">
-                  <span
-                    className="color-dot project-dot"
-                    style={{ "--dot-color": project.color }}
-                  />
-                  <div className="card-menu">
-                    <button
-                      className="mini-button"
-                      type="button"
-                      onClick={() => openEdit(project)}
-                    >
-                      แก้ไข
-                    </button>
-                  </div>
-                </div>
-                <h2>{project.name}</h2>
-                <p>
-                  {client?.company_name || client?.name || "ไม่พบลูกค้า"} ·{" "}
-                  {tasks.length} งาน
-                </p>
-                <div className="card-metrics">
-                  <span>
-                    <strong>
-                      {completedTasks}
-                      <small> / {tasks.length} เสร็จแล้ว</small>
-                    </strong>
-                    ความคืบหน้างาน
-                  </span>
-                  <span>
-                    <strong>{formatDuration(minutes)}</strong>เวลาที่บันทึก
-                  </span>
-                </div>
-                <div className="progress-label">
-                  <span>ความคืบหน้างาน</span>
-                  <strong>{taskPercent}%</strong>
-                </div>
-                <div className="progress-track">
-                  <span
-                    style={{
-                      width: `${taskPercent}%`,
-                      background: project.color,
-                    }}
-                  />
-                </div>
-                {project.budget_hours && (
-                  <div
-                    className={`budget-note${budgetPercent >= 100 ? " danger" : budgetPercent >= 80 ? " warning" : ""}`}
-                  >
-                    ใช้เวลา {budgetPercent}% ของงบ {project.budget_hours}{" "}
-                    ชั่วโมง
-                  </div>
-                )}
-                <div className="card-footer">
-                  <select
-                    className={`status-badge project-status-select status-${project.status.toLowerCase()}`}
-                    value={project.status}
-                    aria-label={`สถานะของโปรเจกต์ ${project.name}`}
-                    disabled={changingProjectId === project.id}
-                    onChange={(event) => {
-                      void updateProjectStatus(
-                        project,
-                        event.target.value as ProjectStatus,
-                      );
-                    }}
-                  >
-                    {allowedStatusTransitions[project.status].map((projectStatus) => (
-                      <option key={projectStatus} value={projectStatus}>
-                        {projectStatusLabels[projectStatus]}
-                      </option>
-                    ))}
-                  </select>
-                  {/* <span>
-                    {project.billing_type === "HOURLY"
-                      ? `${formatMoney(project.hourly_rate, project.currency)}/ชม.`
-                      : formatMoney(project.fixed_price, project.currency)}
-                  </span> */}
-                </div>
-              </article>
-            );
+            const clientName = project.client_name || client?.company_name || client?.name || "ไม่พบลูกค้า";
+            return <ProjectCard
+              key={project.id}
+              project={project}
+              clientName={clientName}
+              changing={changingProjectId === project.id}
+              onEdit={openEdit}
+              onStatusChange={(nextProject, status) => { void updateProjectStatus(nextProject, status) }}
+            />;
           })}
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button
-            className="button button-secondary"
-            type="button"
-            disabled={safePage === 1}
-            onClick={() => setPage((value) => value - 1)}
-          >
-            <FiArrowLeft aria-hidden="true" /> ก่อนหน้า
-          </button>
-          <span>
-            หน้า {safePage} จาก {totalPages}
-          </span>
-          <button
-            className="button button-secondary"
-            type="button"
-            disabled={safePage === totalPages}
-            onClick={() => setPage((value) => value + 1)}
-          >
-            ถัดไป <FiArrowRight aria-hidden="true" />
-          </button>
-        </div>
-      )}
+      <Pagination className="mt-6">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={`?page=${safePage - 1}`}
+                text="ก่อนหน้า"
+                aria-disabled={safePage === 1}
+                className={safePage === 1 ? "pointer-events-none opacity-50" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (safePage > 1) setPage(safePage - 1);
+                }}
+              />
+            </PaginationItem>
+            {paginationItems.map((item, index) => (
+              <PaginationItem key={`${item}-${index}`}>
+                {item === "ellipsis" ? (
+                  <PaginationEllipsis />
+                ) : (
+                  <PaginationLink
+                    href={`?page=${item}`}
+                    isActive={item === safePage}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setPage(item);
+                    }}
+                  >
+                    {item}
+                  </PaginationLink>
+                )}
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href={`?page=${safePage + 1}`}
+                text="ถัดไป"
+                aria-disabled={safePage === totalPages}
+                className={safePage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (safePage < totalPages) setPage(safePage + 1);
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+      </Pagination>
 
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={form.id ? "แก้ไขProjects" : "เพิ่มProjects"}
-        size="large"
-      >
-        <ProjectForm
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
+        <DialogContent className="!max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
+          <DialogHeader><DialogTitle>{form.id ? "แก้ไขโปรเจกต์" : "เพิ่มโปรเจกต์"}</DialogTitle></DialogHeader>
+          <ProjectForm
           value={form}
           clients={data.clients}
           error={formError}
@@ -435,15 +404,9 @@ function ProjectsPage() {
           onChange={handleChange}
           onSubmit={handleSubmit}
           onCancel={() => setModalOpen(false)}
-        />
-      </Modal>
-      {toast && (
-        <Toast
-          success={toast.success}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

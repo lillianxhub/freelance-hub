@@ -3,28 +3,30 @@
 **เจ้าของ feature:** `thirawat_673380039-7_02`  
 **ขอบเขต:** Client API และ business logic สำหรับผู้ใช้ที่เข้าสู่ระบบ
 
-เลขบรรทัดอ้างอิง implementation ปัจจุบันภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/` และควรตรวจซ้ำเมื่อรวมเข้าเอกสารหลักหรือแก้โค้ด
+ไฟล์อ้างอิงอยู่ภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/` โดยไม่ผูกกับเลขบรรทัดที่เปลี่ยนเมื่อแก้โค้ด
 
-| Principle | ไฟล์/คลาสและบรรทัด | เหตุผลและขอบเขตหลักฐาน |
+| Principle | ไฟล์/คลาส | เหตุผลและขอบเขตหลักฐาน |
 |---|---|---|
-| Single Responsibility | `controller/ClientController.java:35-105` | Controller รับ request, ดึง owner จากผู้ใช้ที่ล็อกอิน และคืน HTTP response; ไม่สร้าง query หรือแก้ entity โดยตรง |
-| Single Responsibility | `mapper/ClientMapper.java:15-69` | Mapper แปลง request/response กับ `Client` และจัดการ semantics ของ PATCH; ไม่ติดต่อฐานข้อมูล |
-| Single Responsibility | `repository/ClientRepository.java:19-32` | Repository รับผิดชอบ data-access contract ของ Client โดยเฉพาะ |
-| Open/Closed | `service/ClientService.java:13-25`, `controller/ClientController.java:41,50-103` | Controller พึ่ง service contract; สามารถเปลี่ยน implementation ของ service หรือใช้ test double โดยไม่แก้ controller ทั้งนี้การเพิ่มรูปแบบ filter ใหม่ยังต้องแก้ `ClientServiceImpl` ปัจจุบัน |
-| Liskov Substitution | `service/ClientService.java:13-25`, `service/impl/ClientServiceImpl.java:29,49-119` | `ClientServiceImpl` implement operation ทั้งห้าตามชนิดผลลัพธ์ใน interface และถูกเรียกผ่าน `ClientService`; ปัจจุบันมี production implementation เดียว จึงยังไม่มีการพิสูจน์การแทนที่ระหว่าง implementation หลายตัว |
-| Interface Segregation | `service/ClientService.java:13-25`, `controller/ClientController.java:41` | Contract นี้มีเฉพาะงาน Client ที่ controller ใช้ ไม่รวม Auth, Project หรือ Time Entry |
-| Dependency Inversion | `controller/ClientController.java:38-42`, `service/impl/ClientServiceImpl.java:34-48`, `repository/ClientRepository.java:19-20` | Controller รับ `ClientService` interface และ service รับ repository interfaces ผ่าน constructor แทนการสร้าง dependency เอง; `ClientMapper` และ `UserService` ยังเป็น concrete class จึงเป็นการใช้ DIP บางส่วน |
+| Single Responsibility | `controller/ClientController.java`, `exception/ClientExceptionHandler.java` | Controller รับ request และคืน success response; handler เฉพาะ Client แปลง exception เป็น error envelope โดยไม่ให้ controller จัดการ error เอง |
+| Single Responsibility | `mapper/ClientMapper.java` | Mapper แปลง DTO กับ `Client` รวม semantics ของ PUT/PATCH; ไม่ติดต่อฐานข้อมูล |
+| Single Responsibility | `repository/ClientRepository.java` | Repository รับผิดชอบ data-access contract ของ Client โดยเฉพาะ |
+| Open/Closed | `service/ClientService.java`, `controller/ClientController.java` | Controller พึ่ง service contract จึงเปลี่ยน implementation หรือใช้ test double ได้โดยไม่แก้ controller ทั้งนี้การเพิ่มรูปแบบ filter ใหม่ยังต้องแก้ `ClientServiceImpl` ปัจจุบัน |
+| Liskov Substitution | `service/ClientService.java`, `service/impl/ClientServiceImpl.java` | `ClientServiceImpl` implement operation ของ interface ครบ รวม `replace`, `changeStatus` และ `softDelete`; ปัจจุบันมี production implementation เดียว จึงยังไม่มีหลักฐานการแทนที่ระหว่าง implementation หลายตัว |
+| Interface Segregation | `service/ClientService.java`, `controller/ClientController.java` | Contract รวมงาน Client API กับ method สรุปเวลาตามลูกค้าสำหรับ service อื่น; ยังไม่รวม Auth หรือ CRUD ของ Project/Time Entry แต่ไม่ควรอ้างว่าทุก method ใช้โดย controller |
+| Dependency Inversion | `controller/ClientController.java`, `service/impl/ClientServiceImpl.java`, `repository/ClientRepository.java` | Controller รับ `ClientService` interface และ service รับ repository interfaces ผ่าน constructor แทนการสร้าง dependency เอง; `ClientMapper` และ `UserService` ยังเป็น concrete class จึงเป็นการใช้ DIP บางส่วน |
 
 ## Evidence จาก Client flow
 
-- Owner ID มาจาก authenticated user ใน controller ไม่รับจาก request: `ClientController.java:50-52,62-64,73-75,85-90,100-102`
-- การอ่าน/แก้/archive ใช้ `findByIdAndOwnerId`; ไม่พบหรือเป็นของผู้อื่นจะได้ `ClientNotFoundException`: `ClientServiceImpl.java:61-62,107-125`
-- รายการลูกค้าเริ่มด้วย predicate ของ owner และต่อ status/search ก่อน pagination: `ClientServiceImpl.java:67-102`
-- Mapper คงฟิลด์เดิมเมื่อ PATCH ส่ง `null`: `ClientMapper.java:34-46,67-69`
-- Archive เปลี่ยน `ClientStatus` โดยไม่ลบ record: `ClientServiceImpl.java:115-119`, `Client.java:123-126`
+- Owner ID มาจาก authenticated user ใน controller ไม่รับจาก request: `ClientController.java`
+- การอ่าน/แก้/เปลี่ยนสถานะ/soft delete ใช้ `findByIdAndOwnerId` และตรวจ `deletedAt == null`; ไม่พบ ไม่ใช่เจ้าของ หรือถูก soft delete แล้วจะได้ `ClientNotFoundException`: `ClientServiceImpl.java`
+- รายการลูกค้าเริ่มด้วย predicate ของ owner และ `deletedAt IS NULL` แล้วต่อ status/search ก่อน pagination: `ClientServiceImpl.java`
+- Mapper คงฟิลด์เดิมเมื่อ PATCH ส่ง `null` แต่ PUT ใช้ข้อมูลใหม่แทนที่และล้าง optional fields ที่ไม่ส่งมา: `ClientMapper.java`
+- `changeStatus` แก้เฉพาะ `isActive`; `softDelete` ตั้งเฉพาะ `deletedAt` โดยไม่ลบ record: `ClientServiceImpl.java`, `Client.java`
+- Response ที่มี body ใช้ `ApiResult`; 400/404 ของ Client ผ่าน `ClientExceptionHandler`, ส่วน GET รายการมี `PaginationMeta`: `ClientController.java`, `ClientExceptionHandler.java`
+- Client detail เลือกแนบ Project/Task ด้วย `include=projects` หรือ `include=projects.tasks` และ repository อ่านเฉพาะฟิลด์ที่แสดง; ส่วน `summarizeTimeByClient` เป็น service method ภายในที่ใช้ projection รวมเวลาของ Time Entry ตาม Client: `ClientController.java`, `ClientRepository.java`, `ClientServiceImpl.java`
 
 ## ข้อสังเกตสำหรับรวมเอกสารหลัก
 
 1. ตัวอย่าง OCP/LSP ของส่วน Client แสดง extension point ผ่าน interface แต่ไม่ควรอ้างว่ามีหลาย algorithm/implementation แล้ว
 2. ถ้าต้องการให้ DIP เข้มขึ้น อาจพิจารณา abstraction สำหรับ mapper หรือ current-user provider ภายหลัง; เอกสารนี้ไม่ถือว่าเป็นงานที่ทำเสร็จแล้ว
-3. ตรวจเลขบรรทัดหลัง code freeze ก่อนนำตารางนี้ไปรวมใน `doc/solid-analysis.md`
+3. เมื่อนำไปรวมใน `doc/solid-analysis.md` ควรเทียบกับ implementation ล่าสุดอีกครั้ง โดยเฉพาะความต่างระหว่าง `isActive` และ `deletedAt`

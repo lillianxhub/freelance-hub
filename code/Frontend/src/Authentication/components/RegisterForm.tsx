@@ -2,7 +2,7 @@ import AuthenticationLayout from './AuthenticationLayout'
 import { useState, type ChangeEvent, type FocusEvent, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import AuthInput from './AuthInput'
-import Button from '../../components/Button'
+import { Button } from '../../components/ui/button'
 import { useAuth } from '../useAuthentication'
 import { getErrorMessage } from '../../api/apiError'
 import { hasRequiredPassword, isValidEmail, isValidPhone, normalizePhone, passwordsMatch } from '../authentication.validators'
@@ -120,7 +120,7 @@ function RegisterForm() {
   return (
     <AuthenticationLayout>
       <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-brand"><span>FH</span><strong>freelance hub</strong></div>
+        <div className="auth-brand"><img src="/logo-light.svg" alt="" /><strong>freelance hub</strong></div>
         <h1>สมัครสมาชิก</h1>
         <p className="auth-description">สร้าง พื้นที่ทำงานสำหรับจัดการงานฟรีแลนซ์ของคุณ</p>
         {error && <p className="auth-error">{error}</p>}
@@ -133,7 +133,7 @@ function RegisterForm() {
         <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.password} autoComplete="new-password" minLength={8} />
         <AuthInput label="ยืนยันรหัสผ่าน" type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.confirmPassword} autoComplete="new-password" minLength={8} />
 
-        <Button className="wide" type="submit" disabled={loading}>
+        <Button className="min-h-10 w-full" type="submit" disabled={loading}>
           {loading ? 'กำลังสมัคร...' : 'สมัครสมาชิก'}
         </Button>
 

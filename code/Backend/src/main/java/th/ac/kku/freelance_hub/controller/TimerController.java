@@ -20,13 +20,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
-import th.ac.kku.freelance_hub.dto.request.StartTimerRequest;
-import th.ac.kku.freelance_hub.dto.response.CurrentTimerResponse;
-import th.ac.kku.freelance_hub.dto.response.StoppedTimerResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.UserService;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.StartTimerRequest;
+import th.ac.kku.freelance_hub.dto.response.timeentry.CurrentTimerResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.StoppedTimerResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @Tag(name = "Timer", description = "Control the authenticated user's timer")
 @RestController
 @RequestMapping("/api/timer")

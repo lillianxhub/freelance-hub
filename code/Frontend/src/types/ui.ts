@@ -1,25 +1,8 @@
-import type {
-  ButtonHTMLAttributes,
-  PropsWithChildren,
-  ReactNode,
-} from 'react'
+import type { ReactNode } from 'react'
 import type { IconType } from 'react-icons'
 import type { ClientStatus } from './client'
 import type { ProjectStatus } from './project'
 import type { TaskStatus } from './task'
-import type { InvoiceStatus } from './billing'
-
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'text'
-}
-
-export interface ModalProps extends PropsWithChildren {
-  open: boolean
-  title: string
-  eyebrow?: string
-  onClose: () => void
-  size?: 'small' | 'medium' | 'large'
-}
 
 export interface PageHeaderProps {
   eyebrow?: string
@@ -40,10 +23,12 @@ export interface SidebarProps {
   onClose: () => void
 }
 
-export type SupportedStatus = ClientStatus | ProjectStatus | TaskStatus | InvoiceStatus
+export type SupportedStatus = ClientStatus | ProjectStatus | TaskStatus
 
 export interface StatusBadgeProps {
   status: SupportedStatus
+  label?: string
+  className?: string
 }
 
 export interface FormLabelProps {
