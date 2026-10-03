@@ -9,9 +9,9 @@ import type { Task } from '../../types/task'
 import type { TimeEntry } from '../../types/timeTracking'
 import { DASHBOARD_LIMITS } from '../dashboard.constants'
 
-interface Props { entries: readonly TimeEntry[]; projects: readonly Project[]; tasks: readonly Task[] }
+interface Props { entries: readonly TimeEntry[]; projects: readonly Project[]; tasks: readonly Task[]; onStop: () => Promise<void> }
 
-export default function DashboardTimerCard({ entries, projects, tasks }: Props) {
+export default function DashboardTimerCard({ entries, projects, tasks, onStop }: Props) {
   const initialRunningEntry = entries.find((entry) => !entry.ended_at) || null
   const [runningEntry, setRunningEntry] = useState(initialRunningEntry)
   const [tick, setTick] = useState(() => Date.now())
@@ -28,6 +28,10 @@ export default function DashboardTimerCard({ entries, projects, tasks }: Props) 
     const interval = window.setInterval(() => setTick(Date.now()), 1000)
     return () => window.clearInterval(interval)
   }, [runningEntry])
+
+  useEffect(() => {
+    setRunningEntry(initialRunningEntry)
+  }, [initialRunningEntry])
 
   return (
     <Card>
@@ -55,7 +59,7 @@ export default function DashboardTimerCard({ entries, projects, tasks }: Props) 
           }
           <p className="mt-5 text-center text-3xl font-bold tracking-wider tabular-nums text-text-primary">{formatTimer(elapsedSeconds)}</p>
           <p className="mt-1 text-center text-xs text-muted-foreground">เริ่มเมื่อ {formatDate(runningEntry.started_at, { hour: '2-digit', minute: '2-digit' })}</p>
-          <Button className="mt-4 w-full" variant="destructive" onClick={() => setRunningEntry(null)}>
+          <Button className="mt-4 w-full" variant="destructive" onClick={() => void onStop()}>
             <FiSquare aria-hidden="true" /> หยุดจับเวลา
           </Button>
         </div> : latestEntry ?
