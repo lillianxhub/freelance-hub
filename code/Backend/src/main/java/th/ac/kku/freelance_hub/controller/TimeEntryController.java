@@ -29,7 +29,7 @@ import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
@@ -49,7 +49,7 @@ public class TimeEntryController {
 
     private final TimeEntryService timeEntryService;
     private final TimeEntryQueryService timeEntryQueryService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     @Operation(summary = "Create a manual time entry")
     @ApiResponse(
@@ -220,6 +220,6 @@ public class TimeEntryController {
     }
 
     private UUID currentOwnerId() {
-        return userService.getCurrentUserEntity().getId();
+        return userService.currentUserId();
     }
 }

@@ -22,7 +22,7 @@ import th.ac.kku.freelance_hub.dto.response.user.UserResponse;
  */
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserService implements CurrentUserProvider {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -37,16 +37,6 @@ public class UserService {
         String email = getCurrentUserEmail();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
-        return userMapper.toResponse(user);
-    }
-
-    /**
-     * Get user by ID
-     */
-    @Transactional(readOnly = true)
-    public UserResponse getUserById(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
         return userMapper.toResponse(user);
     }
 
@@ -80,7 +70,7 @@ public class UserService {
     /**
      * Get current authenticated user email from SecurityContext
      */
-    public String getCurrentUserEmail() {
+    private String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("ไม่พบผู้ใช้ที่เข้าสู่ระบบ");
@@ -88,11 +78,19 @@ public class UserService {
         return authentication.getName();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UUID currentUserId() {
+        String email = getCurrentUserEmail();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email))
+                .getId();
+    }
+
     /**
      * Get current authenticated user entity
      */
-    @Transactional(readOnly = true)
-    public User getCurrentUserEntity() {
+    private User getCurrentUserEntity() {
         String email = getCurrentUserEmail();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
