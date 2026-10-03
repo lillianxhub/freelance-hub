@@ -361,8 +361,13 @@ public class ProjectServiceImpl implements ProjectService {
         Objects.requireNonNull(request, "request is required");
 
         Project project = findOwnedProject(ownerId, projectId);
+        ProjectStatus previousStatus = project.getStatus();
         requireNoRunningTimer(ownerId, projectId);
         project.changeStatus(request.getStatus());
+        if (previousStatus != ProjectStatus.COMPLETED
+                && project.getStatus() == ProjectStatus.COMPLETED) {
+            timeEntryService.lockByProject(ownerId, projectId);
+        }
 
         return projectMapper.toResponse(projectRepository.save(project));
     }
