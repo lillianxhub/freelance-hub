@@ -27,7 +27,7 @@ import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.service.DashboardService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.dto.request.dashboard.DashboardActivityPeriod;
 import th.ac.kku.freelance_hub.dto.response.dashboard.ActiveProjectResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DailyWorkResponse;
@@ -45,20 +45,20 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final TimeEntryRepository timeEntryRepository;
-    private final TimeEntryQueryService timeEntryQueryService;
+    private final TimeEntryService timeEntryService;
     private final Clock clock;
 
     public DashboardServiceImpl(
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             TimeEntryRepository timeEntryRepository,
-            TimeEntryQueryService timeEntryQueryService,
+            TimeEntryService timeEntryService,
             Clock clock
     ) {
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.timeEntryRepository = timeEntryRepository;
-        this.timeEntryQueryService = timeEntryQueryService;
+        this.timeEntryService = timeEntryService;
         this.clock = clock;
     }
 
@@ -74,15 +74,15 @@ public class DashboardServiceImpl implements DashboardService {
         );
         LocalDate previousWeekStart = weekStart.minusWeeks(1);
 
-        long weekSeconds = timeEntryQueryService.sumCompletedSeconds(
+        long weekSeconds = timeEntryService.sumCompletedSeconds(
                 ownerId, weekStart, tomorrow
         );
-        long previousWeekSeconds = timeEntryQueryService.sumCompletedSeconds(
+        long previousWeekSeconds = timeEntryService.sumCompletedSeconds(
                 ownerId, previousWeekStart, weekStart
         );
 
         List<DailyWorkResponse> dailyWork =
-                timeEntryQueryService.sumDailySeconds(
+                timeEntryService.sumDailySeconds(
                         ownerId, today.minusDays(6), tomorrow
                 ).stream()
                 .map(day -> new DailyWorkResponse(
@@ -217,8 +217,8 @@ public class DashboardServiceImpl implements DashboardService {
             case YEAR -> from.plusYears(1);
         };
 
-        List<TimeEntryQueryService.DailySeconds> daily =
-                timeEntryQueryService.sumDailySeconds(ownerId, from, to);
+        List<TimeEntryService.DailySeconds> daily =
+                timeEntryService.sumDailySeconds(ownerId, from, to);
 
         if (period != DashboardActivityPeriod.YEAR) {
             return new DashboardActivityResponse(
@@ -235,7 +235,7 @@ public class DashboardServiceImpl implements DashboardService {
         for (LocalDate month = from; month.isBefore(to); month = month.plusMonths(1)) {
             monthly.put(month, 0L);
         }
-        for (TimeEntryQueryService.DailySeconds day : daily) {
+        for (TimeEntryService.DailySeconds day : daily) {
             monthly.merge(day.day().withDayOfMonth(1), day.totalSeconds(), Long::sum);
         }
         return new DashboardActivityResponse(
