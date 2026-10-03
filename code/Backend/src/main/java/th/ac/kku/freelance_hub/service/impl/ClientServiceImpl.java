@@ -20,20 +20,19 @@ import jakarta.persistence.criteria.Predicate;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
-import th.ac.kku.freelance_hub.dto.request.ClientFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateClientRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateClientRequest;
-import th.ac.kku.freelance_hub.dto.response.ClientResponse;
-import th.ac.kku.freelance_hub.dto.response.ClientProjectSummaryResponse;
-import th.ac.kku.freelance_hub.dto.response.ClientTaskSummaryResponse;
-import th.ac.kku.freelance_hub.dto.response.ClientTimeTotalResponse;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.exception.UserNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ClientService;
-
+import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
+import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientProjectSummaryResponse;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
+import th.ac.kku.freelance_hub.dto.response.client.ClientTaskSummaryResponse;
+import th.ac.kku.freelance_hub.dto.response.client.ClientTimeTotalResponse;
 @Service
 public class ClientServiceImpl implements ClientService {
 

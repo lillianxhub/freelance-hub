@@ -28,20 +28,18 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
 import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.service.UserService;
 
-import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
 import static org.hamcrest.Matchers.nullValue;
-
-import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
-
+import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 @ExtendWith(MockitoExtension.class)
 class ProjectControllerTest {
 
@@ -123,7 +121,7 @@ class ProjectControllerTest {
                 eq(ProjectStatus.ACTIVE),
                 eq(CLIENT_ID),
                 any(Pageable.class),
-                eq(false)
+                eq(false), eq(false)
         )).thenReturn(new PageImpl<>(
             List.of(ProjectListItemResponse.builder()
                     .id(PROJECT_ID)
@@ -163,7 +161,7 @@ class ProjectControllerTest {
                                         .getOrderFor("name")
                                         .isDescending()
                 ),
-                eq(false)
+                eq(false), eq(false)
         );
     }
 
@@ -173,7 +171,7 @@ class ProjectControllerTest {
                 .thenReturn(User.builder().id(OWNER_ID).build());
         when(projectService.list(
                 eq(OWNER_ID), eq(null), eq(null), eq(null),
-                any(Pageable.class), eq(true)
+                any(Pageable.class), eq(true), eq(false)
         )).thenReturn(new PageImpl<>(List.of(
                 ProjectListItemResponse.builder()
                         .id(PROJECT_ID)
@@ -187,8 +185,32 @@ class ProjectControllerTest {
 
         verify(projectService).list(
                 eq(OWNER_ID), eq(null), eq(null), eq(null),
-                any(Pageable.class), eq(true)
+                any(Pageable.class), eq(true), eq(false)
         );
+    }
+
+    @Test
+    void listAcceptsAllStatuses() throws Exception {
+        when(userService.getCurrentUserEntity())
+                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(projectService.list(
+                eq(OWNER_ID), eq(null), eq(null), eq(null),
+                any(Pageable.class), eq(false), eq(true)
+        )).thenReturn(new PageImpl<>(List.of(
+                ProjectListItemResponse.builder()
+                        .id(PROJECT_ID)
+                        .status(ProjectStatus.ARCHIVED)
+                        .build()
+        )));
+
+        mockMvc.perform(get("/api/projects")
+                        .param("page", "1")
+                        .param("limit", "10")
+                        .param("sortBy", "project_name")
+                        .param("direction", "ASC")
+                        .param("status", "ALL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("ARCHIVED"));
     }
 
     @Test

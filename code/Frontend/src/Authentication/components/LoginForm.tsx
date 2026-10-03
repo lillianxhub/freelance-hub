@@ -36,7 +36,7 @@ function LoginForm() {
     <AuthenticationLayout>
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-brand">
-          <span>FH</span>
+          <img src="/logo-light.svg" alt="" />
           <strong>freelance hub</strong>
         </div>
         <h1>เข้าสู่ระบบ</h1>
@@ -59,7 +59,7 @@ function LoginForm() {
         />
 
         <Button variant="default"
-          className="button button-primary wide"
+          className="h-10 w-full"
           type="submit"
           disabled={loading}
         >

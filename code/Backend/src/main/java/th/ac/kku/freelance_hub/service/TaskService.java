@@ -5,13 +5,11 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
-
+import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.task.CreateTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.ReorderTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 public interface TaskService {
 
     TaskResponse create(UUID ownerId, UUID projectId, CreateTaskRequest request);

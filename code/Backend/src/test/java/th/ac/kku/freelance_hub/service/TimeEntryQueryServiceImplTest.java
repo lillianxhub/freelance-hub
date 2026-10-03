@@ -34,13 +34,12 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TimeEntryMapper;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.service.impl.TimeEntryQueryServiceImpl;
-
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 @ExtendWith(MockitoExtension.class)
 class TimeEntryQueryServiceImplTest {
 

@@ -19,9 +19,6 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
-import th.ac.kku.freelance_hub.dto.request.LoginRequest;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
-import th.ac.kku.freelance_hub.dto.response.AuthResponse;
 import th.ac.kku.freelance_hub.service.AuthService;
 import th.ac.kku.freelance_hub.service.AuthSessionResult;
 import th.ac.kku.freelance_hub.security.RefreshTokenCookie;
@@ -31,7 +28,9 @@ import th.ac.kku.freelance_hub.exception.LoginRateLimitedException;
 
 import java.net.URI;
 import java.util.Arrays;
-
+import th.ac.kku.freelance_hub.dto.request.auth.LoginRequest;
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.response.auth.AuthResponse;
 @Tag(name = "Authentication", description = "Authentication and registration endpoints")
 @RestController
 @RequestMapping("/api/auth")

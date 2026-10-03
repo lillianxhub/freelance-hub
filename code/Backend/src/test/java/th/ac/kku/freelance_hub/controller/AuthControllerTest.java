@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import th.ac.kku.freelance_hub.repository.RefreshTokenRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
-import th.ac.kku.freelance_hub.dto.request.LoginRequest;
-import th.ac.kku.freelance_hub.dto.request.RegisterRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -26,7 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
+import th.ac.kku.freelance_hub.dto.request.auth.LoginRequest;
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
+import th.ac.kku.freelance_hub.dto.response.auth.AuthResponse;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

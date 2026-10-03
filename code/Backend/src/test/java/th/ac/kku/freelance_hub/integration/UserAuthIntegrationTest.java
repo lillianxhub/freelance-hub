@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -89,7 +89,7 @@ class UserAuthIntegrationTest {
                 String mixedCase = "User-" + email.substring(5);
                 assertThat(objectMapper.readValue(objectMapper.writeValueAsString(
                         new Registration("  " + mixedCase + "  ", PASSWORD, "Canonical User")),
-                        th.ac.kku.freelance_hub.dto.request.RegisterRequest.class).getEmail()).isEqualTo(email);
+                        th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest.class).getEmail()).isEqualTo(email);
                 var registration = mockMvc.perform(post("/api/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(

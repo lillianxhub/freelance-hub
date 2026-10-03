@@ -7,13 +7,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
-
-import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
-
+import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
 /** Operations on projects owned by the authenticated user. */
 public interface ProjectService {
 
@@ -56,13 +54,26 @@ public interface ProjectService {
         return list(ownerId, search, status, clientId, pageable, false);
     }
 
-    Page<ProjectListItemResponse> list(
+    default Page<ProjectListItemResponse> list(
             UUID ownerId,
             String search,
             ProjectStatus status,
             UUID clientId,
             Pageable pageable,
             boolean includeTasks
+    ) {
+        return list(ownerId, search, status, clientId, pageable,
+                includeTasks, false);
+    }
+
+    Page<ProjectListItemResponse> list(
+            UUID ownerId,
+            String search,
+            ProjectStatus status,
+            UUID clientId,
+            Pageable pageable,
+            boolean includeTasks,
+            boolean allStatuses
     );
 
     ProjectResponse update(

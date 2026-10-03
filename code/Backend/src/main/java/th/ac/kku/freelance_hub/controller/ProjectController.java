@@ -1,5 +1,4 @@
 package th.ac.kku.freelance_hub.controller;
-import th.ac.kku.freelance_hub.dto.response.ProjectListItemResponse;
 
 import java.net.URI;
 import java.util.UUID;
@@ -11,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 // import org.springframework.data.domain.Pageable;
@@ -22,26 +22,17 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-// import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
-import th.ac.kku.freelance_hub.dto.request.ChangeProjectStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateProjectRequest;
-import th.ac.kku.freelance_hub.dto.request.ProjectFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.dto.response.ProjectResponse;
 import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.ProjectService;
 import th.ac.kku.freelance_hub.service.UserService;
-
-
-
-
-
-
-
-
-
-
+import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.ProjectFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectListItemResponse;
+import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
 @Tag(name = "Projects", description = "Manage projects belonging to the authenticated user")
 @RestController
 @RequestMapping("/api/projects")
@@ -76,7 +67,8 @@ public class ProjectController {
             summary = "List projects",
             description = "ค้นหา Project จากชื่อ Project หรือ Client "
                     + "กรองสถานะ เรียงลำดับ และแบ่งหน้า; "
-                    + "ส่ง include=tasks เมื่อต้องการรายการ Task ที่ยังใช้งานของแต่ละ Project"
+                    + "ส่ง include=tasks เมื่อต้องการรายการ Task ที่ยังใช้งานของแต่ละ Project; "
+                    + "status=ALL จะแสดงทุกสถานะรวม ARCHIVED"
     )
     @ApiResponse(
             responseCode = "200",
@@ -93,7 +85,7 @@ public class ProjectController {
     )
     @GetMapping
     public ResponseEntity<ApiResult<List<ProjectListItemResponse>>> list(
-            @Valid @ModelAttribute ProjectFilterRequest filter,
+            @ParameterObject @Valid @ModelAttribute ProjectFilterRequest filter,
             @RequestParam(name = "clientId", required = false) UUID clientId
     ) {
         String sortField = switch (filter.getSortBy()) {
@@ -125,13 +117,17 @@ public class ProjectController {
                 sort
         );
 
+        boolean allStatuses = "ALL".equals(filter.getStatus());
+        ProjectStatus status = filter.getStatus() == null || allStatuses
+                ? null : ProjectStatus.valueOf(filter.getStatus());
         Page<ProjectListItemResponse> projects = projectService.list(
                 currentOwnerId(),
                 filter.getSearch(),
-                filter.getStatus(),
+                status,
                 clientId,
                 pageable,
-                "tasks".equals(filter.getInclude())
+                "tasks".equals(filter.getInclude()),
+                allStatuses
         );
 
         PaginationMeta meta = PaginationMeta.builder()

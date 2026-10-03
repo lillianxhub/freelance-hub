@@ -19,13 +19,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
-import th.ac.kku.freelance_hub.dto.request.ChangeTaskStatusRequest;
-import th.ac.kku.freelance_hub.dto.request.CreateTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.ReorderTaskRequest;
-import th.ac.kku.freelance_hub.dto.request.TimeEntryFilterRequest;
-import th.ac.kku.freelance_hub.dto.request.UpdateTaskRequest;
-import th.ac.kku.freelance_hub.dto.response.TaskResponse;
-import th.ac.kku.freelance_hub.dto.response.TimeEntryResponse;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TaskMapper;
@@ -33,7 +26,13 @@ import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.service.TaskService;
 import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
-
+import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
+import th.ac.kku.freelance_hub.dto.request.task.CreateTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.ReorderTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @Service
 public class TaskServiceImpl implements TaskService {
 

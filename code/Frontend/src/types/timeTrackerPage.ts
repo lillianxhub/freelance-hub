@@ -25,7 +25,6 @@ export interface ManualTimeForm {
   billable: boolean
   rate_snapshot: number | string
   currency: CurrencyCode
-  invoice_id?: string | null
 }
 
 export type RangePreset = 'DAY' | 'WEEK' | 'ALL'
@@ -35,7 +34,6 @@ export interface TimeFilters {
   project: string
   task: string
   billable: 'ALL' | 'true' | 'false'
-  invoice: 'ALL' | 'UNBILLED' | 'INVOICED'
   from: string
   to: string
 }

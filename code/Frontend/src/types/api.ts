@@ -49,6 +49,10 @@ export interface ApiClient {
   email?: string
   phone?: string
   address?: string
+  subdistrict?: string
+  district?: string
+  province?: string
+  postalCode?: string
   taxId?: string
   notes?: string
   status: 'ACTIVE' | 'ARCHIVED'
