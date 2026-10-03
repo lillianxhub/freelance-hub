@@ -1,6 +1,6 @@
 # Design Patterns: Time Tracking
 
-**เจ้าของ feature:** `kompat_673380262-4_02`  
+**เจ้าของ feature:** `kompat_673380262-4_02`
 **ขอบเขต:** Timer, Manual Time Entry, การล็อก Time Entry ตาม Project, Time Entry Query และ `TimerStoppedEvent`
 
 เอกสารนี้อธิบายรูปแบบที่ใช้จริงในโค้ดปัจจุบันภายใต้ `code/Backend/src/main/java/th/ac/kku/freelance_hub/` โดยแยก GoF pattern ออกจากรูปแบบสถาปัตยกรรมและกลไกของ Spring/JPA
