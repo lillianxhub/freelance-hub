@@ -1,4 +1,4 @@
-import { calculateTimeValue } from './formatters'
+import { calculateTimeValue } from '../lib/formatters'
 import type { CsvValue, TimeSummaryEntry } from '../types/analytics'
 
 export function inDateRange(value: string, from: string, to: string) {

@@ -1,9 +1,8 @@
-import { createContext, useCallback, useEffect, useState, type PropsWithChildren } from 'react'
+import { useCallback, useEffect, useState, type PropsWithChildren } from 'react'
+import { TimerContext } from './timer-context'
 import { getCurrentTimer } from '../services/timeTracking'
 import type { ApiCurrentTimer } from '../types/api'
-import type { CurrentTimerContextValue } from '../types/timer'
 
-export const TimerContext = createContext<CurrentTimerContextValue | null>(null)
 
 export function TimerProvider({ children }: PropsWithChildren) {
   const [currentTimer, setCurrentTimer] = useState<ApiCurrentTimer | null>(null)
@@ -17,8 +16,19 @@ export function TimerProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
-    void refreshCurrentTimer()
-  }, [refreshCurrentTimer])
+    let active = true
+    getCurrentTimer()
+      .then((timer) => {
+        if (active) setCurrentTimer(timer)
+      })
+      .catch(() => {
+        if (active) setCurrentTimer(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <TimerContext.Provider value={{ currentTimer, refreshCurrentTimer }}>

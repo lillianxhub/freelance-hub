@@ -1,4 +1,5 @@
-import { createContext, useCallback, type PropsWithChildren } from 'react'
+import { useCallback, type PropsWithChildren } from 'react'
+import { ClientsContext } from './clients-context'
 import { useAsyncData } from '../shared/useAsyncData'
 import { listClients, saveClient as saveClientRequest, updateClientStatus } from '../services/client'
 import { listAllProjects } from '../services/project'
@@ -12,7 +13,6 @@ export interface ClientsContextValue extends AsyncDataState<ClientsData> {
   saveClient: (input: ClientInput) => Promise<Client>
   archiveClient: (id: string) => Promise<void>
 }
-export const ClientsContext = createContext<ClientsContextValue | null>(null)
 const emptyData: ClientsData = { clients: [], projects: [], time_entries: [] }
 
 export function ClientsProvider({ children }: PropsWithChildren) {

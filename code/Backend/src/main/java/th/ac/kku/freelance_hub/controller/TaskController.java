@@ -29,9 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TaskService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.project.ProjectTaskReorderRequest;
 import th.ac.kku.freelance_hub.dto.request.task.CreateTaskRequest;
 import th.ac.kku.freelance_hub.dto.request.task.ReorderTaskRequest;
@@ -45,7 +44,7 @@ import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 public class TaskController {
 
     private final TaskService taskService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     @Operation(
             summary = "Create a task",
@@ -69,14 +68,14 @@ public class TaskController {
             responseCode = "404",
             description = "ไม่พบโปรเจกต์",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @ApiResponse(
             responseCode = "409",
             description = "สถานะโปรเจกต์ไม่อนุญาตให้สร้างงานย่อย",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @PostMapping
@@ -113,7 +112,7 @@ public class TaskController {
     @ApiResponse(responseCode = "400", description = "ข้อมูลตัวกรองหรือแบ่งหน้าไม่ถูกต้อง")
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping
     public ResponseEntity<ApiResult<List<TaskResponse>>> list(
             @PathVariable("projectId") UUID projectId,
@@ -155,7 +154,7 @@ public class TaskController {
     //         content = @Content(schema = @Schema(implementation = TaskResponse.class)))
     // @ApiResponse(responseCode = "401", description = "Authentication required")
     // @ApiResponse(responseCode = "404", description = "Task not found",
-    //         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    //         content = @Content(schema = @Schema(implementation = ApiResult.class)))
     // // Legacy route unused by Frontend; use GET /api/tasks/{taskId}.
     // // @GetMapping("/{taskId}")
     // public ResponseEntity<TaskResponse> getById(
@@ -176,9 +175,9 @@ public class TaskController {
     @ApiResponse(responseCode = "400", description = "Invalid task data")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Project or task not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "Project is completed or archived",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{taskId}")
     public ResponseEntity<TaskResponse> update(
             @PathVariable("projectId") UUID projectId,
@@ -200,9 +199,9 @@ public class TaskController {
     //         content = @Content(schema = @Schema(implementation = TaskResponse.class)))
     // @ApiResponse(responseCode = "401", description = "Authentication required")
     // @ApiResponse(responseCode = "404", description = "Project or task not found",
-    //         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    //         content = @Content(schema = @Schema(implementation = ApiResult.class)))
     // @ApiResponse(responseCode = "409", description = "Task cannot be started in its current state",
-    //         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    //         content = @Content(schema = @Schema(implementation = ApiResult.class)))
     // // Legacy route unused by Frontend; use PATCH /api/tasks/{taskId}/status.
     // // @PatchMapping("/{taskId}/start")
     // public ResponseEntity<TaskResponse> start(
@@ -222,9 +221,9 @@ public class TaskController {
             content = @Content(schema = @Schema(implementation = TaskResponse.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Project or task not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "Task cannot be completed in its current state",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{taskId}/complete")
     public ResponseEntity<TaskResponse> complete(
             @PathVariable("projectId") UUID projectId,
@@ -244,9 +243,9 @@ public class TaskController {
     @ApiResponse(responseCode = "400", description = "Invalid sort order")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Project or task not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "Project is completed or archived",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{taskId}/reorder")
     public ResponseEntity<TaskResponse> reorder(
             @PathVariable("projectId") UUID projectId,
@@ -267,9 +266,9 @@ public class TaskController {
     @ApiResponse(responseCode = "204", description = "Task deleted", content = @Content)
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Project or task not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้ลบงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> delete(
             @PathVariable("projectId") UUID projectId,
@@ -289,9 +288,9 @@ public class TaskController {
     @ApiResponse(responseCode = "400", description = "ข้อมูลงานย่อยหรือลำดับไม่ถูกต้อง")
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์หรืองานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้เรียงลำดับงาน",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/reorder")
     public ResponseEntity<ApiResult<TaskResponse>> reorderInProject(
             @PathVariable("projectId") UUID projectId,
@@ -311,6 +310,6 @@ public class TaskController {
         );
     }
     private UUID currentOwnerId() {
-        return userService.getCurrentUserEntity().getId();
+        return userService.currentUserId();
     }
 }

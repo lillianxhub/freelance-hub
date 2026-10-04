@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { TimeEntriesContext } from './TimeEntriesContext'
+import { TimeEntriesContext } from './time-entries-context'
 import type { TimeEntriesContextValue } from './TimeEntriesContext'
 
 export function useTimeEntries(): TimeEntriesContextValue {
