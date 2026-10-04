@@ -57,6 +57,8 @@ State ทุกตัวอนุญาตสถานะเดิมซ้ำ �
 
 `TaskServiceImpl` ตรวจ `project.canEditTasks()` ก่อนสร้าง แก้ เปลี่ยนสถานะ ย้าย และลบ Task; ฝั่ง Time Entry ตรวจ `project.canTrackTime()` ก่อนเริ่ม timer ขณะที่ `TaskStatus` (`OPEN`, `IN_PROGRESS`, `COMPLETED`) เป็น enum และกฎใน `Task.changeStatus()` ไม่ใช่ State pattern อีกชุด Task ที่ `COMPLETED` ย้อนเป็น `IN_PROGRESS` ได้โดยล้าง `completedAt` แต่ย้อนเป็น `OPEN` ไม่ได้ และถ้า Project เป็น `ARCHIVED` จะย้อน Task ไม่ได้ (`service/impl/TaskServiceImpl.java:178-197,297-311`, `domain/entity/Task.java:179-199`)
 
+เมื่อ Project เพิ่งเปลี่ยนเข้าสู่ `COMPLETED`, `ProjectServiceImpl.changeStatus()` เรียก `TimeEntryService.lockByProject()` หลัง State ตรวจ transition และก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่ถูกล็อกจะแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ การประสานงานนี้อยู่ใน Service ไม่ใช่ใน `CompletedState` (`service/impl/ProjectServiceImpl.java:355-375`, `service/TimeEntryService.java:39-52`)
+
 **ขอบเขตการขยาย:** เปลี่ยนกฎของสถานะเดิมได้ใน State ของสถานะนั้น แต่เพิ่มสถานะใหม่ยังต้องแก้ `ProjectStatus` enum และ `ProjectStates.from()` ไม่มี State object ที่เก็บลงฐานข้อมูล (`domain/state/ProjectStates.java:13-24`)
 
 ## Observer: เกณฑ์เวลา 80% และ 100%
@@ -68,13 +70,13 @@ sequenceDiagram
     participant T as Timer Service (ส่วนของทีม)
     participant E as TimerStoppedEvent
     participant L as TimerStoppedProgressListener
-    participant Q as TimeEntryQueryService
+    participant Q as TimeEntryService
     participant H as ProjectProgressThresholds
     participant P as ProjectProgressThresholdEvent
     participant O as ProjectProgressThresholdListener
     T->>E: publish หลังหยุด timer
     E-->>L: รับหลัง transaction commit
-    L->>Q: summarize(ownerId, projectId)
+    L->>Q: summarize(ownerId, filter.projectId)
     Q-->>L: เวลาที่บันทึกจบแล้ว
     L->>H: newlyReached(ก่อน, หลัง, targetMinutes)
     H-->>L: 80, 100 หรือไม่มีเกณฑ์ใหม่
@@ -91,7 +93,7 @@ sequenceDiagram
 
 ## หลักฐานทดสอบ
 
-- `domain/entity/ProjectStateTest.java` ทดสอบ transition, การย้อน `ARCHIVED → ACTIVE/PLANNED` เฉพาะเมื่อ Client ยังใช้งาน และสิทธิ์ timer/Task; `service/ProjectServiceImplTest.java` ทดสอบการห้ามแก้ Project ที่จัดเก็บและการห้ามคืนสถานะเมื่อ Client ถูกจัดเก็บ
+- `domain/entity/ProjectStateTest.java` ทดสอบ transition, การย้อน `ARCHIVED → ACTIVE/PLANNED` เฉพาะเมื่อ Client ยังใช้งาน และสิทธิ์ timer/Task; `service/ProjectServiceImplTest.java` ทดสอบการห้ามแก้ Project ที่จัดเก็บ การห้ามคืนสถานะเมื่อ Client ถูกจัดเก็บ การล็อกรายการเวลาเมื่อเพิ่งเปลี่ยนเป็น `COMPLETED` และการไม่ล็อกซ้ำเมื่อส่งสถานะเดิม
 - `service/TaskServiceImplTest.java` ทดสอบ `COMPLETED → IN_PROGRESS → COMPLETED`, การล้าง `completedAt` และการห้ามย้อน Task เมื่อ Project เป็น `ARCHIVED`
 - `domain/progress/ProjectProgressThresholdsTest.java` ทดสอบขอบ 80%/100%, ไม่มีเป้าหมาย และการไม่ส่งเกณฑ์ที่ผ่านไปแล้วซ้ำ
 - `event/TimerStoppedProgressListenerTest.java` และ `event/ProjectProgressThresholdListenerTest.java` ทดสอบการเผยแพร่ event และการรับเพื่อเขียน log

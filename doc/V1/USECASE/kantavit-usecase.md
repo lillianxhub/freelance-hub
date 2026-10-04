@@ -70,9 +70,12 @@
 
 1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่; Service ตรวจว่าไม่มี timer ของ Project นี้กำลังทำงานก่อนเปลี่ยนสถานะ
 2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; การคืนจาก `ARCHIVED` ทำได้ต่อเมื่อ Client ยังใช้งาน (`isActive=true`) และไม่ถูก soft delete (`deletedAt=null`); ส่งสถานะเดิมซ้ำได้
-3. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
+3. ถ้าเพิ่งเปลี่ยนจากสถานะอื่นเป็น `COMPLETED`, Service เรียก `TimeEntryService.lockByProject(ownerId, projectId)` ก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่มีอยู่ของ Project จะถูกล็อกและแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ
+4. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
 
 **ทางเลือก:** สถานะไม่ถูกต้อง = `400`; ไม่พบ Project = `404`; transition ผิดกฎ, Client ถูกจัดเก็บ/soft delete หรือ timer ของ Project กำลังทำงาน = `409`
+
+**Postcondition ของการเปลี่ยนเป็น COMPLETED:** รายการเวลาที่ถูกล็อกแล้วจะถูก API ปฏิเสธหากพยายามแก้หรือลบ (`409`)
 
 ### UC-PRJ-06 ลบ Project แบบ soft delete
 
@@ -130,6 +133,7 @@ sequenceDiagram
     participant R as ProjectRepository
     participant P as Project
     participant ST as ProjectStates / ProjectState
+    participant TE as TimeEntryService
     participant H as GlobalExceptionHandler
     F->>C: PATCH /api/projects/{id}/status + JWT
     C->>S: changeStatus(ownerId, id, request)
@@ -147,6 +151,10 @@ sequenceDiagram
         end
         alt transition ผ่านและ Client ใช้งาน
             P-->>S: อัปเดต status และ isActive
+            opt เพิ่งเปลี่ยนเข้าสู่ COMPLETED
+                S->>TE: lockByProject(ownerId, id)
+                TE-->>S: ล็อกรายการเวลาใน transaction เดียวกัน
+            end
             S->>R: save(Project)
             S-->>C: ProjectResponse
             C-->>F: 200 ApiResult
@@ -162,3 +170,4 @@ sequenceDiagram
 
 - เอกสารนี้อธิบาย Project/Task และ listener ความคืบหน้าที่เกี่ยวกับ Project เท่านั้น ไม่อธิบายการทำงานทั้งหมดของ Timer, Time Entry หรือ Dashboard
 - `FR-PRJ-07` มีการตรวจเกณฑ์และเผยแพร่ event แล้ว แต่การแจ้งเตือนถึงผู้ใช้จริงยังไม่ปรากฏในส่วนนี้
+- การล็อกรายการเวลาเกิดเมื่อเปลี่ยนเข้าสู่ `COMPLETED` ครั้งใหม่; Project ที่เป็น `COMPLETED` อยู่ก่อนเพิ่ม flow นี้ไม่ได้ถูกล็อกย้อนหลังโดยอัตโนมัติ
