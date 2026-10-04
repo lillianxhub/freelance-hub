@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { TimerContext } from './TimerContext'
+import { TimerContext } from './timer-context'
 
 export function useCurrentTimer() {
   const context = useContext(TimerContext)

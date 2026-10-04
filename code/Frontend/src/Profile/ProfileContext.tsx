@@ -1,4 +1,5 @@
-import { createContext, useCallback, type PropsWithChildren } from 'react'
+import { useCallback, type PropsWithChildren } from 'react'
+import { ProfileContext } from './profile-context'
 import { updateProfile as updateProfileRequest, loadProfile } from '../services/profile'
 import { useAsyncData } from '../shared/useAsyncData'
 import type { AsyncDataState } from '../types/asyncData'
@@ -8,7 +9,6 @@ import type { ApiResponse } from '../types/api'
 export interface ProfileContextValue extends AsyncDataState<Profile | null> {
   updateProfile: (input: ProfileInput) => Promise<ApiResponse<Profile>>
 }
-export const ProfileContext = createContext<ProfileContextValue | null>(null)
 
 export function ProfileProvider({ children }: PropsWithChildren) {
   const load = useCallback(() => loadProfile(), [])

@@ -1,9 +1,8 @@
-import { createContext, useCallback, type PropsWithChildren } from 'react'
+import { useCallback, type PropsWithChildren } from 'react'
+import { DashboardContext } from './dashboard-context'
 import { api } from '../api/apiClient'
 import { useAsyncData } from '../shared/useAsyncData'
-import type { DashboardActivity, DashboardChartPeriod, DashboardContextValue, DashboardData, DashboardResponse } from '../types/dashboard'
-
-export const DashboardContext = createContext<DashboardContextValue | null>(null)
+import type { DashboardActivity, DashboardChartPeriod, DashboardData, DashboardResponse } from '../types/dashboard'
 
 const emptyDashboard: DashboardData = {
   generatedAt: '',
@@ -40,8 +39,8 @@ async function loadDashboardActivity(period: DashboardChartPeriod): Promise<Dash
 }
 
 export function DashboardProvider({ children }: PropsWithChildren) {
-  const load = useCallback(loadDashboard, [])
+  const load = useCallback(() => loadDashboard(), [])
   const state = useAsyncData(load, emptyDashboard)
-  const loadActivity = useCallback(loadDashboardActivity, [])
+  const loadActivity = useCallback((period: DashboardChartPeriod) => loadDashboardActivity(period), [])
   return <DashboardContext.Provider value={{ ...state, loadActivity }}>{children}</DashboardContext.Provider>
 }
