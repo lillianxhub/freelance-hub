@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { ProjectsContext } from './ProjectsContext'
+import { ProjectsContext } from './projects-context'
 import type { ProjectsContextValue } from './ProjectsContext'
 
 export function useProjects(): ProjectsContextValue {

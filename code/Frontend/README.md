@@ -28,12 +28,31 @@ npm run build
 
 ## โครงสร้าง
 
-`src/Authentication`, `src/Workspace`, `src/ClientManagement`, `src/ProjectManagement`, `src/TimeTracking`, `src/Analytics`, `src/Billing` และ `src/Settings` แยก Context, hooks, components และ pages ตามหน้าที่ ส่วนโค้ดที่ใช้ร่วมกันอยู่ในโฟลเดอร์กลาง:
+โครงสร้างปัจจุบันของ `src/` (ไม่มี `Workspace`, `Billing`, `Settings` หรือ `utils`):
 
-- `src/api` เก็บ fetch wrapper และ HTTP helpers
-- `src/services` เก็บการเรียก backend และการจัดการข้อมูลจาก API
-- `src/utils` เก็บฟังก์ชันคำนวณ จัดรูปแบบ และแปลงข้อมูล
-- `src/components` เก็บ UI ที่ใช้ร่วมกันหลายฟีเจอร์
-- `src/types` เก็บ type และ interface โดยแยกไฟล์ตามข้อมูลหรือหน้าที่ใช้งาน
+```text
+src/
+├── main.tsx, App.tsx          # จุดเริ่มต้นและตัวแอป
+├── routes/                    # กำหนดเส้นทางหน้าเว็บ
+├── Authentication/            # เข้าสู่ระบบ สมัครสมาชิก และการป้องกัน route
+├── Profile/                   # ข้อมูลผู้ใช้และการแก้ไขโปรไฟล์
+├── ClientManagement/          # รายการและรายละเอียดลูกค้า
+├── ProjectManagement/         # โปรเจกต์และงาน
+├── TimeTracking/              # จับเวลาและรายการเวลา
+├── Analytics/                 # Dashboard, Reports และข้อมูลรายงานจำลอง
+├── api/                       # HTTP client, token refresh และข้อผิดพลาด API
+├── services/                  # ฟังก์ชันเรียก API และแปลงข้อมูลของแต่ละฟีเจอร์
+├── shared/                    # hook ที่ใช้ร่วมกัน เช่น useAsyncData
+├── lib/                       # ฟังก์ชันคำนวณ จัดรูปแบบ และแปลงข้อมูล
+├── components/                # UI ร่วม รวมถึง components/ui
+├── constants/                 # ค่าคงที่สำหรับการนำทาง
+├── types/                     # ชนิดข้อมูลและ interface
+├── assets/                    # ไฟล์ภาพที่ import จากโค้ด
+└── styles/                    # CSS ของแอป (มี index.css ที่ราก src ด้วย)
+```
+
+โฟลเดอร์ฟีเจอร์มี `pages/` และ `components/` ตามที่ใช้งานจริง รวมถึง Context, hook และ validator ของฟีเจอร์นั้น ๆ ไฟล์ `*-context.ts` เก็บ Context object ส่วน `*Context.tsx` เก็บ Provider และ `use*.ts` เก็บ hook ที่อ่าน Context หรือโหลดข้อมูล
+
+ไฟล์ทดสอบ `*.test.ts` อยู่ใกล้โค้ดที่ทดสอบใน `api/`, `services/` และ `lib/` ปัจจุบันคำสั่ง `npm test` ใน `package.json` ระบุเฉพาะ `api/`, `services/` และ `utils/` จึงยังไม่รวมชุดทดสอบใน `lib/`; ดูข้อจำกัดนี้เมื่ออ่านผลการทดสอบ
 
 โค้ด TypeScript ไม่ใช้ `any` เมื่อระบุชนิดข้อมูลได้ หากรับค่าที่ไม่ทราบรูปแบบ ให้ใช้ `unknown` และตรวจชนิดก่อนนำไปใช้งาน

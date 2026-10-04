@@ -1,7 +1,7 @@
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { NativeSelect } from '../../../components/ui/native-select'
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { FiBriefcase, FiPlus } from "react-icons/fi";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import PageHeader from "../../../components/PageHeader";
@@ -83,15 +83,8 @@ function ProjectsPage() {
   const [status, setStatus] = useState<ProjectFilter>("ALL");
   const [sortBy, setSortBy] = useState<ProjectSort>("UPDATED_DESC");
   const [page, setPage] = useState(1);
-  const [pageProjects, setPageProjects] = useState<Project[]>([]);
-  const [pageMeta, setPageMeta] = useState<ApiMeta>({
-    page: 1,
-    limit: projectPageLimit,
-    total: 0,
-    totalPages: 1,
-  });
-  const [pageLoading, setPageLoading] = useState(true);
-  const [pageError, setPageError] = useState("");
+  const [pageRequestKey, setPageRequestKey] = useState(0);
+  const [pageResult, setPageResult] = useState<{ key: string; projects: Project[]; meta: ApiMeta; error: string } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
@@ -101,38 +94,37 @@ function ProjectsPage() {
   const showToast = ({ success, message }: NotificationMessage) => {
     toast[success ? 'success' : 'error'](message);
   };
-  const latestRequest = useRef(0);
+  const pageQueryKey = JSON.stringify([page, clientId, query, status, sortBy, pageRequestKey]);
+  const currentPageResult = pageResult?.key === pageQueryKey ? pageResult : null;
+  const pageProjects = currentPageResult?.projects ?? [];
+  const pageMeta = currentPageResult?.meta ?? { page: 1, limit: projectPageLimit, total: 0, totalPages: 1 };
+  const pageLoading = !currentPageResult;
+  const pageError = currentPageResult?.error ?? "";
 
-  const loadProjectPage = useCallback(async (requestedPage: number) => {
-    const requestId = ++latestRequest.current;
-    setPageLoading(true);
-    setPageError("");
-    try {
-      const result = await listProjectsPage(requestedPage, projectPageLimit, {
+  useEffect(() => {
+    let active = true;
+    listProjectsPage(page, projectPageLimit, {
         clientId: clientId === 'ALL' ? undefined : clientId,
         search: query,
         status,
         ...projectSortParams[sortBy],
-      });
-      if (requestId !== latestRequest.current) return;
-      if (requestedPage > Math.max(1, result.meta.totalPages)) {
+      }).then((result) => {
+      if (!active) return;
+      if (page > Math.max(1, result.meta.totalPages)) {
         setPage(Math.max(1, result.meta.totalPages));
         return;
       }
-      setPageProjects(result.projects);
-      setPageMeta(result.meta);
-    } catch (loadError) {
-      if (requestId === latestRequest.current) {
-        setPageError(getErrorMessage(loadError, "ไม่สามารถโหลดโปรเจกต์ได้"));
-      }
-    } finally {
-      if (requestId === latestRequest.current) setPageLoading(false);
-    }
-  }, [clientId, query, sortBy, status]);
-
-  useEffect(() => {
-    void loadProjectPage(page);
-  }, [loadProjectPage, page]);
+      setPageResult({ key: pageQueryKey, projects: result.projects, meta: result.meta, error: "" });
+    }).catch((loadError: unknown) => {
+      if (active) setPageResult({
+        key: pageQueryKey,
+        projects: [],
+        meta: { page, limit: projectPageLimit, total: 0, totalPages: 1 },
+        error: getErrorMessage(loadError, "ไม่สามารถโหลดโปรเจกต์ได้"),
+      });
+    });
+    return () => { active = false; };
+  }, [clientId, page, pageQueryKey, query, sortBy, status]);
 
   const projects = pageProjects;
   const totalPages = Math.max(1, pageMeta.totalPages);
@@ -215,7 +207,7 @@ function ProjectsPage() {
           form.budget_amount === "" ? null : Number(form.budget_amount),
       });
       setModalOpen(false);
-      if (page === 1) await loadProjectPage(1);
+      if (page === 1) setPageRequestKey((current) => current + 1);
       else setPage(1);
     } catch (err) {
       setFormError(getErrorMessage(err, "บันทึกโปรเจกต์ไม่สำเร็จ"));
@@ -229,7 +221,7 @@ function ProjectsPage() {
     setChangingProjectId(project.id);
     try {
       await changeProjectStatus(project.id, nextStatus);
-      await loadProjectPage(safePage);
+      setPageRequestKey((current) => current + 1);
       showToast({ success: true, message: "อัปเดตสถานะโปรเจกต์เรียบร้อยแล้ว" });
     } catch (statusError) {
       showToast({
@@ -248,7 +240,7 @@ function ProjectsPage() {
         message={error || pageError}
         onRetry={async () => {
           await refresh();
-          await loadProjectPage(page);
+          setPageRequestKey((current) => current + 1);
         }}
       />
     );

@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+import org.springframework.http.HttpStatus;
 
 /**
  * Entry point for handling authentication errors
@@ -17,7 +19,12 @@ import th.ac.kku.freelance_hub.common.response.ApiResult;
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-        private final ObjectMapper objectMapper = new ObjectMapper();
+        private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        private final ApiErrorFactory errorFactory;
+
+        public JwtAuthenticationEntryPoint(ApiErrorFactory errorFactory) {
+                this.errorFactory = errorFactory;
+        }
 
         @Override
         public void commence(
@@ -28,6 +35,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 response.setCharacterEncoding("UTF-8");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 objectMapper.writeValue(response.getWriter(),
-                                ApiResult.error("Authentication is required", "AUTHENTICATION_REQUIRED", null));
+                                errorFactory.body(HttpStatus.UNAUTHORIZED, "Authentication is required",
+                                                "AUTHENTICATION_REQUIRED", null));
         }
 }
