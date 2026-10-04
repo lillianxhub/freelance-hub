@@ -23,7 +23,7 @@ import TimeEntryForm from "../../components/TimeEntryForm";
 import {
   createEmptyManualForm,
   localDateValue,
-} from "../../../lib/timeTracking";
+} from "../../timeTracking.utils";
 import { listTimerTasks } from "../../../services/timerOptions";
 import {
   createManualTimeEntry,
