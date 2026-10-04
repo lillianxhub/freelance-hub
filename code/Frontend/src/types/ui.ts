@@ -7,6 +7,7 @@ import type { TaskStatus } from './task'
 export interface PageHeaderProps {
   eyebrow?: string
   title: string
+  truncateTitle?: boolean
   description?: string
   actions?: ReactNode
 }

@@ -21,9 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.TaskService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.task.ChangeTaskStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.task.UpdateTaskRequest;
 import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
@@ -35,7 +34,7 @@ import th.ac.kku.freelance_hub.dto.response.task.TaskResponse;
 public class TaskDetailController {
 
     private final TaskService taskService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     @Operation(
             summary = "Get task detail",
@@ -46,13 +45,13 @@ public class TaskDetailController {
             useReturnTypeSchema = true)
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping("/{taskId}")
     public ResponseEntity<ApiResult<TaskResponse>> getById(
             @PathVariable("taskId") UUID taskId
     ) {
         TaskResponse task = taskService.getById(
-                userService.getCurrentUserEntity().getId(), taskId
+                userService.currentUserId(), taskId
         );
 
         return ResponseEntity.ok(
@@ -73,16 +72,16 @@ public class TaskDetailController {
     @ApiResponse(responseCode = "400", description = "ข้อมูลงานย่อยไม่ถูกต้อง")
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้แก้ไขงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PutMapping("/{taskId}")
     public ResponseEntity<ApiResult<TaskResponse>> update(
             @PathVariable("taskId") UUID taskId,
             @Valid @RequestBody UpdateTaskRequest request
     ) {
         TaskResponse task = taskService.update(
-                userService.getCurrentUserEntity().getId(), taskId, request
+                userService.currentUserId(), taskId, request
         );
 
         return ResponseEntity.ok(
@@ -104,16 +103,16 @@ public class TaskDetailController {
     @ApiResponse(responseCode = "400", description = "สถานะงานย่อยไม่ถูกต้อง")
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "ไม่อนุญาตให้เปลี่ยนสถานะงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{taskId}/status")
     public ResponseEntity<ApiResult<TaskResponse>> changeStatus(
             @PathVariable("taskId") UUID taskId,
             @Valid @RequestBody ChangeTaskStatusRequest request
     ) {
         TaskResponse task = taskService.changeStatus(
-                userService.getCurrentUserEntity().getId(), taskId, request
+                userService.currentUserId(), taskId, request
         );
 
         return ResponseEntity.ok(
@@ -134,14 +133,14 @@ public class TaskDetailController {
             useReturnTypeSchema = true)
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้ลบงานย่อย",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @DeleteMapping("/{taskId}")
     public ResponseEntity<ApiResult<Void>> delete(
             @PathVariable("taskId") UUID taskId
     ) {
-        taskService.delete(userService.getCurrentUserEntity().getId(), taskId);
+        taskService.delete(userService.currentUserId(), taskId);
         return ResponseEntity.ok(
                 ApiResult.<Void>success(
                         "ลบงานย่อยสำเร็จ", null

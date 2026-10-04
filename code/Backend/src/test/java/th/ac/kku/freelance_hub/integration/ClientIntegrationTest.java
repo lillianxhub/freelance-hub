@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.EntityManager;
@@ -25,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import th.ac.kku.freelance_hub.domain.entity.Client;
+import th.ac.kku.freelance_hub.domain.entity.Project;
+import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.dto.request.auth.RegisterRequest;
 import th.ac.kku.freelance_hub.dto.request.user.UpdateUserProfileRequest;
@@ -79,7 +84,7 @@ class ClientIntegrationTest {
                         .value("Page of clients returned"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].description")
                         .value("Client not found"))
-                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema['$ref']")
+                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema.allOf[0]['$ref']")
                         .value(org.hamcrest.Matchers.hasItem("#/components/schemas/ApiResult")))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description")
                         .value("Client updated"))
@@ -219,6 +224,62 @@ class ClientIntegrationTest {
     }
 
     @Test
+    void clientGetEndpointsReturnTrackedSecondsMatchingSummaryAndZeroForEmptyClients() throws Exception {
+        String token = registerAndGetToken("client-tracked-api@example.com");
+        String body = mockMvc.perform(post("/api/clients")
+                .header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Tracked Client\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.totalTrackedSeconds").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+        UUID clientId = UUID.fromString(objectMapper.readTree(body).path("data").path("id").asText());
+        Client client = clientRepository.findById(clientId).orElseThrow();
+        clientRepository.save(new Client(client.getOwner(), "Zero Client"));
+        Project project = new Project(client.getOwner(), client, "Tracked Project");
+        project.changeStatus(ProjectStatus.ACTIVE);
+        entityManager.persist(project);
+        entityManager.persist(TimeEntry.createManualWithDurationSeconds(
+                client.getOwner(), project, null, null, Instant.parse("2026-09-01T00:00:00Z"), 5401));
+        entityManager.flush();
+        entityManager.clear();
+
+        String summaryBody = mockMvc.perform(get("/api/time-entries/summary")
+                .header("Authorization", bearer(token))
+                .param("clientId", clientId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalSeconds").value(5401))
+                .andReturn().getResponse().getContentAsString();
+        long summary = objectMapper.readTree(summaryBody).path("data").path("totalSeconds").asLong();
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(token))
+                .param("page", "1").param("limit", "1").param("sortBy", "name").param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.page").value(1))
+                .andExpect(jsonPath("$.meta.total").value(2))
+                .andExpect(jsonPath("$.meta.totalPages").value(2))
+                .andExpect(jsonPath("$.data[0].id").value(clientId.toString()))
+                .andExpect(jsonPath("$.data[0].totalTrackedSeconds").value(summary));
+        mockMvc.perform(get("/api/clients")
+                .header("Authorization", bearer(token))
+                .param("page", "2").param("limit", "1").param("sortBy", "name").param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Zero Client"))
+                .andExpect(jsonPath("$.data[0].totalTrackedSeconds").value(0));
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalTrackedSeconds").value(summary));
+        mockMvc.perform(get("/api/clients/{id}", clientId)
+                .header("Authorization", bearer(token))
+                .param("include", "projects.tasks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalTrackedSeconds").value(summary))
+                .andExpect(jsonPath("$.data.projects[0].id").value(project.getId().toString()))
+                .andExpect(jsonPath("$.data.projects[0].tasks").isEmpty());
+    }
+
+    @Test
     void updatedAddressFieldsAreStoredSeparatelyAndReturnedAfterReload() throws Exception {
         String ownerToken = registerAndGetToken("client-address-update@example.com");
         String createdBody = mockMvc.perform(post("/api/clients")
@@ -276,7 +337,7 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details.name").exists());
+                .andExpect(jsonPath("$.error.fieldErrors.name").exists());
 
         mockMvc.perform(get("/api/clients/{id}", UUID.randomUUID())
                 .header("Authorization", bearer(token)))
@@ -429,10 +490,15 @@ class ClientIntegrationTest {
                 .password("password123")
                 .displayName("Client integration user")
                 .build();
-        String body = mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isCreated());
+        String body = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                        java.util.Map.of("email", email, "password", "password123"))))
+                .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).path("data").path("token").asText();
     }

@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -77,7 +79,7 @@ class TimeEntryControllerTest {
                                 userService
                         )
                 )
-                .setControllerAdvice(new TimeTrackingExceptionHandler())
+                .setControllerAdvice(new TimeTrackingExceptionHandler(new ApiErrorFactory()))
                 .setValidator(validator)
                 .build();
     }
@@ -150,7 +152,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details.projectId").exists());
+                .andExpect(jsonPath("$.error.fieldErrors.projectId").exists());
 
         verify(timeEntryService, never()).createManual(any(), any());
     }
@@ -197,7 +199,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.data[0].durationSeconds")
                         .value(1800))
                 .andExpect(jsonPath("$.data[0].description")
-                        .doesNotExist())
+                        .value("Listed work"))
                 .andExpect(jsonPath("$.meta.page").value(1))
                 .andExpect(jsonPath("$.meta.limit").value(5))
                 .andExpect(jsonPath("$.meta.total").value(6))
@@ -365,8 +367,8 @@ class TimeEntryControllerTest {
     }
 
     private void stubCurrentUser() {
-        when(userService.getCurrentUserEntity()).thenReturn(
-                User.builder().id(OWNER_ID).build()
+        when(userService.currentUserId()).thenReturn(
+                OWNER_ID
         );
     }
 

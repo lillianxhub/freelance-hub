@@ -2,8 +2,8 @@ import { lazy } from "react";
 import { Navigate, useParams, useRoutes, type RouteObject } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import ProtectedRoute from "../Authentication/components/ProtectedRoute";
-import { AnalyticsProvider } from "../Analytics/AnalyticsContext";
 import { ClientsProvider } from "../ClientManagement/ClientsContext";
+import { DashboardProvider } from "../Analytics/DashboardContext";
 import { ProfileProvider } from "../Profile/ProfileContext";
 import { ProjectsProvider } from "../ProjectManagement/ProjectsContext";
 import { TimeEntriesProvider } from "../TimeTracking/TimeEntriesContext";
@@ -53,7 +53,7 @@ const protectedRoutes: AppRouteDefinition[] = [
     {
         path: "/dashboard",
         label: "Dashboard",
-        element: <DashboardPage />,
+        element: <DashboardProvider><DashboardPage /></DashboardProvider>,
     },
     {
         path: "/clients",
@@ -67,11 +67,7 @@ const protectedRoutes: AppRouteDefinition[] = [
     {
         path: "/clients/:clientId",
         label: "Clients detail",
-        element: (
-            <ClientsProvider>
-                <ClientDetailPage />
-            </ClientsProvider>
-        ),
+        element: <ClientDetailPage />,
     },
     {
         path: "/projects",
@@ -90,16 +86,12 @@ const protectedRoutes: AppRouteDefinition[] = [
     {
         path: "/time-tracker",
         label: "บันทึกเวลา",
-        element: <TimeTrackerPage />,
+        element: <TimeEntriesProvider><TimeTrackerPage /></TimeEntriesProvider>,
     },
     {
         path: "/reports",
         label: "รายงาน",
-        element: (
-            <AnalyticsProvider>
-                <ReportsPage />
-            </AnalyticsProvider>
-        ),
+        element: <ReportsPage />,
     },
     {
         path: "/profile",
@@ -125,11 +117,9 @@ const protectedRoutes: AppRouteDefinition[] = [
 function ProtectedWorkspace() {
     return (
         <ProtectedRoute>
-            <TimeEntriesProvider>
-                <TimerProvider>
-                    <AppLayout />
-                </TimerProvider>
-            </TimeEntriesProvider>
+            <TimerProvider>
+                <AppLayout />
+            </TimerProvider>
         </ProtectedRoute>
     );
 }

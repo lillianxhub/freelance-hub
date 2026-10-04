@@ -59,17 +59,4 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.success("เปลี่ยนรหัสผ่านสำเร็จ", null));
     }
 
-    /*
-     * Reserved for a future admin user-management feature.
-     * GET /api/users/{id}
-     *
-     * @GetMapping("/{id}")
-     *
-     * @PreAuthorize("hasRole('ADMIN')")
-     * public ResponseEntity<ApiResult<UserResponse>> getUserById(@PathVariable
-     * UUID id) {
-     * UserResponse response = userService.getUserById(id);
-     * return ResponseEntity.ok(ApiResult.success("User retrieved", response));
-     * }
-     */
 }

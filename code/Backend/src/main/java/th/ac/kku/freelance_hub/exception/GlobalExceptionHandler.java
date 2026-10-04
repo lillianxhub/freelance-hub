@@ -1,264 +1,123 @@
 package th.ac.kku.freelance_hub.exception;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+import th.ac.kku.freelance_hub.common.response.ApiResult;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
-/**
- * Global exception handler for REST controllers
- */
+/** Fallback mappings for endpoints without a feature-specific exception handler. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private final ApiErrorFactory errors;
 
-        @ExceptionHandler(EmailAlreadyExistsException.class)
-        public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.CONFLICT.value())
-                                .error("Conflict")
-                                .message(ex.getMessage())
-                                .build();
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-        }
+    public GlobalExceptionHandler(ApiErrorFactory errors) {
+        this.errors = errors;
+    }
 
-        @ExceptionHandler(UserNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message(ex.getMessage())
-                                .build();
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-        }
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ApiResult<Void>> emailAlreadyExists(EmailAlreadyExistsException ex) {
+        return errors.response(HttpStatus.CONFLICT, ex.getMessage(), "EMAIL_ALREADY_EXISTS", null);
+    }
 
-        @ExceptionHandler(ClientNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleClientNotFound(ClientNotFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message(ex.getMessage())
-                                .build();
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-        }
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiResult<Void>> userNotFound(UserNotFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, ex.getMessage(), "USER_NOT_FOUND", null);
+    }
 
-        @ExceptionHandler(BadCredentialsException.class)
-        public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.UNAUTHORIZED.value())
-                                .error("Unauthorized")
-                                .message("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-                                .build();
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-        }
+    @ExceptionHandler(ClientNotFoundException.class)
+    public ResponseEntity<ApiResult<Void>> clientNotFound(ClientNotFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, ex.getMessage(), "CLIENT_NOT_FOUND", null);
+    }
 
-        @ExceptionHandler(InvalidCredentialsException.class)
-        public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.UNAUTHORIZED.value())
-                                .error("Unauthorized")
-                                .message(ex.getMessage())
-                                .build();
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-        }
+    @ExceptionHandler(ProjectNotFoundException.class)
+    public ResponseEntity<ApiResult<Void>> projectNotFound(ProjectNotFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, ex.getMessage(), "PROJECT_NOT_FOUND", null);
+    }
 
-        @ExceptionHandler(InvalidRefreshTokenException.class)
-        public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.UNAUTHORIZED.value())
-                                .error("Unauthorized")
-                                .message(ex.getMessage())
-                                .build();
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-        }
+    @ExceptionHandler(TaskNotFoundException.class)
+    public ResponseEntity<ApiResult<Void>> taskNotFound(TaskNotFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, ex.getMessage(), "TASK_NOT_FOUND", null);
+    }
 
-        @ExceptionHandler(ResponseStatusException.class)
-        public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException ex) {
-                HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(status.value())
-                                .error(status.getReasonPhrase())
-                                .message(ex.getReason())
-                                .build();
-                return ResponseEntity.status(status).body(error);
-        }
+    @ExceptionHandler(TimeEntryNotFoundException.class)
+    public ResponseEntity<ApiResult<Void>> timeEntryNotFound(TimeEntryNotFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, ex.getMessage(), "TIME_ENTRY_NOT_FOUND", null);
+    }
 
-        @ExceptionHandler(MethodArgumentNotValidException.class)
-        public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
-                        MethodArgumentNotValidException ex) {
-                Map<String, String> errors = new HashMap<>();
-                ex.getBindingResult().getAllErrors().forEach(error -> {
-                        String fieldName = ((FieldError) error).getField();
-                        String errorMessage = error.getDefaultMessage();
-                        errors.put(fieldName, errorMessage);
-                });
+    @ExceptionHandler(RunningTimerNotFoundException.class)
+    public ResponseEntity<ApiResult<Void>> runningTimerNotFound(RunningTimerNotFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, ex.getMessage(), "RUNNING_TIMER_NOT_FOUND", null);
+    }
 
-                ValidationErrorResponse response = ValidationErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.BAD_REQUEST.value())
-                                .error("Validation Failed")
-                                .message("ข้อมูลที่ส่งมาไม่ถูกต้อง")
-                                .errors(errors)
-                                .build();
+    @ExceptionHandler(TimerAlreadyRunningException.class)
+    public ResponseEntity<ApiResult<Void>> timerAlreadyRunning(TimerAlreadyRunningException ex) {
+        return errors.response(HttpStatus.CONFLICT, ex.getMessage(), "TIMER_ALREADY_RUNNING", null);
+    }
 
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+    @ExceptionHandler(TimeEntryLockedException.class)
+    public ResponseEntity<ApiResult<Void>> timeEntryLocked(TimeEntryLockedException ex) {
+        return errors.response(HttpStatus.CONFLICT, ex.getMessage(), "TIME_ENTRY_LOCKED", null);
+    }
 
-        //
-        @ExceptionHandler(IllegalArgumentException.class)
-        public ResponseEntity<ErrorResponse> handleInvalidArgument(
-                        IllegalArgumentException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.BAD_REQUEST.value())
-                                .error("Bad Request")
-                                .message(ex.getMessage())
-                                .build();
+    @ExceptionHandler({BadCredentialsException.class, InvalidCredentialsException.class})
+    public ResponseEntity<ApiResult<Void>> invalidCredentials(Exception ex) {
+        String message = ex instanceof BadCredentialsException ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : ex.getMessage();
+        return errors.response(HttpStatus.UNAUTHORIZED, message, "INVALID_CREDENTIALS", null);
+    }
 
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ApiResult<Void>> invalidRefreshToken(InvalidRefreshTokenException ex) {
+        return errors.response(HttpStatus.UNAUTHORIZED, ex.getMessage(), "INVALID_REFRESH_TOKEN", null);
+    }
 
-        @ExceptionHandler(IllegalStateException.class)
-        public ResponseEntity<ErrorResponse> handleInvalidState(
-                        IllegalStateException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.CONFLICT.value())
-                                .error("Conflict")
-                                .message(ex.getMessage())
-                                .build();
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResult<Void>> validation(MethodArgumentNotValidException ex) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(field ->
+                fields.putIfAbsent(field.getField(), field.getDefaultMessage()));
+        return errors.validation(fields);
+    }
 
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-        }
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiResult<Void>> invalidRequest(Exception ex) {
+        return errors.response(HttpStatus.BAD_REQUEST, "ข้อมูลที่ส่งมาไม่ถูกต้อง", "INVALID_REQUEST", null);
+    }
 
-        @ExceptionHandler(NoResourceFoundException.class)
-        public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message("ไม่พบข้อมูลที่ร้องขอ")
-                                .build();
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResult<Void>> responseStatus(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        return errors.response(status, ex.getReason() == null ? status.getReasonPhrase() : ex.getReason(),
+                status.name(), null);
+    }
 
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-        }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResult<Void>> invalidArgument(IllegalArgumentException ex) {
+        return errors.response(HttpStatus.BAD_REQUEST, ex.getMessage(), "INVALID_ARGUMENT", null);
+    }
 
-        @ExceptionHandler(Exception.class)
-        public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                                .error("Internal Server Error")
-                                .message("เกิดข้อผิดพลาดภายในระบบ")
-                                .build();
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResult<Void>> invalidState(IllegalStateException ex) {
+        return errors.response(HttpStatus.CONFLICT, ex.getMessage(), "INVALID_STATE", null);
+    }
 
-        // Project and Tash GlobalHandler
-        @ExceptionHandler(ProjectNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleProjectNotFound(
-                        ProjectNotFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message(ex.getMessage())
-                                .build();
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResult<Void>> noResource(NoResourceFoundException ex) {
+        return errors.response(HttpStatus.NOT_FOUND, "ไม่พบข้อมูลที่ร้องขอ", "NOT_FOUND", null);
+    }
 
-                return ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .body(error);
-        }
-
-        @ExceptionHandler(TaskNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleTaskNotFound(
-                        TaskNotFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message(ex.getMessage())
-                                .build();
-
-                return ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .body(error);
-        }
-
-        @ExceptionHandler(TimeEntryNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleTimeEntryNotFound(
-                        TimeEntryNotFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message(ex.getMessage())
-                                .build();
-
-                return ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .body(error);
-        }
-
-        @ExceptionHandler(RunningTimerNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleRunningTimerNotFound(
-                        RunningTimerNotFoundException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.NOT_FOUND.value())
-                                .error("Not Found")
-                                .message(ex.getMessage())
-                                .build();
-
-                return ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .body(error);
-        }
-
-        @ExceptionHandler(TimerAlreadyRunningException.class)
-        public ResponseEntity<ErrorResponse> handleTimerAlreadyRunning(
-                        TimerAlreadyRunningException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.CONFLICT.value())
-                                .error("Conflict")
-                                .message(ex.getMessage())
-                                .build();
-
-                return ResponseEntity
-                                .status(HttpStatus.CONFLICT)
-                                .body(error);
-        }
-
-        @ExceptionHandler(TimeEntryLockedException.class)
-        public ResponseEntity<ErrorResponse> handleTimeEntryLocked(
-                        TimeEntryLockedException ex) {
-                ErrorResponse error = ErrorResponse.builder()
-                                .timestamp(LocalDateTime.now())
-                                .status(HttpStatus.CONFLICT.value())
-                                .error("Conflict")
-                                .message(ex.getMessage())
-                                .build();
-
-                return ResponseEntity
-                                .status(HttpStatus.CONFLICT)
-                                .body(error);
-        }
-
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResult<Void>> unexpected(Exception ex) {
+        return errors.response(HttpStatus.INTERNAL_SERVER_ERROR, "เกิดข้อผิดพลาดภายในระบบ",
+                "INTERNAL_SERVER_ERROR", null);
+    }
 }

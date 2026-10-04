@@ -24,6 +24,7 @@
 - `changeStatus(false)` เปลี่ยน Client เป็น inactive และเรียก `Project.changeStatus(ARCHIVED)` สำหรับ Project ของลูกค้านั้นที่ยังไม่ถูก soft delete ภายใน transaction เดียวกัน; เปิด Client กลับมาไม่คืนสถานะ Project อัตโนมัติ ส่วน `softDelete` ตั้งเฉพาะ `deletedAt` ของ Client โดยไม่ลบ record: `ClientServiceImpl.java`, `ClientRepository.java`, `Client.java`, `Project.java`
 - Response ที่มี body ใช้ `ApiResult`; 400/404 ของ Client ผ่าน `ClientExceptionHandler`, ส่วน GET รายการมี `PaginationMeta`: `ClientController.java`, `ClientExceptionHandler.java`
 - Client detail เลือกแนบ Project/Task ด้วย `include=projects` หรือ `include=projects.tasks` และ repository อ่านเฉพาะฟิลด์ที่แสดง; ส่วน `summarizeTimeByClient` เป็น service method ภายในที่ใช้ projection รวมเวลาของ Time Entry ตาม Client: `ClientController.java`, `ClientRepository.java`, `ClientServiceImpl.java`
+- `ClientServiceImpl` เติม `totalTrackedSeconds` ใน GET รายการและรายละเอียดผ่าน aggregate projection โดย query ทีเดียวเฉพาะ IDs ในหน้าปัจจุบัน; mapper ยังรับผิดชอบเฉพาะการแปลง entity และไม่มีการ query ใน mapper กติกายอดใหม่นับประวัติแบบเดียวกับ Time Entry summary ไม่ใช้ตัวกรอง Project/Task inactive ของ method Analytics เดิม: `ClientRepository.java`, `ClientServiceImpl.java`, `dto/response/client/ClientResponse.java`
 
 ## ข้อสังเกตสำหรับรวมเอกสารหลัก
 

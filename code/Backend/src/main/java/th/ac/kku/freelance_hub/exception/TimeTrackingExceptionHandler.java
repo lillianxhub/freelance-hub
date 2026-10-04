@@ -15,6 +15,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 
 import th.ac.kku.freelance_hub.common.response.ApiResult;
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 import th.ac.kku.freelance_hub.controller.TimeEntryController;
 import th.ac.kku.freelance_hub.controller.TimerController;
 
@@ -22,6 +23,11 @@ import th.ac.kku.freelance_hub.controller.TimerController;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = {TimeEntryController.class, TimerController.class})
 public class TimeTrackingExceptionHandler {
+    private final ApiErrorFactory errorFactory;
+
+    public TimeTrackingExceptionHandler(ApiErrorFactory errorFactory) {
+        this.errorFactory = errorFactory;
+    }
 
     @ExceptionHandler(TimeEntryNotFoundException.class)
     public ResponseEntity<ApiResult<Void>> timeEntryNotFound(TimeEntryNotFoundException ex) {
@@ -63,7 +69,7 @@ public class TimeTrackingExceptionHandler {
         Map<String, String> fields = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(fieldError ->
                 fields.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage()));
-        return error(HttpStatus.BAD_REQUEST, "ข้อมูลที่ส่งมาไม่ถูกต้อง", "VALIDATION_ERROR", fields);
+        return errorFactory.validation(fields);
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
@@ -93,6 +99,6 @@ public class TimeTrackingExceptionHandler {
     }
 
     private ResponseEntity<ApiResult<Void>> error(HttpStatus status, String message, String code, Object details) {
-        return ResponseEntity.status(status).body(ApiResult.error(message, code, details));
+        return errorFactory.response(status, message, code, details);
     }
 }

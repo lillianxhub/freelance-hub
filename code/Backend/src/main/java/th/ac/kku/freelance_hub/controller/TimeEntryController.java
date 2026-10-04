@@ -218,6 +218,6 @@ public class TimeEntryController {
     }
 
     private UUID currentOwnerId() {
-        return userService.getCurrentUserEntity().getId();
+        return userService.currentUserId();
     }
 }

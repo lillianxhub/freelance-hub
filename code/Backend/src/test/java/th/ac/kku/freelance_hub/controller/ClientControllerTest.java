@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -58,7 +60,7 @@ class ClientControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(new ClientController(clientService, userService))
-            .setControllerAdvice(new ClientExceptionHandler())
+            .setControllerAdvice(new ClientExceptionHandler(new ApiErrorFactory()))
             .setValidator(validator)
             .build();
         clientId = UUID.randomUUID();
@@ -66,7 +68,7 @@ class ClientControllerTest {
 
     @Test
     void createUsesCurrentUserAndReturnsCreated() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.create(eq(OWNER_ID), any(CreateClientRequest.class)))
             .thenReturn(ClientResponse.builder().id(clientId).name("Acme").build());
 
@@ -96,14 +98,14 @@ class ClientControllerTest {
             .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
             .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
             .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-            .andExpect(jsonPath("$.error.details.name").exists());
+            .andExpect(jsonPath("$.error.fieldErrors.name").exists());
 
         verify(clientService, never()).create(any(), any());
     }
 
     @Test
     void listUsesCurrentUserAndDefaultFilters() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         doReturn(new PageImpl<>(List.of(ClientResponse.builder().name("Acme").build()),
             PageRequest.of(0, 20), 1))
             .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
@@ -126,7 +128,7 @@ class ClientControllerTest {
 
     @Test
     void listBindsFiltersAndPagination() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(2, 5), 0))
             .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
 
@@ -163,7 +165,7 @@ class ClientControllerTest {
 
     @Test
     void listBindsLimitAlongsideLegacySize() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         doReturn(new PageImpl<ClientResponse>(List.of(), PageRequest.of(0, 7), 0))
             .when(clientService).list(eq(OWNER_ID), any(ClientFilterRequest.class));
 
@@ -191,7 +193,7 @@ class ClientControllerTest {
 
     @Test
     void getByIdUsesCurrentUserAndReturnsClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.getById(OWNER_ID, clientId))
             .thenReturn(ClientResponse.builder().id(clientId).name("Acme").build());
 
@@ -209,7 +211,7 @@ class ClientControllerTest {
 
     @Test
     void getByIdReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.getById(OWNER_ID, clientId)).thenThrow(new ClientNotFoundException(clientId));
 
         mockMvc.perform(get("/api/clients/{id}", clientId))
@@ -226,7 +228,7 @@ class ClientControllerTest {
 
     @Test
     void replaceUsesCurrentUserAndReturnsWrappedClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class)))
             .thenReturn(ClientResponse.builder().id(clientId).name("New Name").build());
 
@@ -255,7 +257,7 @@ class ClientControllerTest {
 
     @Test
     void replaceReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.replace(eq(OWNER_ID), eq(clientId), any(CreateClientRequest.class)))
             .thenThrow(new ClientNotFoundException(clientId));
 
@@ -269,7 +271,7 @@ class ClientControllerTest {
 
     @Test
     void updateUsesCurrentUserAndReturnsUpdatedClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.update(eq(OWNER_ID), eq(clientId), any(UpdateClientRequest.class)))
             .thenReturn(ClientResponse.builder().id(clientId).name("New Name").build());
 
@@ -301,7 +303,7 @@ class ClientControllerTest {
 
     @Test
     void updateReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.update(eq(OWNER_ID), eq(clientId), any(UpdateClientRequest.class)))
             .thenThrow(new ClientNotFoundException(clientId));
 
@@ -315,7 +317,7 @@ class ClientControllerTest {
 
     @Test
     void changeStatusUsesCurrentUserAndBooleanFlag() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.changeStatus(OWNER_ID, clientId, false))
             .thenReturn(ClientResponse.builder().id(clientId).status(ClientStatus.ARCHIVED)
                 .isActive(false).build());
@@ -345,7 +347,7 @@ class ClientControllerTest {
 
     @Test
     void changeStatusReturnsNotFoundForAnotherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.changeStatus(OWNER_ID, clientId, true))
             .thenThrow(new ClientNotFoundException(clientId));
 
@@ -359,7 +361,7 @@ class ClientControllerTest {
 
     @Test
     void softDeleteUsesCurrentUserAndReturnsNoContent() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))
             .andExpect(status().isNoContent());
@@ -369,7 +371,7 @@ class ClientControllerTest {
 
     @Test
     void softDeleteReturnsNotFoundForMissingOrOtherOwnersClient() throws Exception {
-        when(userService.getCurrentUserEntity()).thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
         doThrow(new ClientNotFoundException(clientId)).when(clientService).softDelete(OWNER_ID, clientId);
 
         mockMvc.perform(delete("/api/clients/{id}", clientId))

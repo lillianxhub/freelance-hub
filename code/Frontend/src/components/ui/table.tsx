@@ -95,9 +95,11 @@ function Table({ className, pagination, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-xl"
+      className="relative min-w-0 w-full rounded-xl"
     >
-      <table data-slot="table" className={cn("w-full rounded-xl border border-border caption-bottom text-sm", className)} {...props} />
+      <div className="w-full overflow-x-auto rounded-xl">
+        <table data-slot="table" className={cn("w-full min-w-[40rem] table-fixed rounded-xl border border-border caption-bottom text-sm", className)} {...props} />
+      </div>
       {pagination && <TablePagination {...pagination} />}
     </div>
   )
@@ -149,7 +151,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+function TableHead({ className, children, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       data-slot="table-head"
@@ -158,11 +160,15 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
         className
       )}
       {...props}
-    />
+    >
+      {typeof children === "string" || typeof children === "number"
+        ? <span className="block min-w-0 truncate" title={String(children)}>{children}</span>
+        : children}
+    </th>
   )
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+function TableCell({ className, children, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
@@ -171,7 +177,11 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
         className
       )}
       {...props}
-    />
+    >
+      {typeof children === "string" || typeof children === "number"
+        ? <span className="block min-w-0 truncate" title={String(children)}>{children}</span>
+        : children}
+    </td>
   )
 }
 
