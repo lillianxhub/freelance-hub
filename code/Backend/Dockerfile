@@ -11,8 +11,13 @@ COPY pom.xml .
 # wrapper before running it in the Linux-based builder image.
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 
-# Download dependencies (cached layer)
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies (cached layer). Maven Central can briefly return 502;
+# -U makes each retry recheck artifacts that failed during the previous attempt.
+RUN for attempt in 1 2 3; do \
+      if ./mvnw dependency:go-offline -B -U; then break; fi; \
+      if [ "$attempt" -eq 3 ]; then exit 1; fi; \
+      sleep "$((attempt * 5))"; \
+    done
 
 # Copy source code
 COPY src src
