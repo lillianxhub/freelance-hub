@@ -74,9 +74,6 @@ function TimeTrackerPage() {
     setTimeEntriesRequestKey((current) => current + 1);
   }, []);
 
-  const reloadTimeEntryData = useCallback(() => {
-    setTimeEntriesRequestKey((current) => current + 1);
-  }, []);
 
   const activeProjects = useMemo(
     () =>
