@@ -1,6 +1,5 @@
 package th.ac.kku.freelance_hub.repository;
 
-import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -126,22 +125,26 @@ public class ReportQueryRepository {
             UUID projectId
     ) {
         String select = """
-                CAST(t.started_at AT TIME ZONE 'Asia/Bangkok' AS date),
+                EXTRACT(YEAR FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
+                EXTRACT(MONTH FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
+                EXTRACT(DAY FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
                 COALESCE(SUM(t.duration_seconds), 0)
                 """;
 
         List<Object[]> rows = nativeTimeQuery(
                 select,
-                " GROUP BY 1 ORDER BY 1",
+                " GROUP BY 1, 2, 3 ORDER BY 1, 2, 3",
                 ownerId, from, toExclusive, clientId, projectId
         ).getResultList();
 
         return rows.stream()
                 .map(row -> new DailyTime(
-                        row[0] instanceof LocalDate date
-                                ? date
-                                : ((Date) row[0]).toLocalDate(),
-                        ((Number) row[1]).longValue()
+                        LocalDate.of(
+                                ((Number) row[0]).intValue(),
+                                ((Number) row[1]).intValue(),
+                                ((Number) row[2]).intValue()
+                        ),
+                        ((Number) row[3]).longValue()
                 ))
                 .toList();
     }
