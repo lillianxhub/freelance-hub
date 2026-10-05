@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 import th.ac.kku.freelance_hub.common.response.ApiResult;
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 import th.ac.kku.freelance_hub.controller.AuthController;
 import th.ac.kku.freelance_hub.controller.UserController;
 
@@ -24,6 +25,11 @@ import th.ac.kku.freelance_hub.controller.UserController;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = { AuthController.class, UserController.class })
 public class AuthUserExceptionHandler {
+    private final ApiErrorFactory errorFactory;
+
+    public AuthUserExceptionHandler(ApiErrorFactory errorFactory) {
+        this.errorFactory = errorFactory;
+    }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiResult<Void>> emailAlreadyExists(EmailAlreadyExistsException ex) {
@@ -49,7 +55,7 @@ public class AuthUserExceptionHandler {
     public ResponseEntity<ApiResult<Void>> loginRateLimited(LoginRateLimitedException ex) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .header(HttpHeaders.RETRY_AFTER, Long.toString(ex.getRetryAfterSeconds()))
-                .body(ApiResult.error(ex.getMessage(), "LOGIN_RATE_LIMITED", null));
+                .body(errorFactory.body(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), "LOGIN_RATE_LIMITED", null));
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
@@ -67,7 +73,7 @@ public class AuthUserExceptionHandler {
         Map<String, String> details = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(fieldError ->
                 details.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage()));
-        return error(HttpStatus.BAD_REQUEST, "ข้อมูลที่ส่งมาไม่ถูกต้อง", "VALIDATION_ERROR", details);
+        return errorFactory.validation(details);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -98,6 +104,6 @@ public class AuthUserExceptionHandler {
     }
 
     private ResponseEntity<ApiResult<Void>> error(HttpStatus status, String message, String code, Object details) {
-        return ResponseEntity.status(status).body(ApiResult.error(message, code, details));
+        return errorFactory.response(status, message, code, details);
     }
 }

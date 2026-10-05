@@ -12,6 +12,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.entity.UserProfile;
 import th.ac.kku.freelance_hub.exception.EmailAlreadyExistsException;
@@ -19,6 +21,7 @@ import th.ac.kku.freelance_hub.exception.InvalidRefreshTokenException;
 import th.ac.kku.freelance_hub.mapper.UserMapper;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.security.JwtTokenProvider;
+import th.ac.kku.freelance_hub.security.LoginAttemptLimiter;
 import th.ac.kku.freelance_hub.service.impl.AuthServiceImpl;
 
 import java.time.Instant;
@@ -56,6 +59,12 @@ class AuthServiceTest {
 
         @Mock
         private RefreshTokenService refreshTokenService;
+
+        @Mock
+        private LoginAttemptLimiter loginAttemptLimiter;
+
+        @Mock
+        private PlatformTransactionManager transactionManager;
 
         @InjectMocks
         private AuthServiceImpl authService;
@@ -111,23 +120,24 @@ class AuthServiceTest {
                 when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("$2a$10$hashedPassword");
                 when(userMapper.toProfile(registerRequest)).thenReturn(userProfile);
                 when(userRepository.save(any(User.class))).thenReturn(user);
-                when(tokenProvider.generateToken(user.getEmail())).thenReturn("jwt-token");
-                when(tokenProvider.getExpirationTime()).thenReturn(900000L);
                 when(userMapper.toResponse(user)).thenReturn(userResponse);
 
+                when(tokenProvider.generateToken(user.getEmail())).thenReturn("jwt-token");
+                when(tokenProvider.getExpirationTime()).thenReturn(900000L);
+                when(refreshTokenService.issue(user)).thenReturn(
+                                new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(3600)));
+
                 // When
-                AuthResponse response = authService.register(registerRequest);
+                AuthSessionResult response = authService.register(registerRequest);
 
                 // Then
                 assertThat(response).isNotNull();
-                assertThat(response.getToken()).isEqualTo("jwt-token");
-                assertThat(response.getExpiresIn()).isEqualTo(900000L);
-                assertThat(response.getUser()).isEqualTo(userResponse);
+                assertThat(response.response().getUser()).isEqualTo(userResponse);
 
                 verify(userRepository).existsByEmail(registerRequest.getEmail());
                 verify(passwordEncoder).encode(registerRequest.getPassword());
                 verify(userRepository).save(any(User.class));
-                verify(tokenProvider).generateToken(user.getEmail());
+                verify(refreshTokenService).issue(user);
         }
 
         @Test
@@ -161,7 +171,7 @@ class AuthServiceTest {
                         new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(604800)));
 
                 // When
-                AuthSessionResult session = authService.login(loginRequest);
+                AuthSessionResult session = authService.login(loginRequest, "127.0.0.1");
                 AuthResponse response = session.response();
 
                 // Then
@@ -184,7 +194,7 @@ class AuthServiceTest {
                                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
                 // When & Then
-                assertThatThrownBy(() -> authService.login(loginRequest))
+                assertThatThrownBy(() -> authService.login(loginRequest, "127.0.0.1"))
                                 .isInstanceOf(BadCredentialsException.class)
                                 .hasMessageContaining("Invalid credentials");
 
@@ -203,7 +213,7 @@ class AuthServiceTest {
                 when(userRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.empty());
 
                 // When & Then
-                assertThatThrownBy(() -> authService.login(loginRequest))
+                assertThatThrownBy(() -> authService.login(loginRequest, "127.0.0.1"))
                                 .isInstanceOf(RuntimeException.class)
                                 .hasMessageContaining("User not found after authentication");
 
@@ -222,6 +232,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("Refresh issues a new access token for the rotated user")
         void shouldRefreshSessionForRotatedUser() {
+                when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
                 Instant expiresAt = Instant.now().plusSeconds(3600);
                 when(refreshTokenService.rotate("old-refresh")).thenReturn(new RefreshTokenService.Rotation(
                                 user, new RefreshTokenService.IssuedToken("new-refresh", expiresAt), false));
@@ -242,12 +253,15 @@ class AuthServiceTest {
         @Test
         @DisplayName("Invalid or replayed refresh token cannot issue an access token")
         void shouldRejectInvalidRefreshRotation() {
+                when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
                 when(refreshTokenService.rotate("replayed-refresh"))
                                 .thenReturn(new RefreshTokenService.Rotation(null, null, true));
 
                 assertThatThrownBy(() -> authService.refresh("replayed-refresh"))
                                 .isInstanceOf(InvalidRefreshTokenException.class);
 
+                verify(transactionManager).commit(any());
+                verify(transactionManager, never()).rollback(any());
                 verifyNoInteractions(tokenProvider);
                 verify(userRepository, never()).findWithProfileById(any());
         }
@@ -255,6 +269,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("Refresh cannot issue an access token if the user no longer exists")
         void shouldRejectRefreshForMissingUser() {
+                when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
                 when(refreshTokenService.rotate("old-refresh")).thenReturn(new RefreshTokenService.Rotation(
                                 user, new RefreshTokenService.IssuedToken("new-refresh", Instant.now().plusSeconds(3600)),
                                 false));
@@ -263,6 +278,7 @@ class AuthServiceTest {
                 assertThatThrownBy(() -> authService.refresh("old-refresh"))
                                 .isInstanceOf(InvalidRefreshTokenException.class);
 
+                verify(transactionManager).rollback(any());
                 verifyNoInteractions(tokenProvider);
         }
 }

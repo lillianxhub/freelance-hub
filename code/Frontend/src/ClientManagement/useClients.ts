@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { ClientsContext } from './ClientsContext'
+import { ClientsContext } from './clients-context'
 import type { ClientsContextValue } from './ClientsContext'
 
 export function useClients(): ClientsContextValue {

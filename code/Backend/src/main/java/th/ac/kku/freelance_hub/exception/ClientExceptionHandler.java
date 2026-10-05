@@ -15,12 +15,18 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 
 import th.ac.kku.freelance_hub.common.response.ApiResult;
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 import th.ac.kku.freelance_hub.controller.ClientController;
 
 /** Keeps Client errors in the same response envelope as Client successes. */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = ClientController.class)
 public class ClientExceptionHandler {
+    private final ApiErrorFactory errorFactory;
+
+    public ClientExceptionHandler(ApiErrorFactory errorFactory) {
+        this.errorFactory = errorFactory;
+    }
 
     @ExceptionHandler(ClientNotFoundException.class)
     public ResponseEntity<ApiResult<Void>> clientNotFound(ClientNotFoundException ex) {
@@ -32,7 +38,7 @@ public class ClientExceptionHandler {
         Map<String, String> details = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(fieldError ->
                 details.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage()));
-        return error(HttpStatus.BAD_REQUEST, "ข้อมูลที่ส่งมาไม่ถูกต้อง", "VALIDATION_ERROR", details);
+        return errorFactory.validation(details);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -68,6 +74,6 @@ public class ClientExceptionHandler {
     }
 
     private ResponseEntity<ApiResult<Void>> error(HttpStatus status, String message, String code, Object details) {
-        return ResponseEntity.status(status).body(ApiResult.error(message, code, details));
+        return errorFactory.response(status, message, code, details);
     }
 }

@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -60,7 +62,7 @@ class TimerControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new TimerController(timeEntryService, userService)
                 )
-                .setControllerAdvice(new TimeTrackingExceptionHandler())
+                .setControllerAdvice(new TimeTrackingExceptionHandler(new ApiErrorFactory()))
                 .setValidator(validator)
                 .build();
     }
@@ -224,8 +226,8 @@ class TimerControllerTest {
     }
 
     private void stubCurrentUser() {
-        when(userService.getCurrentUserEntity()).thenReturn(
-                User.builder().id(OWNER_ID).build()
+        when(userService.currentUserId()).thenReturn(
+                OWNER_ID
         );
     }
 

@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -55,7 +57,7 @@ class TaskDetailControllerTest {
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new TaskDetailController(taskService, userService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new GlobalExceptionHandler(new ApiErrorFactory()))
                 .setValidator(validator)
                 .build();
     }
@@ -168,8 +170,8 @@ class TaskDetailControllerTest {
     }
 
     private void stubCurrentUser() {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
     }
 
     @Test

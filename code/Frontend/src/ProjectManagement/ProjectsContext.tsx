@@ -1,9 +1,9 @@
-import { createContext, useCallback, type PropsWithChildren } from 'react'
+import { useCallback, type PropsWithChildren } from 'react'
+import { ProjectsContext } from './projects-context'
 import { useAsyncData } from '../shared/useAsyncData'
 import { getClientById, listClientOptions } from '../services/client'
 import { deleteProject as deleteProjectRequest, getProjectById, saveProject as saveProjectRequest } from '../services/project'
 import { deleteTask as deleteTaskRequest, listTasks, saveTask as saveTaskRequest } from '../services/task'
-import { listTimeEntries } from '../services/timeTracking'
 import type { AsyncDataState } from '../types/asyncData'
 import type { Client } from '../types/client'
 import type { Project, ProjectInput } from '../types/project'
@@ -17,7 +17,6 @@ export interface ProjectsContextValue extends AsyncDataState<ProjectsData> {
   saveTask: (input: TaskInput) => Promise<Task>
   deleteTask: (projectId: string, taskId: string) => Promise<void>
 }
-export const ProjectsContext = createContext<ProjectsContextValue | null>(null)
 const emptyData: ProjectsData = { clients: [], projects: [], tasks: [], time_entries: [] }
 
 interface ProjectsProviderProps extends PropsWithChildren { projectId?: string }
