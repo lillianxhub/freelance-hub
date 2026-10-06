@@ -1,6 +1,6 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart'
-import { formatChartDuration } from '../dashboardChart'
+import { formatChartDuration } from '../../lib/dashboard'
 import type { ProductivityChartProps } from '../../types/analytics'
 
 function formatAxisDuration(totalSeconds: number): string {

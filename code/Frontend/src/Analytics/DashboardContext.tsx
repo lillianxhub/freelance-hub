@@ -1,8 +1,8 @@
 import { useCallback, type PropsWithChildren } from 'react'
 import { DashboardContext } from './dashboard-context'
-import { api } from '../api/apiClient'
-import { useAsyncData } from '../shared/useAsyncData'
-import type { DashboardActivity, DashboardChartPeriod, DashboardData, DashboardResponse } from '../types/dashboard'
+import { useAsyncData } from '../hooks/useAsyncData'
+import { getDashboard, getDashboardActivity } from '../services/dashboard'
+import type { DashboardChartPeriod, DashboardData } from '../types/dashboard'
 
 const emptyDashboard: DashboardData = {
   generatedAt: '',
@@ -23,24 +23,9 @@ const emptyDashboard: DashboardData = {
   recentTimeEntries: [],
 }
 
-async function loadDashboard(): Promise<DashboardData> {
-  const response = await api.get<DashboardResponse>('/dashboard')
-  return {
-    ...response.data,
-    recentTimeEntries: Array.isArray(response.data.recentTimeEntries)
-      ? response.data.recentTimeEntries
-      : [],
-  }
-}
-
-async function loadDashboardActivity(period: DashboardChartPeriod): Promise<DashboardActivity> {
-  const response = await api.get<DashboardActivity>(`/dashboard/activity?period=${period}`)
-  return response.data
-}
-
 export function DashboardProvider({ children }: PropsWithChildren) {
-  const load = useCallback(() => loadDashboard(), [])
+  const load = useCallback(() => getDashboard(), [])
   const state = useAsyncData(load, emptyDashboard)
-  const loadActivity = useCallback((period: DashboardChartPeriod) => loadDashboardActivity(period), [])
+  const loadActivity = useCallback((period: DashboardChartPeriod) => getDashboardActivity(period), [])
   return <DashboardContext.Provider value={{ ...state, loadActivity }}>{children}</DashboardContext.Provider>
 }

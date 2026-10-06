@@ -11,7 +11,7 @@ import type { TimeEntry } from '../../types/timeTracking'
 import type { RangePreset, TimeEntryTableProps, TimeFilters } from '../../types/timeTrackerPage'
 import type { TablePaginationProps } from '../../components/ui/table'
 import TimeEntryTable from './TimeEntryTable'
-import { formatDurationSeconds } from '../../lib/formatters'
+import { formatDurationSeconds } from '../../utils/duration'
 import { FiClock } from 'react-icons/fi'
 
 interface TimeEntrySummary {

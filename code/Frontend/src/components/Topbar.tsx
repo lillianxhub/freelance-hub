@@ -1,7 +1,7 @@
 import { Button } from './ui/button'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../Authentication/useAuthentication'
-import { initials } from '../lib/formatters'
+import { initials } from '../utils/string'
 import type { TopbarProps } from '../types/ui'
 import { FiChevronDown, FiMenu } from 'react-icons/fi'
 import TopbarTimer from '../TimeTracking/components/TopbarTimer'

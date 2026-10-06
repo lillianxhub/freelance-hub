@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { activityChartPoints, formatChartDuration, weeklyChartPoints } from './dashboardChart'
+import { activityChartPoints, formatChartDuration, weeklyChartPoints } from './dashboard'
 
 test('dashboard chart keeps exact seconds, including durations shorter than one hour', () => {
   assert.equal(weeklyChartPoints([{ date: '2026-10-01', trackedSeconds: 5400 }])[0].totalSeconds, 5400)
