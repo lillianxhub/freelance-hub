@@ -11,8 +11,11 @@ export interface ApiMeta {
 
 export interface ApiResponseError {
   code?: string
-  message?: string
   details?: unknown
+  status?: number
+  timestamp?: string
+  fieldErrors?: Record<string, string> | null
+  traceId?: string
 }
 
 export interface ApiResponse<T> {

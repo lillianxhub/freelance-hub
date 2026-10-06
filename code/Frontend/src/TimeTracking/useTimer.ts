@@ -15,24 +15,25 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
   const [description, setDescription] = useState('')
   const [billable, setBillable] = useState(true)
   const [tick, setTick] = useState(() => Date.now())
-  const [selectedTasksFromApi, setSelectedTasksFromApi] = useState<Task[]>([])
-  const [optionsError, setOptionsError] = useState('')
+  const [taskOptions, setTaskOptions] = useState<{ projectId: string; tasks: Task[]; error: string } | null>(null)
   const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const activeProjects = useMemo(() => data.projects.filter((project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED'), [data.projects])
   const fallbackRunningEntry = data.time_entries.find((entry) => !entry.ended_at) || null
   const currentEntry = currentTimer?.running ? currentTimer.timeEntry : null
   const runningEntry = useMemo(() => currentEntry
     ? {
-        id: currentEntry.id,
-        project_id: currentEntry.project.id,
-        task_id: currentEntry.task?.id ?? null,
-        description: currentEntry.description ?? '',
-        started_at: currentEntry.startedAt,
-      }
+      id: currentEntry.id,
+      project_id: currentEntry.project.id,
+      task_id: currentEntry.task?.id ?? null,
+      description: currentEntry.description ?? '',
+      started_at: currentEntry.startedAt,
+    }
     : fallbackRunningEntry, [currentEntry, fallbackRunningEntry])
   const timerProjectId = selectedProject || activeProjects[0]?.id || ''
+  const hasRunningEntry = Boolean(runningEntry)
   const selectedProjectData = data.projects.find((project) => project.id === timerProjectId)
-  const selectedTasks = selectedTasksFromApi.filter((task) => task.status !== 'DONE')
+  const selectedTasks = (taskOptions?.projectId === timerProjectId ? taskOptions.tasks : []).filter((task) => task.status !== 'DONE')
+  const optionsError = taskOptions?.projectId === timerProjectId ? taskOptions.error : ''
   const runningProject = runningEntry && (data.projects.find((project) => project.id === runningEntry.project_id) || (currentEntry ? { id: currentEntry.project.id, name: currentEntry.project.name, color: '#4F6BFF' } : null))
   const runningTask = runningEntry && (data.tasks.find((task) => task.id === runningEntry.task_id) || (currentEntry?.task ? { id: currentEntry.task.id, name: currentEntry.task.title } : null))
   const elapsedSeconds = runningEntry ? Math.max(0, Math.floor((tick - Date.parse(runningEntry.started_at)) / 1000)) : 0
@@ -44,28 +45,22 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
   }, [runningEntry])
 
   useEffect(() => {
-    if (!loadTaskOptions || !timerProjectId || runningEntry) {
-      setSelectedTasksFromApi([])
-      return undefined
-    }
+    if (!loadTaskOptions || !timerProjectId || hasRunningEntry) return undefined
 
     let active = true
-    setOptionsError('')
-    setSelectedTasksFromApi([])
-    listTimerTasks(timerProjectId)
+    const projectId = timerProjectId
+    listTimerTasks(projectId)
       .then((tasks) => {
-        if (active) setSelectedTasksFromApi(tasks)
+        if (active) setTaskOptions({ projectId, tasks, error: '' })
       })
       .catch(() => {
-        if (!active) return
-        setSelectedTasksFromApi([])
-        setOptionsError('ไม่สามารถโหลดงานของโปรเจกต์ได้')
+        if (active) setTaskOptions({ projectId, tasks: [], error: 'ไม่สามารถโหลดงานของโปรเจกต์ได้' })
       })
 
     return () => {
       active = false
     }
-  }, [loadTaskOptions, Boolean(runningEntry), timerProjectId])
+  }, [loadTaskOptions, hasRunningEntry, timerProjectId])
 
   async function startTimer() {
     if (!selectedProjectData || runningEntry) return

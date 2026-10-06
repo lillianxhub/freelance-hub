@@ -66,7 +66,9 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public ClientResponse getById(UUID ownerId, UUID clientId) {
-        return clientMapper.toResponse(findOwnedClient(ownerId, clientId));
+        ClientResponse response = clientMapper.toResponse(findOwnedClient(ownerId, clientId));
+        addTrackedSeconds(ownerId, List.of(response));
+        return response;
     }
 
     @Override
@@ -141,7 +143,10 @@ public class ClientServiceImpl implements ClientService {
         PageRequest pageable = PageRequest.of(
                 filter.getPage() - 1, pageSize,
                 Sort.by(filter.getDirection(), filter.getSortBy()));
-        return clientRepository.findAll(specification, pageable).map(clientMapper::toResponse);
+        Page<ClientResponse> responses = clientRepository.findAll(specification, pageable)
+                .map(clientMapper::toResponse);
+        addTrackedSeconds(ownerId, responses.getContent());
+        return responses;
     }
 
     @Override
@@ -202,6 +207,20 @@ public class ClientServiceImpl implements ClientService {
         return clientRepository.findByIdAndOwnerId(clientId, ownerId)
                 .filter(client -> client.getDeletedAt() == null)
                 .orElseThrow(() -> new ClientNotFoundException(clientId));
+    }
+
+    private void addTrackedSeconds(UUID ownerId, List<ClientResponse> responses) {
+        if (responses.isEmpty()) {
+            return;
+        }
+        List<UUID> clientIds = responses.stream().map(ClientResponse::getId).toList();
+        Map<UUID, Long> totals = new HashMap<>();
+        for (ClientRepository.ClientTrackedSeconds total :
+                clientRepository.sumTrackedSecondsByClientIds(ownerId, clientIds)) {
+            totals.put(total.getClientId(), total.getTotalSeconds());
+        }
+        responses.forEach(response ->
+                response.setTotalTrackedSeconds(totals.getOrDefault(response.getId(), 0L)));
     }
 
     private static String escapeLike(String value) {

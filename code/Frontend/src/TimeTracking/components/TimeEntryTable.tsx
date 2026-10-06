@@ -1,7 +1,8 @@
 import { Button } from '../../components/ui/button'
 import { TablePagination } from '../../components/ui/table'
 import type { TimeEntryTableProps } from '../../types/timeTrackerPage'
-import { formatDate, formatDurationSeconds } from '../../lib/formatters'
+import { formatDate } from '../../utils/date'
+import { formatDurationSeconds } from '../../utils/duration'
 import { FiEdit3, FiTrash2 } from 'react-icons/fi'
 
 const datePartsFormatter = new Intl.DateTimeFormat('en-US', {

@@ -1,5 +1,6 @@
-import { createContext, useCallback, type PropsWithChildren } from 'react'
-import { useAsyncData } from '../shared/useAsyncData'
+import { useCallback, type PropsWithChildren } from 'react'
+import { TimeEntriesContext } from './time-entries-context'
+import { useAsyncData } from '../hooks/useAsyncData'
 import { listClientOptions } from '../services/client'
 import { listTimerProjects } from '../services/timerOptions'
 import { deleteTimeEntry as deleteTimeEntryRequest, listTimeEntries, saveTimeEntry as saveTimeEntryRequest } from '../services/timeTracking'
@@ -15,7 +16,6 @@ export interface TimeEntriesContextValue extends AsyncDataState<TimeEntriesData>
   deleteTimeEntry: (id: string) => Promise<void>
 }
 const emptyData: TimeEntriesData = { clients: [], projects: [], tasks: [], time_entries: [] }
-export const TimeEntriesContext = createContext<TimeEntriesContextValue | null>(null)
 
 export function TimeEntriesProvider({ children }: PropsWithChildren) {
   const load = useCallback(async () => {

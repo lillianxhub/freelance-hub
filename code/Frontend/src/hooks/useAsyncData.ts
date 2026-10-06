@@ -9,6 +9,9 @@ export function useAsyncData<T>(load: () => Promise<T>, initialData: T, key?: un
   const [status, setStatus] = useState<{ key: unknown; loading: boolean; error: string }>({ key, loading: true, error: '' })
   const requestId = useRef(0)
   const loadedKeys = useRef(new Set<unknown>())
+  const invalidateRequest = useCallback(() => {
+    requestId.current++
+  }, [])
 
   const refresh = useCallback(async () => {
     const currentRequest = ++requestId.current
@@ -27,8 +30,8 @@ export function useAsyncData<T>(load: () => Promise<T>, initialData: T, key?: un
 
   useEffect(() => {
     void refresh()
-    return () => { requestId.current++ }
-  }, [refresh])
+    return invalidateRequest
+  }, [invalidateRequest, refresh])
 
   return {
     data: Object.is(storedData.key, key) ? storedData.value : initialData,

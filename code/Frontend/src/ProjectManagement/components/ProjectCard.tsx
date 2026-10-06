@@ -5,7 +5,8 @@ import { Progress } from '../../components/ui/progress'
 import { Link } from 'react-router-dom'
 import { FiEdit2 } from 'react-icons/fi'
 import type { Project, ProjectStatus } from '../../types/project'
-import { formatDate, formatTimer } from '../../lib/formatters'
+import { formatDate } from '../../utils/date'
+import { formatTimer } from '../../utils/duration'
 
 const projectStatusLabels: Record<ProjectStatus, string> = {
   PLANNED: 'วางแผน',

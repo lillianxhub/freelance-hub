@@ -3,7 +3,7 @@ import type { TaskListProps } from '../../types/projectDetailPage'
 import StatusBadge from '../../components/StatusBadge'
 import { FiArrowDown, FiArrowUp, FiCheck, FiEdit2, FiTrash2 } from 'react-icons/fi'
 
-export default function TaskList({ tasks, onToggle, onMove, onEdit, onDelete }: TaskListProps) {
+export default function TaskList({ tasks, changingTaskId, onToggle, onMove, onEdit, onDelete }: TaskListProps) {
   return (
     <div className="flex flex-col">
       {tasks.map((task, index) => (
@@ -16,13 +16,15 @@ export default function TaskList({ tasks, onToggle, onMove, onEdit, onDelete }: 
             size="icon-sm"
             className={`rounded-md border ${task.status === 'DONE' ? 'border-green bg-green text-white hover:bg-green hover:text-white' : 'border-border bg-background text-text-secondary'}`}
             type="button"
-            aria-label="สลับสถานะงาน"
+            aria-label={task.status === 'DONE' ? 'เปิดงานอีกครั้ง' : 'ทำเครื่องหมายว่าเสร็จแล้ว'}
+            aria-pressed={task.status === 'DONE'}
+            disabled={changingTaskId === task.id}
             onClick={() => onToggle(task)}
           >
             {task.status === 'DONE' && <FiCheck aria-hidden="true" />}
           </Button>
           <div className="min-w-0">
-            <strong className="block truncate text-sm font-semibold text-text-primary">{task.name}</strong>
+            <strong className="block truncate text-sm font-semibold text-text-primary" title={task.name}>{task.name}</strong>
             <small className="mt-1 block truncate text-xs text-text-secondary">{task.description || 'ไม่มีรายละเอียด'}</small>
           </div>
           <StatusBadge className="shrink-0" status={task.status} />

@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Progress } from '../../../components/ui/progress'
 import { Button } from '../../../components/ui/button'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -20,7 +20,13 @@ import type { Task } from "../../../types/task";
 import type { TaskDraft } from "../../../types/projectDetailPage";
 import TaskForm from "../../components/TaskForm";
 import TaskList from "../../components/TaskList";
-import { formatDate, formatDuration } from "../../../lib/formatters";
+import { formatDate } from "../../../utils/date";
+import { formatDurationSeconds } from "../../../utils/duration";
+import { changeTaskStatus } from "../../../services/task";
+import { listTimeEntriesPage, summarizeTimeEntries } from "../../../services/timeTracking";
+import type { TimeEntry } from "../../../types/timeTracking";
+import { getErrorMessage } from "../../../api/apiError";
+import { toast } from "sonner";
 
 const emptyTask: TaskDraft = {
   name: "",
@@ -43,7 +49,36 @@ function ProjectDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [formError, setFormError] = useState("");
+  const [changingTaskId, setChangingTaskId] = useState<string | null>(null);
   const [timeEntryPage, setTimeEntryPage] = useState(1);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [timeEntryTotal, setTimeEntryTotal] = useState(0);
+  const [trackedSeconds, setTrackedSeconds] = useState<number | null>(null);
+  const [timeEntryError, setTimeEntryError] = useState("");
+  const timeEntryPageSize = 5;
+
+  useEffect(() => {
+    if (!projectId) return undefined;
+    let active = true;
+    listTimeEntriesPage({ projectId, page: timeEntryPage, limit: timeEntryPageSize }).then((pageResult) => {
+      if (!active) return;
+      setTimeEntries(pageResult.entries);
+      setTimeEntryTotal(pageResult.meta.total);
+      setTimeEntryError("");
+    }).catch((reason: unknown) => {
+      if (active) setTimeEntryError(getErrorMessage(reason, "โหลดรายการเวลาไม่สำเร็จ"));
+    });
+    return () => { active = false };
+  }, [projectId, timeEntryPage]);
+
+  useEffect(() => {
+    if (!projectId) return undefined;
+    let active = true;
+    summarizeTimeEntries({ projectId })
+      .then((summary) => { if (active) setTrackedSeconds(summary.totalSeconds) })
+      .catch(() => { if (active) setTrackedSeconds(null) });
+    return () => { active = false };
+  }, [projectId]);
 
   if (loading) return <LoadingState label="LoadingProjects..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -55,26 +90,13 @@ function ProjectDetailPage() {
   const tasks = data.tasks
     .filter((task) => task.project_id === project.id)
     .sort((a, b) => a.sort_order - b.sort_order);
-  const entries = data.time_entries
-    .filter((entry) => entry.project_id === project.id)
-    .sort((first, second) => Date.parse(second.started_at) - Date.parse(first.started_at));
-  const timeEntryPageSize = 5;
-  const timeEntryTotalPages = Math.max(1, Math.ceil(entries.length / timeEntryPageSize));
+  const timeEntryTotalPages = Math.max(1, Math.ceil(timeEntryTotal / timeEntryPageSize));
   const safeTimeEntryPage = Math.min(timeEntryPage, timeEntryTotalPages);
-  const visibleTimeEntries = entries.slice(
-    (safeTimeEntryPage - 1) * timeEntryPageSize,
-    safeTimeEntryPage * timeEntryPageSize,
-  );
-  const totalMinutes = entries.reduce(
-    (sum, entry) => sum + (entry.duration_minutes || 0),
-    0,
-  );
+  const visibleTimeEntries = timeEntries;
   const completed = project.task_progress?.completed_tasks ?? tasks.filter((task) => task.status === "DONE").length;
   const totalTaskCount = project.task_progress?.total_tasks ?? tasks.length;
   const taskProgress = project.task_progress?.percent ?? (totalTaskCount ? Math.round((completed / totalTaskCount) * 100) : 0);
-  const trackedMinutes = project.time_tracking?.tracked_seconds === undefined
-    ? totalMinutes
-    : project.time_tracking.tracked_seconds / 60;
+  const totalTrackedSeconds = trackedSeconds ?? project.time_tracking?.tracked_seconds ?? 0;
   const usagePercent = project.time_tracking?.usage_percent ?? null;
 
   const openTask = (task: Task | TaskDraft = emptyTask) => {
@@ -109,13 +131,26 @@ function ProjectDetailPage() {
     ]);
   };
 
+  const toggleTask = async (task: Task) => {
+    setChangingTaskId(task.id);
+    try {
+      await changeTaskStatus(task.id, task.status === 'DONE' ? 'TODO' : 'DONE');
+      await refresh();
+    } catch (reason: unknown) {
+      toast.error(getErrorMessage(reason, 'เปลี่ยนสถานะงานไม่สำเร็จ'));
+    } finally {
+      setChangingTaskId(null);
+    }
+  };
+
   return (
-    <div className="mx-auto w-full max-w-screen-2xl">
+    <div className="mx-auto w-full min-w-0 max-w-screen-2xl">
       <Link className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary no-underline hover:text-primary-dark" to="/projects">
         <FiArrowLeft aria-hidden="true" /> กลับไปหน้าโปรเจกต์
       </Link>
       <PageHeader
         title={project.name}
+        truncateTitle
         description={`${project.client_name || client?.company_name || client?.name || "ไม่พบลูกค้า"} · ${project.description || "ไม่มีรายละเอียด"}`}
         actions={
           <>
@@ -134,7 +169,7 @@ function ProjectDetailPage() {
         <SummaryCard
           label="เวลาที่ใช้"
           icon={<FiClock aria-hidden="true" />}
-          value={formatDuration(trackedMinutes)}
+          value={formatDurationSeconds(totalTrackedSeconds)}
           foot={<>จาก {project.budget_hours || "—"} ชั่วโมง</>}
           accent="blue"
           compact
@@ -158,7 +193,7 @@ function ProjectDetailPage() {
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(18rem,0.8fr)]">
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4">
           <Card asChild><section className="!p-0">
             <CardHeader className="flex flex-col items-start justify-between gap-4 p-6 pb-2 sm:flex-row">
               <div className="grid gap-1">
@@ -176,12 +211,8 @@ function ProjectDetailPage() {
             <CardContent className="p-6 pt-0">
               <TaskList
                 tasks={tasks}
-                onToggle={(task) =>
-                  persistTask({
-                    ...task,
-                    status: task.status === "DONE" ? "TODO" : "DONE",
-                  })
-                }
+                changingTaskId={changingTaskId}
+                onToggle={(task) => { void toggleTask(task) }}
                 onMove={moveTask}
                 onEdit={openTask}
                 onDelete={(task) => deleteTask(project.id, task.id)}
@@ -201,7 +232,7 @@ function ProjectDetailPage() {
                 pagination={{
                   page: safeTimeEntryPage,
                   totalPages: timeEntryTotalPages,
-                  total: entries.length,
+                  total: timeEntryTotal,
                   onPageChange: setTimeEntryPage,
                 }}
               >
@@ -217,11 +248,11 @@ function ProjectDetailPage() {
                   {visibleTimeEntries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="min-w-0 whitespace-normal">
-                        <div className="grid gap-1">
-                          <strong className="truncate text-sm font-semibold text-text-primary">
+                        <div className="grid min-w-0 gap-1">
+                          <strong className="truncate text-sm font-semibold text-text-primary" title={tasks.find((task) => task.id === entry.task_id)?.name || entry.task_name || "ไม่ระบุงาน"}>
                             {tasks.find((task) => task.id === entry.task_id)?.name || entry.task_name || "ไม่ระบุงาน"}
                           </strong>
-                          <span className="truncate text-xs text-text-secondary">
+                          <span className="truncate text-xs text-text-secondary" title={entry.description?.trim() || "ไม่มีรายละเอียด"}>
                             {entry.description?.trim() || "ไม่มีรายละเอียด"}
                           </span>
                         </div>
@@ -233,15 +264,15 @@ function ProjectDetailPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums text-text-primary">
-                        {formatDuration(entry.duration_minutes)}
+                        {formatDurationSeconds(entry.duration_seconds)}
                       </TableCell>
                       {/* <td>{entry.billable ? "ใช่" : "ไม่"}</td>
                       <td>{formatMoney(calculateTimeValue(entry), entry.currency)}</td> */}
                     </TableRow>
                   ))}
-                  {entries.length === 0 && (
+                  {visibleTimeEntries.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3}>ยังไม่มีรายการเวลา</TableCell>
+                      <TableCell colSpan={3}>{timeEntryError || "ยังไม่มีรายการเวลา"}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -259,7 +290,7 @@ function ProjectDetailPage() {
             <div className="grid gap-4">
             <div className="grid gap-1.5 [&>span:first-child]:text-xs [&>span:first-child]:text-text-secondary [&>strong]:text-sm [&>strong]:leading-relaxed">
               <span>ลูกค้า</span>
-              <Link className="font-semibold text-primary hover:underline" to={`/clients/${client?.id}`}>
+              <Link className="min-w-0 truncate font-semibold text-primary hover:underline" title={client?.company_name || client?.name || project.client_name || "ไม่พบลูกค้า"} to={`/clients/${client?.id}`}>
                 <strong>{client?.company_name || client?.name || project.client_name || "ไม่พบลูกค้า"}</strong>
               </Link>
             </div>
@@ -281,7 +312,7 @@ function ProjectDetailPage() {
             </div>
             <div className="grid gap-2 [&>span:first-child]:text-xs [&>span:first-child]:text-text-secondary">
               <span>เวลาที่บันทึก</span>
-              <strong>{formatDuration(trackedMinutes)}</strong>
+              <strong>{formatDurationSeconds(totalTrackedSeconds)}</strong>
             </div>
             <div className="grid gap-2 [&>span:first-child]:text-xs [&>span:first-child]:text-text-secondary">
               <span>ความคืบหน้างาน</span>

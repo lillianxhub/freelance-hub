@@ -147,7 +147,6 @@ jobs:
         name: Build Docker image
         needs:
             - changes
-            - changes
             - test
             - migration
         if: needs.changes.outputs.backend == 'true'

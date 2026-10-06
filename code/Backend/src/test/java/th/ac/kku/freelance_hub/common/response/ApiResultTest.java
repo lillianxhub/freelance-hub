@@ -5,9 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 class ApiResultTest {
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Test
     void successWithoutPaginationKeepsAllEnvelopeFields() throws Exception {
@@ -36,13 +37,15 @@ class ApiResultTest {
     @Test
     void errorUsesTheSameEnvelope() throws Exception {
         JsonNode json = objectMapper.readTree(objectMapper.writeValueAsString(
-                ApiResult.error("ไม่ถูกต้อง", "VALIDATION_ERROR", java.util.Map.of("email", "จำเป็น"))));
+                new ApiErrorFactory().body(HttpStatus.BAD_REQUEST, "ไม่ถูกต้อง", "INVALID_ARGUMENT", "จำเป็น")));
 
         assertThat(json.path("success").asBoolean()).isFalse();
         assertThat(json.path("message").asText()).isEqualTo("ไม่ถูกต้อง");
         assertThat(json.path("data").isNull()).isTrue();
         assertThat(json.path("meta").isNull()).isTrue();
-        assertThat(json.path("error").path("code").asText()).isEqualTo("VALIDATION_ERROR");
-        assertThat(json.path("error").path("details").path("email").asText()).isEqualTo("จำเป็น");
+        assertThat(json.path("error").path("code").asText()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(json.path("error").path("details").asText()).isEqualTo("จำเป็น");
+        assertThat(json.path("error").path("status").asInt()).isEqualTo(400);
+        assertThat(java.time.Instant.parse(json.path("error").path("timestamp").asText())).isNotNull();
     }
 }

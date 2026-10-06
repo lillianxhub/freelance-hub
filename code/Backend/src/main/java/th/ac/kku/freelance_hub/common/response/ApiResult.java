@@ -31,13 +31,13 @@ public class ApiResult<T> {
                 .build();
     }
 
-    public static ApiResult<Void> error(String message, String code, Object details) {
+    public static ApiResult<Void> error(String message, ApiError error) {
         return ApiResult.<Void>builder()
                 .success(false)
                 .message(message)
                 .data(null)
                 .meta(null)
-                .error(new ApiError(code, details))
+                .error(error)
                 .build();
     }
 }

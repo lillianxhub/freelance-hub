@@ -10,7 +10,7 @@ import {
 } from '../../../components/ui/pagination'
 import { Button } from '../../../components/ui/button'
 import { NativeSelect } from '../../../components/ui/native-select'
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { FiPlus, FiUsers } from 'react-icons/fi'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog'
 import PageHeader from '../../../components/PageHeader'
@@ -73,46 +73,47 @@ function toClientForm(value: Partial<ClientInput> = {}): ClientInput {
 
 function ClientsPage() {
   const { data, loading, error, refresh, saveClient, archiveClient } = useClients()
+  const [searchInput, setSearchInput] = useState('')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<ClientFilter>('ACTIVE')
   const [sortBy, setSortBy] = useState<ClientSort>('UPDATED_DESC')
   const [page, setPage] = useState(1)
-  const [pageClients, setPageClients] = useState<Client[]>([])
-  const [pageMeta, setPageMeta] = useState<ApiMeta>({ page: 1, limit: clientPageLimit, total: 0, totalPages: 1 })
-  const [pageLoading, setPageLoading] = useState(true)
-  const [pageError, setPageError] = useState('')
-  const latestRequest = useRef(0)
+  const [pageRequestKey, setPageRequestKey] = useState(0)
+  const [pageResult, setPageResult] = useState<{ key: string; clients: Client[]; meta: ApiMeta; error: string } | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
-  const loadClientPage = useCallback(async (requestedPage: number) => {
-    const requestId = ++latestRequest.current
-    setPageLoading(true)
-    setPageError('')
-    try {
-      const result = await listClientsPage(requestedPage, clientPageLimit, {
-        search: query,
-        status: status === 'ALL' ? undefined : status,
-        ...clientSortParams[sortBy],
-      })
-      if (requestId !== latestRequest.current) return
-      if (requestedPage > Math.max(1, result.meta.totalPages)) {
+  const pageQueryKey = JSON.stringify([page, query, status, sortBy, pageRequestKey])
+  const currentPageResult = pageResult?.key === pageQueryKey ? pageResult : null
+  const pageClients = currentPageResult?.clients ?? []
+  const pageMeta = currentPageResult?.meta ?? { page: 1, limit: clientPageLimit, total: 0, totalPages: 1 }
+  const pageLoading = !currentPageResult
+  const pageError = currentPageResult?.error ?? ''
+
+  useEffect(() => {
+    let active = true
+    listClientsPage(page, clientPageLimit, {
+      search: query,
+      status: status === 'ALL' ? undefined : status,
+      ...clientSortParams[sortBy],
+    }).then((result) => {
+      if (!active) return
+      if (page > Math.max(1, result.meta.totalPages)) {
         setPage(Math.max(1, result.meta.totalPages))
         return
       }
-      setPageClients(result.clients)
-      setPageMeta(result.meta)
-    } catch (loadError) {
-      if (requestId === latestRequest.current) setPageError(getErrorMessage(loadError, 'ไม่สามารถโหลดรายชื่อลูกค้าได้'))
-    } finally {
-      if (requestId === latestRequest.current) setPageLoading(false)
-    }
-  }, [query, sortBy, status])
-
-  useEffect(() => {
-    void loadClientPage(page)
-  }, [loadClientPage, page])
+      setPageResult({ key: pageQueryKey, clients: result.clients, meta: result.meta, error: '' })
+    }).catch((loadError: unknown) => {
+      if (active) setPageResult({
+        key: pageQueryKey,
+        clients: [],
+        meta: { page, limit: clientPageLimit, total: 0, totalPages: 1 },
+        error: getErrorMessage(loadError, 'ไม่สามารถโหลดรายชื่อลูกค้าได้'),
+      })
+    })
+    return () => { active = false }
+  }, [page, pageQueryKey, query, sortBy, status])
 
   const totalPages = Math.max(1, pageMeta.totalPages)
   const safePage = Math.min(pageMeta.page, totalPages)
@@ -158,7 +159,7 @@ function ClientsPage() {
     try {
       await saveClient({ ...form, name: (form.name ?? '').trim(), company_name: (form.company_name ?? '').trim() })
       setModalOpen(false)
-      if (page === 1) await loadClientPage(1)
+      if (page === 1) setPageRequestKey((current) => current + 1)
       else setPage(1)
     } catch (err) {
       setFormError(getErrorMessage(err, 'บันทึกลูกค้าไม่สำเร็จ'))
@@ -171,11 +172,11 @@ function ClientsPage() {
     if (client.status === 'ARCHIVED') await saveClient({ ...client, status: 'ACTIVE' })
     else await archiveClient(client.id)
     await refresh()
-    await loadClientPage(safePage)
+    setPageRequestKey((current) => current + 1)
   }
 
   if (loading || pageLoading) return <LoadingState label="กำลังโหลดรายชื่อลูกค้า..." />
-  if (error || pageError) return <ErrorState message={error || pageError} onRetry={() => { void refresh(); void loadClientPage(page) }} />
+  if (error || pageError) return <ErrorState message={error || pageError} onRetry={() => { void refresh(); setPageRequestKey((current) => current + 1) }} />
 
   return (
     <div className="mx-auto w-full max-w-auto">
@@ -188,8 +189,12 @@ function ClientsPage() {
       />
 
       <FilterBar
-        value={query}
-        onChange={(event) => { setQuery(event.target.value); setPage(1) }}
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
+        onSearch={() => {
+          setQuery(searchInput.trim())
+          setPage(1)
+        }}
         placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร"
         searchAriaLabel="ค้นหาClients"
       >
@@ -207,10 +212,8 @@ function ClientsPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleClients.map((client) => {
             const clientProjects = data.projects.filter((project) => project.client_id === client.id)
-            const projectIds = new Set(clientProjects.map((project) => project.id))
-            const minutes = data.time_entries.filter((entry) => projectIds.has(entry.project_id)).reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
-            const revenue = data.time_entries.filter((entry) => projectIds.has(entry.project_id) && entry.billable).reduce((sum, entry) => sum + ((entry.duration_minutes || 0) / 60) * (entry.rate_snapshot || 0), 0)
-            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={revenue} onEdit={openEdit} onArchive={archiveClients} />
+            const minutes = clientProjects.reduce((sum, project) => sum + (project.time_tracking?.tracked_seconds ?? 0) / 60, 0)
+            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={0} onEdit={openEdit} onArchive={archiveClients} />
           })}
         </div>
       )}

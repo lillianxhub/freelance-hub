@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.service.DashboardService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.dashboard.DashboardActivityPeriod;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardActivityResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
@@ -23,11 +23,11 @@ import th.ac.kku.freelance_hub.dto.response.dashboard.DashboardResponse;
 public class DashboardController {
 
     private final DashboardService dashboardService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     @GetMapping
     public ResponseEntity<ApiResult<DashboardResponse>> getDashboard() {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         DashboardResponse data = dashboardService.getDashboard(ownerId);
 
         return ResponseEntity.ok(
@@ -39,7 +39,7 @@ public class DashboardController {
     public ResponseEntity<ApiResult<DashboardActivityResponse>> getActivity(
             @RequestParam(defaultValue = "WEEK") DashboardActivityPeriod period
     ) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         DashboardActivityResponse data = dashboardService.getActivity(ownerId, period);
         return ResponseEntity.ok(ApiResult.success("ดึงข้อมูลกราฟ Dashboard สำเร็จ", data));
     }

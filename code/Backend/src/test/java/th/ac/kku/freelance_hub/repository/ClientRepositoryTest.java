@@ -21,9 +21,14 @@ import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
+import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
+import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
+import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 import th.ac.kku.freelance_hub.dto.response.client.ClientTimeTotalResponse;
 @SpringBootTest
 @ActiveProfiles("test")
@@ -47,6 +52,9 @@ class ClientRepositoryTest {
 
     @Autowired
     private ClientService clientService;
+
+    @Autowired
+    private TimeEntryService timeEntryService;
 
     @Autowired
     private EntityManager entityManager;
@@ -148,6 +156,68 @@ class ClientRepositoryTest {
                 .isEmpty();
         assertThatThrownBy(() -> clientService.summarizeTimeByClient(owner.getId(), to, from))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void trackedSecondsMatchTimeEntrySummaryIncludingArchivedHistoryAndExactSeconds() {
+        User owner = saveUser("tracked-owner@example.com");
+        User otherOwner = saveUser("tracked-other@example.com");
+        Client alpha = clientRepository.saveAndFlush(new Client(owner, "Alpha"));
+        Client beta = clientRepository.saveAndFlush(new Client(owner, "Beta"));
+        Client empty = clientRepository.saveAndFlush(new Client(owner, "Empty"));
+        Client foreign = clientRepository.saveAndFlush(new Client(otherOwner, "Foreign"));
+        Project first = saveActiveProject(owner, alpha, "First");
+        Project archived = saveActiveProject(owner, alpha, "Archived");
+        Project deleted = saveActiveProject(owner, alpha, "Deleted");
+        Project betaProject = saveActiveProject(owner, beta, "Beta Project");
+        Project foreignProject = saveActiveProject(otherOwner, foreign, "Foreign Project");
+        Instant start = Instant.parse("2026-09-01T00:00:00Z");
+        saveManualEntry(owner, first, start, 59);
+        saveManualEntry(owner, archived, start.plusSeconds(100), 61);
+        saveManualEntry(owner, deleted, start.plusSeconds(200), 600);
+        Task deletedTask = taskRepository.saveAndFlush(new Task(first, "Deleted Task", 0));
+        timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, first, deletedTask, null, start.plusSeconds(300), 120));
+        TimeEntry completedTimer = TimeEntry.startTimer(owner, first, null, null, start.plusSeconds(500));
+        completedTimer.stop(start.plusSeconds(590));
+        timeEntryRepository.saveAndFlush(completedTimer);
+        TimeEntry locked = saveManualEntry(owner, first, start.plusSeconds(700), 180);
+        locked.lock(start.plusSeconds(900));
+        TimeEntry deletedEntry = saveManualEntry(owner, first, start.plusSeconds(1000), 1800);
+        deletedEntry.softDelete(start.plusSeconds(3000));
+        timeEntryRepository.saveAndFlush(TimeEntry.startTimer(owner, first, null, null, start.plusSeconds(4000)));
+        saveManualEntry(owner, betaProject, start.plusSeconds(5000), 75);
+        saveManualEntry(otherOwner, foreignProject, start, 7200);
+        archived.changeStatus(ProjectStatus.ARCHIVED);
+        deleted.archive();
+        deletedTask.softDelete();
+        entityManager.flush();
+        entityManager.clear();
+
+        var totals = clientRepository.sumTrackedSecondsByClientIds(
+                owner.getId(), List.of(alpha.getId(), beta.getId(), empty.getId(), foreign.getId()));
+        assertThat(totals).extracting(ClientRepository.ClientTrackedSeconds::getClientId)
+                .containsExactlyInAnyOrder(alpha.getId(), beta.getId());
+        var page = clientService.list(owner.getId(), ClientFilterRequest.builder().limit(2).build());
+        assertThat(page.getContent()).extracting(ClientResponse::getTotalTrackedSeconds)
+                .containsExactly(1110L, 75L);
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        for (Client client : List.of(alpha, beta, empty)) {
+            long summary = timeEntryService.summarize(owner.getId(),
+                    TimeEntryFilterRequest.builder().clientId(client.getId()).build()).getTotalSeconds();
+            assertThat(clientService.getById(owner.getId(), client.getId()).getTotalTrackedSeconds())
+                    .isEqualTo(summary);
+        }
+        assertThat(clientService.list(owner.getId(), ClientFilterRequest.builder().page(2).limit(2).build())
+                .getContent()).extracting(ClientResponse::getTotalTrackedSeconds).containsExactly(0L);
+        assertThat(clientService.getById(owner.getId(), alpha.getId(), true, true).getTotalTrackedSeconds())
+                .isEqualTo(1110L);
+        clientService.changeStatus(owner.getId(), alpha.getId(), false);
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(clientService.list(owner.getId(), ClientFilterRequest.builder()
+                .status(ClientStatus.ARCHIVED).build()).getContent())
+                .extracting(ClientResponse::getTotalTrackedSeconds).containsExactly(1110L);
     }
 
     @Test

@@ -1,6 +1,6 @@
 import type { ProductivityPoint } from '../types/analytics'
 import type { DashboardDailyWork } from '../types/dashboard'
-import { splitDurationSeconds } from '../lib/formatters'
+import { splitDurationSeconds } from '../utils/duration'
 
 export function formatChartDuration(totalSeconds: number): string {
   const { hours, minutes, seconds } = splitDurationSeconds(totalSeconds)
@@ -20,7 +20,10 @@ export function weeklyChartPoints(days: DashboardDailyWork[]): ProductivityPoint
   }))
 }
 
-export function activityChartPoints(period: 'MONTH' | 'YEAR', points: DashboardDailyWork[]): ProductivityPoint[] {
+export function activityChartPoints(
+  period: 'MONTH' | 'YEAR',
+  points: DashboardDailyWork[],
+): ProductivityPoint[] {
   return points.map((item) => ({
     key: item.date,
     day: period === 'YEAR'

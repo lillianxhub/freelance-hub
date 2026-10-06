@@ -54,15 +54,17 @@ class LocalSeedServiceTest {
         List<TimeEntry> entries = timeEntryRepository.findAll().stream().filter(t -> t.getOwner().getId().equals(user.getId())).toList();
 
         assertThat(clients).hasSize(12);
+        assertThat(clients).allSatisfy(client -> assertThat(client.getName()).endsWith(" [seed]"));
         assertThat(clients).filteredOn(c -> c.getStatus().name().equals("ACTIVE")).hasSize(11);
         assertThat(projects).hasSize(12);
+        assertThat(projects).allSatisfy(project -> assertThat(project.getName()).endsWith(" [seed]"));
         assertThat(projects).extracting(Project::getStatus).containsExactlyInAnyOrder(
                 ProjectStatus.ACTIVE, ProjectStatus.ACTIVE, ProjectStatus.ACTIVE, ProjectStatus.ACTIVE,
                 ProjectStatus.ACTIVE, ProjectStatus.ACTIVE, ProjectStatus.ACTIVE, ProjectStatus.PLANNED,
                 ProjectStatus.PLANNED, ProjectStatus.ON_HOLD, ProjectStatus.COMPLETED, ProjectStatus.ARCHIVED);
         assertThat(tasks).hasSize(16);
         assertThat(tasks).extracting(Task::getStatus).contains(TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED);
-        assertThat(tasks).filteredOn(t -> t.getProject().getName().endsWith("Website Redesign")).hasSize(12);
+        assertThat(tasks).filteredOn(t -> t.getProject().getName().equals("Website Redesign [seed]")).hasSize(12);
         assertThat(entries).hasSize(15);
         assertThat(entries).filteredOn(entry -> entry.getEntryType() == EntryType.MANUAL).hasSize(12);
         assertThat(entries).filteredOn(entry -> entry.getEntryType() == EntryType.TIMER && !entry.isRunning()).hasSize(2);
@@ -72,10 +74,10 @@ class LocalSeedServiceTest {
         assertThat(user.getProfile().getAddress()).isNotBlank();
         assertThat(user.getProfile().getBio()).isNotBlank();
 
-        Client edited = clients.stream().filter(c -> c.getName().endsWith("Mekong Creative Studio")).findFirst().orElseThrow();
+        Client edited = clients.stream().filter(c -> c.getName().equals("Mekong Creative Studio [seed]")).findFirst().orElseThrow();
         UUID editedId = edited.getId();
         edited.updateDetails("My renamed client", "User edited company", "me@example.test", "0801234567", "A user address", "0000000000000", "User notes");
-        Client softDeleted = clients.stream().filter(c -> c.getName().endsWith("Northstar Learning")).findFirst().orElseThrow();
+        Client softDeleted = clients.stream().filter(c -> c.getName().equals("Northstar Learning [seed]")).findFirst().orElseThrow();
         UUID softDeletedId = softDeleted.getId();
         softDeleted.softDelete();
         UUID deletedEntryId = jdbcTemplate.queryForObject(

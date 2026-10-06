@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, PropsWithChildren } from 'react'
+import type { ChangeEventHandler, KeyboardEventHandler, PropsWithChildren } from 'react'
 import { FiSearch } from 'react-icons/fi'
 import { cn } from 'cn'
 import { Input } from './ui/input'
@@ -7,6 +7,7 @@ interface FilterBarProps extends PropsWithChildren {
   placeholder?: string
   value: string
   onChange: ChangeEventHandler<HTMLInputElement>
+  onSearch?: () => void
   searchAriaLabel?: string
   className?: string
 }
@@ -15,10 +16,17 @@ export default function FilterBar({
   placeholder = 'ค้นหา...',
   value,
   onChange,
+  onSearch,
   searchAriaLabel = 'ค้นหา',
   className,
   children,
 }: FilterBarProps) {
+  const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    onSearch?.()
+  }
+
   return (
     <div className={cn('mb-[18px] flex items-center gap-2.5 rounded-[13px] border border-border bg-surface p-[11px] max-[680px]:flex-wrap', className)}>
       <div className="relative min-w-[220px] flex-1 max-[680px]:basis-full">
@@ -26,6 +34,7 @@ export default function FilterBar({
         <Input
           value={value}
           onChange={onChange}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           aria-label={searchAriaLabel}
           className="h-[38px] border-0 bg-transparent pl-[34px] shadow-none focus-visible:border-0 focus-visible:ring-0"

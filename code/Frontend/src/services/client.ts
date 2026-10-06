@@ -16,10 +16,15 @@ function toClient(source: ApiClient): Client {
 }
 
 function clientPayload(input: ClientInput) {
-  const location = [input.sub_district ? `ตำบล/แขวง ${input.sub_district}` : '', input.district ? `อำเภอ/เขต ${input.district}` : '', input.province ? `จังหวัด ${input.province}` : '', input.postal_code ? `รหัสไปรษณีย์ ${input.postal_code}` : ''].filter(Boolean).join(' ')
   return {
     name: input.name, companyName: input.company_name || undefined, email: input.email || undefined, phone: input.phone || undefined,
-    address: [input.address, location].filter(Boolean).join(', ') || undefined, taxId: input.tax_id || undefined, notes: input.notes || undefined
+    address: input.address || undefined,
+    subdistrict: input.sub_district || undefined,
+    district: input.district || undefined,
+    province: input.province || undefined,
+    postalCode: input.postal_code || undefined,
+    taxId: input.tax_id || undefined,
+    notes: input.notes || undefined,
   }
 }
 
@@ -48,10 +53,11 @@ export async function listClientsPage(page = 1, limit = 10, filters: ClientListF
 }
 
 export async function listClientOptions(): Promise<Client[]> {
-  const firstPage = await listClientsPage(1, 100)
+  const filters: ClientListFilters = { status: 'ACTIVE', sortBy: 'name', direction: 'ASC' }
+  const firstPage = await listClientsPage(1, 100, filters)
   const remainingPages = await Promise.all(
     Array.from({ length: Math.max(0, firstPage.meta.totalPages - 1) }, (_, index) =>
-      listClientsPage(index + 2, 100),
+      listClientsPage(index + 2, 100, filters),
     ),
   )
   return [...firstPage.clients, ...remainingPages.flatMap((page) => page.clients)]

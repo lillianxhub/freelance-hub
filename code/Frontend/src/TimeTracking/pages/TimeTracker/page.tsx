@@ -1,5 +1,6 @@
 import { Button } from '../../../components/ui/button'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -22,7 +23,7 @@ import TimeEntryForm from "../../components/TimeEntryForm";
 import {
   createEmptyManualForm,
   localDateValue,
-} from "../../../lib/timeTracking";
+} from "../../timeTracking.utils";
 import { listTimerTasks } from "../../../services/timerOptions";
 import {
   createManualTimeEntry,
@@ -47,9 +48,8 @@ function TimeTrackerPage() {
   const { data, loading, error, refresh, saveTimeEntry, deleteTimeEntry } = workspace;
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState(createEmptyManualForm());
-  const [manualTasks, setManualTasks] = useState<Task[]>([]);
-  const [manualTasksLoaded, setManualTasksLoaded] = useState(false);
-  const [filterTasks, setFilterTasks] = useState<Task[]>([]);
+  const [manualTaskResult, setManualTaskResult] = useState<{ projectId: string; tasks: Task[] } | null>(null);
+  const [filterTaskResult, setFilterTaskResult] = useState<{ projectId: string; tasks: Task[] } | null>(null);
   const [formError, setFormError] = useState("");
   const [filters, setFilters] = useState<TimeFilters>({
     client: "ALL",
@@ -61,12 +61,19 @@ function TimeTrackerPage() {
   });
   const [timeEntryPage, setTimeEntryPage] = useState(1);
   const [rangePreset, setRangePreset] = useState<RangePreset | ''>('ALL');
-  const [serverEntries, setServerEntries] = useState<TimeEntry[]>([]);
-  const [timeEntryMeta, setTimeEntryMeta] = useState({ page: 1, limit: TIME_ENTRY_PAGE_LIMIT, total: 0, totalPages: 0 });
-  const [timeEntriesLoading, setTimeEntriesLoading] = useState(false);
-  const [timeEntriesError, setTimeEntriesError] = useState('');
+  const [timeEntryResult, setTimeEntryResult] = useState<{
+    key: string;
+    entries: TimeEntry[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+    summary: { entryCount: number; totalSeconds: number };
+    error: string;
+  } | null>(null);
   const [timeEntriesRequestKey, setTimeEntriesRequestKey] = useState(0);
-  const [timeEntrySummary, setTimeEntrySummary] = useState({ entryCount: 0, totalSeconds: 0 });
+
+  const reloadTimeEntryData = useCallback(() => {
+    setTimeEntriesRequestKey((current) => current + 1);
+  }, []);
+
 
   const activeProjects = useMemo(
     () =>
@@ -74,28 +81,32 @@ function TimeTrackerPage() {
         (project) =>
           project.status !== "COMPLETED" && project.status !== "ARCHIVED",
       ),
-    [data?.projects],
+    [data.projects],
   );
+  const manualTasksLoaded = Boolean(manualOpen && manualForm.project_id && manualTaskResult?.projectId === manualForm.project_id);
+  const manualTasks = manualTasksLoaded ? manualTaskResult?.tasks ?? [] : [];
+  const filterTasks = filters.project === 'ALL' || filterTaskResult?.projectId !== filters.project ? [] : filterTaskResult.tasks;
+  const timeEntryQueryKey = JSON.stringify([filters, timeEntryPage, timeEntriesRequestKey, loading]);
+  const currentTimeEntryResult = timeEntryResult?.key === timeEntryQueryKey ? timeEntryResult : null;
+  const serverEntries = currentTimeEntryResult?.entries ?? [];
+  const timeEntryMeta = currentTimeEntryResult?.meta ?? { page: 1, limit: TIME_ENTRY_PAGE_LIMIT, total: 0, totalPages: 0 };
+  const timeEntrySummary = currentTimeEntryResult?.summary ?? { entryCount: 0, totalSeconds: 0 };
+  const timeEntriesLoading = !loading && !currentTimeEntryResult;
+  const timeEntriesError = currentTimeEntryResult?.error ?? '';
 
   useEffect(() => {
-    if (!manualOpen || !manualForm.project_id) {
-      setManualTasks([]);
-      setManualTasksLoaded(false);
-      return undefined;
-    }
+    if (!manualOpen || !manualForm.project_id) return undefined;
 
     let active = true;
-    setManualTasksLoaded(false);
-    listTimerTasks(manualForm.project_id)
+    const projectId = manualForm.project_id;
+    listTimerTasks(projectId)
       .then((tasks) => {
         if (!active) return;
-        setManualTasks(tasks);
-        setManualTasksLoaded(true);
+        setManualTaskResult({ projectId, tasks });
       })
       .catch(() => {
         if (!active) return;
-        setManualTasks([]);
-        setManualTasksLoaded(true);
+        setManualTaskResult({ projectId, tasks: [] });
       });
 
     return () => {
@@ -104,18 +115,16 @@ function TimeTrackerPage() {
   }, [manualForm.project_id, manualOpen]);
 
   useEffect(() => {
-    if (filters.project === "ALL") {
-      setFilterTasks([]);
-      return undefined;
-    }
+    if (filters.project === "ALL") return undefined;
 
     let active = true;
-    listTimerTasks(filters.project)
+    const projectId = filters.project;
+    listTimerTasks(projectId)
       .then((tasks) => {
-        if (active) setFilterTasks(tasks);
+        if (active) setFilterTaskResult({ projectId, tasks });
       })
       .catch(() => {
-        if (active) setFilterTasks([]);
+        if (active) setFilterTaskResult({ projectId, tasks: [] });
       });
 
     return () => {
@@ -124,14 +133,8 @@ function TimeTrackerPage() {
   }, [filters.project]);
 
   useEffect(() => {
-    setTimeEntryPage(1);
-  }, [filters]);
-
-  useEffect(() => {
     if (loading) return undefined;
     let active = true;
-    setTimeEntriesLoading(true);
-    setTimeEntriesError('');
 
     const query = {
       clientId: filters.client === 'ALL' ? undefined : filters.client,
@@ -146,22 +149,23 @@ function TimeTrackerPage() {
     Promise.all([listTimeEntriesPage(query), summarizeTimeEntries(query)])
       .then(([pageResult, summary]) => {
         if (!active) return;
-        setServerEntries(pageResult.entries);
-        setTimeEntryMeta(pageResult.meta);
-        setTimeEntrySummary(summary);
+        setTimeEntryResult({ key: timeEntryQueryKey, entries: pageResult.entries, meta: pageResult.meta, summary, error: '' });
       })
       .catch((reason: unknown) => {
         if (!active) return;
-        setTimeEntriesError(getErrorMessage(reason, 'ไม่สามารถโหลดรายการเวลาได้'));
-      })
-      .finally(() => {
-        if (active) setTimeEntriesLoading(false);
+        setTimeEntryResult({
+          key: timeEntryQueryKey,
+          entries: [],
+          meta: { page: timeEntryPage, limit: TIME_ENTRY_PAGE_LIMIT, total: 0, totalPages: 0 },
+          summary: { entryCount: 0, totalSeconds: 0 },
+          error: getErrorMessage(reason, 'ไม่สามารถโหลดรายการเวลาได้'),
+        });
       });
 
     return () => {
       active = false;
     };
-  }, [data.time_entries, filters.client, filters.from, filters.project, filters.task, filters.to, loading, timeEntriesRequestKey, timeEntryPage]);
+  }, [data.time_entries, filters, loading, timeEntriesRequestKey, timeEntryPage, timeEntryQueryKey]);
 
   if (loading) return <LoadingState label="LoadingTime entries..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -169,6 +173,10 @@ function TimeTrackerPage() {
   const entries = serverEntries.filter((entry) => entry.ended_at);
   const safeTimeEntryPage = Math.min(timeEntryPage, Math.max(1, timeEntryMeta.totalPages));
   const visibleTimeEntries = entries;
+  const updateFilters = (update: (current: TimeFilters) => TimeFilters) => {
+    setFilters(update);
+    setTimeEntryPage(1);
+  };
 
   const openManual = (entry: TimeEntry | null = null) => {
     if (entry) {
@@ -257,13 +265,14 @@ function TimeTrackerPage() {
         });
       }
       await refresh();
+      reloadTimeEntryData();
       setManualOpen(false);
     } catch (saveError: unknown) {
       setFormError(getErrorMessage(saveError, "บันทึกรายการเวลาไม่สำเร็จ"));
     }
   };
 
-  const duplicateEntry = (entry: TimeEntry) => {
+  const duplicateEntry = async (entry: TimeEntry) => {
     const duplicate = {
       ...entry,
       id: undefined,
@@ -272,12 +281,13 @@ function TimeTrackerPage() {
         Date.now() + (entry.duration_minutes ?? 0) * 60000,
       ).toISOString(),
     };
-    void saveTimeEntry(duplicate);
+    await saveTimeEntry(duplicate);
+    reloadTimeEntryData();
   };
 
   const applyRange = (preset: RangePreset) => {
     if (preset === "ALL") {
-      setFilters((current) => ({ ...current, from: "", to: "" }));
+      updateFilters((current) => ({ ...current, from: "", to: "" }));
       return;
     }
     const now = new Date();
@@ -287,13 +297,13 @@ function TimeTrackerPage() {
         .slice(0, 10);
     if (preset === "DAY") {
       const today = local(now);
-      setFilters((current) => ({ ...current, from: today, to: today }));
+      updateFilters((current) => ({ ...current, from: today, to: today }));
       return;
     }
     const weekday = now.getDay() || 7;
     const start = new Date(now);
     start.setDate(start.getDate() - weekday + 1);
-    setFilters((current) => ({
+    updateFilters((current) => ({
       ...current,
       from: local(start),
       to: local(now),
@@ -316,7 +326,7 @@ function TimeTrackerPage() {
       />
 
       <div className="mb-4 grid grid-cols-[minmax(0,1fr)] items-stretch gap-4">
-        <TimerPanel workspace={workspace} />
+        <TimerPanel workspace={workspace} onProjectOptionsOpen={() => { void refresh() }} onTimerChanged={reloadTimeEntryData} />
       </div>
 
       <TimeEntriesCard
@@ -340,7 +350,7 @@ function TimeTrackerPage() {
           applyRange(preset)
         }}
         onClientChange={(value) =>
-          setFilters((current) => ({
+          updateFilters((current) => ({
             ...current,
             client: value,
             project: 'ALL',
@@ -348,18 +358,21 @@ function TimeTrackerPage() {
           }))
         }
         onProjectChange={(value) =>
-          setFilters((current) => ({ ...current, project: value, task: 'ALL' }))
+          updateFilters((current) => ({ ...current, project: value, task: 'ALL' }))
         }
         onTaskChange={(value) =>
-          setFilters((current) => ({ ...current, task: value }))
+          updateFilters((current) => ({ ...current, task: value }))
         }
         onDateChange={(field, value) => {
           setRangePreset('')
-          setFilters((current) => ({ ...current, [field]: value }))
+          updateFilters((current) => ({ ...current, [field]: value }))
         }}
-        onRetry={() => setTimeEntriesRequestKey((current) => current + 1)}
+        onRetry={reloadTimeEntryData}
         onEdit={openManual}
-        onDelete={(entry) => deleteTimeEntry(entry.id)}
+        onDelete={async (entry) => {
+          await deleteTimeEntry(entry.id);
+          reloadTimeEntryData();
+        }}
         onDuplicate={duplicateEntry}
       />
 
