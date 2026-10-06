@@ -1,6 +1,6 @@
 import { useCallback, type PropsWithChildren } from 'react'
 import { ClientsContext } from './clients-context'
-import { useAsyncData } from '../shared/useAsyncData'
+import { useAsyncData } from '../hooks/useAsyncData'
 import { listClients, saveClient as saveClientRequest, updateClientStatus } from '../services/client'
 import { listAllProjects } from '../services/project'
 import type { AsyncDataState } from '../types/asyncData'
