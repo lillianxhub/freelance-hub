@@ -11,8 +11,6 @@ export interface AnalyticsData {
   time_entries: TimeEntry[]
 }
 export type TimeSummaryEntry = Pick<TimeEntry, 'duration_minutes' | 'billable' | 'rate_snapshot'>
-export type CsvValue = string | number | boolean | null | undefined
-
 export interface ProductivityPoint {
   key: string
   day: string

@@ -14,10 +14,10 @@ import { NativeSelect } from '../../../components/ui/native-select'
 import { Progress } from '../../../components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '../../../components/ui/toggle-group'
-import { downloadCsv } from '../../analytics.utils'
-import { formatDurationSeconds } from '../../../lib/formatters'
+import { downloadCsv } from '../../../utils/csv'
+import { formatDurationSeconds } from '../../../utils/duration'
 import { getReportDistribution, getReportProjects, getReportSummary } from '../../../services/report'
-import { useAsyncData } from '../../../shared/useAsyncData'
+import { useAsyncData } from '../../../hooks/useAsyncData'
 import type { ReportDistributionData, ReportProjectPage, ReportSummaryData, ReportSummaryQuery } from '../../../types/analytics'
 
 const emptyReport: ReportSummaryData = {

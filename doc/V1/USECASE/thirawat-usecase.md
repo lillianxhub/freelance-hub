@@ -7,9 +7,22 @@
 
 **Actor หลัก:** Freelancer ที่เข้าสู่ระบบด้วย JWT  
 **Precondition ร่วม:** Request มี bearer token ที่ถูกต้อง; Client ที่อ่าน/แก้ไข/เปลี่ยนสถานะ/soft delete ต้องเป็นของผู้ใช้คนนั้นและยังไม่ถูก soft delete
-**กติกาการเป็นเจ้าของ:** ระบบดึง owner ID จาก authenticated user ไม่รับ owner ID จาก payload และการหา Client รายตัวใช้ทั้ง `clientId` และ `ownerId`
+**กติกาการเป็นเจ้าของ:** Controller เรียก `CurrentUserProvider.currentUserId()` เพื่ออ่าน UUID ของ authenticated user ไม่รับ owner ID จาก payload และการหา Client รายตัวใช้ทั้ง `clientId` และ `ownerId`; UserService เป็น production implementation ของ provider
 
-**Response ร่วม:** ทุก endpoint ที่มี body คืน `ApiResult` (`success`, `message`, `data`, `meta`, `error`); กรณี error ของ Client ใช้ `success=false` และ `error.code/details` ส่วน `DELETE` สำเร็จเป็น `204 No Content` ไม่มี body
+**Response ร่วม:** ทุก endpoint ที่มี body คืน `ApiResult` (`success`, `message`, `data`, `meta`, `error`); success มี `error=null`; error มี `success=false`, `data=null`, `meta=null` และ message อยู่ชั้นบน ส่วน `DELETE` สำเร็จเป็น `204 No Content` ไม่มี body
+
+Error contract หลัง PR #107:
+
+| ฟิลด์ | ความหมาย |
+|---|---|
+| `error.code` | รหัสที่ใช้แยกประเภท เช่น VALIDATION_ERROR, CLIENT_NOT_FOUND, AUTHENTICATION_REQUIRED |
+| `error.details` | รายละเอียด error ที่ไม่ใช่ validation เช่น `{ "field": "id" }` เมื่อ UUID ไม่ถูกต้อง; อาจเป็น null |
+| `error.status` | HTTP status เช่น 400, 401 หรือ 404 |
+| `error.timestamp` | เวลาที่สร้าง error ในรูป ISO 8601 UTC ลงท้าย Z |
+| `error.fieldErrors` | รายฟิลด์ของ validation เช่น `{ "name": "Client name is required" }`; ไม่ใส่ซ้ำใน details และเป็น null สำหรับ error ที่ไม่ใช่ validation |
+| `error.traceId` | UUID ที่ server สร้าง ตรงกับ response header X-Request-ID |
+
+`ClientExceptionHandler` ใช้ `ApiErrorFactory` สร้าง error ส่วน 401 สร้างผ่าน `JwtAuthenticationEntryPoint` ด้วย factory เดียวกัน; `RequestTraceFilter` สร้าง trace ID ก่อน security/MVC ไม่ใช้ trace ID ที่ผู้เรียกส่งมาเป็นตัวระบุของระบบ
 
 ## Use Case Summary
 
@@ -21,7 +34,7 @@
 | UC-CLI-04 | Replace Client | `PUT /api/clients/{id}` | แทนที่ข้อมูลที่แก้ไขได้; optional fields ที่ไม่ส่งมาถูกล้าง (`200`) | FR-CLI-01, FR-CLI-02 |
 | UC-CLI-05 | Update Client | `PATCH /api/clients/{id}` | แก้เฉพาะฟิลด์ที่ส่งมาและคืนข้อมูลล่าสุด (`200`) | FR-CLI-01, FR-CLI-02 |
 | UC-CLI-06 | Change Client Status | `PATCH /api/clients/{id}/status` | กำหนด `isActive`; เมื่อเป็น false ให้ Project ที่ยังไม่ถูก soft delete เป็น `ARCHIVED` ด้วย โดยไม่ตั้ง `deletedAt` (`200`) | FR-CLI-01, FR-CLI-05 |
-| UC-CLI-07 | Soft-delete Client | `DELETE /api/clients/{id}` | ตั้ง `deletedAt` โดยไม่เปลี่ยน `isActive` และไม่ลบ record (`204`) | FR-CLI-01, FR-CLI-05 |
+| UC-CLI-07 | Soft-delete Client | `DELETE /api/clients/{id}` | ตั้ง `deletedAt` โดยไม่เปลี่ยน `isActive` และไม่ลบ record (`204`) | งานเสริมของทีม; ข้อจำกัด FR-CLI-05 ดูด้านล่าง |
 
 ## UC-CLI-01 Create Client
 
@@ -115,20 +128,25 @@ method นี้ยังใช้กติกาเดิมสำหรับ 
 **Alternative flow:** ไม่พบ/ไม่ใช่เจ้าของ/ถูก soft delete แล้ว = `404`; ไม่มี JWT = `401`
 **Postcondition:** Client และประวัติที่ผูกอยู่ยังคงอยู่; Client ที่ soft delete แล้วไม่ปรากฏใน Client API แม้ไม่กรอง status แต่ค่า `isActive` เดิมไม่เปลี่ยน
 
+**Requirement boundary:** FR-CLI-05 ระบุว่าห้ามลบลูกค้าที่มีธุรกรรม แต่ implementation ของ soft delete ยังไม่ตรวจว่ามีธุรกรรมหรือไม่ จึงยังไม่อ้างว่า DELETE พิสูจน์ requirement นี้ครบ; ถ้าทีมกำหนดว่าห้ามเฉพาะ hard delete และอนุญาต soft delete ต้องบันทึกการตีความนั้นใน requirement หลักก่อน
+
 ## Sequence: Soft-delete Client
 
 ```mermaid
 sequenceDiagram
     actor F as Freelancer
+    participant M as Spring MVC
     participant C as ClientController
-    participant U as UserService
+    participant U as CurrentUserProvider
     participant S as ClientServiceImpl
     participant R as ClientRepository
     participant E as Client
     participant H as ClientExceptionHandler
+    participant A as ApiErrorFactory
 
-    F->>C: DELETE /api/clients/{id} + Bearer JWT
-    C->>U: getCurrentUserEntity().getId()
+    F->>M: DELETE /api/clients/{id} + Bearer JWT
+    M->>C: softDelete(clientId)
+    C->>U: currentUserId()
     U-->>C: ownerId
     C->>S: softDelete(ownerId, clientId)
     S->>R: findByIdAndOwnerId(clientId, ownerId)
@@ -137,18 +155,34 @@ sequenceDiagram
         S->>E: softDelete() ตั้ง deletedAt
         S->>R: save(Client)
         S-->>C: void
-        C-->>F: 204 No Content
+        C-->>M: 204 No Content
+        M-->>F: 204 No Content
     else ไม่พบหรือเป็นของผู้อื่น
-        S-->>H: ClientNotFoundException
-        H-->>F: 404 ApiResult(error.code=CLIENT_NOT_FOUND)
+        S-->>C: ClientNotFoundException
+        C-->>M: ClientNotFoundException
+        M->>H: handle ClientNotFoundException
+        H->>A: response(404, message, CLIENT_NOT_FOUND, null)
+        A-->>H: ApiResult พร้อม error metadata
+        H-->>M: 404 ApiResult
+        M-->>F: 404 ApiResult + X-Request-ID
     end
 ```
+
+Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; RequestTraceFilter สร้าง X-Request-ID/MDC ก่อนหน้าและล้าง MDC เมื่อคำขอจบ ส่วน 401 ถูกตอบจาก security ก่อนถึง controller
+
+## หลักฐานข้าม feature: BR-06
+
+การเริ่ม timer ใหม่เมื่อ Client ถูก archive ถูกป้องกันใน `TimeEntry.startTimer()` ผ่าน `requireTrackableProject()` ที่ตรวจ Client isActive; มี test `rejectsTimerForArchivedClient` ใน `domain/entity/TimeEntryTest.java` และ `service/TimerServiceImplTest.java` แล้ว เป็นหลักฐานจาก Time Tracking ไม่ใช่การอ้างว่า Client endpoint ตรวจการเริ่ม timer เอง
 
 ## ขอบเขตที่ยังไม่เสร็จ
 
 - `FR-CLI-04` ยังครบไม่หมด: Client detail แนบ Project/Task แบบเลือกได้แล้ว แต่ยังไม่คืนเวลาที่ใช้ในแต่ละ Project; method รวมเวลาปัจจุบันรวมตาม Client สำหรับ Dashboard/Analytics ไม่ใช่เวลาราย Project ในหน้า Client detail
+- `FR-CLI-05` ยังต้องยืนยันการตีความ soft delete กับทีม หรือเพิ่มกติกาตรวจธุรกรรมตาม requirement; เอกสารนี้ไม่เปลี่ยนพฤติกรรม DELETE ให้เอง
 - การค้นหาใน `FR-CLI-03` เป็น prefix search จากชื่อ บริษัท อีเมล เบอร์โทร และที่อยู่ตามรูปแบบที่บันทึกไว้; ยังไม่ใช่การค้นหาแบบตัดช่องว่างหรือเครื่องหมายในเบอร์โทร
-- การป้องกันเริ่ม timer ใหม่เมื่อ Client ถูก archive (`isActive=false`) เป็นกติกาข้าม feature ใน `BR-06` ไม่ใช่พฤติกรรมที่ Client API นี้พิสูจน์แล้ว
 - ยังไม่พบ Use Case Diagram ใน `doc/diagrams/`; ก่อนรวมเอกสารหลักควรเทียบชื่อ actor/use case กับ diagram ฉบับทีม
 
 **หลักฐานการทดสอบ:** `ClientControllerTest`, `ClientServiceImplTest`, `ClientRepositoryTest` และ `ClientIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
+
+- Controller tests mock CurrentUserProvider โดยตรงและติดตั้ง RequestTraceFilter; ตรวจ envelope ของ 400/404/409/500 รวม timestamp/traceId และไม่เปิดเผยข้อความ exception ภายในใน 500
+- Integration tests ตรวจ 401 ของทุก Client endpoint ผ่าน Spring Security, validation fieldErrors, 404, UUID/include/page ที่ไม่ถูกต้อง และ trace ID ที่ต่างกันแต่ละ request
+- OpenAPI test ตรวจ ApiError fields และ `allOf` ของ Client error response ที่กำหนด success=false; test profile ใช้ H2 และไม่เปิด Flyway จึงไม่ใช่หลักฐาน PostgreSQL migration

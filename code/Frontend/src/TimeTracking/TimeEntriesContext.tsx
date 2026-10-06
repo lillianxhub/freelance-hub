@@ -1,6 +1,6 @@
 import { useCallback, type PropsWithChildren } from 'react'
 import { TimeEntriesContext } from './time-entries-context'
-import { useAsyncData } from '../shared/useAsyncData'
+import { useAsyncData } from '../hooks/useAsyncData'
 import { listClientOptions } from '../services/client'
 import { listTimerProjects } from '../services/timerOptions'
 import { deleteTimeEntry as deleteTimeEntryRequest, listTimeEntries, saveTimeEntry as saveTimeEntryRequest } from '../services/timeTracking'

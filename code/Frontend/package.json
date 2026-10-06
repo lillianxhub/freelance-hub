@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "node --import tsx --test src/api/*.test.ts src/services/*.test.ts src/utils/*.test.ts src/Analytics/*.test.ts src/Analytics/*.test.tsx",
+    "test": "node --import tsx --test src/api/*.test.ts src/services/*.test.ts src/utils/*.test.ts src/lib/*.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
