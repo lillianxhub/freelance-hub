@@ -3,7 +3,8 @@ import { Button } from '../../components/ui/button'
 import { Link } from 'react-router-dom'
 import { FiArchive, FiEdit2, FiRotateCcw } from 'react-icons/fi'
 import type { ClientCardProps } from '../../types/clientsPage'
-import { formatDuration, initials } from '../../lib/formatters'
+import { formatDurationSeconds } from '../../utils/duration'
+import { initials } from '../../utils/string'
 import ClientStatus from './ClientStatus'
 
 const avatarColors = ['bg-primary', 'bg-brand-secondary', 'bg-green', 'bg-orange', 'bg-red'] as const
@@ -47,7 +48,7 @@ export default function ClientCard({ client, projectCount, minutes, onEdit, onAr
             โปรเจกต์
           </span>
           <span className="grid gap-0.5">
-            <strong className="text-base font-semibold text-text-primary">{formatDuration(minutes)}</strong>
+            <strong className="text-base font-semibold text-text-primary">{formatDurationSeconds(minutes * 60)}</strong>
             เวลารวม
           </span>
         </div>

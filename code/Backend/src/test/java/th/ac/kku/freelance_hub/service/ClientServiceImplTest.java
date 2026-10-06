@@ -3,10 +3,13 @@ package th.ac.kku.freelance_hub.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,9 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.User;
@@ -30,6 +36,7 @@ import th.ac.kku.freelance_hub.service.impl.ClientServiceImpl;
 import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
+import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 @ExtendWith(MockitoExtension.class)
 class ClientServiceImplTest {
 
@@ -49,6 +56,7 @@ class ClientServiceImplTest {
         owner = User.builder().id(OWNER_ID).build();
         client = new Client(owner, "Existing Client");
         clientId = UUID.randomUUID();
+        ReflectionTestUtils.setField(client, "id", clientId);
     }
 
     @Test
@@ -202,6 +210,38 @@ class ClientServiceImplTest {
         verify(clientRepository).findAll(any(Specification.class),
             org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
                 pageable.getPageNumber() == 0 && pageable.getPageSize() == 7));
+    }
+
+    @Test
+    void listLoadsTrackedSecondsOnceForOnlyTheCurrentPageAndDefaultsMissingTotalsToZero() {
+        Client second = new Client(owner, "Second Client");
+        UUID secondId = UUID.randomUUID();
+        ReflectionTestUtils.setField(second, "id", secondId);
+        when(clientRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(client, second), PageRequest.of(0, 2), 3));
+        when(clientRepository.sumTrackedSecondsByClientIds(OWNER_ID, List.of(clientId, secondId)))
+                .thenReturn(List.of(new ClientRepository.ClientTrackedSeconds() {
+                    public UUID getClientId() { return clientId; }
+                    public Long getTotalSeconds() { return 5401L; }
+                }));
+
+        var page = service.list(OWNER_ID, ClientFilterRequest.builder().limit(2).build());
+
+        assertThat(page.getContent()).extracting(ClientResponse::getTotalTrackedSeconds)
+                .containsExactly(5401L, 0L);
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getTotalPages()).isEqualTo(2);
+        verify(clientRepository).sumTrackedSecondsByClientIds(OWNER_ID, List.of(clientId, secondId));
+    }
+
+    @Test
+    void emptyClientPageDoesNotQueryTrackedSeconds() {
+        when(clientRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        assertThat(service.list(OWNER_ID, ClientFilterRequest.builder().build()).getContent()).isEmpty();
+
+        verify(clientRepository, never()).sumTrackedSecondsByClientIds(eq(OWNER_ID), anyList());
     }
 
     @Test

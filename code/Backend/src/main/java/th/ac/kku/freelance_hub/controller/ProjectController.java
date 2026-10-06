@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
-import th.ac.kku.freelance_hub.exception.ErrorResponse;
 import th.ac.kku.freelance_hub.service.ProjectService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
 import th.ac.kku.freelance_hub.dto.request.project.ProjectFilterRequest;
@@ -41,7 +41,7 @@ import th.ac.kku.freelance_hub.dto.response.project.ProjectResponse;
 public class ProjectController {
 
     private final ProjectService projectService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     //Create, Read, Update, Delete (CRUD) operations for projects
     @Operation(
@@ -53,7 +53,7 @@ public class ProjectController {
     @ApiResponse(responseCode = "400", description = "Invalid project data")
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Client not found",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PostMapping
     public ResponseEntity<ApiResult<ProjectResponse>> create(@Valid @RequestBody CreateProjectRequest request) {
         ProjectResponse response = projectService.create(currentOwnerId(), request);
@@ -155,7 +155,7 @@ public class ProjectController {
             useReturnTypeSchema = true)
     @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
     @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping("/{id}")
     public ResponseEntity<ApiResult<ProjectListItemResponse>> getById(
             @PathVariable("id") UUID id
@@ -190,7 +190,7 @@ public class ProjectController {
             responseCode = "404",
             description = "ไม่พบโปรเจกต์หรือ Client",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @PutMapping("/{id}")
@@ -234,14 +234,14 @@ public class ProjectController {
             responseCode = "404",
             description = "ไม่พบโปรเจกต์",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @ApiResponse(
             responseCode = "409",
             description = "ไม่อนุญาตให้เปลี่ยนไปยังสถานะที่ระบุ",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @PatchMapping("/{id}/status")
@@ -281,7 +281,7 @@ public class ProjectController {
             responseCode = "404",
             description = "ไม่พบโปรเจกต์",
             content = @Content(
-                    schema = @Schema(implementation = ErrorResponse.class)
+                    schema = @Schema(implementation = ApiResult.class)
             )
     )
     @DeleteMapping("/{id}")
@@ -299,6 +299,6 @@ public class ProjectController {
     }
 
     private UUID currentOwnerId() {
-        return userService.getCurrentUserEntity().getId();
+        return userService.currentUserId();
     }
 }

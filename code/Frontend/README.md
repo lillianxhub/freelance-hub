@@ -28,12 +28,45 @@ npm run build
 
 ## โครงสร้าง
 
-`src/Authentication`, `src/Workspace`, `src/ClientManagement`, `src/ProjectManagement`, `src/TimeTracking`, `src/Analytics`, `src/Billing` และ `src/Settings` แยก Context, hooks, components และ pages ตามหน้าที่ ส่วนโค้ดที่ใช้ร่วมกันอยู่ในโฟลเดอร์กลาง:
+โครงสร้างปัจจุบันของ `src/` แยก generic utility ออกจาก shared application logic:
 
-- `src/api` เก็บ fetch wrapper และ HTTP helpers
-- `src/services` เก็บการเรียก backend และการจัดการข้อมูลจาก API
-- `src/utils` เก็บฟังก์ชันคำนวณ จัดรูปแบบ และแปลงข้อมูล
-- `src/components` เก็บ UI ที่ใช้ร่วมกันหลายฟีเจอร์
-- `src/types` เก็บ type และ interface โดยแยกไฟล์ตามข้อมูลหรือหน้าที่ใช้งาน
+```text
+src/
+├── main.tsx, App.tsx          # จุดเริ่มต้นและตัวแอป
+├── routes/                    # กำหนดเส้นทางหน้าเว็บ
+├── Authentication/            # เข้าสู่ระบบ สมัครสมาชิก และการป้องกัน route
+├── Profile/                   # ข้อมูลผู้ใช้และการแก้ไขโปรไฟล์
+├── ClientManagement/          # รายการและรายละเอียดลูกค้า
+├── ProjectManagement/         # โปรเจกต์และงาน
+├── TimeTracking/              # จับเวลาและรายการเวลา
+├── Analytics/                 # Dashboard, Reports และ UI สำหรับข้อมูลวิเคราะห์
+├── api/                       # HTTP client, token refresh และข้อผิดพลาด API
+├── services/                  # ฟังก์ชันเรียก API และแปลงข้อมูลของแต่ละฟีเจอร์
+├── hooks/                     # React hooks ที่ใช้ร่วมกันทั้งแอป
+│   └── useAsyncData.ts        # จัดการสถานะโหลดข้อมูลแบบ asynchronous
+├── utils/                     # helper ทั่วไปที่ไม่รู้จัก business domain
+│   ├── csv.ts                 # สร้างและดาวน์โหลด CSV
+│   ├── date.ts                # จัดรูปแบบและตรวจช่วงวันที่
+│   ├── duration.ts            # แปลงและจัดรูปแบบระยะเวลา
+│   ├── number.ts              # จัดรูปแบบตัวเลขและสกุลเงิน
+│   └── string.ts              # helper สำหรับข้อความ
+├── lib/                       # logic กลางที่เข้าใจ domain ของ Freelance Hub
+│   ├── analytics.ts           # สรุปและจัดกลุ่มข้อมูลเวลา
+│   ├── dashboard.ts           # แปลงข้อมูล API สำหรับกราฟ Dashboard
+│   └── timeTracking.ts        # คำนวณมูลค่าจากรายการเวลา
+├── components/                # UI ร่วม รวมถึง components/ui
+├── constants/                 # ค่าคงที่สำหรับการนำทาง
+├── types/                     # ชนิดข้อมูลและ interface
+├── assets/                    # ไฟล์ภาพที่ import จากโค้ด
+└── styles/                    # CSS ของแอป (มี index.css ที่ราก src ด้วย)
+```
+
+`utils/` ใช้กับฟังก์ชันที่สามารถนำไปใช้ในโปรเจกต์อื่นได้โดยไม่ต้องรู้จัก type ของ Freelance Hub ส่วน `lib/` ใช้กับการคำนวณหรือการแปลงข้อมูลที่อ้างถึง business type ของระบบ โฟลเดอร์ฟีเจอร์เก็บ `pages/`, `components/`, Context, hook, validator และ helper ที่ใช้เฉพาะฟีเจอร์นั้น เช่น `TimeTracking/timeTracking.utils.ts`
+
+`api/` เก็บ HTTP infrastructure ระดับต่ำ ส่วน `services/` เก็บ backend operation และการ map response, `types/` เก็บ domain/API contract ที่ใช้ร่วมกัน, `components/` เก็บ UI ร่วม, `hooks/` เก็บ React hook ที่ใช้ข้ามฟีเจอร์ และ `constants/` เก็บค่าคงที่ของแอป
+
+ไฟล์ Context ชื่อพิมพ์เล็ก เช่น `profile-context.ts` เก็บ Context object ขณะที่ไฟล์ชื่อ PascalCase เช่น `ProfileContext.tsx` เก็บ Provider รูปแบบนี้ยังใช้งานชัดเจนและถูก import อยู่หลายจุด จึงคงชื่อเดิมไว้เพื่อลดการเปลี่ยนแปลงที่ไม่จำเป็น
+
+ไฟล์ทดสอบ `*.test.ts` อยู่ใกล้โค้ดที่ทดสอบ และ `npm test` รันชุดทดสอบใน `api/`, `services/`, `utils/` และ `lib/`
 
 โค้ด TypeScript ไม่ใช้ `any` เมื่อระบุชนิดข้อมูลได้ หากรับค่าที่ไม่ทราบรูปแบบ ให้ใช้ `unknown` และตรวจชนิดก่อนนำไปใช้งาน

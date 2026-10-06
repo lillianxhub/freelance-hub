@@ -1,9 +1,9 @@
-import { createContext, useCallback, type PropsWithChildren } from 'react'
-import { useAsyncData } from '../shared/useAsyncData'
+import { useCallback, type PropsWithChildren } from 'react'
+import { ProjectsContext } from './projects-context'
+import { useAsyncData } from '../hooks/useAsyncData'
 import { getClientById, listClientOptions } from '../services/client'
 import { deleteProject as deleteProjectRequest, getProjectById, saveProject as saveProjectRequest } from '../services/project'
 import { deleteTask as deleteTaskRequest, listTasks, saveTask as saveTaskRequest } from '../services/task'
-import { listTimeEntries } from '../services/timeTracking'
 import type { AsyncDataState } from '../types/asyncData'
 import type { Client } from '../types/client'
 import type { Project, ProjectInput } from '../types/project'
@@ -17,7 +17,6 @@ export interface ProjectsContextValue extends AsyncDataState<ProjectsData> {
   saveTask: (input: TaskInput) => Promise<Task>
   deleteTask: (projectId: string, taskId: string) => Promise<void>
 }
-export const ProjectsContext = createContext<ProjectsContextValue | null>(null)
 const emptyData: ProjectsData = { clients: [], projects: [], tasks: [], time_entries: [] }
 
 interface ProjectsProviderProps extends PropsWithChildren { projectId?: string }
@@ -25,10 +24,10 @@ export function ProjectsProvider({ children, projectId }: ProjectsProviderProps)
   const load = useCallback(async (): Promise<ProjectsData> => {
     if (!projectId) return { ...emptyData, clients: await listClientOptions() }
     const project = await getProjectById(projectId)
-    const [tasks, time_entries, client] = await Promise.all([
-      listTasks(projectId), listTimeEntries(projectId), project.client_id ? getClientById(project.client_id) : Promise.resolve(undefined),
+    const [tasks, client] = await Promise.all([
+      listTasks(projectId), project.client_id ? getClientById(project.client_id) : Promise.resolve(undefined),
     ])
-    return { clients: client ? [client] : [], projects: [project], tasks, time_entries }
+    return { clients: client ? [client] : [], projects: [project], tasks, time_entries: [] }
   }, [projectId])
   const state = useAsyncData(load, emptyData, projectId ?? 'project-list')
   const value: ProjectsContextValue = { ...state,

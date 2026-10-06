@@ -28,7 +28,8 @@ import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ProjectService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
+import th.ac.kku.freelance_hub.service.TimeEntryService;
+import th.ac.kku.freelance_hub.service.TimerService;
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -61,7 +62,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
-    private final TimeEntryQueryService timeEntryQueryService;
+    private final TimeEntryService timeEntryService;
+    private final TimerService timerService;
 
 
 
@@ -72,7 +74,8 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectMapper projectMapper,
         TaskRepository taskRepository,
         TaskMapper taskMapper,
-        TimeEntryQueryService timeEntryQueryService
+        TimeEntryService timeEntryService,
+        TimerService timerService
     ) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
@@ -80,7 +83,8 @@ public class ProjectServiceImpl implements ProjectService {
         this.projectMapper = projectMapper;
         this.taskRepository = taskRepository;
         this.taskMapper = taskMapper;
-        this.timeEntryQueryService = timeEntryQueryService;
+        this.timeEntryService = timeEntryService;
+        this.timerService = timerService;
     }
 
     @Override
@@ -329,6 +333,9 @@ public class ProjectServiceImpl implements ProjectService {
         Objects.requireNonNull(request, "request is required");
 
         Project project = findOwnedProject(ownerId, projectId);
+        if (project.getStatus() == ProjectStatus.ARCHIVED) {
+            throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
+        }
         Client client = findOwnedClient(ownerId, request.getClientId());
 
         project.changeClient(client);
@@ -354,7 +361,13 @@ public class ProjectServiceImpl implements ProjectService {
         Objects.requireNonNull(request, "request is required");
 
         Project project = findOwnedProject(ownerId, projectId);
+        ProjectStatus previousStatus = project.getStatus();
+        requireNoRunningTimer(ownerId, projectId);
         project.changeStatus(request.getStatus());
+        if (previousStatus != ProjectStatus.COMPLETED
+                && project.getStatus() == ProjectStatus.COMPLETED) {
+            timeEntryService.lockByProject(ownerId, projectId);
+        }
 
         return projectMapper.toResponse(projectRepository.save(project));
     }
@@ -363,6 +376,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public void archive(UUID ownerId, UUID projectId) {
         Project project = findOwnedProject(ownerId, projectId);
+        requireNoRunningTimer(ownerId, projectId);
         project.archive();
         projectRepository.save(project);
     }
@@ -381,7 +395,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private long trackedSeconds(UUID ownerId, UUID projectId) {
-        return timeEntryQueryService.summarize(
+        return timeEntryService.summarize(
                 ownerId,
                 TimeEntryFilterRequest.builder().projectId(projectId).build()
         ).getTotalSeconds();
@@ -395,6 +409,14 @@ public class ProjectServiceImpl implements ProjectService {
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(targetMinutes.longValue() * 60),
                         2, RoundingMode.HALF_UP);
+    }
+
+    private void requireNoRunningTimer(UUID ownerId, UUID projectId) {
+        if (timerService.getCurrentTimer(ownerId)
+                .filter(timer -> projectId.equals(timer.getProjectId()))
+                .isPresent()) {
+            throw new IllegalStateException("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
+        }
     }
 
     private Project findOwnedProject(UUID ownerId, UUID projectId) {

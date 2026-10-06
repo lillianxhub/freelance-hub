@@ -85,10 +85,10 @@
 ## UC-TIME-06 List and Filter Time Entries
 
 1. Freelancer เรียก `GET /api/time-entries` พร้อม query parameter ที่ต้องการ ได้แก่ `clientId`, `projectId`, `taskId`, `entryType`, `from`, `to`, `page`, `limit`, `sortBy` และ `direction`
-2. Query service เริ่มเงื่อนไขด้วย owner ID และ `isActive = true` เสมอ แล้วจึงเพิ่ม filter ที่ส่งมา
+2. `TimeEntryService.list()` เริ่มเงื่อนไขด้วย owner ID และ `isActive = true` เสมอ แล้วจึงเพิ่ม filter ที่ส่งมา
 3. ช่วงเวลาใช้ `from` แบบ inclusive และ `to` แบบ exclusive กับ `startedAt`
 4. Repository คืน `Page<TimeEntry>` และ mapper แปลงเป็น `Page<TimeEntryResponse>`
-5. Controller คืน `200 OK` พร้อม `TimeEntryListItemResponse` ใน `data` และ `{page, limit, total, totalPages}` ใน `meta` โดย `page` เริ่มที่ 1
+5. Controller คืน `200 OK` พร้อม `TimeEntryListItemResponse` ใน `data` ซึ่งมี `description` ของแต่ละรายการ รวมถึง timer ที่หยุดแล้ว และ `{page, limit, total, totalPages}` ใน `meta` โดย `page` เริ่มที่ 1
 
 **Alternative flow:** ไม่มีผลลัพธ์ = `data` เป็นรายการว่าง; `from` ไม่น้อยกว่า `to`, page/limit, sort field หรือ direction ไม่ถูกต้อง = `400`; ไม่มี JWT = `401`
 **Postcondition:** ไม่มีการเปลี่ยนข้อมูลและไม่แสดง Time Entry ของผู้ใช้อื่น
@@ -96,7 +96,7 @@
 ## UC-TIME-07 Summarize Time Entries
 
 1. Freelancer เรียก `GET /api/time-entries/summary` พร้อม filter ชุดเดียวกับรายการ
-2. Query service จำกัดข้อมูลด้วย owner, `isActive = true` และ filter ที่ระบุ; `from` รวมขอบล่าง ส่วน `to` ไม่รวมขอบบน โดยเทียบกับ `startedAt`
+2. `TimeEntryService.summarize()` จำกัดข้อมูลด้วย owner, `isActive = true` และ filter ที่ระบุ; `from` รวมขอบล่าง ส่วน `to` ไม่รวมขอบบน โดยเทียบกับ `startedAt`
 3. ระบบนับเฉพาะรายการที่มี `endedAt` และ `durationSeconds` จึงไม่นับ running timer หรือรายการที่ soft delete
 4. ระบบคืน `entryCount`, `totalSeconds`, `from` และ `to` ใน `TimeEntrySummaryResponse` ภายใต้ `ApiResult.data`; `page`, `limit` และการ sort ไม่เปลี่ยนผลรวม
 
@@ -128,7 +128,7 @@
 ## UC-TIME-10 View Time Entry Detail
 
 1. Freelancer เรียก `GET /api/time-entries/{id}` พร้อม UUID ของรายการ
-2. Query service ค้นหาเฉพาะรายการที่เป็นของ owner และ `isActive = true`
+2. `TimeEntryService.getById()` ค้นหาเฉพาะรายการที่เป็นของ owner และ `isActive = true`
 3. Controller คืน `200 OK` พร้อม `TimeEntryDetailResponse` ใน `ApiResult.data` รวม `createdAt` และ `updatedAt`
 
 **Alternative flow:** ไม่พบ เป็นของผู้ใช้อื่น หรือถูก soft delete = `404`; ไม่มี JWT = `401`
@@ -136,7 +136,7 @@
 
 ## UC-TIME-11 Lock Project Time Entries
 
-1. ฝั่ง Project ต้องตรวจสิทธิ์เจ้าของและการเปลี่ยนสถานะเป็น `COMPLETED` แล้วเรียก `TimeEntryService.lockByProject(ownerId, projectId)` ใน transaction เดียวกับการเปลี่ยนสถานะ โดยไม่รับคำสั่ง lock จากหน้าบ้าน
+1. `ProjectServiceImpl.changeStatus()` ตรวจสิทธิ์เจ้าของและไม่ให้มี running timer ใน Project ก่อนเปลี่ยนสถานะ; เมื่อเปลี่ยนเป็น `COMPLETED` จะเรียก `TimeEntryService.lockByProject(ownerId, projectId)` ใน transaction เดียวกัน โดยไม่มีคำสั่ง lock จากหน้าบ้าน
 2. `TimeEntryServiceImpl` ใช้ `@Transactional(propagation = Propagation.MANDATORY)` เพื่อบังคับว่าผู้เรียกต้องเปิด transaction ไว้แล้ว
 3. Repository ใช้ `findLockedByOwnerIdAndProjectIdAndLockedAtIsNull` พร้อม `PESSIMISTIC_WRITE` เพื่อดึงเฉพาะรายการที่ยังไม่ล็อกของ owner/Project ที่ระบุ รวมรายการที่ soft delete และ timer ที่ยังวิ่งอยู่
 4. Service ตรวจทุกรายการก่อนแก้ข้อมูล; หากพบ running timer จะโยน `IllegalStateException` โดยไม่หยุด timer อัตโนมัติและไม่ตั้ง `lockedAt` ให้รายการใด
@@ -146,7 +146,7 @@
 **Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `IllegalStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
 **Postcondition:** เมื่อ transaction commit รายการที่ถูกเลือกมี `lockedAt` ถาวรและไม่สามารถแก้ไขหรือ soft delete ผ่าน Entity/service ปกติได้; การล็อกแถวฐานข้อมูลสิ้นสุดเมื่อ transaction จบ แต่ค่า `lockedAt` ยังอยู่
 
-**สถานะการเชื่อมต่อ:** เมธอดฝั่ง Time Tracking พร้อมแล้ว แต่ `ProjectServiceImpl.changeStatus()` ปัจจุบันยังไม่เรียกเมธอดนี้ จึงยังไม่ล็อกอัตโนมัติเมื่อ Project เปลี่ยนสถานะ; ผู้รับผิดชอบ Project ต้องเพิ่มจุดเรียกและการป้องกันรายการใหม่เข้ามาระหว่างปิด Project
+**สถานะการเชื่อมต่อ:** `ProjectServiceImpl.changeStatus()` เรียกเมธอดล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` แล้ว; integration test ตรวจว่าการเปลี่ยนสถานะผ่าน API ตั้ง `lockedAt` ในฐานข้อมูล และการแก้ไข/ลบ Time Entry หลังจากนั้นได้ `409 TIME_ENTRY_LOCKED` แต่ยังต้องพิจารณาการสร้างหรือย้ายรายการใหม่เข้ามาใน Project ที่ปิดแล้ว
 
 ## Sequence: Start และ Stop Timer
 
@@ -188,10 +188,10 @@ sequenceDiagram
 - `GET /api/time-entries/summary` มีอยู่ใน implementation แต่ไม่อยู่ใน API contract ที่ได้รับมา; ยังต้องยืนยันกับทีมว่าจะเก็บ endpoint นี้ไว้หรือไม่
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
-- มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ยังรอฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันและจัดการ concurrent creation/reassignment
+- มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันแล้ว แต่ยังต้องจัดการ concurrent creation/reassignment
 - เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; ปัจจุบันยังไม่มีการล็อกอัตโนมัติสำหรับ manual entry ที่สร้างใหม่หรือรายการที่ย้ายเข้ามาภายหลังใน Project ที่ `COMPLETED`
 - Audit event สำหรับการแก้ไข Time Entry ตาม non-functional requirement ยังไม่ได้แสดงใน implementation นี้
 
-**หลักฐานการทดสอบ:** `TimerControllerTest`, `TimeEntryControllerTest`, `TimerServiceImplTest`, `TimeEntryServiceImplTest`, `TimeEntryQueryServiceImplTest`, `TimeEntryRepositoryTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
+**หลักฐานการทดสอบ:** `TimerControllerTest`, `TimeEntryControllerTest`, `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest`, `ProjectServiceImplTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
 
-การล็อกมี 4 unit test cases ใน `TimeEntryServiceImplTest` สำหรับ manual/completed timer/soft-deleted ด้วย server clock, ปฏิเสธ running timer ก่อนล็อก, ไม่มีรายการ และ ID ที่จำเป็น; อีก 2 cases ใน `TimeEntryRepositoryTest` ตรวจการบันทึกจริง การแยก owner/Project การรักษาเวลาล็อกเดิมและเรียกซ้ำ รวมถึงการปฏิเสธเมื่อไม่มี transaction โดยใช้ฐานข้อมูล H2 ใน test profile ยังไม่ได้ทดสอบ flow เปลี่ยนสถานะ Project แล้วล็อกผ่าน API
+การล็อกมี 4 unit test cases ใน `TimeEntryServiceImplTest` สำหรับ manual/completed timer/soft-deleted ด้วย server clock, ปฏิเสธ running timer ก่อนล็อก, ไม่มีรายการ และ ID ที่จำเป็น; อีก 2 cases ใน `TimeEntryRepositoryTest` ตรวจการบันทึกจริง การแยก owner/Project การรักษาเวลาล็อกเดิมและเรียกซ้ำ รวมถึงการปฏิเสธเมื่อไม่มี transaction โดยใช้ฐานข้อมูล H2 ใน test profile; `ProjectServiceImplTest` ตรวจจุดเรียกเมื่อเปลี่ยนเป็น `COMPLETED` และ `TimeEntryIntegrationTest` ตรวจ flow ผ่าน API จนถึง `lockedAt` และข้อผิดพลาด `409` เมื่อแก้ไขหรือลบ

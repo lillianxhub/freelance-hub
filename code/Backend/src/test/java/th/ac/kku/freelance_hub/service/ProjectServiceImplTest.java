@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -49,7 +50,9 @@ import org.springframework.data.jpa.domain.Specification;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.dto.request.project.ChangeProjectStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.project.CreateProjectRequest;
+import th.ac.kku.freelance_hub.dto.request.project.UpdateProjectRequest;
 import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntrySummaryResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceImplTest {
 
@@ -70,7 +73,10 @@ class ProjectServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private TimeEntryQueryService timeEntryQueryService;
+    private TimeEntryService timeEntryService;
+
+    @Mock
+    private TimerService timerService;
 
     private ProjectServiceImpl service;
     private User owner;
@@ -85,7 +91,8 @@ class ProjectServiceImplTest {
                 new ProjectMapper(),
                 taskRepository,
                 new TaskMapper(),
-                timeEntryQueryService
+                timeEntryService,
+                timerService
         );
 
         owner = User.builder().id(OWNER_ID).build();
@@ -184,7 +191,7 @@ class ProjectServiceImplTest {
         project.updateDetails("Website", null, null, null, null, 100);
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
                 .thenReturn(Optional.of(project));
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 argThat(filter -> PROJECT_ID.equals(filter.getProjectId()))
         )).thenReturn(TimeEntrySummaryResponse.builder()
@@ -205,7 +212,7 @@ class ProjectServiceImplTest {
         Project project = new Project(owner, client, "No target");
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
                 .thenReturn(Optional.of(project));
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 argThat(filter -> PROJECT_ID.equals(filter.getProjectId()))
         )).thenReturn(TimeEntrySummaryResponse.builder()
@@ -228,7 +235,121 @@ class ProjectServiceImplTest {
 
         assertThatThrownBy(() -> service.getProgress(OWNER_ID, PROJECT_ID))
                 .isInstanceOf(ProjectNotFoundException.class);
-        verifyNoInteractions(timeEntryQueryService);
+        verifyNoInteractions(timeEntryService);
+    }
+
+    @ParameterizedTest
+    @EnumSource(ProjectStatus.class)
+    void rejectsStatusChangeWhileSameProjectTimerRuns(ProjectStatus nextStatus) {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(timerService.getCurrentTimer(OWNER_ID))
+                .thenReturn(Optional.of(TimeEntryResponse.builder()
+                        .projectId(PROJECT_ID)
+                        .build()));
+
+        assertThatThrownBy(() -> service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder().status(nextStatus).build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
+
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void allowsStatusChangeWhenTimerRunsInAnotherProject() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(timerService.getCurrentTimer(OWNER_ID))
+                .thenReturn(Optional.of(TimeEntryResponse.builder()
+                        .projectId(UUID.randomUUID())
+                        .build()));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.ON_HOLD)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.ON_HOLD);
+        verify(projectRepository).save(project);
+        verifyNoInteractions(timeEntryService);
+    }
+
+    @Test
+    void locksTimeEntriesWhenProjectBecomesCompleted() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.COMPLETED)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verify(timeEntryService).lockByProject(OWNER_ID, PROJECT_ID);
+        verify(projectRepository).save(project);
+    }
+
+    @Test
+    void doesNotRelockTimeEntriesWhenProjectIsAlreadyCompleted() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project.changeStatus(ProjectStatus.COMPLETED);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.COMPLETED)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verifyNoInteractions(timeEntryService);
+    }
+
+    @Test
+    void rejectsArchiveWhileSameProjectTimerRuns() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(timerService.getCurrentTimer(OWNER_ID))
+                .thenReturn(Optional.of(TimeEntryResponse.builder()
+                        .projectId(PROJECT_ID)
+                        .build()));
+
+        assertThatThrownBy(() -> service.archive(OWNER_ID, PROJECT_ID))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
+
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        assertThat(project.getIsActive()).isTrue();
+        verify(projectRepository, never()).save(any(Project.class));
     }
 
     @Test
@@ -461,6 +582,46 @@ class ProjectServiceImplTest {
     }
 
     @Test
+    void cannotUpdateArchivedProject() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ARCHIVED);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+
+        UpdateProjectRequest request = UpdateProjectRequest.builder()
+                .clientId(CLIENT_ID)
+                .name("Updated website")
+                .build();
+
+        assertThatThrownBy(() -> service.update(OWNER_ID, PROJECT_ID, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("โปรเจกต์ที่จัดเก็บแล้ว");
+        assertThat(project.getName()).isEqualTo("Website");
+        verifyNoInteractions(clientRepository);
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void cannotRestoreArchivedProjectWhileClientIsArchived() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ARCHIVED);
+        client.setActive(false);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.ACTIVE)
+                        .build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ลูกค้าถูกจัดเก็บ");
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
     void changingArchivedStatusToActiveSavesProjectAsActive() {
         Project project = new Project(owner, client, "Website");
         ReflectionTestUtils.setField(project, "id", PROJECT_ID);
@@ -542,7 +703,7 @@ class ProjectServiceImplTest {
     }
 
     private void givenTrackedSeconds(UUID projectId, long seconds) {
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 argThat(filter -> projectId.equals(filter.getProjectId()))
         )).thenReturn(TimeEntrySummaryResponse.builder()

@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.common.response.PaginationMeta;
 import th.ac.kku.freelance_hub.service.ClientService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.client.ChangeClientStatusRequest;
 import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
@@ -43,7 +43,7 @@ import th.ac.kku.freelance_hub.dto.response.client.ClientResponse;
 public class ClientController {
 
     private final ClientService clientService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     @Operation(summary = "Create a client", description = "Create a client for the authenticated user")
     @ApiResponse(responseCode = "201", description = "Client created", content = @Content(schema = @Schema(implementation = ApiResult.class)))
@@ -53,7 +53,7 @@ public class ClientController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> create(
             @Valid @RequestBody CreateClientRequest request) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         ClientResponse response = clientService.create(ownerId, request);
         return ResponseEntity.created(URI.create("/api/clients/" + response.getId()))
                 .body(ApiResult.success("สร้างลูกค้าสำเร็จ", response));
@@ -67,7 +67,7 @@ public class ClientController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<List<ClientResponse>>> list(
             @ParameterObject @Valid @ModelAttribute ClientFilterRequest filter) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         Page<ClientResponse> clients = clientService.list(ownerId, filter);
         // Spring Data is zero-based internally; the public API is one-based.
         PaginationMeta meta = PaginationMeta.builder()
@@ -89,7 +89,7 @@ public class ClientController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> getById(
             @PathVariable UUID id, @RequestParam(required = false) String include) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         boolean includeProjects = false;
         boolean includeTasks = false;
         if (include != null && !include.isEmpty()) {
@@ -120,7 +120,7 @@ public class ClientController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> replace(
             @PathVariable UUID id, @Valid @RequestBody CreateClientRequest request) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         return ResponseEntity.ok(ApiResult.success(
                 "อัปเดตข้อมูลลูกค้าสำเร็จ", clientService.replace(ownerId, id, request)));
     }
@@ -135,12 +135,12 @@ public class ClientController {
     public ResponseEntity<ApiResult<ClientResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateClientRequest request) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         return ResponseEntity.ok(ApiResult.success(
                 "อัปเดตข้อมูลลูกค้าสำเร็จ", clientService.update(ownerId, id, request)));
     }
 
-    @Operation(summary = "Change client status", description = "Activate or deactivate a client by updating only its is_active flag")
+    @Operation(summary = "Change client status", description = "Deactivate a client and archive its non-deleted projects without soft deletion; reactivating the client does not restore project statuses")
     @ApiResponse(responseCode = "200", description = "Client status updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
@@ -149,7 +149,7 @@ public class ClientController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<ClientResponse>> changeStatus(
             @PathVariable UUID id, @Valid @RequestBody ChangeClientStatusRequest request) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         return ResponseEntity.ok(ApiResult.success(
                 "อัปเดตสถานะลูกค้าสำเร็จ", clientService.changeStatus(ownerId, id, request.getIsActive())));
     }
@@ -162,7 +162,7 @@ public class ClientController {
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
-        UUID ownerId = userService.getCurrentUserEntity().getId();
+        UUID ownerId = userService.currentUserId();
         clientService.softDelete(ownerId, id);
         return ResponseEntity.noContent().build();
     }

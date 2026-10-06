@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,7 +37,6 @@ import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
-import th.ac.kku.freelance_hub.service.TimeEntryQueryService;
 import th.ac.kku.freelance_hub.service.UserService;
 import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
@@ -61,8 +62,6 @@ class TimeEntryControllerTest {
     @Mock
     private TimeEntryService timeEntryService;
 
-    @Mock
-    private TimeEntryQueryService timeEntryQueryService;
 
     @Mock
     private UserService userService;
@@ -77,11 +76,10 @@ class TimeEntryControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new TimeEntryController(
                                 timeEntryService,
-                                timeEntryQueryService,
                                 userService
                         )
                 )
-                .setControllerAdvice(new TimeTrackingExceptionHandler())
+                .setControllerAdvice(new TimeTrackingExceptionHandler(new ApiErrorFactory()))
                 .setValidator(validator)
                 .build();
     }
@@ -154,7 +152,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details.projectId").exists());
+                .andExpect(jsonPath("$.error.fieldErrors.projectId").exists());
 
         verify(timeEntryService, never()).createManual(any(), any());
     }
@@ -163,7 +161,7 @@ class TimeEntryControllerTest {
     void listsEntriesUsingBoundFiltersAndCurrentUser() throws Exception {
         stubCurrentUser();
         PageRequest pageable = PageRequest.of(0, 5);
-        when(timeEntryQueryService.list(
+        when(timeEntryService.list(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         )).thenReturn(new PageImpl<>(
@@ -201,14 +199,14 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.data[0].durationSeconds")
                         .value(1800))
                 .andExpect(jsonPath("$.data[0].description")
-                        .doesNotExist())
+                        .value("Listed work"))
                 .andExpect(jsonPath("$.meta.page").value(1))
                 .andExpect(jsonPath("$.meta.limit").value(5))
                 .andExpect(jsonPath("$.meta.total").value(6))
                 .andExpect(jsonPath("$.meta.totalPages").value(2))
                 .andExpect(jsonPath("$.error").value(nullValue()));
 
-        verify(timeEntryQueryService).list(
+        verify(timeEntryService).list(
                 eq(OWNER_ID),
                 org.mockito.ArgumentMatchers.argThat(filter ->
                         PROJECT_ID.equals(filter.getProjectId())
@@ -225,7 +223,7 @@ class TimeEntryControllerTest {
     @Test
     void getsEntryDetailsForCurrentUser() throws Exception {
         stubCurrentUser();
-        when(timeEntryQueryService.getById(OWNER_ID, ENTRY_ID))
+        when(timeEntryService.getById(OWNER_ID, ENTRY_ID))
                 .thenReturn(response("Detailed work"));
 
         mockMvc.perform(get("/api/time-entries/{id}", ENTRY_ID))
@@ -258,13 +256,13 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error").value(nullValue()));
 
-        verify(timeEntryQueryService).getById(OWNER_ID, ENTRY_ID);
+        verify(timeEntryService).getById(OWNER_ID, ENTRY_ID);
     }
 
     @Test
     void summarizesEntriesForCurrentUser() throws Exception {
         stubCurrentUser();
-        when(timeEntryQueryService.summarize(
+        when(timeEntryService.summarize(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         )).thenReturn(TimeEntrySummaryResponse.builder()
@@ -285,7 +283,7 @@ class TimeEntryControllerTest {
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error").value(nullValue()));
 
-        verify(timeEntryQueryService).summarize(
+        verify(timeEntryService).summarize(
                 eq(OWNER_ID),
                 any(TimeEntryFilterRequest.class)
         );
@@ -294,7 +292,7 @@ class TimeEntryControllerTest {
     @Test
     void returnsSharedErrorWhenEntryIsNotFound() throws Exception {
         stubCurrentUser();
-        when(timeEntryQueryService.getById(OWNER_ID, ENTRY_ID))
+        when(timeEntryService.getById(OWNER_ID, ENTRY_ID))
                 .thenThrow(new TimeEntryNotFoundException(ENTRY_ID));
 
         mockMvc.perform(get("/api/time-entries/{id}", ENTRY_ID))
@@ -369,8 +367,8 @@ class TimeEntryControllerTest {
     }
 
     private void stubCurrentUser() {
-        when(userService.getCurrentUserEntity()).thenReturn(
-                User.builder().id(OWNER_ID).build()
+        when(userService.currentUserId()).thenReturn(
+                OWNER_ID
         );
     }
 

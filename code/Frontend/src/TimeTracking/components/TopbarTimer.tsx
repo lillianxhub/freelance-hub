@@ -1,25 +1,34 @@
 import { Button } from '../../components/ui/button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiClock, FiSquare } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/apiError'
-import { formatTimer } from '../../lib/formatters'
-import { useTimer } from '../useTimer'
-import { useTimeEntries } from '../useTimeEntries'
+import { formatTimer } from '../../utils/duration'
+import { stopTimer as stopTimerRequest } from '../../services/timeTracking'
+import { useCurrentTimer } from '../useCurrentTimer'
 import { toast } from 'sonner'
 
 function TopbarTimer() {
-  const workspace = useTimeEntries()
-  const timer = useTimer(workspace)
+  const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const navigate = useNavigate()
   const [stopping, setStopping] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+  const entry = currentTimer?.running ? currentTimer.timeEntry : null
+  const startedAt = entry?.startedAt
 
-  if (!timer.runningEntry) return null
+  useEffect(() => {
+    if (!startedAt) return undefined
+    const interval = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [startedAt])
+
+  if (!entry) return null
 
   const stopTimer = async () => {
     setStopping(true)
     try {
-      await timer.stopTimer()
+      await stopTimerRequest()
+      await refreshCurrentTimer()
     } catch (stopError: unknown) {
       toast.error(getErrorMessage(stopError, 'ไม่สามารถหยุดเวลาได้'))
     } finally {
@@ -35,13 +44,13 @@ function TopbarTimer() {
             <FiClock className="size-[14px]" aria-hidden="true" />
           </span>
           <span className="flex min-w-0 max-w-[140px] flex-col max-[820px]:hidden">
-            <strong className="truncate text-xs">{timer.runningProject?.name || 'กำลังบันทึกเวลา'}</strong>
+            <strong className="truncate text-xs">{entry.project.name || 'กำลังบันทึกเวลา'}</strong>
             <small className="truncate text-[10px] text-text-secondary">
-              {timer.runningTask?.name || timer.runningEntry.description || 'ไม่ระบุงาน'}
+              {entry.task?.title || entry.description || 'ไม่ระบุงาน'}
             </small>
           </span>
           <time className="shrink-0 text-xs font-bold tabular-nums">
-            {formatTimer(timer.elapsedSeconds)}
+            {formatTimer(Math.max(0, Math.floor((now - Date.parse(entry.startedAt)) / 1000)))}
           </time>
         </Button>
         <button

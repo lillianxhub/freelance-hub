@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -64,7 +66,7 @@ class ProjectControllerTest {
                 .standaloneSetup(
                         new ProjectController(projectService, userService)
                 )
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new GlobalExceptionHandler(new ApiErrorFactory()))
                 .setValidator(validator)
                 .setCustomArgumentResolvers(
                         new PageableHandlerMethodArgumentResolver()
@@ -74,8 +76,8 @@ class ProjectControllerTest {
 
     @Test
     void createUsesCurrentUserAndReturns201() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.create(eq(OWNER_ID), any(CreateProjectRequest.class)))
                 .thenReturn(ProjectResponse.builder()
                         .id(PROJECT_ID)
@@ -113,8 +115,8 @@ class ProjectControllerTest {
 
     @Test
     void listPassesFiltersAndPaginationToService() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.list(
                 eq(OWNER_ID),
                 eq("web"),
@@ -167,8 +169,8 @@ class ProjectControllerTest {
 
     @Test
     void listIncludesTasksWhenRequested() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.list(
                 eq(OWNER_ID), eq(null), eq(null), eq(null),
                 any(Pageable.class), eq(true), eq(false)
@@ -191,8 +193,8 @@ class ProjectControllerTest {
 
     @Test
     void listAcceptsAllStatuses() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.list(
                 eq(OWNER_ID), eq(null), eq(null), eq(null),
                 any(Pageable.class), eq(false), eq(true)
@@ -215,8 +217,8 @@ class ProjectControllerTest {
 
     @Test
     void getByIdReturns404WhenProjectIsNotFound() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.getById(OWNER_ID, PROJECT_ID))
                 .thenThrow(new ProjectNotFoundException(PROJECT_ID));
 
@@ -228,8 +230,8 @@ class ProjectControllerTest {
 
     @Test
     void invalidStatusChangeReturns409() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.changeStatus(
                 eq(OWNER_ID),
                 eq(PROJECT_ID),
@@ -246,8 +248,8 @@ class ProjectControllerTest {
 
     @Test
     void deleteCallsArchiveAndReturnsCommonResponse() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
 
         mockMvc.perform(delete("/api/projects/{id}", PROJECT_ID))
                 .andExpect(status().isOk())
@@ -263,8 +265,8 @@ class ProjectControllerTest {
 
         @Test
     void updateUsesPutAndReturnsCommonResponse() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
 
         when(projectService.update(
                 eq(OWNER_ID),
@@ -330,8 +332,8 @@ class ProjectControllerTest {
 
         @Test
     void changeStatusUsesPatchAndReturnsCommonResponse() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
 
         when(projectService.changeStatus(
                 eq(OWNER_ID),
@@ -369,8 +371,8 @@ class ProjectControllerTest {
 
     @Test
     void getProjectDetailReturnsNestedDataAndCommonResponse() throws Exception {
-        when(userService.getCurrentUserEntity())
-                .thenReturn(User.builder().id(OWNER_ID).build());
+        when(userService.currentUserId())
+                .thenReturn(OWNER_ID);
         when(projectService.getById(OWNER_ID, PROJECT_ID))
                 .thenReturn(ProjectListItemResponse.builder()
                         .id(PROJECT_ID)

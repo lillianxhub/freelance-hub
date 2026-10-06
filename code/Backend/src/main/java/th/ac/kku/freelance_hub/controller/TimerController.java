@@ -21,7 +21,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import th.ac.kku.freelance_hub.common.response.ApiResult;
 import th.ac.kku.freelance_hub.service.TimerService;
-import th.ac.kku.freelance_hub.service.UserService;
+import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.timeentry.StartTimerRequest;
 import th.ac.kku.freelance_hub.dto.response.timeentry.CurrentTimerResponse;
 import th.ac.kku.freelance_hub.dto.response.timeentry.StoppedTimerResponse;
@@ -34,7 +34,7 @@ import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 public class TimerController {
 
     private final TimerService timerService;
-    private final UserService userService;
+    private final CurrentUserProvider userService;
 
     @Operation(summary = "Start a timer")
     @ApiResponse(
@@ -139,6 +139,6 @@ public class TimerController {
     }
 
     private UUID currentOwnerId() {
-        return userService.getCurrentUserEntity().getId();
+        return userService.currentUserId();
     }
 }
