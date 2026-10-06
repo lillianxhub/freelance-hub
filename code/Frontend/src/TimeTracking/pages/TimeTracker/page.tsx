@@ -74,6 +74,7 @@ function TimeTrackerPage() {
     setTimeEntriesRequestKey((current) => current + 1);
   }, []);
 
+
   const activeProjects = useMemo(
     () =>
       (data?.projects || []).filter(
