@@ -1,6 +1,6 @@
 import { useCallback, type PropsWithChildren } from 'react'
 import { ProjectsContext } from './projects-context'
-import { useAsyncData } from '../shared/useAsyncData'
+import { useAsyncData } from '../hooks/useAsyncData'
 import { getClientById, listClientOptions } from '../services/client'
 import { deleteProject as deleteProjectRequest, getProjectById, saveProject as saveProjectRequest } from '../services/project'
 import { deleteTask as deleteTaskRequest, listTasks, saveTask as saveTaskRequest } from '../services/task'

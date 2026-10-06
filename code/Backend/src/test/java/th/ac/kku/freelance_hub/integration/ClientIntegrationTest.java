@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.EntityManager;
@@ -21,11 +22,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import th.ac.kku.freelance_hub.common.response.RequestTraceFilter;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
@@ -48,24 +51,34 @@ class ClientIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    private RequestTraceFilter requestTraceFilter;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                // webAppContextSetup does not automatically register servlet filter beans.
+                .addFilters(requestTraceFilter)
                 .apply(springSecurity())
                 .build();
     }
 
     @Test
     void unauthenticatedClientRequestIsRejected() throws Exception {
-        mockMvc.perform(get("/api/clients"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"));
+        UUID id = UUID.randomUUID();
+        for (var request : List.of(
+                get("/api/clients"), get("/api/clients/{id}", id),
+                post("/api/clients"), put("/api/clients/{id}", id),
+                patch("/api/clients/{id}", id), patch("/api/clients/{id}/status", id),
+                delete("/api/clients/{id}", id))) {
+            mockMvc.perform(request)
+                    .andExpect(traceableError(401, "AUTHENTICATION_REQUIRED"))
+                    .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()))
+                    .andExpect(jsonPath("$.error.fieldErrors").value(org.hamcrest.Matchers.nullValue()));
+        }
     }
 
     @Test
@@ -86,6 +99,12 @@ class ClientIntegrationTest {
                         .value("Client not found"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema.allOf[0]['$ref']")
                         .value(org.hamcrest.Matchers.hasItem("#/components/schemas/ApiResult")))
+                .andExpect(jsonPath("$.paths['/api/clients/{id}'].get.responses['404'].content.*.schema.allOf[1].properties.success.enum[0]")
+                        .value(org.hamcrest.Matchers.hasItem(false)))
+                .andExpect(jsonPath("$.components.schemas.ApiError.properties.status.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.ApiError.properties.timestamp.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.ApiError.properties.fieldErrors.type").value("object"))
+                .andExpect(jsonPath("$.components.schemas.ApiError.properties.traceId.type").value("string"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].patch.responses['200'].description")
                         .value("Client updated"))
                 .andExpect(jsonPath("$.paths['/api/clients/{id}'].delete.responses['204'].description")
@@ -337,6 +356,8 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(traceableError(400, "VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.error.fieldErrors.name").exists());
 
         mockMvc.perform(get("/api/clients/{id}", UUID.randomUUID())
@@ -345,7 +366,39 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"));
+                .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"))
+                .andExpect(traceableError(404, "CLIENT_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.fieldErrors").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void invalidClientParametersUseTheSharedTraceableErrorContract() throws Exception {
+        String token = registerAndGetToken("client-invalid-parameters@example.com");
+        mockMvc.perform(get("/api/clients/not-a-uuid").header("Authorization", bearer(token)))
+                .andExpect(traceableError(400, "INVALID_ARGUMENT"))
+                .andExpect(jsonPath("$.error.details.field").value("id"));
+        mockMvc.perform(get("/api/clients/{id}", UUID.randomUUID())
+                .header("Authorization", bearer(token)).param("include", "tasks"))
+                .andExpect(traceableError(400, "INVALID_ARGUMENT"));
+        mockMvc.perform(get("/api/clients").header("Authorization", bearer(token)).param("page", "0"))
+                .andExpect(traceableError(400, "VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fieldErrors.page").isNotEmpty())
+                .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void clientRequestTraceIdsAreGeneratedByServerAndDistinctPerRequest() throws Exception {
+        String suppliedTraceId = UUID.randomUUID().toString();
+        var first = mockMvc.perform(get("/api/clients").header(RequestTraceFilter.HEADER, suppliedTraceId))
+                .andExpect(traceableError(401, "AUTHENTICATION_REQUIRED"))
+                .andReturn().getResponse();
+        var second = mockMvc.perform(get("/api/clients"))
+                .andExpect(traceableError(401, "AUTHENTICATION_REQUIRED"))
+                .andReturn().getResponse();
+
+        assertThat(first.getHeader(RequestTraceFilter.HEADER)).isNotEqualTo(suppliedTraceId);
+        assertThat(second.getHeader(RequestTraceFilter.HEADER))
+                .isNotEqualTo(first.getHeader(RequestTraceFilter.HEADER));
     }
 
     @Test
@@ -505,5 +558,29 @@ class ClientIntegrationTest {
 
     private static String bearer(String token) {
         return "Bearer " + token;
+    }
+
+    /** Also covers 401 from Spring Security, which does not pass through Client advice. */
+    private ResultMatcher traceableError(int expectedStatus, String expectedCode) {
+        return result -> {
+            var response = result.getResponse();
+            var body = objectMapper.readTree(response.getContentAsByteArray());
+            var error = body.path("error");
+            assertThat(response.getStatus()).isEqualTo(expectedStatus);
+            assertThat(body.path("success").isBoolean()).isTrue();
+            assertThat(body.path("success").booleanValue()).isFalse();
+            assertThat(body.path("message").asText()).isNotBlank();
+            assertThat(body.path("data").isNull()).isTrue();
+            assertThat(body.path("meta").isNull()).isTrue();
+            assertThat(error.path("code").asText()).isEqualTo(expectedCode);
+            assertThat(error.path("status").intValue()).isEqualTo(expectedStatus);
+            String timestamp = error.path("timestamp").asText();
+            assertThat(timestamp).endsWith("Z");
+            Instant.parse(timestamp);
+            String traceId = response.getHeader(RequestTraceFilter.HEADER);
+            assertThat(traceId).isNotBlank();
+            UUID.fromString(traceId);
+            assertThat(error.path("traceId").asText()).isEqualTo(traceId);
+        };
     }
 }

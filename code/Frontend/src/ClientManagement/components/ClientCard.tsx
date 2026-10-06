@@ -3,7 +3,8 @@ import { Button } from '../../components/ui/button'
 import { Link } from 'react-router-dom'
 import { FiArchive, FiEdit2, FiRotateCcw } from 'react-icons/fi'
 import type { ClientCardProps } from '../../types/clientsPage'
-import { formatDurationSeconds, initials } from '../../lib/formatters'
+import { formatDurationSeconds } from '../../utils/duration'
+import { initials } from '../../utils/string'
 import ClientStatus from './ClientStatus'
 
 const avatarColors = ['bg-primary', 'bg-brand-secondary', 'bg-green', 'bg-orange', 'bg-red'] as const
