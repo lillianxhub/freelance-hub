@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { NativeSelect } from '../../components/ui/native-select'
-import { formatTimer } from '../../lib/formatters'
+import { formatTimer } from '../../utils/duration'
 import type { TimerWorkspace } from '../../types/timerWorkspace'
 import { useTimer } from '../useTimer'
 

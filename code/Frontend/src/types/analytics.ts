@@ -11,8 +11,6 @@ export interface AnalyticsData {
   time_entries: TimeEntry[]
 }
 export type TimeSummaryEntry = Pick<TimeEntry, 'duration_minutes' | 'billable' | 'rate_snapshot'>
-export type CsvValue = string | number | boolean | null | undefined
-
 export interface ProductivityPoint {
   key: string
   day: string
@@ -56,7 +54,7 @@ export interface ReportProjectOption extends ReportFilterOption {
 
 export interface ReportSummaryKpi {
   totalTrackedSeconds: number
-  trackedTimeTrendPercent: number
+  trackedTimeTrendPercent: number | null
   timeEntryCount: number
   projectsWithTime: number
   totalProjects: number
@@ -91,6 +89,29 @@ export interface ReportSummaryData {
     projects: ReportProjectOption[]
   }
   summary: ReportSummaryKpi
-  timeByClient: ReportClientTime[]
-  projectUsage: ReportProjectUsage[]
+}
+
+export interface ReportDistributionData {
+  groupBy: 'CLIENT' | 'PROJECT'
+  items: Array<ReportFilterOption & { trackedSeconds: number; percent: number }>
+}
+
+export interface ReportWorkTrendData {
+  granularity: 'DAY' | 'WEEK' | 'MONTH'
+  points: Array<{ periodStart: string; trackedSeconds: number }>
+}
+
+export interface ReportWorkPatternData {
+  mostProductiveDay: string | null
+  mostActiveHour: number | null
+  trackedTimeTrendPercent: number | null
+  timeByWeekday: Array<{ day: string; trackedSeconds: number }>
+  timeByHour: Array<{ hour: number; trackedSeconds: number }>
+}
+
+export interface ReportProjectPage {
+  items: ReportProjectUsage[]
+  page: number
+  totalPages: number
+  total: number
 }

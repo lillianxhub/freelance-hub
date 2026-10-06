@@ -1,7 +1,7 @@
 import { useCallback, type PropsWithChildren } from 'react'
 import { ProfileContext } from './profile-context'
 import { updateProfile as updateProfileRequest, loadProfile } from '../services/profile'
-import { useAsyncData } from '../shared/useAsyncData'
+import { useAsyncData } from '../hooks/useAsyncData'
 import type { AsyncDataState } from '../types/asyncData'
 import type { Profile, ProfileInput } from '../types/profile'
 import type { ApiResponse } from '../types/api'
