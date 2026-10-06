@@ -1,5 +1,5 @@
 import type { ReportSummaryData, ReportSummaryQuery } from '../types/analytics'
-import { createReportSummaryMock } from '../Analytics/reports.mock'
+import { createReportSummaryMock } from './report.mock'
 
 /**
  * Temporary mock implementation of GET /api/reports/summary.

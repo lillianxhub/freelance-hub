@@ -13,10 +13,10 @@ import { Label } from '../../../components/ui/label'
 import { NativeSelect } from '../../../components/ui/native-select'
 import { Progress } from '../../../components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
-import { downloadCsv } from '../../analytics.utils'
-import { formatDurationSeconds } from '../../../lib/formatters'
+import { downloadCsv } from '../../../utils/csv'
+import { formatDurationSeconds } from '../../../utils/duration'
 import { getReportSummary } from '../../../services/report'
-import { useAsyncData } from '../../../shared/useAsyncData'
+import { useAsyncData } from '../../../hooks/useAsyncData'
 import type { ReportSummaryData } from '../../../types/analytics'
 
 const now = new Date()

@@ -1,5 +1,6 @@
 import type { ProjectStatus } from '../types/project'
 import type { ReportProjectUsage, ReportSummaryData, ReportSummaryQuery } from '../types/analytics'
+import { inDateRange } from '../utils/date'
 
 interface MockProject extends Omit<ReportProjectUsage, 'trackedSeconds' | 'usagePercent'> {
   entries: Array<{ date: string; durationSeconds: number }>
@@ -22,17 +23,13 @@ const projects: MockProject[] = [
   { projectId: 'project-store', projectName: 'Online Store', clientId: 'client-northstar', clientName: 'Northstar Studio', color: '#EF4444', targetSeconds: 30 * 3600, taskProgressPercent: 100, status: 'COMPLETED', previousPeriodSeconds: 4 * 3600, entries: [{ date: '2026-09-29', durationSeconds: 6 * 3600 }] },
 ]
 
-function isInRange(date: string, from: string, to: string): boolean {
-  return (!from || date >= from) && (!to || date <= to)
-}
-
 export function createReportSummaryMock(query: ReportSummaryQuery): ReportSummaryData {
   const selectedProjects = projects.filter((project) =>
     (!query.clientId || project.clientId === query.clientId)
     && (!query.projectId || project.projectId === query.projectId),
   )
   const rows = selectedProjects.map((project) => {
-    const matchingEntries = project.entries.filter((entry) => isInRange(entry.date, query.from, query.to))
+    const matchingEntries = project.entries.filter((entry) => inDateRange(entry.date, query.from, query.to))
     const trackedSeconds = matchingEntries.reduce((total, entry) => total + entry.durationSeconds, 0)
     return {
       projectId: project.projectId,

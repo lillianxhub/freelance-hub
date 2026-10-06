@@ -1,5 +1,6 @@
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { formatDuration, formatMoney } from "../../lib/formatters";
+import { formatDuration } from "../../utils/duration";
+import { formatMoney } from "../../utils/number";
 import type { TimeSummaryProps } from "../../types/timeTrackerPage";
 
 export default function TimeSummary({
