@@ -10,6 +10,8 @@
 
 เส้น Project และ Task หลักคืนรูปแบบ `ApiResult` (`success`, `message`, `data`, `meta`, `error`) รายการที่แบ่งหน้าจะใส่ `page`, `limit`, `total`, `totalPages` ใน `meta` ส่วนเส้น Task แบบซ้อนบางเส้นที่ยังเปิดใช้อยู่คืน `TaskResponse` ตรง ๆ ตามโค้ดปัจจุบัน
 
+เมื่อเกิดข้อผิดพลาดจากเส้นหลัก ระบบคืน `ApiResult` ที่มี `success=false`, `data=null` และ `error` ซึ่งระบุ `code`, HTTP `status`, `timestamp` และ `traceId`; กรณี validation มี `fieldErrors` เพิ่มเติม
+
 ## Use Case Summary
 
 | ID | Use Case | Endpoint หลัก | ผลลัพธ์ |
@@ -68,8 +70,8 @@
 
 ### UC-PRJ-05 เปลี่ยนสถานะ Project
 
-1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่; Service ตรวจว่าไม่มี timer ของ Project นี้กำลังทำงานก่อนเปลี่ยนสถานะ
-2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; การคืนจาก `ARCHIVED` ทำได้ต่อเมื่อ Client ยังใช้งาน (`isActive=true`) และไม่ถูก soft delete (`deletedAt=null`); ส่งสถานะเดิมซ้ำได้
+1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่; Service ค้นเฉพาะ Project ของผู้ใช้ที่ยังไม่ถูก soft delete แล้วตรวจว่าไม่มี timer ของ Project นี้กำลังทำงานก่อนเปลี่ยนสถานะ
+2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; การคืนจาก `ARCHIVED` ทำได้ต่อเมื่อ Project ยังไม่ถูก soft delete และ Client ยังใช้งาน (`isActive=true`, `deletedAt=null`); ส่งสถานะเดิมซ้ำได้
 3. ถ้าเพิ่งเปลี่ยนจากสถานะอื่นเป็น `COMPLETED`, Service เรียก `TimeEntryService.lockByProject(ownerId, projectId)` ก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่มีอยู่ของ Project จะถูกล็อกและแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ
 4. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
 
@@ -79,10 +81,11 @@
 
 ### UC-PRJ-06 ลบ Project แบบ soft delete
 
-1. ส่ง `DELETE /api/projects/{id}`; Service ตรวจเจ้าของแล้วเรียก `Project.archive()`
+1. ส่ง `DELETE /api/projects/{id}`; Service ตรวจเจ้าของและตรวจว่าไม่มี timer ของ Project นี้กำลังทำงาน แล้วเรียก `Project.archive()`
 2. Entity ตั้งสถานะ `ARCHIVED`, `isActive=false` และ `deletedAt` แล้วคืน `200 ApiResult` โดย `data=null`
 
-**Postcondition:** แถวยังอยู่ในฐานข้อมูล แต่ไม่ปรากฏใน Project list แม้ส่ง `status=ALL`
+**ทางเลือก:** ไม่พบ Project หรือไม่ใช่เจ้าของ = `404`; timer ของ Project กำลังทำงาน = `409`
+**Postcondition:** แถวยังอยู่ในฐานข้อมูล แต่ไม่ปรากฏใน Project list แม้ส่ง `status=ALL` และไม่สามารถเรียก Project API เพื่อคืนสถานะได้ เพราะ query ค้นด้วย ID ตัดรายการที่ `deletedAt` ไม่เป็น null ออก
 
 ## Task use cases
 
@@ -131,6 +134,7 @@ sequenceDiagram
     participant C as ProjectController
     participant S as ProjectServiceImpl
     participant R as ProjectRepository
+    participant T as TimerService
     participant P as Project
     participant ST as ProjectStates / ProjectState
     participant TE as TimeEntryService
@@ -138,7 +142,9 @@ sequenceDiagram
     F->>C: PATCH /api/projects/{id}/status + JWT
     C->>S: changeStatus(ownerId, id, request)
     S->>R: findByIdAndOwnerId(id, ownerId)
-    R-->>S: Project หรือไม่พบ
+    R-->>S: Project ที่ยังไม่ถูก soft delete
+    S->>T: getCurrentTimer(ownerId)
+    T-->>S: running timer ของ owner หรือว่าง
     alt timer ของ Project กำลังทำงาน
         S-->>H: IllegalStateException
         H-->>F: 409 Conflict
@@ -171,3 +177,4 @@ sequenceDiagram
 - เอกสารนี้อธิบาย Project/Task และ listener ความคืบหน้าที่เกี่ยวกับ Project เท่านั้น ไม่อธิบายการทำงานทั้งหมดของ Timer, Time Entry หรือ Dashboard
 - `FR-PRJ-07` มีการตรวจเกณฑ์และเผยแพร่ event แล้ว แต่การแจ้งเตือนถึงผู้ใช้จริงยังไม่ปรากฏในส่วนนี้
 - การล็อกรายการเวลาเกิดเมื่อเปลี่ยนเข้าสู่ `COMPLETED` ครั้งใหม่; Project ที่เป็น `COMPLETED` อยู่ก่อนเพิ่ม flow นี้ไม่ได้ถูกล็อกย้อนหลังโดยอัตโนมัติ
+- เมื่อ Client ถูกตั้ง inactive, `ClientServiceImpl.changeStatus()` เปลี่ยน Project ที่ยังไม่ถูก soft delete ของ Client เป็น `ARCHIVED` โดยตรง ไม่ผ่านการตรวจ running timer ของ `ProjectServiceImpl`; การ soft delete Client ไม่เปลี่ยนสถานะ Project อัตโนมัติ จึงเป็นคนละ flow กับ UC-PRJ-05/06

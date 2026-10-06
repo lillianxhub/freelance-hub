@@ -91,7 +91,7 @@ public class Task {
             name = "sort_order",
             nullable = false
     )
-    private int sortOrder;
+    private int sortOrder; //เก็บเป็นเลขเอาไว้เป็น sort
 
     @Column(name = "completed_at")
     private Instant completedAt;
