@@ -1,39 +1,31 @@
-# Design Patterns: Dashboard, Shared UI และ Time Tracking
+# Design Patterns: Dashboard และ Analytics
 
-**ผู้รับผิดชอบ:** Nattadol Sarika  
-**Feature branch:** `nattadol_673380511-9_02`
+**เจ้าของ feature:** `nattadol_673380511-9_02`
 
-เอกสารนี้อธิบายแนวทางออกแบบของงาน Dashboard, การใช้ shared UI ด้วย shadcn/ui, ตัวจับเวลาแบบทำงานข้ามหน้า และการตรวจสอบข้อมูลในหน้าโปรไฟล์
+**ขอบเขต :** Dashboard/Analytics และ Frontend — summary queries, tracked hours, utilization, project progress, productivity metrics, loading/empty/error state และ React + Vite screens
 
-## ขอบเขตงาน
+เอกสารนี้อธิบายเฉพาะงาน Analytics ที่แสดงบนหน้า **ภาพรวม** และ **รายงาน** รวมทั้ง Backend API ที่ป้อนข้อมูลให้สองหน้านี้ การจัดการวงจรชีวิต Timer, Project/Task และ Client เป็นงานของ feature อื่น; Dashboard เพียงอ่านข้อมูลหรือเรียก action ที่ feature เหล่านั้นเปิดให้ใช้
 
-- API และการรวมข้อมูลสำหรับ Dashboard
-- กราฟกิจกรรมรายสัปดาห์ รายเดือน และรายปี
-- Shared UI: `Dialog`, `Sonner`, `Input`, `NativeSelect` และ `Table` ที่มี pagination
-- สถานะ timer กลางของแอปพลิเคชัน
-- การตรวจสอบข้อมูลฟอร์มโปรไฟล์
+## รูปแบบที่ใช้
 
-## 1. Dashboard: MVC, Service Layer และ Aggregation
+| Pattern / รูปแบบ | ปัญหาที่แก้ | หลักฐานใน implementation |
+|---|---|---|
+| Layered Architecture / MVC | แยก HTTP, กติกาสรุปผล, query และการแสดงผล | `DashboardController`, `ReportController`, service, repository, response DTO และ React pages |
+| Service Layer | เก็บสูตร KPI และการประกอบ response ในที่เดียว | `DashboardServiceImpl`, `ReportServiceImpl` |
+| Repository / Summary Query | จำกัดข้อมูลและรวมเวลาใน Backend โดยไม่ดึง Time Entry ทุกแถวไปบวกใน browser; Reports ใช้ aggregate query ส่วน Dashboard รวมข้อมูลรายวันใน service หลังอ่าน projection | `ReportQueryRepository`, `DashboardServiceImpl`, `TimeEntryServiceImpl` |
+| DTO / Read Model | ส่งข้อมูลที่หน้า Dashboard/Reports ต้องแสดง โดยไม่เผย JPA entity ตรง ๆ | `dto/response/dashboard/*`, `dto/response/report/*`, `types/dashboard.ts`, `types/analytics.ts` |
+| Context Provider | ให้หน้า Dashboard อ่านและ refresh ข้อมูลผ่าน hook เดียว | `DashboardContext.tsx`, `dashboard-context.ts`, `useDashboard.ts` |
+| Component Composition | ประกอบ SummaryCard, Card, Table, Chart และ ViewState ที่มีอยู่ให้เป็นสองหน้าที่ responsive | `Analytics/pages/Dashboard/page.tsx`, `Analytics/pages/Reports/page.tsx` |
 
-Dashboard ต้องแสดง KPI, กราฟชั่วโมงทำงาน, โปรเจกต์ที่กำลังทำ และงานที่ยังไม่เสร็จในหน้าเดียว หากหน้าเว็บเรียก API แยกทุกส่วน จะมี request จำนวนมากและทำให้ข้อมูลในหน้าอาจมาจากเวลาคนละช่วงกัน
+## 1. Backend สำหรับ Dashboard
 
-จึงมี API สำหรับรวมข้อมูล Dashboard โดยให้ controller รับผิดชอบ HTTP, service รับผิดชอบกติกาและการคำนวณ, repository/query service รับผิดชอบอ่านข้อมูลจากฐานข้อมูล และ DTO รับผิดชอบรูปแบบ response
+`GET /api/dashboard` คืน KPI สัปดาห์นี้, จุดเวลารายวันสำหรับกราฟ, โปรเจกต์ active, งานที่ยังเปิด และ `recentTimeEntries` ใน response เดียว `GET /api/dashboard/activity?period=WEEK|MONTH|YEAR` คืนจุดกราฟตามช่วงที่เลือก Controller อ่าน owner ID จากผู้ใช้ที่เข้าสู่ระบบแล้วส่งต่อให้ service
 
-| ส่วน | หน้าที่ | แนวคิดที่ใช้ |
-| --- | --- | --- |
-| `DashboardController` | รับ request และคืน response ตามมาตรฐาน API | MVC Controller |
-| `DashboardService` | กำหนด contract ของการสร้างข้อมูล Dashboard | Service Layer interface |
-| `DashboardServiceImpl` | รวมข้อมูลจากหลายแหล่งและคำนวณ KPI | Aggregation / Facade ระดับ service |
-| `ProjectRepository`, `TaskRepository`, `TimeEntryRepository` | อ่านข้อมูล domain ตามหน้าที่ | Repository pattern |
-| `TimeEntryQueryService` | อ่านผลรวมเวลาที่เหมาะกับการทำรายงาน | Query service |
-| Dashboard response DTO | ส่งข้อมูลที่ UI ต้องใช้โดยไม่เปิดเผย entity | DTO pattern |
+`DashboardServiceImpl` รวมผลลัพธ์จาก repository และ `TimeEntryService` โดยใช้ `Clock` กับเขตเวลา `Asia/Bangkok` เพื่อกำหนดช่วงวันที่และทดสอบเวลาได้ `TimeEntryServiceImpl.sumDailySeconds()` อ่านรายการที่จบแล้วเป็น projection จาก repository แล้วรวมเป็นรายวันใน service พร้อมเติมวันที่ไม่มีรายการเป็นศูนย์ ส่วนเวลาที่ส่งให้กราฟและ KPI ยังคงเป็นวินาทีเต็มจนถึง Frontend เพื่อให้ระยะเวลาที่สั้นกว่าหนึ่งชั่วโมงยังปรากฏ
 
 ```mermaid
 classDiagram
-    class DashboardController {
-        +getDashboard()
-        +getActivity(period)
-    }
+    class DashboardController
     class DashboardService {
         <<interface>>
         +getDashboard(ownerId)
@@ -43,8 +35,7 @@ classDiagram
     class ProjectRepository
     class TaskRepository
     class TimeEntryRepository
-    class TimeEntryQueryService
-    class Clock
+    class TimeEntryService
     class DashboardResponse
     class DashboardActivityResponse
 
@@ -53,102 +44,87 @@ classDiagram
     DashboardServiceImpl --> ProjectRepository
     DashboardServiceImpl --> TaskRepository
     DashboardServiceImpl --> TimeEntryRepository
-    DashboardServiceImpl --> TimeEntryQueryService
-    DashboardServiceImpl --> Clock
+    DashboardServiceImpl --> TimeEntryService
     DashboardServiceImpl --> DashboardResponse
     DashboardServiceImpl --> DashboardActivityResponse
 ```
 
-### API ที่เพิ่ม
+ความคืบหน้าโปรเจกต์คำนวณจาก `completedTasks / totalTasks * 100`; utilization เปรียบเทียบเวลาที่ใช้กับเป้าหมาย KPI สัปดาห์นี้รวมตั้งแต่วันจันทร์ถึงวันนี้แล้วเทียบกับสัปดาห์ก่อน ส่วน `dailyWork` ของกราฟเริ่มต้นเป็น 7 วันย้อนหลัง งานที่ยังเปิดไม่รวม task สถานะ `COMPLETED` การแสดง recent entries อยู่ใน Dashboard response เพื่อลด request สำหรับรายการเวลาล่าสุด
 
-| Method | Endpoint | หน้าที่ |
-| --- | --- | --- |
-| `GET` | `/api/dashboard` | คืน KPI, ชั่วโมงทำงานรายวัน, โปรเจกต์ที่กำลังทำ และงานที่ยังเปิดอยู่ |
-| `GET` | `/api/dashboard/activity?period=WEEK|MONTH|YEAR` | คืนข้อมูลกราฟตามช่วงเวลาที่เลือก |
+## 2. Backend สำหรับ Reports
 
-Service ใช้ `Clock` และโซนเวลา `Asia/Bangkok` เพื่อกำหนดวันและช่วงเวลาเดียวกันทั้งระบบ และทำให้ทดสอบวันที่ได้โดยไม่ต้องพึ่งเวลาจริงของเครื่อง
+| Endpoint | หน้าที่ | การใช้บนหน้า Reports ปัจจุบัน |
+|---|---|---|
+| `GET /api/reports/summary` | KPI และตัวเลือก filter ลูกค้า/โปรเจกต์ | ใช้ |
+| `GET /api/reports/distribution` | สัดส่วนเวลาตาม `CLIENT` หรือ `PROJECT` | ใช้ |
+| `GET /api/reports/projects` | เวลาเป้าหมาย เวลาที่ใช้ ความคืบหน้า และ pagination | ใช้ |
+| `GET /api/reports/work-trend` | แนวโน้มเวลาแบบ DAY/WEEK/MONTH | มี API แต่หน้า Reports ยังไม่ใช้ |
+| `GET /api/reports/work-pattern` | วันและชั่วโมงที่ทำงานมากที่สุด | มี API แต่หน้า Reports ยังไม่ใช้ |
 
-### การคำนวณข้อมูล
+`ReportController` ตรวจ request และห่อ response ด้วย `ApiResult`; `ReportServiceImpl` เลือกข้อมูลและคำนวณ KPI; `ReportQueryRepository` ใช้ aggregate query โดยจำกัด owner และไม่รวม Time Entry ที่ยังไม่จบหรือถูกลบ `ReportFilterRequest` รับช่วงวันที่แบบ optional: ว่างทั้งคู่หมายถึงทุกช่วงเวลา ส่วนส่งข้างเดียวหรือสลับวันเป็นข้อผิดพลาด
 
-- ชั่วโมงที่บันทึก: รวม `durationSeconds` ของ time entry ในช่วงที่เลือก
-- เปอร์เซ็นต์เทียบช่วงก่อน: เปรียบเทียบผลรวมของช่วงปัจจุบันกับช่วงก่อนหน้า
-- ความคืบหน้าโปรเจกต์: `completedTasks / totalTasks * 100`
-- งานที่ยังเปิด: เลือกเฉพาะ task ที่สถานะไม่ใช่ `DONE`
-- กราฟรายสัปดาห์: รวมเวลาเป็นรายวัน
-- กราฟรายเดือนและรายปี: รวมข้อมูลตามหน่วยเวลาที่เหมาะกับช่วงที่เลือก
+Response แยก DTO ตาม endpoint เพื่อให้หน้าบ้านรับข้อมูลเฉพาะที่ต้องใช้ `/projects` คืน `meta` ของ pagination และเปอร์เซ็นต์ความคืบหน้าจาก task; ไม่เก็บค่า progress ซ้ำใน Project entity สำหรับรายงาน
 
-ข้อมูลเวลายังคงส่งและเก็บเป็นวินาที (`trackedSeconds`) จนถึงชั้นแสดงผล เพื่อไม่ให้เวลาที่น้อยกว่าหนึ่งชั่วโมงถูกปัดเป็นศูนย์ก่อนนำไปสร้างกราฟ
+## 3. Frontend Dashboard
 
-## 2. Dashboard UI และการแสดงกราฟ
-
-หน้า `Analytics/pages/Dashboard` เรียก service ฝั่ง frontend เพียงชุดข้อมูล Dashboard สำหรับส่วนสรุปหลัก และเรียก activity endpoint ใหม่เมื่อผู้ใช้เปลี่ยนช่วงกราฟเป็นสัปดาห์ เดือน หรือปี
+หน้า `Analytics/pages/Dashboard/page.tsx` อยู่ใต้ `DashboardProvider` และเรียก `useDashboard()` ข้อมูลหลักมาจาก `/api/dashboard` กราฟ `WEEK` ใช้ `dailyWork` ใน response นี้ ส่วน `MONTH`/`YEAR` เรียก `/api/dashboard/activity` เมื่อผู้ใช้เลือกช่วงใหม่ `dashboardChart.ts` แปลงจุดกราฟและ label โดยไม่ปัดเวลาทิ้งก่อนส่งให้ Recharts
 
 ```mermaid
 flowchart LR
-    Page[Dashboard page] --> Service[services/dashboard.ts]
-    Service --> MainAPI[GET /api/dashboard]
+    Page[DashboardPage] --> Hook[useDashboard]
+    Hook --> Context[DashboardProvider]
+    Context --> Main[GET /api/dashboard]
     Page --> Period[เลือก WEEK / MONTH / YEAR]
-    Period --> ActivityAPI[GET /api/dashboard/activity]
-    MainAPI --> Cards[KPI, โปรเจกต์, งาน]
-    ActivityAPI --> Chart[Activity chart]
+    Period --> Context
+    Context --> Activity[GET /api/dashboard/activity]
+    Main --> Cards[KPI และรายการ]
+    Activity --> Chart[ProductivityChart]
 ```
 
-Utility สำหรับกราฟแยกออกจาก component เพื่อให้การจัด label, ค่าแกน และการแสดงเวลาเป็น logic ที่ทดสอบได้โดยไม่ผูกกับ UI library โดยตรง
+Page ประกอบ `SummaryCard` 4 ใบ, `ProductivityChart`, `DashboardProjectsTable`, `DashboardTasksTable` และ `DashboardTimerCard` พร้อม `LoadingState`/`ErrorState` และ empty state เมื่อไม่มีข้อมูล ตัวจับเวลาใน card ใช้สถานะ current timer จาก feature Time Tracking ที่มีอยู่; หากไม่มี timer กำลังวิ่งจะแสดง `recentTimeEntries` จาก Dashboard response การหยุด timer จาก card เป็นการเรียก action ของ feature เดิมแล้ว refresh สองข้อมูลที่หน้าใช้
 
-## 3. Shared UI ด้วย Component Composition
+## 4. Frontend Reports
 
-ส่วน UI ที่ใช้ซ้ำถูกย้ายมาอยู่ใน `src/components/ui` เพื่อให้ทุกหน้าใช้รูปแบบเดียวกันและลด CSS/markup ซ้ำกัน โดยใช้ shadcn/ui ที่มีอยู่ในโครงการ
-
-| Component | การนำไปใช้ |
-| --- | --- |
-| `Dialog` | แทน modal ที่เขียนเอง สำหรับฟอร์มและหน้าต่างยืนยัน |
-| `Sonner` | แสดงผลสำเร็จหรือผิดพลาดจาก action/API ในจุดเดียว |
-| `Input` | รูปแบบ input, disabled state และ password visibility ที่สม่ำเสมอ |
-| `NativeSelect` | adapter เพื่อให้ select เดิมเปลี่ยนมาใช้ shadcn Select ได้โดยไม่ต้องแก้ทุกหน้าพร้อมกัน |
-| `Table` และ pagination | ตารางข้อมูลที่ใช้โครงสร้างเดียวกันและรับข้อมูล pagination จาก API |
-
-`NativeSelect` ทำหน้าที่เป็น **Adapter pattern**: รับ props และ `<option>` ในรูปแบบ native select เดิม แล้วแปลงเป็นโครงสร้าง `Select`, `SelectContent` และ `SelectItem` ของ shadcn/ui ช่วยให้ย้ายโค้ดทีละหน้าได้โดยยังรักษา API ของ component เดิมไว้
-
-## 4. Global Timer ด้วย Context Provider
-
-ตัวจับเวลาไม่ควรหายเมื่อผู้ใช้เปลี่ยนหน้า จึงวาง `TimerProvider` ไว้ในระดับ route/app และให้ component ที่ต้องใช้สถานะ timer อ่านผ่าน hook กลาง
+`services/report.ts` สร้าง query string และอ่าน `data/meta` ของ API ส่วน `types/analytics.ts` ระบุรูปข้อมูลที่ UI ใช้ `ReportsPage` ใช้ `useAsyncData` แยกชุด summary, distribution และ projects เพื่อแสดง loading/error/retry และไม่ใช้ response เก่าของ filter คนละชุด
 
 ```mermaid
-flowchart TD
-    Routes[App routes] --> Provider[TimerProvider]
-    Provider --> Context[TimerContext]
-    Context --> Topbar[Topbar timer]
-    Context --> TimerPage[Time tracker]
-    Context --> Dashboard[Dashboard current timer]
-    TimerPage --> TimerAPI[/api/timer/current]
+flowchart LR
+    Page[ReportsPage] --> Service[services/report.ts]
+    Service --> Summary[GET /api/reports/summary]
+    Service --> Distribution[GET /api/reports/distribution]
+    Service --> Projects[GET /api/reports/projects]
+    Summary --> KPI[KPI และตัวเลือก filter]
+    Distribution --> ByClient[กราฟเวลาตามลูกค้า/โปรเจกต์]
+    Projects --> ProjectChart[กราฟเทียบเป้าหมาย]
+    Projects --> Table[ตาราง pagination และ CSV หน้านี้]
 ```
 
-`TimerContext` เก็บ current timer และมี `refreshCurrentTimer()` เพื่อให้หน้าเริ่ม หยุด หรือกลับมาทำต่อ รีเฟรชข้อมูลใน Topbar, Time Tracker และ Dashboard พร้อมกันได้
+วันที่เริ่มและสิ้นสุดว่างทั้งคู่แสดงทุกช่วงเวลา กรอกไม่ครบหรือเรียงวันผิดจะแสดง error และไม่ส่ง request ค่า `ALL` ใช้ใน UI เท่านั้น ผู้ใช้เลือกกราฟเวลาตามลูกค้าหรือโปรเจกต์ได้เองด้วย `groupBy=CLIENT|PROJECT` โดยตัวกรองลูกค้ายังมีผลกับทั้งสองแบบ การสลับกราฟเรียกเฉพาะ `/distribution`; เมื่อเปลี่ยน filter ตารางกลับไปหน้า 1 ชื่อโปรเจกต์ยาวบนแกนกราฟถูกตัด แต่ tooltip ยังแสดงชื่อเต็ม ค่าแนวโน้มเวลาจะแสดงวันที่ของช่วงก่อนหน้าที่นำมาเทียบเมื่อเลือกช่วงวันที่
 
-Current timer ยังคงใช้ endpoint เฉพาะ `/api/timer/current` แยกจาก Dashboard เพราะ Topbar ต้องแสดงสถานะนี้ได้ทุกหน้า ไม่ได้ขึ้นกับการเปิด Dashboard
+กราฟเปรียบเทียบโปรเจกต์และ CSV ใช้เฉพาะรายการในหน้า pagination ปัจจุบัน จึงระบุปุ่มว่า “ส่งออกหน้านี้ CSV” และใช้ `meta` จาก Backend แทนการเดาจำนวนหน้า
 
-## 5. Form Validation แบบ Pure Function
+## Component และ Deployment Diagram
 
-การตรวจสอบโปรไฟล์อยู่ใน `Profile/profile.validators.ts` แยกจาก React component เพื่อให้ใช้ซ้ำและทดสอบได้ง่าย
+```mermaid
+flowchart LR
+    Browser[Browser: React ที่ build ด้วย Vite] --> API[Spring Boot API]
+    API --> DB[(PostgreSQL)]
+    subgraph BrowserUI[Frontend Analytics]
+      Dashboard[DashboardPage + DashboardProvider]
+      Reports[ReportsPage + report.ts]
+      Shared[SummaryCard / Table / Chart / ViewState]
+      Dashboard --> Shared
+      Reports --> Shared
+    end
+    Dashboard --> API
+    Reports --> API
+```
 
-ตัวตรวจสอบครอบคลุม:
+Diagram แสดงขอบเขตการเชื่อมต่อ ไม่ยืนยันว่า Frontend และ Backend อยู่ใน container หรือ host เดียวกันในทุก environment; `VITE_API_BASE_URL`/proxy เป็นตัวกำหนดปลายทางใน runtime ที่ใช้จริง
 
-- ฟิลด์บังคับกรอก
-- เบอร์โทรศัพท์เป็นตัวเลข 10 หลัก
-- รหัสไปรษณีย์เป็นตัวเลข 5 หลัก
-- เลขประจำตัวผู้เสียภาษีเป็นตัวเลข 13 หลัก
-- ข้อความ error แสดงใต้ฟิลด์ และปุ่มบันทึกเปิดใช้เมื่อข้อมูลผ่านการตรวจสอบและมีการเปลี่ยนแปลง
+## ขอบเขตและการทดสอบ
 
-การแยก validation ออกจาก page เป็นการแยกความรับผิดชอบ: component ดูแล state และการแสดงผล ขณะที่ validator ดูแลกติกาข้อมูล
-
-## ขอบเขตของ Pattern
-
-- `DashboardActivityPeriod` เป็น enum สำหรับเลือกช่วงเวลา ยังไม่จำเป็นต้องสร้าง Strategy class แยก เพราะกติกาเลือกช่วงมีขนาดเล็กและอยู่ใน service เดียว
-- Dashboard ไม่รวม current timer ใน response หลัก เพื่อลดการผูกกันของข้อมูลหน้า Dashboard กับสถานะที่ต้องใช้ทั่วแอป
-- การใช้ DTO ป้องกันไม่ให้ entity จากฐานข้อมูลกลายเป็นสัญญา API โดยตรง และช่วยให้ frontend รับเฉพาะข้อมูลที่ต้องแสดง
-
-## การทดสอบและตรวจสอบ
-
-- เพิ่ม unit test สำหรับ utility ที่จัดข้อมูลกราฟ เพื่อยืนยันการจัดช่วงเวลาและการคงค่าหน่วยวินาที
-- เพิ่ม integration test ของ Dashboard เพื่อทดสอบการรวมข้อมูลจากฐานข้อมูลและรูปแบบ response
-- ทดสอบหน้า Dashboard ด้วยข้อมูลว่าง เพื่อให้ KPI และกราฟแสดงค่า `0` ได้อย่างปลอดภัย
+- การจัดการ timer, Project/Task และ Client เป็น feature อื่น Analytics อ่านผลลัพธ์และใช้ action ที่มีอยู่เท่านั้น
+- หน้า Reports ยังไม่แสดง work trend, work pattern และค่าเฉลี่ยรายวัน แม้ Backend มี endpoint แล้ว; CSV ปัจจุบันเป็นรายงานโปรเจกต์เฉพาะหน้าตาราง ไม่ใช่ Time Entry ทุกแถว
+- `getProjects` ฝั่ง Backend ยังแบ่งหน้าหลังโหลดโปรเจกต์ที่มองเห็นทั้งหมด หากข้อมูลมากควรย้าย pagination ไปฐานข้อมูล
+- Frontend มี `dashboardChart.test.ts`, `dashboard.test.tsx`, `services/report.test.ts` และ `analytics.utils.test.ts`; Backend มี `DashboardIntegrationTest`, `ReportControllerTest`, `ReportServiceImplTest` และ `ReportIntegrationTest`
