@@ -1,401 +1,208 @@
 # Freelance Hub
 
-<p align="center"><img src="code/Frontend/public/logo.svg" alt="Freelance Hub logo" width="220" /></p>
+<p align="center"><img src="code/Frontend/public/logo-light.svg" alt="Freelance Hub logo" width="220" /></p>
 
-Freelance Hub คือระบบบริหารงานสำหรับ Freelancer ที่รวมการจัดการลูกค้า โปรเจกต์ และงานย่อยไว้ในที่เดียว
-ระบบรองรับการจับเวลาทำงานแบบ real-time และ manual entry พร้อมสรุปชั่วโมงการทำงาน
-ผู้ใช้สามารถวิเคราะห์เวลาทำงานและดู productivity insights ผ่าน Dashboard
-โปรเจกต์พัฒนาด้วย React + Vite สำหรับ Frontend และ Spring Boot REST API สำหรับ Backend โดยใช้ PostgreSQL บน Supabase ตาม Layered Architecture
+Freelance Hub เป็นเว็บแอปสำหรับ Freelancer ที่จัดการลูกค้า โปรเจกต์ และงานย่อยในที่เดียว
+ผู้ใช้จับเวลาทำงานหรือบันทึกย้อนหลัง แล้วดูเวลาที่ใช้เทียบกับเป้าหมายของแต่ละโปรเจกต์ได้
+Dashboard และ Reports ช่วยให้เห็นภาระงานและรูปแบบการใช้เวลาโดยไม่ต้องรวบรวมข้อมูลจากหลายเครื่องมือ
+ระบบใช้ React, Spring Boot และ PostgreSQL โดยแยกข้อมูลของผู้ใช้แต่ละบัญชี
 
-> **Project Status:** กำลังพัฒนา
+> สถานะ: กำลังพัฒนา ขอบเขต MVP ครอบคลุมการจัดการงานและเวลา ยังไม่รวม Invoice, Payment หรือระบบบัญชี
 
 ## สมาชิกกลุ่ม
 
-| ลำดับ | ชื่อ-นามสกุล          | รหัสนักศึกษา | Section   | Branch                    | หน้าที่รับผิดชอบ                    |
-| ----: | --------------------- | ------------ | --------- | ------------------------- | ----------------------------------- |
-|     1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7  | Section 2 | `petpinyo_673380073-7_02` | Authentication, Security, PM/DevOps |
-|     2 | ถิรวัฒน์ อุจินา       | 673380039-7  | Section 2 | `thirawat_673380039-7_02` | Client Management                   |
-|     3 | กันตวิชญ์ นาคนวล      | 673380027-4  | Section 1 | `kantavit_673380027-4_01` | Project และ Task Management         |
-|     4 | กรมภัฏ พิริยะ         | 673380262-4  | Section 2 | `kompat_673380262-4_02`   | Time Tracking                       |
-|     5 | ณัฏฐดนย์ สาริกา       | 673380511-9  | Section 2 | `nattadol_673380511-9_02` | Dashboard, Analytics และ Frontend   |
+| ลำดับ | ชื่อ-นามสกุล | รหัสนักศึกษา | Section | Branch | หน้าที่รับผิดชอบ |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | เพชรภิญโญ ธนศิรินรากร | 673380073-7 | 2 | `petpinyo_673380073-7_02` | Authentication, User, Security และ CI/CD |
+| 2 | ถิรวัฒน์ อุจินา | 673380039-7 | 2 | `thirawat_673380039-7_02` | Client Management |
+| 3 | กันตวิชญ์ นาคนวล | 673380027-4 | 1 | `kantavit_673380027-4_01` | Project และ Task Management |
+| 4 | กรมภัฏ พิริยะ | 673380262-4 | 2 | `kompat_673380262-4_02` | Time Tracking |
+| 5 | ณัฏฐดนย์ สาริกา | 673380511-9 | 2 | `nattadol_673380511-9_02` | Dashboard, Analytics และ Frontend |
 
 ## Tech Stack
 
-| ส่วน              | เทคโนโลยี                                                       |
-| ----------------- | --------------------------------------------------------------- |
-| Backend           | Java 17, Spring Boot 4.0.0                                      |
-| Build Tool        | Maven                                                           |
-| Database          | PostgreSQL 16                                                   |
-| ORM               | Spring Data JPA / Hibernate                                     |
-| Web / API         | Spring MVC, RESTful API                                         |
-| Frontend          | React 19, Vite 8, React Router, Recharts                        |
-| API Documentation | OpenAPI / Swagger UI เปิดเฉพาะ local, dev และ staging           |
-| Testing           | JUnit 5, Mockito, Spring Boot Test                              |
-| Version Control   | Git + Github                                                    |
-| Deployment        | Vercel (Frontend) + Render (Backend) + Supabase (Database)      |
+| ส่วน | เทคโนโลยี |
+| --- | --- |
+| Backend | Java 17, Spring Boot 4.0.0, Spring MVC, Spring Security |
+| Build และ ORM | Maven Wrapper, Spring Data JPA / Hibernate |
+| Database | PostgreSQL 16, Flyway migrations |
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS, React Router, Recharts |
+| API documentation | OpenAPI / Swagger UI เมื่อเปิด `OPENAPI_ENABLED` |
+| Testing | JUnit 5, Mockito, Spring Boot Test, Node.js test runner, ESLint, TypeScript |
+| Deployment | Vercel (Frontend), Render (Backend), Supabase PostgreSQL |
 
 ## System Architecture
 
-ระบบใช้ **Layered Architecture** โดยแต่ละ request ต้องไหลตามลำดับและห้าม Controller เรียก Repository โดยตรง
+Frontend เรียก REST API ผ่าน path `/api` บน origin เดียวกัน ส่วน Backend แยกชั้นตาม Layered Architecture:
 
 ```text
-Presentation Layer (React UI / REST Controller)
-                              |
-                              v
-Service Layer (Business Logic / Validation / Transaction)
-                              |
-                              v
-Repository Layer (Spring Data JPA / Data Access)
-                              |
-                              v
-Domain Layer (Entity / Value Object / Enum)
-                              |
-                              v
-                         PostgreSQL
+React UI → REST Controller → Service → Repository → PostgreSQL
+                             ↕
+                    Request/Response DTO + Mapper
 ```
 
-ใช้ DTO และ Mapper แยก API contract ออกจาก JPA Entity และใช้ Constructor Injection สำหรับ dependency ทั้งหมด
+Controller รับ HTTP request และส่งต่อให้ Service; Service จัดการ business rules และ transaction; Repository เข้าถึงข้อมูลผ่าน JPA โดย Controller ไม่เรียก Repository ตรง ๆ Spring Security ตรวจ access JWT ก่อนเข้า endpoint ที่ต้องล็อกอิน และ Flyway จัดการ schema เมื่อ Backend เริ่มทำงาน
+
+เอกสารสถาปัตยกรรมเพิ่มเติม: [Class Diagram](doc/diagrams/class-diagram.md) ส่วน SOLID และ Design Patterns ฉบับรายบุคคลอยู่ใน `doc/V1/` และจะนำมารวมเป็นเอกสารกลางก่อนส่งงาน
 
 ## Database Design (ER Diagram)
 
-ฐานข้อมูล MVP ประกอบด้วย 7 ตารางหลัก ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` ซึ่งครบจำนวนขั้นต่ำตามข้อกำหนดรายวิชา โดย `addresses` เป็นตารางกลางสำหรับข้อมูลที่อยู่ของ User Profile และ Client
+Schema ปัจจุบันหลัง Flyway migration มี 7 ตารางหลัก: `users`, `user_profiles`, `refresh_tokens`, `clients`, `projects`, `tasks` และ `time_entries`
 
-ความสัมพันธ์หลัก:
+| ความสัมพันธ์ | การใช้งาน |
+| --- | --- |
+| `users` 1:1 `user_profiles` | โปรไฟล์ของผู้ใช้แต่ละบัญชี |
+| `users` 1:N `refresh_tokens` และ `clients` | session และลูกค้าที่ผู้ใช้เป็นเจ้าของ |
+| `clients` 1:N `projects` | โปรเจกต์ของลูกค้า |
+| `projects` 1:N `tasks` และ `time_entries` | งานย่อยและเวลาที่บันทึก |
 
-- One-to-One: `users` → `user_profiles`
-- `user_profiles` เก็บ field ที่อยู่โดยตรงตาม Data Dictionary; `clients` ยังใช้ `addresses` ในช่วง migration ของ Client
-- One-to-Many: `clients` → `projects`
-- One-to-Many: `projects` → `tasks` และ `time_entries`
-- ตาราง `invoices`, `invoice_items`, `payments` และ `transactions` จะเพิ่มใน Post-MVP
-
-ดู schema และความสัมพันธ์ฉบับออกแบบได้ที่ [ER Diagram](doc/diagrams/er-diagram.md)
-และโครงสร้าง JPA Entity ที่ [Domain Class Diagram](doc/diagrams/class-diagram.md)
-
-ดูรายละเอียด field และ constraint ที่ [Data Dictionary](doc/data-dictionary.md)
+ข้อมูลที่อยู่ของ `user_profiles` และ `clients` ใช้ `Address` value object แบบ `@Embedded` และเก็บเป็นคอลัมน์ในตารางนั้น ๆ; migration V13 ลบตาราง `addresses` เดิมแล้ว ข้อมูลสัมพันธ์ด้วย foreign key และ index ตาม [ER Diagram](doc/diagrams/er-diagram.md) และ [Data Dictionary](doc/data-dictionary.md) ส่วน migration อยู่ใน [db/migration](code/Backend/src/main/resources/db/migration/)
 
 ## Installation & Setup
 
-### Prerequisites
-
-- Git
-- Docker Desktop หรือ Docker Engine พร้อม Docker Compose
-- JDK 17 กรณีต้องการรันโดยไม่ใช้ Docker
-
-### Clone Repository
+ต้องมี Git, Docker Engine/Desktop พร้อม Docker Compose และ Node.js สำหรับรัน Frontend หากรัน Backend โดยไม่ใช้ Docker ให้ติดตั้ง JDK 17 ด้วย โปรเจกต์มี Maven Wrapper จึงไม่จำเป็นต้องติดตั้ง Maven แยก
 
 ```bash
 git clone https://github.com/lillianxhub/freelance-hub.git
-cd freelance-hub/code
+cd freelance-hub
+cp code/Backend/.env.example code/Backend/.env
 ```
 
-### Environment Variables
+บน Windows PowerShell ใช้ `Copy-Item code/Backend/.env.example code/Backend/.env` แทน `cp` แล้วแก้ `POSTGRES_PASSWORD` และ `JWT_SECRET` ใน `.env` ก่อนรัน อย่า commit `.env` หรือ production credentials
 
-Backend ใช้ `application.properties` เป็น config กลาง ส่วน Frontend ใช้ Vite environment variables และ Docker Compose ของ Backend โหลดค่าฐานข้อมูล dev จาก `code/Backend/.env`
+| ตัวแปร | ใช้สำหรับ | ค่า local ใน `.env.example` |
+| --- | --- | --- |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | ฐานข้อมูล Docker | `freelance_hub`, `freelance_hub`, รหัสผ่านตัวอย่างที่ต้องเปลี่ยน |
+| `JWT_SECRET` | ลงนาม access JWT | ค่า local ตัวอย่างที่ต้องเปลี่ยน |
+| `CORS_ALLOWED_ORIGINS` | origin ที่อนุญาต | `http://localhost:5173,http://localhost:8080` |
+| `REFRESH_COOKIE_SECURE` | cookie ผ่าน HTTPS | `false` สำหรับ local; `true` สำหรับ HTTPS |
+| `OPENAPI_ENABLED` | เปิด Swagger UI | `true` ใน `.env.example`; ค่าเริ่มต้นของแอปคือ `false` |
+| `VITE_API_BASE_URL` | path ของ Frontend API | `/api` |
+| `BACKEND_ORIGIN` | Backend ที่ Vite/Vercel proxy ไป | local: `http://localhost:8080`; บน Vercel ใช้ HTTPS origin ของ Render |
 
-PowerShell:
-
-```powershell
-cd code/Backend
-Copy-Item .env.example .env
-```
-
-macOS/Linux:
-
-```bash
-cd code/Backend
-cp .env.example .env
-```
-
-| Variable                     | Description                         | Development Default   |
-| ---------------------------- | ----------------------------------- | --------------------- |
-| `POSTGRES_DB`                | ชื่อฐานข้อมูลสำหรับ Docker          | `freelance_hub`       |
-| `POSTGRES_USER`              | ผู้ใช้ PostgreSQL สำหรับ Docker     | `freelance_hub`       |
-| `POSTGRES_PASSWORD`          | รหัสผ่าน PostgreSQL สำหรับ Docker   | ต้องเปลี่ยนค่า        |
-| `SPRING_JPA_DEFAULT_SCHEMA`  | Schema ของ JPA และ Flyway           | `public`              |
-| `SPRING_DATASOURCE_URL`      | JDBC URL สำหรับ production          | Secret ของ deployment |
-| `SPRING_DATASOURCE_USERNAME` | Database username สำหรับ production | Secret ของ deployment |
-| `SPRING_DATASOURCE_PASSWORD` | Database password สำหรับ production | Secret ของ deployment |
-| `JWT_SECRET`                 | Secret สำหรับลงนาม JWT              | Secret ของ deployment |
-| `CORS_ALLOWED_ORIGINS`       | Origin ที่อนุญาตสำหรับ CORS และ refresh/logout คั่นด้วย comma | `http://localhost:5173,http://localhost:8080` |
-| `REFRESH_COOKIE_SECURE`      | เปิด Secure cookie เมื่อใช้ HTTPS | `false` ใน Docker local; `true` บน Render |
-| `OPENAPI_ENABLED`            | เปิด OpenAPI/Swagger เฉพาะ local, dev หรือ staging; production ให้ใช้ `false` หรือไม่กำหนด | `true` ผ่าน Docker Compose |
-
-ห้าม commit ไฟล์ `.env` หรือ production credentials ลง Git
-
-Flyway จะรัน migration อัตโนมัติเมื่อ application container เริ่มทำงาน โดยอ่านไฟล์จาก
-`src/main/resources/db/migration` ที่บรรจุอยู่ใน JAR ไม่ต้องติดตั้ง Flyway CLI
+ตัวแปรฐานข้อมูลสำหรับ Backend ที่รันแยกหรือบน Render ได้แก่ `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` และ `SPRING_DATASOURCE_PASSWORD` ดูค่าอื่นได้ใน [application.properties](code/Backend/src/main/resources/application.properties) และ [.env.example](code/Backend/.env.example)
 
 ## How to Run
 
-### Local Development ด้วย Docker Compose
-
-ต้องติดตั้ง Docker Desktop และสร้างไฟล์ `code/Backend/.env` จาก `.env.example` ก่อน จากนั้นรัน Backend จากโฟลเดอร์ `code/Backend/`:
+จาก root ของ repository เปิด Backend และ PostgreSQL ด้วย Docker Compose:
 
 ```bash
+cd code/Backend
 docker compose up --build
 ```
 
-เมื่อเริ่มระบบแล้ว:
+Backend อยู่ที่ `http://localhost:8080` และ PostgreSQL เปิดที่ port `5432` ตามค่าเริ่มต้น Flyway จะรัน migration ก่อนแอปรับ request หากต้องการรัน Backend บนเครื่องแทน Docker ให้เปิด PostgreSQL และใช้ `./mvnw spring-boot:run` จาก `code/Backend` (Windows ใช้ `mvnw.cmd`)
 
-- Backend API: <http://localhost:8080>
-- PostgreSQL: `localhost:5432`
-- Flyway จะรัน migration ที่ยังไม่เคยรันโดยอัตโนมัติก่อน Backend เริ่มทำงาน
-
-รัน Frontend แยกจากโฟลเดอร์ `code/Frontend/`:
+เปิดอีก terminal แล้วรัน Frontend:
 
 ```bash
-npm install
+cd code/Frontend
+npm ci
 npm run dev
 ```
 
-Vite จะเปิดที่ <http://localhost:5173>
+เปิด `http://localhost:5173` และสมัครบัญชีใหม่ Vite proxy `/api` ไป Backend local; Frontend เก็บ access token ในหน่วยความจำ และ refresh token อยู่ใน HttpOnly cookie หากใช้ `docker compose up -d` สามารถดู log ด้วย `docker compose logs -f app` และหยุดด้วย `docker compose down` โดย volume PostgreSQL ยังอยู่
 
-รันแบบ background:
+### ข้อมูลตัวอย่างสำหรับ local
 
-```bash
-docker compose up --build -d
-```
-
-ดู log ของ application:
-
-```bash
-docker compose logs -f app
-```
-
-หยุด container โดยเก็บข้อมูล PostgreSQL ไว้:
-
-```bash
-docker compose down
-```
-
-### Seed ข้อมูลตัวอย่างสำหรับ Local
-
-Java seeder สร้างข้อมูลตัวอย่าง User → Client → Project → Task ใน PostgreSQL ของ Docker สำหรับทดลองใช้งานเท่านั้น ไม่ทำงานตอนเปิด Backend ตามปกติ และรันซ้ำได้โดยไม่สร้างข้อมูลซ้ำ Seeder ยอมต่อฐานข้อมูลเฉพาะ `localhost`, `127.0.0.1` หรือ service `postgres` ใน Docker Compose และไม่ทำงานใน CI/Render
-
-จากโฟลเดอร์ `code/Backend/` ให้ build และเปิด app เวอร์ชันล่าสุดก่อน เพื่อให้โค้ดตรงกับ Flyway migration ที่รันแล้ว:
-
-```bash
-docker compose up -d postgres
-docker compose build app
-docker compose up -d --no-deps app
-```
-
-รัน seeder จากเครื่องโดยตรงด้วย `./seed-local.sh` (จากโฟลเดอร์ `code/Backend/`) หรือใช้ Docker ตามคำสั่งด้านล่าง ค่าเริ่มต้นล่าสุดของ `seed-local.sh` คือ email `seed@example.co` และรหัสผ่าน `LocalSeed1` ใช้สำหรับ local เท่านั้น และรหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร สามารถกำหนด `LOCAL_SEED_EMAIL` และ `LOCAL_SEED_PASSWORD` เพื่อเปลี่ยนค่าเริ่มต้นได้
-
-ตั้งรหัสผ่านเองก่อนรันได้ดังนี้:
-
-```powershell
-# Windows PowerShell
-$env:LOCAL_SEED_EMAIL = 'seed@example.co'
-$env:LOCAL_SEED_PASSWORD = 'your-local-test-password'
-```
-
-```bash
-# macOS / Linux
-export LOCAL_SEED_EMAIL='seed@example.co'
-export LOCAL_SEED_PASSWORD='your-local-test-password'
-```
-
-จากนั้นใช้คำสั่งเดียวกันทุกระบบเพื่อ seed ผ่าน Docker โดยให้ข้อมูล login ตรงกับค่าเริ่มต้นของ `seed-local.sh`:
-
-```bash
-docker compose run --rm --no-deps -e LOCAL_SEED_RUN=true -e LOCAL_SEED_EMAIL -e LOCAL_SEED_PASSWORD app
-```
-
-เข้าสู่ระบบด้วย `seed@example.co` / `LocalSeed1` เมื่อใช้ `./seed-local.sh` โดยไม่กำหนด override; Docker seeder ใช้ email/password ที่ export ไว้ก่อนรัน หรือใช้ email และรหัสผ่านที่กำหนดเอง Seeder จะไม่แสดงรหัสผ่านใน log และจะหยุดหาก email เดิมมีรหัสผ่านไม่ตรงกัน ชุดข้อมูลประกอบด้วย profile, clients, projects, tasks และ time entries สำหรับทดสอบหน้ารายการและตัวกรอง การรันซ้ำจะอ้างอิง ID เดิมและไม่เขียนทับข้อมูลที่แก้จาก UI
-
-ปกติ Seeder จะไม่สร้าง timer ที่กำลังทำงาน หากต้องการลอง Stop/Cancel ให้ตั้ง `LOCAL_SEED_RUNNING_TIMER=true` ก่อนรัน โดยจะไม่สร้าง timer ซ้ำหากบัญชีนี้มี timer เปิดอยู่แล้ว Seeder ใช้ได้เฉพาะ PostgreSQL local ที่ผ่านการตรวจ host และสร้างตาราง mapping เฉพาะฐานข้อมูล local เท่านั้น ห้ามใช้ข้อมูลรับรอง production
+จาก `code/Backend` รัน `./seed-local.sh` (หรือ `bash ./seed-local.sh`) หลังเปิด PostgreSQL แล้ว สคริปต์ใช้ `local.seed@example.com` / `localseed1234` เป็นค่าเริ่มต้นสำหรับ local เท่านั้น เปลี่ยนได้ด้วย `LOCAL_SEED_EMAIL` และ `LOCAL_SEED_PASSWORD`; seeder จะไม่ทำงานเองเมื่อเปิด Backend ตามปกติ ดูเงื่อนไขและวิธีใช้ใน [seed-local.sh](code/Backend/seed-local.sh)
 
 ## API Documentation
 
-OpenAPI และ Swagger UI ปิดเป็นค่าเริ่มต้นใน application configuration เพื่อไม่ให้เปิดบน production
-โดยตั้ง `OPENAPI_ENABLED=true` เฉพาะ local development หรือ staging เท่านั้น
+เมื่อตั้ง `OPENAPI_ENABLED=true` ให้เปิด Swagger UI ที่ `http://localhost:8080/swagger-ui.html` หรือ OpenAPI JSON ที่ `http://localhost:8080/v3/api-docs` โดย production ควรปิดไว้ตามค่าเริ่มต้น
 
-- Base URL: `http://localhost:8080`
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+| ส่วน | Endpoint หลัก |
+| --- | --- |
+| Authentication | `POST /api/auth/register`, `/login`, `/refresh`, `/logout` |
+| User | `GET/PATCH /api/users/me`, `PATCH /api/users/me/password` |
+| Clients | `/api/clients`, `/api/clients/{id}` |
+| Projects และ Tasks | `/api/projects`, `/api/projects/{id}`, `/api/projects/{projectId}/tasks`, `/api/tasks/{taskId}` |
+| Time Tracking | `/api/time-entries`, `/api/time-entries/summary`, `/api/timer/start`, `/api/timer/current`, `/api/timer/stop` |
+| Dashboard และ Reports | `GET /api/dashboard`, `GET /api/dashboard/activity`, `GET /api/reports/{summary,distribution,projects,work-trend,work-pattern}` |
 
-| Resource     | Endpoint             |
-| ------------ | -------------------- |
-| Register     | `/api/auth/register` |
-| Login        | `/api/auth/login`    |
-| Refresh token | `/api/auth/refresh` |
-| Logout       | `/api/auth/logout`   |
-| My profile   | `GET/PATCH /api/users/me` |
-| Change password | `/api/users/me/password` |
-| Clients      | `/api/clients`       |
-| Projects     | `/api/projects`      |
-| Time entries | `/api/time-entries`  |
-| Timer        | `/api/timer`         |
-| Analytics    | `/api/analytics`     |
+Endpoint ที่ต้องล็อกอินใช้ `Authorization: Bearer <access-token>` โดย access JWT มีอายุเริ่มต้น 15 นาที Refresh token อยู่ใน cookie `fh_refresh` (HttpOnly, SameSite=Lax และ Secure บน HTTPS) มีอายุสูงสุด 7 วัน การ refresh หมุน token ใหม่; logout เพิกถอน refresh-token family และตอบ `204` Access JWT เดิมยังอาจใช้ได้จนหมดอายุ การ refresh/logout ตรวจ `Origin` หรือ `Referer` ที่อนุญาต และ login มี rate limit ต่อ email/IP
 
-Income, Expense, Invoice และ Payment เป็น **Post-MVP** และยังไม่มี endpoint ในขอบเขต MVP
-
-ข้อมูลที่อยู่ของ User Profile และ Client ใช้ API contract เดียวกันและส่งเป็น flat fields
-โดยเก็บฟิลด์ที่อยู่ไว้ใน `user_profiles` และ `clients`:
-
-```json
-{
-  "address": "ที่อยู่",
-  "subdistrict": "ตำบล",
-  "district": "อำเภอ",
-  "province": "จังหวัด",
-  "postalCode": "รหัสไปรษณีย์"
-}
-```
-
-การเปลี่ยนรหัสผ่านใช้ `PATCH /api/users/me/password` พร้อม bearer JWT และ body
-`{"oldPassword":"รหัสผ่านเดิม","newPassword":"รหัสผ่านใหม่"}`; MVP ยังไม่มี forgot/reset password
-หากรหัสผ่านเดิมผิด API ตอบ `401` พร้อมข้อความ `รหัสผ่านไม่ถูกต้อง`
-
-การสมัครและ login จะตัดช่องว่างหัวท้ายและแปลง email เป็นตัวพิมพ์เล็กก่อนค้นหา/บันทึก
-`PATCH /api/users/me` เปลี่ยนเฉพาะฟิลด์ที่ส่งมา (ไม่ใช้ `PUT`)
-หาก login ผิดเกิน 10 ครั้งต่อ email ภายใน 15 นาที หรือเกิน 300 ครั้งต่อนาทีต่อ IP
-API ตอบ `429` พร้อม `Retry-After` และ `LOGIN_RATE_LIMITED`; ตัวนับอยู่ในหน่วยความจำ
-ของ Backend instance เดียวและจะเริ่มใหม่เมื่อ restart
-
-Access JWT มีอายุ 15 นาทีและส่งใน `data.token`; refresh token อยู่ใน cookie
-`fh_refresh` (`HttpOnly`, `SameSite=Lax`, `Secure` บน HTTPS) มีอายุสูงสุด 7 วัน
-`POST /api/auth/refresh` หมุน cookie และคืน access token ใหม่ การ logout เพิกถอน
-refresh-token family และตอบ `204`; access token เดิมอาจใช้ต่อได้จนหมดอายุ (ไม่เกิน 15 นาที)
-และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
-Refresh/logout ต้องมี `Origin` ที่อนุญาต หรือ `Referer` ที่อนุญาตเมื่อไม่มี `Origin`;
-หากไม่มีทั้งคู่หรือไม่ตรง API ตอบ `403`
-
-รายละเอียด API และ business rules อยู่ใน [REQUIREMENTS.md](REQUIREMENTS.md)
+API ใช้ response format กลางและ validation; ดู endpoint, business rules และขอบเขต MVP เพิ่มเติมใน [REQUIREMENTS.md](REQUIREMENTS.md) และ [Report API](doc/reports-summary-api.md) ระบบยังไม่มี Invoice, Payment, forgot/reset password หรืออัปโหลดรูปโปรไฟล์
 
 ## How to Run Tests
 
-รัน Backend automated tests จาก `code/Backend/`:
-
-Windows:
-
-```powershell
-.\mvnw.cmd test
-```
-
-macOS/Linux:
+Backend (จาก `code/Backend`):
 
 ```bash
-./mvnw test
+./mvnw verify
 ```
 
-สร้าง package พร้อมรัน tests:
+Windows ใช้ `.\mvnw.cmd verify` ผล JUnit อยู่ใน `code/Backend/target/surefire-reports/`
+
+Frontend (จาก `code/Frontend`):
 
 ```bash
-npm --prefix ../Frontend run build
-./mvnw clean verify
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
-Maven test result อยู่ใน `code/Backend/target/surefire-reports/` และ Frontend build ต้องผ่าน `npm run build` ส่วน test plan, exported report และหลักฐานการทดสอบสำหรับส่งงานเก็บใน `test/reports/`
+แผนทดสอบและหลักฐานการทดสอบอยู่ใน [test/](test/README.md) GitHub Actions รัน Backend `verify`, ตรวจ Flyway กับ PostgreSQL, build Docker image และ smoke test endpoint สมัครสมาชิก ส่วน Frontend รัน lint, typecheck, unit tests และ build โดยมี `Backend gate` กับ `Frontend gate` เป็น status checks
 
 ## Deployment URL
 
-| Environment          | URL                                                      | Status       |
-| -------------------- | -------------------------------------------------------- | ------------ |
-| Frontend (Vercel)    | `https://freelance-hub-self.vercel.app/`                  | HTTP 200 checked 2026-09-29 |
-| Backend staging (Render) | `https://freelance-hub-backend-staging.onrender.com`  | `/actuator/health` returned `UP` 2026-09-29 |
-| Backend production (Render) | `https://freelance-hub-g8y5.onrender.com` | URL confirmed by owner; health check timed out 2026-09-29 |
-| Swagger UI (Staging) | `https://freelance-hub-backend-staging.onrender.com/swagger-ui.html` | HTTP 200 checked 2026-09-29 |
+| Environment | URL |
+| --- | --- |
+| Frontend (Vercel) | <https://freelance-hub-self.vercel.app/> |
+| Backend staging (Render) | <https://freelance-hub-backend-staging.onrender.com> |
+| Backend production (Render) | <https://freelance-hub-g8y5.onrender.com> |
+| Swagger UI staging | <https://freelance-hub-backend-staging.onrender.com/swagger-ui.html> |
 
-Frontend ให้ deploy บน Vercel โดยกำหนด Root Directory เป็น `code/Frontend`, Build Command เป็น `npm run build` และ Output Directory เป็น `dist` พร้อมตั้ง `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render (ไม่มี `/` ปิดท้าย) ทั้ง Preview และ Production โดยช่วงทดสอบใช้ Render staging เดียวกัน เพื่อให้ Vercel proxy `/api` ไป Backend ผ่าน `code/Frontend/vercel.ts`; ไม่ตั้ง `VITE_API_BASE_URL` เป็น URL ข้ามโดเมน
-สำหรับการทดสอบ staging ให้ตั้ง `BACKEND_ORIGIN=https://freelance-hub-backend-staging.onrender.com`;
-เมื่อจะใช้ Backend production ให้เปลี่ยนเป็น `https://freelance-hub-g8y5.onrender.com` และ redeploy Vercel
+URL ข้างต้นคือที่อยู่ที่กำหนดไว้ในโครงการ ควรตรวจว่าเปิดได้จริงอีกครั้งก่อนส่งงานและก่อนนำเสนอ โดยเฉพาะ health endpoint ของ Backend production
 
-Backend ให้ deploy บน **Render Web Service** โดยกำหนด Root Directory เป็น `code/Backend`, Runtime เป็น Docker และใช้ `Dockerfile` ของ Backend พร้อม environment variables สำหรับ Supabase
+Vercel ใช้ Root Directory `code/Frontend`, Build Command `npm run build` และ Output Directory `dist` ตั้ง `VITE_API_BASE_URL=/api` และ `BACKEND_ORIGIN` เป็น HTTPS origin ของ Render ที่ต้องการใช้ [vercel.ts](code/Frontend/vercel.ts) จะ proxy `/api` ไป Backend ผ่าน origin เดียวกับ Frontend
 
-Production ใช้ Supabase PostgreSQL และกำหนด `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` และ `JWT_SECRET` ผ่าน secret/environment settings ของ Backend provider ห้ามใส่ service role key ใน Frontend
-ตั้ง `OPENAPI_ENABLED=true` เฉพาะ Render staging; production ให้ตั้ง `OPENAPI_ENABLED=false` หรือไม่กำหนด เพื่อปิด `/v3/api-docs` และ Swagger UI
-ตั้ง `REFRESH_COOKIE_SECURE=true` บน Render ที่ใช้ HTTPS และกำหนด `CORS_ALLOWED_ORIGINS`
-เป็น origin แบบเต็มที่คั่นด้วย comma สำหรับ staging เช่น
-`https://freelance-hub-self.vercel.app,https://freelance-hub-backend-staging.onrender.com`
-(ส่วน Backend production ใช้ `https://freelance-hub-self.vercel.app,https://freelance-hub-g8y5.onrender.com`)
-(รวม Vercel Preview origins ที่ใช้จริง) เพื่อให้ refresh/logout และ Swagger staging ทำงาน;
-local ใช้ `http://localhost:5173,http://localhost:8080` และ Docker ใช้ค่า cookie `false` จาก `.env.example`
-ก่อน deploy migration V19 ให้สำรองฐานข้อมูลและตรวจ email ที่ซ้ำกันหลัง `lower(btrim(email))`;
-หากพบต้องแก้เป็นรายบัญชีก่อน เพราะ migration จะหยุดโดยไม่รวมบัญชีอัตโนมัติ
+Render ใช้ `code/Backend/Dockerfile` และ Supabase PostgreSQL; ตั้ง database credentials, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` และ `REFRESH_COOKIE_SECURE=true` ใน environment settings GitHub Actions ตรวจ PR เข้า `dev`/`main`; เมื่อ push เข้า `dev` และ Backend gate ผ่านจะเรียก staging deploy hook ส่วน push เข้า `main` จะเรียก production deploy hook Frontend deployment ใช้ Vercel Git integration
 
-```sql
-SELECT lower(btrim(email)) AS canonical_email, count(*) AS account_count
-FROM users
-GROUP BY lower(btrim(email))
-HAVING count(*) > 1;
-```
-
-> **TODO:** ตรวจ end-to-end login/refresh/logout บน staging หลัง deploy โค้ดล่าสุด,
-> ตรวจ production health อีกครั้ง, ระบุ Supabase project และขั้นตอน deploy จริงก่อนส่งงาน
+ก่อนใช้ migration V19 กับฐานข้อมูลที่มีข้อมูลเดิม ให้สำรองข้อมูลและตรวจ email ที่ซ้ำกันหลัง `lower(btrim(email))` ตาม [migration V19](code/Backend/src/main/resources/db/migration/V19__normalize_user_emails.sql)
 
 ## Project Structure
 
 ```text
 freelance-hub/
+├── .github/workflows/           # Backend และ Frontend CI/CD
 ├── code/
-│   ├── Backend/                  # Spring Boot REST API
-│   │   ├── .mvn/
-│   │   ├── src/
-│   │   │   ├── main/
-│   │   │   ├── java/th/ac/kku/freelance_hub/
-│   │   │   │   ├── config/
-│   │   │   │   ├── controller/
-│   │   │   │   ├── service/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── domain/entity/
-│   │   │   │   ├── domain/enums/
-│   │   │   │   ├── domain/valueobject/
-│   │   │   │   ├── dto/request/
-│   │   │   │   ├── dto/response/
-│   │   │   │   ├── event
-│   │   │   │   ├── mapper/
-│   │   │   │   ├── exception/
-│   │   │   │   └── security/
-│   │   │   └── resources/
-│   │   │       ├── db/migration/
-│   │   │       ├── static/
-│   │   │       └── templates/
-│   │   │   └── test/
-│   │   ├── Dockerfile
-│   │   ├── docker-compose.yml
-│   │   ├── .dockerignore
-│   │   ├── .env.example
-│   │   ├── pom.xml
-│   │   └── mvnw
-│   └── Frontend/                 # React + Vite SPA
-│       ├── src/
-│       ├── public/
-│       ├── package.json
-│       ├── package-lock.json
-│       └── vite.config.js
-├── test/                         # Test plan, reports, and evidence
-├── doc/                          # Documents, diagrams, and slides
+│   ├── Backend/                 # Spring Boot, Docker, Maven Wrapper
+│   │   └── src/
+│   │       ├── main/java/th/ac/kku/freelance_hub/
+│   │       │   ├── controller/  # REST endpoints
+│   │       │   ├── service/     # Business logic
+│   │       │   ├── repository/  # JPA data access
+│   │       │   ├── domain/      # Entity, value object, enum
+│   │       │   ├── dto/         # Request และ response contracts
+│   │       │   └── mapper/      # Entity ↔ DTO
+│   │       ├── main/resources/db/migration/
+│   │       └── test/            # JUnit และ Spring tests
+│   └── Frontend/                # React + Vite SPA
+│       └── src/
+│           ├── Authentication/, Profile/
+│           ├── ClientManagement/, ProjectManagement/
+│           ├── TimeTracking/, Analytics/
+│           ├── api/, services/, types/
+│           └── components/, hooks/, lib/, utils/
+├── doc/                          # เอกสาร, diagrams, slides
+│   ├── V1/                      # ร่างรายบุคคล: SOLID, DESIGN, USECASE, CICD
 │   ├── diagrams/
 │   └── slide/
-├── img/                          # Images and media
+├── test/                         # Test plan และหลักฐาน
+├── img/                          # รูปภาพประกอบ
 ├── README.md
 └── REQUIREMENTS.md
 ```
 
-## เอกสารโครงการ
+เอกสารประกอบ: [Schedule](SCHEDULE.md), [ER Diagram](doc/diagrams/er-diagram.md), [Data Dictionary](doc/data-dictionary.md) และ [Diagram Checklist](doc/diagrams/README.md)
 
-- [Software Requirements Specification](REQUIREMENTS.md)
-- [MVP Team Schedule](SCHEDULE.md)
-- [SOLID Analysis](doc/solid-analysis.md)
-- [Design Patterns](doc/design-patterns.md)
-- [Data Dictionary](doc/data-dictionary.md)
-- [Use Case Description](doc/use-case-description.md)
-- [Diagram Checklist](doc/diagrams/README.md)
+เอกสารใน `doc/V1/SOLID/`, `doc/V1/DESIGN/`, `doc/V1/USECASE/` และ `doc/V1/CICD/` ยังแยกตามผู้รับผิดชอบ จะตรวจความสอดคล้องกับโค้ดแล้วรวมเข้าฉบับส่งงานภายหลัง ปัจจุบัน `doc/solid-analysis.md`, `doc/design-patterns.md` และ `doc/use-case-description.md` ยังเป็นโครงร่าง ไม่ควรใช้เป็นหลักฐานฉบับสมบูรณ์
 
 ## Git Workflow
 
-- `main`: production และ version ที่ส่งมอบ
-- `develop`: integration branch
-- branch ส่วนตัว: `ชื่อ_รหัสนักศึกษา_section`
-- รวมงานผ่าน Pull Request และมี reviewer อย่างน้อย 1 คน
-- สมาชิกแต่ละคนต้องมี meaningful commits อย่างน้อย 15 ครั้งและใช้บัญชี GitHub ของตนเอง
+`main` ใช้สำหรับ production และรุ่นส่งมอบ, `dev` ใช้รวมงาน, ส่วนแต่ละคนทำงานใน branch รูปแบบ `ชื่อ_รหัสนักศึกษา_section` แล้วเปิด Pull Request พร้อม reviewer อย่างน้อย 1 คนก่อนรวมงาน ตั้ง commit message แบบ `<type>: <สิ่งที่ทำ>` เช่น `feat: add report API` หรือ `docs: update README`
 
-Commit message format: `<type>: <สิ่งที่ทำ>`
-
-ตัวอย่าง `feat: add time tracking API`, `fix: prevent duplicate timer`, `test: add project service tests` และ `docs: update ER diagram`
-
-## License
-
-TODO: เลือก License และเพิ่มไฟล์ `LICENSE` ก่อนเผยแพร่โครงการ
+ใบงานรายวิชาระบุชื่อ integration branch เป็น `develop` แต่ repository นี้ใช้ `dev` และ workflow ปัจจุบันอ้าง `dev`; ทีมควรยืนยันชื่อ branch ที่อาจารย์ยอมรับก่อนส่งงาน
