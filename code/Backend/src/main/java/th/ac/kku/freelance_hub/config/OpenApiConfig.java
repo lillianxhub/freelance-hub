@@ -48,7 +48,16 @@ public class OpenApiConfig {
 
     @Bean
     public OpenApiCustomizer errorResponseExampleCustomizer() {
-        return openApi -> openApi.getPaths().values().stream()
+        return openApi -> {
+            openApi.getPaths().forEach((path, item) -> {
+                if (path.startsWith("/api/")) {
+                    item.readOperations().forEach(operation -> operation.getResponses()
+                            .computeIfAbsent("500", ignored -> new io.swagger.v3.oas.models.responses.ApiResponse()
+                                    .description("Unexpected server error")));
+                }
+            });
+
+            openApi.getPaths().values().stream()
                 .flatMap(path -> path.readOperations().stream())
                 .flatMap(operation -> operation.getResponses().entrySet().stream())
                 .filter(response -> isErrorStatus(response.getKey()))
@@ -69,6 +78,7 @@ public class OpenApiConfig {
                                 .addAllOfItem(new ObjectSchema().addProperty("success", failure)));
                     });
                 });
+        };
     }
 
     private boolean isErrorStatus(String responseCode) {

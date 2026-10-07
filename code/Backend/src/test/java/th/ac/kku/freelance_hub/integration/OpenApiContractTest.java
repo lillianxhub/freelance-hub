@@ -159,6 +159,51 @@ class OpenApiContractTest {
     }
 
     @Test
+    void documentedStatusesCoverSharedAuthenticationLookupAndServerFailures() throws Exception {
+        JsonNode paths = document().path("paths");
+        for (String route : new String[] {
+                "/api/users/me", "/api/users/me/password", "/api/dashboard",
+                "/api/dashboard/activity", "/api/reports/summary",
+                "/api/reports/work-trend", "/api/reports/distribution",
+                "/api/reports/work-pattern", "/api/reports/projects"
+        }) {
+            String method = route.endsWith("/password") ? "patch" : "get";
+            assertThat(paths.path(route).path(method).path("responses").has("401"))
+                    .as(method + " " + route + " documents 401")
+                    .isTrue();
+        }
+        for (String route : new String[] {
+                "/api/reports/summary", "/api/reports/work-trend",
+                "/api/reports/distribution", "/api/reports/work-pattern",
+                "/api/reports/projects"
+        }) {
+            assertThat(paths.path(route).path("get").path("responses").has("404"))
+                    .as("GET " + route + " documents selection 404")
+                    .isTrue();
+        }
+        assertThat(paths.path("/api/auth/refresh").path("post").path("responses").has("401")).isTrue();
+        assertThat(paths.path("/api/auth/logout").path("post").path("security").isEmpty())
+                .as("logout is public")
+                .isTrue();
+
+        for (Iterator<Map.Entry<String, JsonNode>> pathIt = paths.fields(); pathIt.hasNext();) {
+            Map.Entry<String, JsonNode> path = pathIt.next();
+            if (!path.getKey().startsWith("/api/")) {
+                continue;
+            }
+            for (Iterator<Map.Entry<String, JsonNode>> operationIt = path.getValue().fields(); operationIt.hasNext();) {
+                Map.Entry<String, JsonNode> operation = operationIt.next();
+                JsonNode serverError = operation.getValue().path("responses").path("500");
+                assertThat(serverError.isMissingNode())
+                        .as(operation.getKey() + " " + path.getKey() + " documents 500")
+                        .isFalse();
+                assertThat(firstContentSchema(serverError).path("allOf").get(0).path("$ref").asText())
+                        .isEqualTo(ref(ApiResult.class));
+            }
+        }
+    }
+
+    @Test
     void includeFieldsAndErrorResponsesDocumentTheirConditionalShape() throws Exception {
         JsonNode document = document();
         JsonNode schemas = document.path("components").path("schemas");

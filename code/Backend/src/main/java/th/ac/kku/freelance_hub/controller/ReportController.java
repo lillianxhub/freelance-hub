@@ -3,6 +3,7 @@ package th.ac.kku.freelance_hub.controller;
 import java.util.List;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -36,6 +37,9 @@ public class ReportController {
     private final ReportService reportService;
     private final CurrentUserProvider currentUserProvider;
 
+    @ApiResponse(responseCode = "200", description = "Report summary returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Selected client or project not found")
     @GetMapping("/summary")
     public ResponseEntity<ApiResult<ReportSummaryResponse>> getSummary(
             @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter
@@ -46,6 +50,9 @@ public class ReportController {
         ));
     }
 
+    @ApiResponse(responseCode = "200", description = "Work trend returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Selected client or project not found")
     @GetMapping("/work-trend")
     public ResponseEntity<ApiResult<ReportWorkTrendResponse>> getWorkTrend(
             @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter,
@@ -57,6 +64,9 @@ public class ReportController {
         ));
     }
 
+    @ApiResponse(responseCode = "200", description = "Distribution returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Selected client or project not found")
     @GetMapping("/distribution")
     public ResponseEntity<ApiResult<ReportDistributionResponse>> getDistribution(
             @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter,
@@ -68,6 +78,9 @@ public class ReportController {
         ));
     }
 
+    @ApiResponse(responseCode = "200", description = "Work pattern returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Selected client or project not found")
     @GetMapping("/work-pattern")
     public ResponseEntity<ApiResult<ReportWorkPatternResponse>> getWorkPattern(
             @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter
@@ -78,6 +91,9 @@ public class ReportController {
         ));
     }
 
+    @ApiResponse(responseCode = "200", description = "Project report returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Selected client or project not found")
     @GetMapping("/projects")
     public ResponseEntity<ApiResult<List<ReportProjectResponse>>> getProjects(
             @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter,
