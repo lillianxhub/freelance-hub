@@ -127,6 +127,52 @@ test('response exposes pagination metadata from the shared API format', async ()
   }
 })
 
+test('concurrent identical GETs share one request, then a later GET is fresh', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  let finishFirst: ((response: Response) => void) | undefined
+  const success = () => Response.json({ success: true, message: '', data: { id: '1' }, meta: null, error: null })
+  globalThis.fetch = async () => {
+    calls++
+    if (calls === 1) return new Promise<Response>((resolve) => { finishFirst = resolve })
+    return success()
+  }
+  try {
+    const first = api.get<{ id: string }>('/shared-items')
+    const second = api.get<{ id: string }>('/shared-items')
+    assert.equal(calls, 1)
+    finishFirst?.(success())
+    assert.deepEqual((await Promise.all([first, second])).map((response) => response.data.id), ['1', '1'])
+    await api.get('/shared-items')
+    assert.equal(calls, 2)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('a mutation does not reuse an older in-flight GET', async () => {
+  const originalFetch = globalThis.fetch
+  let getCalls = 0
+  let finishFirst: ((response: Response) => void) | undefined
+  const success = () => Response.json({ success: true, message: '', data: {}, meta: null, error: null })
+  globalThis.fetch = async (_input, init) => {
+    if (init?.method === 'POST') return success()
+    getCalls++
+    if (getCalls === 1) return new Promise<Response>((resolve) => { finishFirst = resolve })
+    return success()
+  }
+  try {
+    const beforeWrite = api.get('/changed-items')
+    await api.post('/changed-items', { name: 'new' })
+    await api.get('/changed-items')
+    assert.equal(getCalls, 2)
+    finishFirst?.(success())
+    await beforeWrite
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('success false is rejected even when HTTP status is successful', async () => {
   const originalFetch = globalThis.fetch
   globalThis.fetch = async () => new Response(JSON.stringify({

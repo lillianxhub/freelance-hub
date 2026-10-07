@@ -306,7 +306,9 @@ class TaskControllerTest {
         stubCurrentUser();
 
         mockMvc.perform(delete(BASE + "/{taskId}", PROJECT_ID, TASK_ID))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andExpect(result -> org.assertj.core.api.Assertions.assertThat(
+                        result.getResponse().getContentAsByteArray()).isEmpty());
 
         verify(taskService).delete(OWNER_ID, PROJECT_ID, TASK_ID);
     }

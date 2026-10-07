@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.common.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class ApiResult<T> {
     private boolean success;
     private String message;
+    @Schema(nullable = true)
     private T data;
     private PaginationMeta meta;
     private ApiError error;

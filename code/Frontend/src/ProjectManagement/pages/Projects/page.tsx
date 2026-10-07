@@ -27,15 +27,7 @@ import { listProjectsPage, type ProjectListFilters } from "../../../services/pro
 import type { NotificationMessage } from "../../../types/notification";
 import { toast } from 'sonner';
 import type { ApiMeta } from "../../../types/api";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "../../../components/ui/pagination";
+import PaginationControls from '../../../components/PaginationControls'
 
 const emptyForm: ProjectDraft = {
   name: "",
@@ -61,19 +53,6 @@ const projectSortParams: Record<ProjectSort, Pick<ProjectListFilters, 'sortBy' |
   END_ASC: { sortBy: 'end_date', direction: 'ASC' },
 };
 
-function getPaginationItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
-  if (totalPages <= 5) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
-  return [...pages]
-    .filter((item) => item >= 1 && item <= totalPages)
-    .sort((a, b) => a - b)
-    .flatMap((item, index, items) =>
-      index > 0 && item - items[index - 1] > 1 ? ["ellipsis" as const, item] : [item],
-    );
-}
 
 function ProjectsPage() {
   const { data, loading, error, refresh, saveProject } = useProjects();
@@ -129,7 +108,6 @@ function ProjectsPage() {
   const projects = pageProjects;
   const totalPages = Math.max(1, pageMeta.totalPages);
   const safePage = Math.min(pageMeta.page, totalPages);
-  const paginationItems = getPaginationItems(safePage, totalPages);
 
   const openCreate = () => {
     setForm({
@@ -350,52 +328,7 @@ function ProjectsPage() {
         </div>
       )}
 
-      <Pagination className="mt-6">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href={`?page=${safePage - 1}`}
-                text="ก่อนหน้า"
-                aria-disabled={safePage === 1}
-                className={safePage === 1 ? "pointer-events-none opacity-50" : undefined}
-                onClick={(event) => {
-                  event.preventDefault();
-                  if (safePage > 1) setPage(safePage - 1);
-                }}
-              />
-            </PaginationItem>
-            {paginationItems.map((item, index) => (
-              <PaginationItem key={`${item}-${index}`}>
-                {item === "ellipsis" ? (
-                  <PaginationEllipsis />
-                ) : (
-                  <PaginationLink
-                    href={`?page=${item}`}
-                    isActive={item === safePage}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setPage(item);
-                    }}
-                  >
-                    {item}
-                  </PaginationLink>
-                )}
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href={`?page=${safePage + 1}`}
-                text="ถัดไป"
-                aria-disabled={safePage === totalPages}
-                className={safePage === totalPages ? "pointer-events-none opacity-50" : undefined}
-                onClick={(event) => {
-                  event.preventDefault();
-                  if (safePage < totalPages) setPage(safePage + 1);
-                }}
-              />
-            </PaginationItem>
-          </PaginationContent>
-      </Pagination>
+      <PaginationControls page={safePage} totalPages={totalPages} onPageChange={setPage} className="mt-6" />
 
       <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
         <DialogContent className="!max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
