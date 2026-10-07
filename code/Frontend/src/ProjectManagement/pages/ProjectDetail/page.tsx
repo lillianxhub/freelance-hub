@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Progress } from '../../../components/ui/progress'
 import { Button } from '../../../components/ui/button'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../../components/ui/table'
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -23,10 +23,9 @@ import TaskList from "../../components/TaskList";
 import { formatDate } from "../../../utils/date";
 import { formatDurationSeconds } from "../../../utils/duration";
 import { changeTaskStatus } from "../../../services/task";
-import { listTimeEntriesPage, summarizeTimeEntries } from "../../../services/timeTracking";
-import type { TimeEntry } from "../../../types/timeTracking";
 import { getErrorMessage } from "../../../api/apiError";
 import { toast } from "sonner";
+import { useProjectTimeEntries } from './useProjectTimeEntries'
 
 const emptyTask: TaskDraft = {
   name: "",
@@ -50,35 +49,7 @@ function ProjectDetailPage() {
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [formError, setFormError] = useState("");
   const [changingTaskId, setChangingTaskId] = useState<string | null>(null);
-  const [timeEntryPage, setTimeEntryPage] = useState(1);
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [timeEntryTotal, setTimeEntryTotal] = useState(0);
-  const [trackedSeconds, setTrackedSeconds] = useState<number | null>(null);
-  const [timeEntryError, setTimeEntryError] = useState("");
-  const timeEntryPageSize = 5;
-
-  useEffect(() => {
-    if (!projectId) return undefined;
-    let active = true;
-    listTimeEntriesPage({ projectId, page: timeEntryPage, limit: timeEntryPageSize }).then((pageResult) => {
-      if (!active) return;
-      setTimeEntries(pageResult.entries);
-      setTimeEntryTotal(pageResult.meta.total);
-      setTimeEntryError("");
-    }).catch((reason: unknown) => {
-      if (active) setTimeEntryError(getErrorMessage(reason, "โหลดรายการเวลาไม่สำเร็จ"));
-    });
-    return () => { active = false };
-  }, [projectId, timeEntryPage]);
-
-  useEffect(() => {
-    if (!projectId) return undefined;
-    let active = true;
-    summarizeTimeEntries({ projectId })
-      .then((summary) => { if (active) setTrackedSeconds(summary.totalSeconds) })
-      .catch(() => { if (active) setTrackedSeconds(null) });
-    return () => { active = false };
-  }, [projectId]);
+  const timeEntries = useProjectTimeEntries(projectId ?? '')
 
   if (loading) return <LoadingState label="LoadingProjects..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -90,13 +61,12 @@ function ProjectDetailPage() {
   const tasks = data.tasks
     .filter((task) => task.project_id === project.id)
     .sort((a, b) => a.sort_order - b.sort_order);
-  const timeEntryTotalPages = Math.max(1, Math.ceil(timeEntryTotal / timeEntryPageSize));
-  const safeTimeEntryPage = Math.min(timeEntryPage, timeEntryTotalPages);
-  const visibleTimeEntries = timeEntries;
+  const safeTimeEntryPage = Math.min(timeEntries.page, timeEntries.totalPages);
+  const visibleTimeEntries = timeEntries.entries;
   const completed = project.task_progress?.completed_tasks ?? tasks.filter((task) => task.status === "COMPLETED").length;
   const totalTaskCount = project.task_progress?.total_tasks ?? tasks.length;
   const taskProgress = project.task_progress?.percent ?? (totalTaskCount ? Math.round((completed / totalTaskCount) * 100) : 0);
-  const totalTrackedSeconds = trackedSeconds ?? project.time_tracking?.tracked_seconds ?? 0;
+  const totalTrackedSeconds = timeEntries.trackedSeconds ?? project.time_tracking?.tracked_seconds ?? 0;
   const usagePercent = project.time_tracking?.usage_percent ?? null;
 
   const openTask = (task: Task | TaskDraft = emptyTask) => {
@@ -230,10 +200,10 @@ function ProjectDetailPage() {
             <CardContent className="p-6 pt-0">
               <Table
                 pagination={{
-                  page: safeTimeEntryPage,
-                  totalPages: timeEntryTotalPages,
-                  total: timeEntryTotal,
-                  onPageChange: setTimeEntryPage,
+                page: safeTimeEntryPage,
+                totalPages: timeEntries.totalPages,
+                total: timeEntries.total,
+                onPageChange: timeEntries.setPage,
                 }}
               >
                 <TableHeader>
@@ -272,7 +242,7 @@ function ProjectDetailPage() {
                   ))}
                   {visibleTimeEntries.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3}>{timeEntryError || "ยังไม่มีรายการเวลา"}</TableCell>
+                      <TableCell colSpan={3}>{timeEntries.error || "ยังไม่มีรายการเวลา"}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

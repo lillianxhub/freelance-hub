@@ -11,12 +11,13 @@ import { NativeSelect } from '../../../components/ui/native-select'
 import { activityChartPoints, formatChartDuration, weeklyChartPoints } from '../../../lib/dashboard'
 import { stopTimer } from '../../../services/timeTracking'
 import { useCurrentTimer } from '../../../TimeTracking/useCurrentTimer'
-import type { DashboardActivity, DashboardChartPeriod } from '../../../types/dashboard'
+import type { DashboardChartPeriod } from '../../../types/dashboard'
 import DashboardProjectsTable from '../../components/DashboardProjectsTable'
 import DashboardTasksTable from '../../components/DashboardTasksTable'
 import DashboardTimerCard from '../../components/DashboardTimerCard'
 import ProductivityChart from '../../components/ProductivityChart'
 import { useDashboard } from '../../useDashboard'
+import { useDashboardActivity } from '../../useDashboardActivity'
 
 function Trend({ value }: { value: number | null }) {
   if (value === null) return <span>ยังไม่มีข้อมูลสัปดาห์ก่อน</span>
@@ -28,30 +29,11 @@ function DashboardPage() {
   const { data, loading, error, refresh, loadActivity } = useDashboard()
   const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const [period, setPeriod] = useState<DashboardChartPeriod>('WEEK')
-  const [activity, setActivity] = useState<DashboardActivity | null>(null)
-  const [activityLoading, setActivityLoading] = useState(false)
-  const [activityError, setActivityError] = useState('')
-  const [activityRequestKey, setActivityRequestKey] = useState(0)
+  const { activity, loading: activityLoading, error: activityError, retry: retryActivity } = useDashboardActivity(period, loadActivity)
 
   useEffect(() => {
     void refreshCurrentTimer()
   }, [refreshCurrentTimer])
-
-  useEffect(() => {
-    if (period === 'WEEK') return undefined
-    let active = true
-    loadActivity(period)
-      .then((result) => {
-        if (active) setActivity(result)
-      })
-      .catch((reason: unknown) => {
-        if (active) setActivityError(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้'))
-      })
-      .finally(() => {
-        if (active) setActivityLoading(false)
-      })
-    return () => { active = false }
-  }, [loadActivity, period, activityRequestKey])
 
   const chartData = period === 'WEEK'
     ? weeklyChartPoints(data.dailyWork)
@@ -95,8 +77,6 @@ function DashboardPage() {
                 onChange={(event) => {
                   const nextPeriod = event.target.value as DashboardChartPeriod
                   setPeriod(nextPeriod)
-                  setActivityError('')
-                  setActivityLoading(nextPeriod !== 'WEEK')
                 }}
               >
                 <option value="WEEK">สัปดาห์</option>
@@ -107,11 +87,7 @@ function DashboardPage() {
           </CardHeader>
           <CardContent>
             {period !== 'WEEK' && activityLoading ? <LoadingState label="กำลังโหลดกราฟ..." />
-              : period !== 'WEEK' && activityError ? <ErrorState message={activityError} onRetry={() => {
-                setActivityError('')
-                setActivityLoading(true)
-                setActivityRequestKey((key) => key + 1)
-              }} />
+              : period !== 'WEEK' && activityError ? <ErrorState message={activityError} onRetry={retryActivity} />
                 : <ProductivityChart data={chartData} />}
           </CardContent>
         </Card>

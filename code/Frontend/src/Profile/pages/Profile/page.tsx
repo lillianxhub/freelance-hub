@@ -1,6 +1,6 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { NativeSelect } from '../../../components/ui/native-select'
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import FormLabel from "../../../components/FormLabel";
 import { Input } from "../../../components/ui/input";
@@ -15,11 +15,8 @@ import { toast } from 'sonner';
 import type { FieldErrorProps } from "../../../types/ui";
 import { getErrorMessage } from "../../../api/apiError";
 import { changePassword } from "../../../services/profile";
-import {
-  loadThaiAddressData,
-  type ThaiProvince,
-} from "../../../services/thaiAddress";
 import { validateProfileFields } from "../../profile.validators";
+import { useThaiAddress } from '../../useThaiAddress'
 
 const emptyProfile: ProfileInput = {
   full_name: "",
@@ -77,9 +74,7 @@ function ProfilePage() {
     toast[success ? 'success' : 'error'](message);
   };
   const [saving, setSaving] = useState(false);
-  const [provinces, setProvinces] = useState<ThaiProvince[]>([]);
-  const [addressLoading, setAddressLoading] = useState(true);
-  const [addressError, setAddressError] = useState("");
+  const { provinces, loading: addressLoading, error: addressError } = useThaiAddress()
   const [profileErrors, setProfileErrors] = useState<ProfileFieldErrors>({});
   const [passwordForm, setPasswordForm] = useState<ChangePasswordInput>({
     current_password: "",
@@ -87,26 +82,6 @@ function ProfilePage() {
     confirm_password: "",
   });
   const [passwordSaving, setPasswordSaving] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    loadThaiAddressData()
-      .then((items) => {
-        if (active) setProvinces(items);
-      })
-      .catch((loadError: unknown) => {
-        if (active)
-          setAddressError(
-            getErrorMessage(loadError, "ไม่สามารถโหลดข้อมูลจังหวัดได้"),
-          );
-      })
-      .finally(() => {
-        if (active) setAddressLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   if (loading) return <LoadingState label="กำลังโหลดโปรไฟล์..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
