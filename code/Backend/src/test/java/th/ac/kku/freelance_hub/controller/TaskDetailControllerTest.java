@@ -98,7 +98,10 @@ class TaskDetailControllerTest {
                 .thenThrow(new TaskNotFoundException(TASK_ID));
 
         mockMvc.perform(get("/api/tasks/{taskId}", TASK_ID))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("TASK_NOT_FOUND"));
 
         verify(taskService).getById(OWNER_ID, TASK_ID);
     }
@@ -231,7 +234,10 @@ class TaskDetailControllerTest {
         mockMvc.perform(patch("/api/tasks/{taskId}/status", TASK_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"IN_PROGRESS\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }
 
     @Test
