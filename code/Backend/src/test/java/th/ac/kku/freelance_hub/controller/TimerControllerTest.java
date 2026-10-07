@@ -31,6 +31,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TimerAlreadyRunningException;
 import th.ac.kku.freelance_hub.service.TimerService;
@@ -43,6 +44,7 @@ class TimerControllerTest {
     private static final UUID OWNER_ID = UUID.randomUUID();
     private static final UUID ENTRY_ID = UUID.randomUUID();
     private static final UUID PROJECT_ID = UUID.randomUUID();
+    private static final UUID TASK_ID = UUID.randomUUID();
     private static final Instant STARTED_AT =
             Instant.parse("2026-09-26T08:00:00Z");
 
@@ -93,7 +95,8 @@ class TimerControllerTest {
                         .value("เริ่มจับเวลาเรียบร้อยแล้ว"))
                 .andExpect(jsonPath("$.data.id")
                         .value(ENTRY_ID.toString()))
-                .andExpect(jsonPath("$.data.running").value(true))
+                .andExpect(jsonPath("$.data.task").doesNotExist())
+                .andExpect(jsonPath("$.data.running").doesNotExist())
                 .andExpect(jsonPath("$.meta").doesNotExist())
                 .andExpect(jsonPath("$.error").doesNotExist());
 
@@ -111,6 +114,45 @@ class TimerControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(timeEntryService, never()).startTimer(any(), any());
+    }
+
+    @Test
+    void startResponseNestsTaskDetailsWithoutFlatTaskFields() throws Exception {
+        stubCurrentUser();
+        when(timeEntryService.startTimer(
+                eq(OWNER_ID), any(StartTimerRequest.class)
+        )).thenReturn(TimeEntryResponse.builder()
+                .id(ENTRY_ID)
+                .projectId(PROJECT_ID)
+                .projectName("Timer project")
+                .taskId(TASK_ID)
+                .taskName("Implementation")
+                .task(new TimeEntryResponse.TaskSummary(
+                        TASK_ID, TaskStatus.IN_PROGRESS))
+                .running(true)
+                .build());
+
+        mockMvc.perform(post("/api/timer/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"projectId":"%s","taskId":"%s"}
+                                """.formatted(PROJECT_ID, TASK_ID)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.projectId").doesNotExist())
+                .andExpect(jsonPath("$.data.projectName").doesNotExist())
+                .andExpect(jsonPath("$.data.project.id")
+                        .value(PROJECT_ID.toString()))
+                .andExpect(jsonPath("$.data.project.name")
+                        .value("Timer project"))
+                .andExpect(jsonPath("$.data.taskId").doesNotExist())
+                .andExpect(jsonPath("$.data.taskName").doesNotExist())
+                .andExpect(jsonPath("$.data.task.id")
+                        .value(TASK_ID.toString()))
+                .andExpect(jsonPath("$.data.task.title")
+                        .value("Implementation"))
+                .andExpect(jsonPath("$.data.task.status")
+                        .value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.data.running").doesNotExist());
     }
 
     @Test
