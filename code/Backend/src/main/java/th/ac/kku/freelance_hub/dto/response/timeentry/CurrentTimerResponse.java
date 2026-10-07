@@ -3,6 +3,9 @@ package th.ac.kku.freelance_hub.dto.response.timeentry;
 import java.time.Instant;
 import java.util.UUID;
 
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+
 /** Current timer state returned to the authenticated user. */
 public record CurrentTimerResponse(
         boolean running,
@@ -12,11 +15,16 @@ public record CurrentTimerResponse(
     public static CurrentTimerResponse active(TimeEntryResponse source) {
         ProjectSummary project = new ProjectSummary(
                 source.getProjectId(),
-                source.getProjectName()
+                source.getProjectName(),
+                source.getProjectStatus()
         );
         TaskSummary task = source.getTaskId() == null
                 ? null
-                : new TaskSummary(source.getTaskId(), source.getTaskName());
+                : new TaskSummary(
+                        source.getTaskId(),
+                        source.getTaskName(),
+                        source.getTask().status()
+                );
 
         return new CurrentTimerResponse(
                 true,
@@ -43,9 +51,9 @@ public record CurrentTimerResponse(
     ) {
     }
 
-    public record ProjectSummary(UUID id, String name) {
+    public record ProjectSummary(UUID id, String name, ProjectStatus status) {
     }
 
-    public record TaskSummary(UUID id, String title) {
+    public record TaskSummary(UUID id, String title, TaskStatus status) {
     }
 }

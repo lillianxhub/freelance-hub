@@ -3,6 +3,9 @@ package th.ac.kku.freelance_hub.dto.response.timeentry;
 import java.time.Instant;
 import java.util.UUID;
 
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+
 /** Time-entry details exposed by create, detail, and update endpoints. */
 public record TimeEntryDetailResponse(
         UUID id,
@@ -19,11 +22,16 @@ public record TimeEntryDetailResponse(
     public static TimeEntryDetailResponse from(TimeEntryResponse source) {
         ProjectSummary project = new ProjectSummary(
                 source.getProjectId(),
-                source.getProjectName()
+                source.getProjectName(),
+                source.getProjectStatus()
         );
         TaskSummary task = source.getTaskId() == null
                 ? null
-                : new TaskSummary(source.getTaskId(), source.getTaskName());
+                : new TaskSummary(
+                        source.getTaskId(),
+                        source.getTaskName(),
+                        source.getTask().status()
+                );
 
         return new TimeEntryDetailResponse(
                 source.getId(),
@@ -38,7 +46,7 @@ public record TimeEntryDetailResponse(
         );
     }
 
-    public record ProjectSummary(UUID id, String name) {}
+    public record ProjectSummary(UUID id, String name, ProjectStatus status) {}
 
-    public record TaskSummary(UUID id, String title) {}
+    public record TaskSummary(UUID id, String title, TaskStatus status) {}
 }

@@ -72,6 +72,7 @@ class TimeEntryMapperTest {
         assertThat(response.getClientName()).isEqualTo("Example Client");
         assertThat(response.getProjectId()).isEqualTo(project.getId());
         assertThat(response.getProjectName()).isEqualTo("Example Project");
+        assertThat(response.getProjectStatus()).isEqualTo(ProjectStatus.ACTIVE);
         assertThat(response.getTaskId()).isEqualTo(taskId);
         assertThat(response.getTaskName()).isEqualTo("Implement timer");
         assertThat(response.getTask().id()).isEqualTo(taskId);

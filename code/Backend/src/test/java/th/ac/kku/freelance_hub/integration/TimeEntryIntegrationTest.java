@@ -111,6 +111,7 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.data.projectName").doesNotExist())
                 .andExpect(jsonPath("$.data.project.id").value(projectId.toString()))
                 .andExpect(jsonPath("$.data.project.name").value("Timer project"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.taskId").doesNotExist())
                 .andExpect(jsonPath("$.data.taskName").doesNotExist())
                 .andExpect(jsonPath("$.data.task.id").value(taskId.toString()))
@@ -140,10 +141,14 @@ class TimeEntryIntegrationTest {
                         .value(projectId.toString()))
                 .andExpect(jsonPath("$.data.timeEntry.project.name")
                         .value("Timer project"))
+                .andExpect(jsonPath("$.data.timeEntry.project.status")
+                        .value("ACTIVE"))
                 .andExpect(jsonPath("$.data.timeEntry.task.id")
                         .value(taskId.toString()))
                 .andExpect(jsonPath("$.data.timeEntry.task.title")
                         .value("Implementation"))
+                .andExpect(jsonPath("$.data.timeEntry.task.status")
+                        .value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.timeEntry.startedAt")
                         .value(TIMER_STARTED_AT.toString()))
                 .andExpect(jsonPath("$.data.timeEntry.description")
@@ -215,6 +220,50 @@ class TimeEntryIntegrationTest {
     }
 
     @Test
+    void manualEntryStartsOpenTaskButRejectsCompletedTask() throws Exception {
+        String token = registerAndGetToken("manual-task-status@example.com");
+        UUID projectId = createActiveProject(token, "Manual task project");
+        UUID taskId = createTask(token, projectId, "Manual task");
+
+        String request = json(Map.of(
+                "projectId", projectId,
+                "taskId", taskId,
+                "startedAt", STARTED_AT,
+                "durationSeconds", 1800
+        ));
+
+        mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.task.status").value("IN_PROGRESS"));
+
+        mockMvc.perform(get("/api/projects/{projectId}/tasks", projectId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("IN_PROGRESS"));
+
+        mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(patch("/api/projects/{projectId}/tasks/{taskId}/complete",
+                        projectId, taskId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+    }
+
+    @Test
     void ownerCanCreateUpdateListSummarizeAndDeleteManualEntry()
             throws Exception {
         String token = registerAndGetToken("manual-flow@example.com");
@@ -239,9 +288,11 @@ class TimeEntryIntegrationTest {
                         .value(projectId.toString()))
                 .andExpect(jsonPath("$.data.project.name")
                         .value("Manual project"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.task.id")
                         .value(taskId.toString()))
                 .andExpect(jsonPath("$.data.task.title").value("Design"))
+                .andExpect(jsonPath("$.data.task.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.startedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.endedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.durationSeconds").value(5400))
@@ -267,6 +318,7 @@ class TimeEntryIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.description")
                         .value("Updated design"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.createdAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.updatedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.task").doesNotExist());
@@ -288,6 +340,8 @@ class TimeEntryIntegrationTest {
                         .value(projectId.toString()))
                 .andExpect(jsonPath("$.data[0].project.name")
                         .value("Manual project"))
+                .andExpect(jsonPath("$.data[0].project.status")
+                        .value("ACTIVE"))
                 .andExpect(jsonPath("$.data[0].task").value(nullValue()))
                 .andExpect(jsonPath("$.data[0].startedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data[0].endedAt").isNotEmpty())
