@@ -2,6 +2,7 @@ package th.ac.kku.freelance_hub.controller;
 
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +26,8 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final CurrentUserProvider userService;
 
+    @ApiResponse(responseCode = "200", description = "Dashboard returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping
     public ResponseEntity<ApiResult<DashboardResponse>> getDashboard() {
         UUID ownerId = userService.currentUserId();
@@ -35,6 +38,8 @@ public class DashboardController {
         );
     }
 
+    @ApiResponse(responseCode = "200", description = "Dashboard activity returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping("/activity")
     public ResponseEntity<ApiResult<DashboardActivityResponse>> getActivity(
             @RequestParam(defaultValue = "WEEK") DashboardActivityPeriod period

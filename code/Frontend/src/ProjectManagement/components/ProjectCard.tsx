@@ -7,30 +7,7 @@ import { FiEdit2 } from 'react-icons/fi'
 import type { Project, ProjectStatus } from '../../types/project'
 import { formatDate } from '../../utils/date'
 import { formatTimer } from '../../utils/duration'
-
-const projectStatusLabels: Record<ProjectStatus, string> = {
-  PLANNED: 'วางแผน',
-  ACTIVE: 'กำลังดำเนินการ',
-  ON_HOLD: 'พักงาน',
-  COMPLETED: 'เสร็จสิ้น',
-  ARCHIVED: 'เก็บถาวร',
-}
-
-const allowedStatusTransitions: Record<ProjectStatus, readonly ProjectStatus[]> = {
-  PLANNED: ['PLANNED', 'ACTIVE', 'ARCHIVED'],
-  ACTIVE: ['ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED'],
-  ON_HOLD: ['ON_HOLD', 'ACTIVE', 'ARCHIVED'],
-  COMPLETED: ['COMPLETED', 'ARCHIVED'],
-  ARCHIVED: ['ARCHIVED', 'PLANNED', 'ACTIVE'],
-}
-
-const statusSelectClasses: Record<ProjectStatus, string> = {
-  PLANNED: '!bg-violet-soft !text-violet',
-  ACTIVE: '!bg-green-soft !text-green',
-  ON_HOLD: '!bg-orange-soft !text-orange',
-  COMPLETED: '!bg-green-soft !text-green',
-  ARCHIVED: '!bg-red-soft !text-destructive',
-}
+import { allowedStatusTransitions, projectStatusLabels, statusSelectClasses } from './projectStatusOptions'
 
 interface ProjectCardProps {
   project: Project

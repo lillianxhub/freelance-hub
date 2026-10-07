@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +34,7 @@ public class ProjectListItemResponse {
     private TimeTracking timeTracking;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Returned only by GET /api/projects when include=tasks; GET /api/projects/{id} does not support include and omits this field", accessMode = Schema.AccessMode.READ_ONLY)
     private List<TaskResponse> tasks;
 
     private Instant createdAt;
