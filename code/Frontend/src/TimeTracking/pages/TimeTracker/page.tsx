@@ -167,7 +167,7 @@ function TimeTrackerPage() {
     };
   }, [data.time_entries, filters, loading, timeEntriesRequestKey, timeEntryPage, timeEntryQueryKey]);
 
-  if (loading) return <LoadingState label="LoadingTime entries..." />;
+  if (loading) return <LoadingState label="กำลังโหลดรายการเวลา..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   const entries = serverEntries.filter((entry) => entry.ended_at);
@@ -378,7 +378,7 @@ function TimeTrackerPage() {
 
       <Dialog open={manualOpen} onOpenChange={(open) => { if (!open) setManualOpen(false) }}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] !max-w-4xl overflow-y-auto">
-          <DialogHeader><DialogTitle>{manualForm.id ? "แก้ไขTime entries" : "เพิ่มTime entries"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{manualForm.id ? "แก้ไขเวลา" : "เพิ่มเวลา"}</DialogTitle></DialogHeader>
           <TimeEntryForm
           value={manualForm}
           projects={data.projects}

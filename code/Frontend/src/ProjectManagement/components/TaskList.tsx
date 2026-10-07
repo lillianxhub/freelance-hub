@@ -14,14 +14,14 @@ export default function TaskList({ tasks, changingTaskId, onToggle, onMove, onEd
           <Button
             variant="ghost"
             size="icon-sm"
-            className={`rounded-md border ${task.status === 'DONE' ? 'border-green bg-green text-white hover:bg-green hover:text-white' : 'border-border bg-background text-text-secondary'}`}
+            className={`rounded-md border ${task.status === 'COMPLETED' ? 'border-green bg-green text-white hover:bg-green hover:text-white' : 'border-border bg-background text-text-secondary'}`}
             type="button"
-            aria-label={task.status === 'DONE' ? 'เปิดงานอีกครั้ง' : 'ทำเครื่องหมายว่าเสร็จแล้ว'}
-            aria-pressed={task.status === 'DONE'}
+            aria-label={task.status === 'COMPLETED' ? 'เปิดงานอีกครั้ง' : 'ทำเครื่องหมายว่าเสร็จแล้ว'}
+            aria-pressed={task.status === 'COMPLETED'}
             disabled={changingTaskId === task.id}
             onClick={() => onToggle(task)}
           >
-            {task.status === 'DONE' && <FiCheck aria-hidden="true" />}
+            {task.status === 'COMPLETED' && <FiCheck aria-hidden="true" />}
           </Button>
           <div className="min-w-0">
             <strong className="block truncate text-sm font-semibold text-text-primary" title={task.name}>{task.name}</strong>

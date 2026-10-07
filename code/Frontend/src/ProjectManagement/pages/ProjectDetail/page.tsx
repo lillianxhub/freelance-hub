@@ -31,7 +31,7 @@ import { toast } from "sonner";
 const emptyTask: TaskDraft = {
   name: "",
   description: "",
-  status: "TODO",
+  status: "OPEN",
   due_date: "",
 };
 
@@ -93,7 +93,7 @@ function ProjectDetailPage() {
   const timeEntryTotalPages = Math.max(1, Math.ceil(timeEntryTotal / timeEntryPageSize));
   const safeTimeEntryPage = Math.min(timeEntryPage, timeEntryTotalPages);
   const visibleTimeEntries = timeEntries;
-  const completed = project.task_progress?.completed_tasks ?? tasks.filter((task) => task.status === "DONE").length;
+  const completed = project.task_progress?.completed_tasks ?? tasks.filter((task) => task.status === "COMPLETED").length;
   const totalTaskCount = project.task_progress?.total_tasks ?? tasks.length;
   const taskProgress = project.task_progress?.percent ?? (totalTaskCount ? Math.round((completed / totalTaskCount) * 100) : 0);
   const totalTrackedSeconds = trackedSeconds ?? project.time_tracking?.tracked_seconds ?? 0;
@@ -134,7 +134,7 @@ function ProjectDetailPage() {
   const toggleTask = async (task: Task) => {
     setChangingTaskId(task.id);
     try {
-      await changeTaskStatus(task.id, task.status === 'DONE' ? 'TODO' : 'DONE');
+      await changeTaskStatus(task.id, task.status === 'COMPLETED' ? 'IN_PROGRESS' : 'COMPLETED');
       await refresh();
     } catch (reason: unknown) {
       toast.error(getErrorMessage(reason, 'เปลี่ยนสถานะงานไม่สำเร็จ'));
@@ -331,7 +331,7 @@ function ProjectDetailPage() {
 
       <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
         <DialogContent className="!max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
-          <DialogHeader><DialogTitle>{taskForm.id ? "แก้ไข Task" : "เพิ่ม Task"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{taskForm.id ? "แก้ไขงาน" : "เพิ่มงาน"}</DialogTitle></DialogHeader>
           <TaskForm
             value={taskForm}
             error={formError}
