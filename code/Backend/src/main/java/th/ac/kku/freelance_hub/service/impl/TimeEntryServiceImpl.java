@@ -113,7 +113,14 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             );
         }
 
-        return timeEntryMapper.toResponse(timeEntryRepository.save(entry));
+        // A completed task cannot receive new work. Check this before saving
+        // the entry, then persist both changes in the same transaction.
+        boolean taskStarted = task != null && task.start();
+        TimeEntry savedEntry = timeEntryRepository.save(entry);
+        if (taskStarted) {
+            taskRepository.saveAndFlush(task);
+        }
+        return timeEntryMapper.toResponse(savedEntry);
     }
 
     @Override

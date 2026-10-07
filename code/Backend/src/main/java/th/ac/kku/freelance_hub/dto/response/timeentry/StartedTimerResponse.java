@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 /** Public response for starting a timer, with related data nested like entry details. */
 public record StartedTimerResponse(
@@ -31,7 +32,8 @@ public record StartedTimerResponse(
                 source.getId(),
                 new ProjectSummary(
                         source.getProjectId(),
-                        source.getProjectName()
+                        source.getProjectName(),
+                        source.getProjectStatus()
                 ),
                 task,
                 source.getStartedAt(),
@@ -43,7 +45,7 @@ public record StartedTimerResponse(
         );
     }
 
-    public record ProjectSummary(UUID id, String name) {
+    public record ProjectSummary(UUID id, String name, ProjectStatus status) {
     }
 
     public record TaskSummary(UUID id, String title, TaskStatus status) {

@@ -34,6 +34,8 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
@@ -117,10 +119,13 @@ class TimeEntryControllerTest {
                         .value(PROJECT_ID.toString()))
                 .andExpect(jsonPath("$.data.project.name")
                         .value("Project name"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.task.id")
                         .value(TASK_ID.toString()))
                 .andExpect(jsonPath("$.data.task.title")
                         .value("Task name"))
+                .andExpect(jsonPath("$.data.task.status")
+                        .value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.startedAt")
                         .value(FROM.toString()))
                 .andExpect(jsonPath("$.data.endedAt")
@@ -188,10 +193,12 @@ class TimeEntryControllerTest {
                         .value(PROJECT_ID.toString()))
                 .andExpect(jsonPath("$.data[0].project.name")
                         .value("Project name"))
+                .andExpect(jsonPath("$.data[0].project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data[0].task.id")
                         .value(TASK_ID.toString()))
                 .andExpect(jsonPath("$.data[0].task.title")
                         .value("Task name"))
+                .andExpect(jsonPath("$.data[0].task.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data[0].startedAt")
                         .value(FROM.toString()))
                 .andExpect(jsonPath("$.data[0].endedAt")
@@ -237,10 +244,13 @@ class TimeEntryControllerTest {
                         .value(PROJECT_ID.toString()))
                 .andExpect(jsonPath("$.data.project.name")
                         .value("Project name"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.task.id")
                         .value(TASK_ID.toString()))
                 .andExpect(jsonPath("$.data.task.title")
                         .value("Task name"))
+                .andExpect(jsonPath("$.data.task.status")
+                        .value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.startedAt")
                         .value(FROM.toString()))
                 .andExpect(jsonPath("$.data.endedAt")
@@ -330,6 +340,8 @@ class TimeEntryControllerTest {
                         .value("แก้ไขรายการเวลาเรียบร้อยแล้ว"))
                 .andExpect(jsonPath("$.data.description")
                         .value("Updated work"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.task.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.meta").value(nullValue()))
                 .andExpect(jsonPath("$.error").value(nullValue()));
 
@@ -377,8 +389,10 @@ class TimeEntryControllerTest {
                 .id(ENTRY_ID)
                 .projectId(PROJECT_ID)
                 .projectName("Project name")
+                .projectStatus(ProjectStatus.ACTIVE)
                 .taskId(TASK_ID)
                 .taskName("Task name")
+                .task(new TimeEntryResponse.TaskSummary(TASK_ID, TaskStatus.IN_PROGRESS))
                 .description(description)
                 .entryType(EntryType.MANUAL)
                 .startedAt(FROM)

@@ -31,6 +31,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TimerAlreadyRunningException;
@@ -125,6 +126,7 @@ class TimerControllerTest {
                 .id(ENTRY_ID)
                 .projectId(PROJECT_ID)
                 .projectName("Timer project")
+                .projectStatus(ProjectStatus.ACTIVE)
                 .taskId(TASK_ID)
                 .taskName("Implementation")
                 .task(new TimeEntryResponse.TaskSummary(
@@ -144,6 +146,7 @@ class TimerControllerTest {
                         .value(PROJECT_ID.toString()))
                 .andExpect(jsonPath("$.data.project.name")
                         .value("Timer project"))
+                .andExpect(jsonPath("$.data.project.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.taskId").doesNotExist())
                 .andExpect(jsonPath("$.data.taskName").doesNotExist())
                 .andExpect(jsonPath("$.data.task.id")
@@ -193,6 +196,8 @@ class TimerControllerTest {
                         .value(PROJECT_ID.toString()))
                 .andExpect(jsonPath("$.data.timeEntry.project.name")
                         .value("Timer project"))
+                .andExpect(jsonPath("$.data.timeEntry.project.status")
+                        .value("ACTIVE"))
                 .andExpect(jsonPath("$.data.timeEntry.task").doesNotExist())
                 .andExpect(jsonPath("$.data.timeEntry.startedAt")
                         .value(STARTED_AT.toString()))
@@ -278,6 +283,7 @@ class TimerControllerTest {
                 .id(ENTRY_ID)
                 .projectId(PROJECT_ID)
                 .projectName("Timer project")
+                .projectStatus(ProjectStatus.ACTIVE)
                 .description("Current work")
                 .entryType(EntryType.TIMER)
                 .startedAt(STARTED_AT)

@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
 /** Time-entry data returned by the API without exposing the JPA entity. */
@@ -26,6 +27,8 @@ public class TimeEntryResponse {
     private UUID projectId;
 
     private String projectName;
+
+    private ProjectStatus projectStatus;
 
     private UUID taskId;
 
