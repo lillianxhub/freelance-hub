@@ -24,6 +24,7 @@ import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.CurrentUserProvider;
 import th.ac.kku.freelance_hub.dto.request.timeentry.StartTimerRequest;
 import th.ac.kku.freelance_hub.dto.response.timeentry.CurrentTimerResponse;
+import th.ac.kku.freelance_hub.dto.response.timeentry.StartedTimerResponse;
 import th.ac.kku.freelance_hub.dto.response.timeentry.StoppedTimerResponse;
 import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @Tag(name = "Timer", description = "Control the authenticated user's timer")
@@ -54,7 +55,7 @@ public class TimerController {
     )
     @PostMapping("/start")
     public ResponseEntity<
-            ApiResult<TimeEntryResponse>
+            ApiResult<StartedTimerResponse>
     > start(
             @Valid @RequestBody StartTimerRequest request
     ) {
@@ -66,7 +67,7 @@ public class TimerController {
                 .created(URI.create("/api/time-entries/" + response.getId()))
                 .body(ApiResult.success(
                         "เริ่มจับเวลาเรียบร้อยแล้ว",
-                        response
+                        StartedTimerResponse.from(response)
                 ));
     }
 

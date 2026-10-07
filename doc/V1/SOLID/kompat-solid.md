@@ -7,7 +7,7 @@
 
 | Principle | หลักฐานในโค้ด | เหตุผลที่ใช้ |
 |---|---|---|
-| Single Responsibility | `TimerServiceImpl.startTimer/getCurrentTimer/stopTimer/cancelTimer` | รับผิดชอบวงจรชีวิตของ timer รวมถึงเผยแพร่ event เมื่อหยุด timer |
+| Single Responsibility | `TimerServiceImpl.startTimer/getCurrentTimer/stopTimer/cancelTimer` | ประสานวงจรชีวิตของ timer รวมถึงเรียก `Task.start()` เมื่อเริ่ม timer ที่มี Task และเผยแพร่ event เมื่อหยุด timer |
 | Single Responsibility | `TimeEntryServiceImpl` | รวมงานอ่าน สร้าง แก้ ลบ ล็อก และรวมเวลาในขอบเขต Time Entry; controller, mapper และ repository แยกหน้าที่กัน |
 | Single Responsibility | `TimerStoppedProgressListener.onTimerStopped` | รับ event หลัง transaction หยุด timer commit แล้ว คำนวณความคืบหน้าโปรเจกต์และเผยแพร่ `ProjectProgressThresholdEvent` เมื่อถึงเกณฑ์ |
 | Single Responsibility | `TimerController`, `TimeEntryController`, `TimeTrackingExceptionHandler` | Controller รับ request และสร้าง `ApiResult`; handler แปลง exception ของ Time Tracking เป็น HTTP error โดยไม่ใส่กฎธุรกิจใน controller |

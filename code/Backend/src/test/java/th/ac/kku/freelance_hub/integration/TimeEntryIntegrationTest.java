@@ -107,15 +107,28 @@ class TimeEntryIntegrationTest {
                         HttpHeaders.LOCATION,
                         org.hamcrest.Matchers.startsWith("/api/time-entries/")
                 ))
-                .andExpect(jsonPath("$.data.projectId").value(projectId.toString()))
-                .andExpect(jsonPath("$.data.taskId").value(taskId.toString()))
-                .andExpect(jsonPath("$.data.entryType").value("TIMER"))
-                .andExpect(jsonPath("$.data.running").value(true))
+                .andExpect(jsonPath("$.data.projectId").doesNotExist())
+                .andExpect(jsonPath("$.data.projectName").doesNotExist())
+                .andExpect(jsonPath("$.data.project.id").value(projectId.toString()))
+                .andExpect(jsonPath("$.data.project.name").value("Timer project"))
+                .andExpect(jsonPath("$.data.taskId").doesNotExist())
+                .andExpect(jsonPath("$.data.taskName").doesNotExist())
+                .andExpect(jsonPath("$.data.task.id").value(taskId.toString()))
+                .andExpect(jsonPath("$.data.task.title").value("Implementation"))
+                .andExpect(jsonPath("$.data.task.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.data.entryType").doesNotExist())
+                .andExpect(jsonPath("$.data.running").doesNotExist())
                 .andExpect(jsonPath("$.data.endedAt").doesNotExist())
                 .andReturn();
         UUID timerId = UUID.fromString(
                 responseJson(started).path("data").path("id").asText()
         );
+
+        mockMvc.perform(get("/api/projects/{projectId}/tasks", projectId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(taskId.toString()))
+                .andExpect(jsonPath("$.data[0].status").value("IN_PROGRESS"));
 
         mockMvc.perform(get("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
@@ -181,7 +194,8 @@ class TimeEntryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(Map.of("projectId", projectId))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.taskId").doesNotExist());
+                .andExpect(jsonPath("$.data.taskId").doesNotExist())
+                .andExpect(jsonPath("$.data.task").doesNotExist());
 
         mockMvc.perform(delete("/api/timer/current")
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
