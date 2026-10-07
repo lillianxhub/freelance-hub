@@ -38,7 +38,6 @@ const emptyTask: TaskDraft = {
   name: "",
   description: "",
   status: "OPEN",
-  status: "OPEN",
   due_date: "",
 };
 const TASK_PAGE_SIZE = 5;
