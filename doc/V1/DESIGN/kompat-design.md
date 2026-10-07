@@ -10,7 +10,7 @@
 | Observer (GoF ในรูปแบบ Spring Application Event) | ให้การหยุด timer แจ้งส่วนอื่นได้โดย `TimerServiceImpl` ไม่ต้องเรียก service คำนวณความคืบหน้าหรือ notification โดยตรง | `service/impl/TimerServiceImpl.java`, `event/TimerStoppedEvent.java` |
 | Service Layer | แยกวงจรชีวิต timer ไว้ใน TimerService ส่วน TimeEntryService รวมงานอ่าน สร้าง แก้ ลบ ล็อก และรวมเวลาไว้ด้วยกัน | `service/TimerService.java`, `service/TimeEntryService.java` และ implementation ทั้งสอง |
 | Repository และ Specification | แยก data access ออกจาก service และประกอบตัวกรองรายการตาม owner, Project, Task และช่วงเวลา | `repository/TimeEntryRepository.java`, `service/impl/TimeEntryServiceImpl.java` |
-| DTO + Mapper | ไม่ส่ง JPA entity ออก API โดยตรง และแยกข้อมูล request/response จาก domain | `dto/request/timeentry/StartTimerRequest.java`, `dto/request/timeentry/ManualTimeEntryRequest.java`, `dto/request/UpdateTimeEntryRequest.java`, `dto/response/TimeEntryResponse.java`, `mapper/TimeEntryMapper.java` |
+| DTO + Mapper | ไม่ส่ง JPA entity ออก API โดยตรง และแยกข้อมูล request/response จาก domain | `dto/request/timeentry/StartTimerRequest.java`, `dto/request/timeentry/ManualTimeEntryRequest.java`, `dto/request/timeentry/UpdateTimeEntryRequest.java`, `dto/response/timeentry/TimeEntryResponse.java`, `dto/response/timeentry/StartedTimerResponse.java`, `mapper/TimeEntryMapper.java` |
 | Dependency Injection ของเวลา | ใช้เวลาจริงใน production และกำหนดเวลาคงที่ใน test ได้โดยไม่เปลี่ยน business logic | `config/TimeConfiguration.java`, `service/impl/TimerServiceImpl.java`, `service/impl/TimeEntryServiceImpl.java` |
 | Concurrency control | ป้องกัน timer ซ้อน การหยุด/ยกเลิกพร้อมกัน และล็อกแถว Time Entry ระหว่างตั้ง `lockedAt` ตาม Project | `repository/TimeEntryRepository.java`, `service/impl/TimerServiceImpl.java`, `service/impl/TimeEntryServiceImpl.java`, `db/migration/V6__create_time_entries_table.sql` |
 
@@ -73,7 +73,13 @@ flowchart TD
     F -- มี --> E
     F -- ไม่มี --> G[สร้าง TimeEntry ชนิด TIMER ด้วย server Clock]
     G --> H[บันทึกและให้ unique index กัน timer ซ้อน]
-    H --> I[คืน 201 พร้อม running entry]
+    H --> T{มี Task?}
+    T -- ไม่มี --> I[คืน 201 พร้อม StartedTimerResponse]
+    T -- มี --> U[เรียก Task.start]
+    U -- COMPLETED --> E2[คืน 409 และ rollback]
+    U -- OPEN --> V[บันทึก Task ที่เปลี่ยนเป็น IN_PROGRESS]
+    U -- IN_PROGRESS --> I
+    V --> I
     I --> J[ผู้ใช้ส่งคำขอหยุด timer]
     J --> K[อ่าน running timer พร้อม pessimistic write lock]
     K --> L{พบ timer?}

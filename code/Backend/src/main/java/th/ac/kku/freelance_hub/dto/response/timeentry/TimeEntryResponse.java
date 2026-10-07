@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
 /** Time-entry data returned by the API without exposing the JPA entity. */
 @Data
@@ -30,6 +31,8 @@ public class TimeEntryResponse {
 
     private String taskName;
 
+    private TaskSummary task;
+
     private String description;
 
     private EntryType entryType;
@@ -51,4 +54,7 @@ public class TimeEntryResponse {
     private Instant updatedAt;
 
     private Long version;
+
+    public record TaskSummary(UUID id, TaskStatus status) {
+    }
 }

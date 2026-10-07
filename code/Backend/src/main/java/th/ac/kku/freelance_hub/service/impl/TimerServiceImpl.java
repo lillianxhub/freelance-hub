@@ -92,16 +92,23 @@ public class TimerServiceImpl implements TimerService {
             throw new TimerAlreadyRunningException();
         }
 
+        TimeEntry savedEntry;
         try {
-            return timeEntryMapper.toResponse(
-                    timeEntryRepository.saveAndFlush(entry)
-            );
+            savedEntry = timeEntryRepository.saveAndFlush(entry);
         } catch (DataIntegrityViolationException ex) {
             if (isRunningTimerConstraintViolation(ex)) {
                 throw new TimerAlreadyRunningException();
             }
             throw ex;
         }
+
+        // Update the task only after the timer insert succeeds; both writes
+        // still roll back together if starting the task is rejected.
+        if (task != null && task.start()) {
+            taskRepository.saveAndFlush(task);
+        }
+
+        return timeEntryMapper.toResponse(savedEntry);
     }
 
     @Override
