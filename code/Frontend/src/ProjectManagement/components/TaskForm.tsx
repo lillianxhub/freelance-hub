@@ -26,21 +26,6 @@ export default function TaskForm({
             required
           />
         </div>
-        {/* <div className="flex flex-col gap-1.5">
-          <label htmlFor="task-status">สถานะ</label>
-          <select
-            id="task-status"
-            value={value.status}
-            onChange={(event) =>
-              onChange({ ...value, status: event.target.value as TaskStatus })
-            }
-          >
-            <option value="TODO">รอดำเนินการ</option>
-            <option value="IN_PROGRESS">กำลังทำ</option>
-            <option value="IN_REVIEW">ตรวจสอบ</option>
-            <option value="DONE">เสร็จแล้ว</option>
-          </select>
-        </div> */}
         <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="task-description">รายละเอียด</FormLabel>
           <Textarea

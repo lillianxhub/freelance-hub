@@ -113,7 +113,10 @@ class TaskControllerTest {
         mockMvc.perform(post(BASE, PROJECT_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sortOrder\":0}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 
         verify(taskService, never()).create(any(), any(), any());
     }
@@ -357,7 +360,10 @@ class TaskControllerTest {
         mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"taskId\":\"" + TASK_ID + "\",\"sortOrder\":0}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("TASK_NOT_FOUND"));
     }
 
     @Test
@@ -383,7 +389,10 @@ class TaskControllerTest {
         mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"taskId\":\"" + TASK_ID + "\",\"sortOrder\":0}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }
     private void stubCurrentUser() {
         when(userService.currentUserId())

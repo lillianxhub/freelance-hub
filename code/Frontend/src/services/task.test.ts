@@ -10,8 +10,17 @@ test('task mapper translates backend status and field names', () => {
   } as ApiTask
   assert.deepEqual(toTask(source), {
     id: 'task-1', owner_id: '', project_id: 'project-1', name: 'Build page', description: '',
-    status: 'DONE', sort_order: 2, due_date: '', created_at: source.createdAt, updated_at: source.updatedAt,
+    status: 'COMPLETED', sort_order: 2, due_date: '', created_at: source.createdAt, updated_at: source.updatedAt,
   })
+})
+
+test('task mapper preserves every backend task status', () => {
+  for (const status of ['OPEN', 'IN_PROGRESS', 'COMPLETED'] as const) {
+    const source = {
+      id: 'task-1', projectId: 'project-1', name: 'Task', status, sortOrder: 0,
+    } as ApiTask
+    assert.equal(toTask(source).status, status)
+  }
 })
 
 test('deleteTask addresses the task under the supplied project', async () => {
@@ -32,7 +41,7 @@ test('deleteTask addresses the task under the supplied project', async () => {
   }
 })
 
-test('changeTaskStatus reopens a completed task through the status endpoint', async () => {
+test('changeTaskStatus reopens a completed task as in progress through the status endpoint', async () => {
   const originalFetch = globalThis.fetch
   let requestedUrl = ''
   let requestedMethod = ''
@@ -43,15 +52,15 @@ test('changeTaskStatus reopens a completed task through the status endpoint', as
     requestedBody = String(init?.body)
     return Response.json({
       success: true, message: 'Updated', meta: null, error: null,
-      data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'OPEN', sortOrder: 0 },
+      data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'IN_PROGRESS', sortOrder: 0 },
     })
   }
   try {
-    const task = await changeTaskStatus('task-1', 'TODO')
+    const task = await changeTaskStatus('task-1', 'IN_PROGRESS')
     assert.equal(requestedUrl, '/api/tasks/task-1/status')
     assert.equal(requestedMethod, 'PATCH')
-    assert.deepEqual(JSON.parse(requestedBody), { status: 'OPEN' })
-    assert.equal(task.status, 'TODO')
+    assert.deepEqual(JSON.parse(requestedBody), { status: 'IN_PROGRESS' })
+    assert.equal(task.status, 'IN_PROGRESS')
   } finally {
     globalThis.fetch = originalFetch
   }

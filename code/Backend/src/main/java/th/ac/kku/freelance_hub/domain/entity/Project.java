@@ -70,12 +70,12 @@ public class Project {
 
     //1 user มีได้หลายโปรเจค
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_id", nullable = false)
+    @JoinColumn(name = "owner_id", nullable = false) //เก็บ owner_id ในตาราง projects ใช้ project.owner_id เป็น FK ไปยัง user.id
     private User owner;
 
     //1ลูกค้ามีได้หลายโปรเจค
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "client_id", nullable = false)
+    @JoinColumn(name = "client_id", nullable = false) //เก็บ client_id ในตาราง projects ใช้ project.client_id เป็น FK ไปยัง client.id
     private Client client;
 
     //attribute ของ Project
