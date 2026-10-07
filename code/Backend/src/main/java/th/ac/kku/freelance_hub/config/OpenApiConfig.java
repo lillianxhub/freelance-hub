@@ -56,16 +56,16 @@ public class OpenApiConfig {
                     if (response.getValue().getContent() == null) {
                         response.getValue().setContent(new Content());
                     }
-                    response.getValue().getContent().computeIfAbsent("application/json", ignored ->
-                            new MediaType().schema(new Schema<>().$ref("#/components/schemas/ApiResult")));
+                    if (response.getValue().getContent().isEmpty()) {
+                        response.getValue().getContent().addMediaType("application/json", new MediaType());
+                    }
                     response.getValue().getContent().values().forEach(mediaType -> {
-                        Schema<?> base = mediaType.getSchema();
-                        if (base == null) base = new Schema<>().$ref("#/components/schemas/ApiResult");
                         BooleanSchema failure = new BooleanSchema();
                         failure.setEnum(java.util.List.of(false));
                         failure.setExample(false);
+                        // Error handlers always return ApiResult<Void>, never the method's success payload.
                         mediaType.setSchema(new ComposedSchema()
-                                .addAllOfItem(base)
+                                .addAllOfItem(new Schema<>().$ref("#/components/schemas/ApiResult"))
                                 .addAllOfItem(new ObjectSchema().addProperty("success", failure)));
                     });
                 });

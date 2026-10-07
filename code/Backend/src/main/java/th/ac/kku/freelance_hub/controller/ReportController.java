@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +38,7 @@ public class ReportController {
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResult<ReportSummaryResponse>> getSummary(
-            @Valid @ModelAttribute ReportFilterRequest filter
+            @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter
     ) {
         return ResponseEntity.ok(ApiResult.success(
                 "ดึงข้อมูลสรุปรายงานสำเร็จ",
@@ -47,7 +48,7 @@ public class ReportController {
 
     @GetMapping("/work-trend")
     public ResponseEntity<ApiResult<ReportWorkTrendResponse>> getWorkTrend(
-            @Valid @ModelAttribute ReportFilterRequest filter,
+            @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter,
             @RequestParam(defaultValue = "DAY") ReportGranularity granularity
     ) {
         return ResponseEntity.ok(ApiResult.success(
@@ -58,7 +59,7 @@ public class ReportController {
 
     @GetMapping("/distribution")
     public ResponseEntity<ApiResult<ReportDistributionResponse>> getDistribution(
-            @Valid @ModelAttribute ReportFilterRequest filter,
+            @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter,
             @RequestParam(defaultValue = "CLIENT") ReportGroupBy groupBy
     ) {
         return ResponseEntity.ok(ApiResult.success(
@@ -69,7 +70,7 @@ public class ReportController {
 
     @GetMapping("/work-pattern")
     public ResponseEntity<ApiResult<ReportWorkPatternResponse>> getWorkPattern(
-            @Valid @ModelAttribute ReportFilterRequest filter
+            @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter
     ) {
         return ResponseEntity.ok(ApiResult.success(
                 "ดึงรูปแบบการทำงานสำเร็จ",
@@ -79,8 +80,8 @@ public class ReportController {
 
     @GetMapping("/projects")
     public ResponseEntity<ApiResult<List<ReportProjectResponse>>> getProjects(
-            @Valid @ModelAttribute ReportFilterRequest filter,
-            @Valid @ModelAttribute ReportProjectsRequest request
+            @ParameterObject @Valid @ModelAttribute ReportFilterRequest filter,
+            @ParameterObject @Valid @ModelAttribute ReportProjectsRequest request
     ) {
         var result = reportService.getProjects(ownerId(), filter, request);
         PaginationMeta meta = new PaginationMeta(
