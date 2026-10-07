@@ -72,6 +72,18 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void startingTaskAgainKeepsItInProgress() {
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
+        Task task = taskRepository.saveAndFlush(new Task(project, "Timer task", 0));
+
+        assertThat(taskService.start(owner.getId(), project.getId(), task.getId())
+                .getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(taskService.start(owner.getId(), project.getId(), task.getId())
+                .getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
     void latestTimeEntryTaskNameUsesMostRecentEntryForOwner() {
         Task firstTask = taskRepository.findById(taskService.create(
                 owner.getId(), project.getId(), request("Design", 0)

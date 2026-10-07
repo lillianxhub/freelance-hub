@@ -31,6 +31,7 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.event.TimerStoppedEvent;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.RunningTimerNotFoundException;
@@ -118,6 +119,9 @@ class TimerServiceImplTest {
 
         assertThat(response.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(response.getTaskId()).isEqualTo(TASK_ID);
+        assertThat(response.getTask().id()).isEqualTo(TASK_ID);
+        assertThat(response.getTask().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
         assertThat(response.getDescription()).isEqualTo("Build timer");
         assertThat(response.getEntryType()).isEqualTo(EntryType.TIMER);
         assertThat(response.getStartedAt()).isEqualTo(NOW);
@@ -131,6 +135,7 @@ class TimerServiceImplTest {
         assertThat(captor.getValue().getOwner()).isSameAs(owner);
         assertThat(captor.getValue().getProject()).isSameAs(project);
         assertThat(captor.getValue().getTask()).isSameAs(task);
+        verify(taskRepository).saveAndFlush(task);
     }
 
     @Test
@@ -151,6 +156,7 @@ class TimerServiceImplTest {
         );
 
         assertThat(response.getTaskId()).isNull();
+        assertThat(response.getTask()).isNull();
         assertThat(response.isRunning()).isTrue();
         verifyNoInteractions(taskRepository);
     }
@@ -255,8 +261,70 @@ class TimerServiceImplTest {
     }
 
     @Test
+    void leavesInProgressTaskUnchangedWhenStartingTimer() {
+        task.start();
+        stubOwnedUserAndProject();
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
+        when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = timerService.startTimer(
+                OWNER_ID,
+                StartTimerRequest.builder().projectId(PROJECT_ID).taskId(TASK_ID).build()
+        );
+
+        assertThat(response.getTask().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
+    }
+
+    @Test
+    void rejectsCompletedTaskAndDoesNotChangeItsStatus() {
+        task.complete(NOW.minusSeconds(60));
+        stubOwnedUserAndProject();
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
+        when(timeEntryRepository.saveAndFlush(any(TimeEntry.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThatThrownBy(() -> timerService.startTimer(
+                OWNER_ID,
+                StartTimerRequest.builder().projectId(PROJECT_ID).taskId(TASK_ID).build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("completed task cannot be started");
+
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
+    }
+
+    @Test
+    void doesNotStartTaskWhenTimerAlreadyExists() {
+        stubOwnedUserAndProject();
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
+        when(timeEntryRepository
+                .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
+                        OWNER_ID, EntryType.TIMER
+                )).thenReturn(true);
+
+        assertThatThrownBy(() -> timerService.startTimer(
+                OWNER_ID,
+                StartTimerRequest.builder().projectId(PROJECT_ID).taskId(TASK_ID).build()
+        )).isInstanceOf(TimerAlreadyRunningException.class);
+
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
+    }
+
+    @Test
     void translatesConcurrentInsertConflictIntoTimerAlreadyRunning() {
         stubOwnedUserAndProject();
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
         when(timeEntryRepository
                 .existsByOwnerIdAndEntryTypeAndEndedAtIsNullAndIsActiveTrue(
                         OWNER_ID, EntryType.TIMER
@@ -268,8 +336,11 @@ class TimerServiceImplTest {
 
         assertThatThrownBy(() -> timerService.startTimer(
                 OWNER_ID,
-                StartTimerRequest.builder().projectId(PROJECT_ID).build()
+                StartTimerRequest.builder().projectId(PROJECT_ID).taskId(TASK_ID).build()
         )).isInstanceOf(TimerAlreadyRunningException.class);
+
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
     }
 
     @Test

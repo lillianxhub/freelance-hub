@@ -32,7 +32,7 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
   const timerProjectId = selectedProject || activeProjects[0]?.id || ''
   const hasRunningEntry = Boolean(runningEntry)
   const selectedProjectData = data.projects.find((project) => project.id === timerProjectId)
-  const selectedTasks = (taskOptions?.projectId === timerProjectId ? taskOptions.tasks : []).filter((task) => task.status !== 'DONE')
+  const selectedTasks = (taskOptions?.projectId === timerProjectId ? taskOptions.tasks : []).filter((task) => task.status !== 'COMPLETED')
   const optionsError = taskOptions?.projectId === timerProjectId ? taskOptions.error : ''
   const runningProject = runningEntry && (data.projects.find((project) => project.id === runningEntry.project_id) || (currentEntry ? { id: currentEntry.project.id, name: currentEntry.project.name, color: '#4F6BFF' } : null))
   const runningTask = runningEntry && (data.tasks.find((task) => task.id === runningEntry.task_id) || (currentEntry?.task ? { id: currentEntry.task.id, name: currentEntry.task.title } : null))

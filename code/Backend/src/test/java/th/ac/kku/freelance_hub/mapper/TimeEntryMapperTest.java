@@ -18,6 +18,7 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 @DisplayName("TimeEntry mapper tests")
 class TimeEntryMapperTest {
@@ -71,8 +72,11 @@ class TimeEntryMapperTest {
         assertThat(response.getClientName()).isEqualTo("Example Client");
         assertThat(response.getProjectId()).isEqualTo(project.getId());
         assertThat(response.getProjectName()).isEqualTo("Example Project");
+        assertThat(response.getProjectStatus()).isEqualTo(ProjectStatus.ACTIVE);
         assertThat(response.getTaskId()).isEqualTo(taskId);
         assertThat(response.getTaskName()).isEqualTo("Implement timer");
+        assertThat(response.getTask().id()).isEqualTo(taskId);
+        assertThat(response.getTask().status()).isEqualTo(TaskStatus.OPEN);
         assertThat(response.getDescription()).isEqualTo("Implement API");
         assertThat(response.getEntryType()).isEqualTo(EntryType.MANUAL);
         assertThat(response.getStartedAt()).isEqualTo(STARTED_AT);
@@ -100,6 +104,7 @@ class TimeEntryMapperTest {
 
         assertThat(response.getTaskId()).isNull();
         assertThat(response.getTaskName()).isNull();
+        assertThat(response.getTask()).isNull();
         assertThat(response.getEndedAt()).isNull();
         assertThat(response.getDurationSeconds()).isNull();
         assertThat(response.isRunning()).isTrue();

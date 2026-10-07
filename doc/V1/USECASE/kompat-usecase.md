@@ -13,7 +13,7 @@
 
 | ID | Use Case | Endpoint | ผลลัพธ์หลัก | Requirement |
 |---|---|---|---|---|
-| UC-TIME-01 | Start Timer | `POST /api/timer/start` | สร้าง running timer และคืน `201` พร้อม `TimeEntryResponse` ใน `data` | FR-TIME-01, FR-TIME-02, FR-TIME-03 |
+| UC-TIME-01 | Start Timer | `POST /api/timer/start` | สร้าง running timer และคืน `201` พร้อม `StartedTimerResponse` ใน `data` | FR-TIME-01, FR-TIME-02, FR-TIME-03 |
 | UC-TIME-02 | View Current Timer | `GET /api/timer/current` | คืน `200` พร้อม `CurrentTimerResponse` ทั้งกรณีมีและไม่มี timer | FR-TIME-01, FR-TIME-02 |
 | UC-TIME-03 | Stop Timer | `POST /api/timer/stop` | บันทึกเวลาสิ้นสุด คำนวณวินาที และคืน `200` พร้อม `StoppedTimerResponse` | FR-TIME-01, FR-TIME-03, FR-TIME-08 |
 | UC-TIME-04 | Cancel Timer | `DELETE /api/timer/current` | ลบ running timer และคืน `200` พร้อม `data: null` | FR-TIME-01 |
@@ -27,6 +27,8 @@
 
 ทุก endpoint ใน UC-TIME-01 ถึง UC-TIME-10 คืน `ApiResult` รูปแบบ `{success, message, data, meta, error}` โดย `message` ของ Time Tracking เป็นภาษาไทย; `meta` มีข้อมูล pagination เฉพาะ list ส่วน error ที่ controller จัดการคืน `success: false` และรหัสใน `error.code` ยกเว้น `401` ซึ่งจัดการโดยระบบ authentication ส่วนกลาง; UC-TIME-11 เป็นคำสั่งภายใน Backend จึงไม่มี HTTP response ของตัวเอง
 
+Response ที่มี `project` หรือ `task` ส่งสถานะปัจจุบันใน `project.status` และ `task.status` ด้วย; หากไม่ได้ระบุ Task จะคืน `task: null` ส่วน `StoppedTimerResponse` ไม่มี object ทั้งสอง
+
 ## UC-TIME-01 Start Timer
 
 1. Freelancer ส่ง `projectId`, optional `taskId` และ optional `description`
@@ -34,11 +36,11 @@
 3. Service ตรวจว่า User และ Project มีอยู่จริง โดย Project ต้องเป็นของ owner
 4. หากส่ง Task ระบบตรวจว่า Task อยู่ใน Project และเป็นของ owner คนเดียวกัน
 5. Entity ตรวจว่า Project สามารถจับเวลาได้ (`canTrackTime()`) และ Client มี `isActive = true` โดยใช้เวลาจาก server ผ่าน `Clock`
-6. Service ตรวจว่า owner ยังไม่มี running timer แล้วบันทึกรายการชนิด `TIMER`
-7. Controller คืน `201 Created`, `ApiResult<TimeEntryResponse>` และ `Location: /api/time-entries/{id}`
+6. Service ตรวจว่า owner ยังไม่มี running timer แล้วบันทึกรายการชนิด `TIMER`; หากมี Task จะเรียก `Task.start()` โดย `OPEN` เปลี่ยนเป็น `IN_PROGRESS`, `IN_PROGRESS` คงเดิม และ `COMPLETED` ถูกปฏิเสธ การบันทึก Timer และการเปลี่ยนสถานะ Task อยู่ใน transaction เดียวกัน
+7. Controller คืน `201 Created`, `ApiResult<StartedTimerResponse>` และ `Location: /api/time-entries/{id}` โดย `data` มี `project` และ `task` พร้อม `status` ของแต่ละรายการ
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่สามารถจับเวลาได้หรือ Client มี `isActive` ไม่ใช่ `true` = `409`; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`\
-**Postcondition:** มี Time Entry ชนิด `TIMER` ที่มี `startedAt` แต่ยังไม่มี `endedAt` และ `durationSeconds`; owner มี running timer ได้ไม่เกินหนึ่งรายการ
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่สามารถจับเวลาได้หรือ Client มี `isActive` ไม่ใช่ `true` = `409`; Task เป็น `COMPLETED` = `409` และ transaction ย้อนกลับ; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`\
+**Postcondition:** มี Time Entry ชนิด `TIMER` ที่มี `startedAt` แต่ยังไม่มี `endedAt` และ `durationSeconds`; owner มี running timer ได้ไม่เกินหนึ่งรายการ; Task ที่ส่งมามีสถานะ `IN_PROGRESS`
 
 ## UC-TIME-02 View Current Timer
 
@@ -77,10 +79,11 @@
 2. Controller validate ว่ามีวิธีกำหนดเวลาสิ้นสุดเพียงแบบเดียวและเวลาสิ้นสุดอยู่หลังเวลาเริ่ม
 3. Service ตรวจ User, Project, Task และ owner relationship
 4. Entity สร้างรายการชนิด `MANUAL`; หากส่ง duration ระบบคำนวณ `endedAt` หรือหากส่งช่วงเวลาระบบคำนวณ duration
-5. Repository บันทึก แล้ว controller คืน `201 Created` พร้อม `Location` และ `TimeEntryDetailResponse` ใน `ApiResult.data` ซึ่งมี `createdAt` และ `updatedAt`
+5. หากส่ง Task จะเรียก `Task.start()` ก่อนบันทึก: `OPEN` เปลี่ยนเป็น `IN_PROGRESS`, `IN_PROGRESS` คงเดิม และ `COMPLETED` ถูกปฏิเสธ; การบันทึก Time Entry และการเปลี่ยนสถานะ Task อยู่ใน transaction เดียวกัน
+6. Repository บันทึก แล้ว controller คืน `201 Created` พร้อม `Location` และ `TimeEntryDetailResponse` ใน `ApiResult.data` ซึ่งมี `createdAt`, `updatedAt`, `project.status` และ `task.status` เมื่อมี Task
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
-**Postcondition:** มี completed manual entry ที่ duration มากกว่า 0; การบันทึกย้อนหลังไม่บังคับให้ Project เป็น `ACTIVE`
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
+**Postcondition:** มี completed manual entry ที่ duration มากกว่า 0; Task ที่ส่งมามีสถานะ `IN_PROGRESS`; การบันทึกย้อนหลังไม่บังคับให้ Project เป็น `ACTIVE`
 
 ## UC-TIME-06 List and Filter Time Entries
 
@@ -159,6 +162,7 @@ sequenceDiagram
     participant P as Project/Task Repository
     participant R as TimeEntryRepository
     participant E as TimeEntry
+    participant T as Task
     participant B as ApplicationEventPublisher
 
     F->>C: POST /api/timer/start + Bearer JWT
@@ -169,7 +173,14 @@ sequenceDiagram
     S->>E: startTimer(..., Instant.now(clock))
     S->>R: check running timer
     S->>R: saveAndFlush(entry)
+    opt ส่ง Task
+        S->>T: start() (OPEN เปลี่ยน, IN_PROGRESS คงเดิม, COMPLETED ปฏิเสธ)
+        opt สถานะเปลี่ยน
+            S->>P: saveAndFlush(task)
+        end
+    end
     S-->>C: TimeEntryResponse
+    C->>C: StartedTimerResponse.from(response)
     C-->>F: 201 Created + ApiResult.data
 
     F->>C: POST /api/timer/stop + Bearer JWT
