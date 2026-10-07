@@ -77,7 +77,7 @@ function TimeEntryForm({ value, projects, tasks, error, onChange, onSubmit, onCa
           <FormLabel htmlFor="manual-task" required>งาน</FormLabel>
           <NativeSelect id="manual-task" name="task_id" value={value.task_id || ''} onChange={handleChange} onBlur={handleBlur} aria-invalid={Boolean(fieldErrors.task_id)} aria-describedby={fieldErrors.task_id ? 'manual-task-error' : undefined}>
             <option value="">เลือกงาน</option>
-            {tasks.filter((task) => task.project_id === value.project_id && task.status !== 'DONE').map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
+            {tasks.filter((task) => task.project_id === value.project_id && task.status !== 'COMPLETED').map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
           </NativeSelect>
           <FieldError id="manual-task-error" message={fieldErrors.task_id} />
         </div>
