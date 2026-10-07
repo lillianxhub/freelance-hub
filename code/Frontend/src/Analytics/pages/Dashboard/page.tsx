@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiBriefcase, FiCheckSquare, FiClock, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
 import { toast } from 'sonner'
 import { getErrorMessage } from '../../../api/apiError'
@@ -30,10 +30,6 @@ function DashboardPage() {
   const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const [period, setPeriod] = useState<DashboardChartPeriod>('WEEK')
   const { activity, loading: activityLoading, error: activityError, retry: retryActivity } = useDashboardActivity(period, loadActivity)
-
-  useEffect(() => {
-    void refreshCurrentTimer()
-  }, [refreshCurrentTimer])
 
   const chartData = period === 'WEEK'
     ? weeklyChartPoints(data.dailyWork)

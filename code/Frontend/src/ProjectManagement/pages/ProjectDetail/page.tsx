@@ -25,7 +25,7 @@ import TaskForm from "../../components/TaskForm";
 import TaskList from "../../components/TaskList";
 import { formatDate } from "../../../utils/date";
 import { formatDurationSeconds } from "../../../utils/duration";
-import { changeTaskStatus } from "../../../services/task";
+import { changeTaskStatus, reorderTask } from "../../../services/task";
 import { summarizeTimeEntries } from '../../../services/timeTracking'
 import { changeProjectStatus } from "../../../services/project";
 import type { ProjectStatus } from "../../../types/project";
@@ -56,6 +56,7 @@ function ProjectDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [formError, setFormError] = useState("");
+  const [savingTask, setSavingTask] = useState(false);
   const [changingTaskId, setChangingTaskId] = useState<string | null>(null);
   const [taskWithoutTime, setTaskWithoutTime] = useState<Task | null>(null);
   const [taskPage, setTaskPage] = useState(1);
@@ -92,28 +93,38 @@ function ProjectDetailPage() {
 
   const saveTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (savingTask) return;
     if (!taskForm.name.trim()) {
       setFormError("กรุณากรอกชื่องาน");
       return;
     }
-    await persistTask({
-      ...taskForm,
-      project_id: project.id,
-      name: taskForm.name.trim(),
-      sort_order: taskForm.sort_order ?? tasks.length,
-    });
-    setModalOpen(false);
+    setSavingTask(true);
+    setFormError('');
+    try {
+      await persistTask({
+        ...taskForm,
+        project_id: project.id,
+        name: taskForm.name.trim(),
+        sort_order: taskForm.sort_order ?? tasks.length,
+      });
+      setModalOpen(false);
+    } catch (reason: unknown) {
+      setFormError(getErrorMessage(reason, 'บันทึกงานไม่สำเร็จ'));
+    } finally {
+      setSavingTask(false);
+    }
   };
 
   const moveTask = async (task: Task, direction: -1 | 1) => {
     const currentIndex = tasks.findIndex((item) => item.id === task.id);
     const nextIndex = currentIndex + direction;
     if (nextIndex < 0 || nextIndex >= tasks.length) return;
-    const other = tasks[nextIndex];
-    await Promise.all([
-      persistTask({ ...task, sort_order: other.sort_order }),
-      persistTask({ ...other, sort_order: task.sort_order }),
-    ]);
+    try {
+      await reorderTask(project.id, task.id, nextIndex);
+      await refresh();
+    } catch (reason: unknown) {
+      toast.error(getErrorMessage(reason, 'เลื่อนลำดับงานไม่สำเร็จ'));
+    }
   };
 
   const completeTask = async (task: Task) => {
@@ -373,15 +384,16 @@ function ProjectDetailPage() {
         </aside></Card>
       </div>
 
-      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open && !savingTask) setModalOpen(false) }}>
         <DialogContent className="!max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
           <DialogHeader><DialogTitle>{taskForm.id ? "แก้ไขงาน" : "เพิ่มงาน"}</DialogTitle></DialogHeader>
           <TaskForm
             value={taskForm}
             error={formError}
+            saving={savingTask}
             onChange={setTaskForm}
             onSubmit={saveTask}
-            onCancel={() => setModalOpen(false)}
+            onCancel={() => { if (!savingTask) setModalOpen(false) }}
           />
         </DialogContent>
       </Dialog>

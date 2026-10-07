@@ -39,6 +39,14 @@ export async function changeTaskStatus(id: string, status: Task['status']): Prom
   return toTask(response.data)
 }
 
+export async function reorderTask(projectId: string, taskId: string, sortOrder: number): Promise<Task> {
+  const response = await api.patch<ApiTask>(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}/reorder`,
+    { sortOrder },
+  )
+  return toTask(response.data)
+}
+
 export async function deleteTask(projectId: string, taskId: string): Promise<void> {
   await api.delete(`/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`)
 }

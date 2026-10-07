@@ -20,7 +20,6 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
   const [taskOptions, setTaskOptions] = useState<{ projectId: string; tasks: Task[]; error: string } | null>(null)
   const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const activeProjects = useMemo(() => data.projects.filter((project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED'), [data.projects])
-  const fallbackRunningEntry = data.time_entries.find((entry) => !entry.ended_at) || null
   const currentEntry = currentTimer?.running ? currentTimer.timeEntry : null
   const runningEntry = useMemo(() => currentEntry
     ? {
@@ -30,7 +29,7 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
       description: currentEntry.description ?? '',
       started_at: currentEntry.startedAt,
     }
-    : fallbackRunningEntry, [currentEntry, fallbackRunningEntry])
+    : null, [currentEntry])
   const timerProjectId = activeProjects.some((project) => project.id === selectedProject) ? selectedProject : activeProjects[0]?.id || ''
   const hasRunningEntry = Boolean(runningEntry)
   const selectedProjectData = data.projects.find((project) => project.id === timerProjectId)

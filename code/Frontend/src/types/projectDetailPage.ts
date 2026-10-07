@@ -7,6 +7,7 @@ export type TaskDraft = Omit<TaskInput, 'project_id' | 'sort_order'> & { project
 export interface TaskFormProps {
   value: TaskDraft
   error: string
+  saving?: boolean
   onChange: (value: TaskDraft) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onCancel: () => void
