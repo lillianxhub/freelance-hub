@@ -196,18 +196,18 @@ function ClientsPage() {
           setPage(1)
         }}
         placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร"
-        searchAriaLabel="ค้นหาClients"
+        searchAriaLabel="ค้นหาลูกค้า"
       >
-        <NativeSelect value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองStatusClients">
+        <NativeSelect value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองสถานะลูกค้า">
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งานอยู่</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </NativeSelect>
-        <NativeSelect value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับClients"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></NativeSelect>
+        <NativeSelect value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับลูกค้า"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></NativeSelect>
       </FilterBar>
 
       {visibleClients.length === 0 ? (
-        <Card asChild><section className="p-4 sm:p-6"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<Button variant="default" className="h-10" type="button" onClick={openCreate}>เพิ่มลูกค้า</Button>} /></section></Card>
+        <Card asChild><section className="p-4 sm:p-6"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบลูกค้า" description="เพิ่มลูกค้ารายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<Button variant="default" className="h-10" type="button" onClick={openCreate}>เพิ่มลูกค้า</Button>} /></section></Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleClients.map((client) => {
@@ -268,7 +268,7 @@ function ClientsPage() {
       <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] !max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'}</DialogTitle>
+            <DialogTitle>{form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้า'}</DialogTitle>
           </DialogHeader>
           <ClientForm
             value={form}

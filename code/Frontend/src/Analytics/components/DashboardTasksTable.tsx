@@ -38,7 +38,7 @@ export default function DashboardTasksTable({ tasks }: Props) {
                   </Link>
                 </TableCell>
                 <TableCell>{task.projectName}</TableCell>
-                <TableCell><StatusBadge status={task.status === 'OPEN' ? 'TODO' : task.status === 'COMPLETED' ? 'DONE' : 'IN_PROGRESS'} /></TableCell>
+                <TableCell><StatusBadge status={task.status} /></TableCell>
               </TableRow>
             ))}</TableBody>
           </Table>
