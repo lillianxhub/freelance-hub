@@ -151,7 +151,6 @@ function ClientsPage() {
   const archiveClients = async (client: Client) => {
     if (client.status === 'ARCHIVED') await saveClient({ ...client, status: 'ACTIVE' })
     else await archiveClient(client.id)
-    await refresh()
     setPageRequestKey((current) => current + 1)
   }
 
