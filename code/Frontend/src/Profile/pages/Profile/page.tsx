@@ -4,6 +4,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import FormLabel from "../../../components/FormLabel";
 import { Input } from "../../../components/ui/input";
+import { Textarea } from '../../../components/ui/textarea'
 import PasswordInput from "../../../components/PasswordInput";
 import PageHeader from "../../../components/PageHeader";
 import { ErrorState, LoadingState } from "../../../components/ViewState";
@@ -338,7 +339,7 @@ function ProfilePage() {
             </div>
             {/* <div className="col-span-full flex flex-col gap-1.5">
               <label htmlFor="profile-bio">แนะนำตัว</label>
-              <textarea
+              <Textarea
                 id="profile-bio"
                 name="bio"
                 value={profile.bio || ""}

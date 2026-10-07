@@ -1,9 +1,13 @@
 import { Button } from '../../components/ui/button'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog'
+import { useState } from 'react'
 import type { TaskListProps } from '../../types/projectDetailPage'
+import type { Task } from '../../types/task'
 import StatusBadge from '../../components/StatusBadge'
 import { FiArrowDown, FiArrowUp, FiCheck, FiEdit2, FiTrash2 } from 'react-icons/fi'
 
 export default function TaskList({ tasks, changingTaskId, onToggle, onMove, onEdit, onDelete }: TaskListProps) {
+  const [deleteTask, setDeleteTask] = useState<Task | null>(null)
   return (
     <div className="flex flex-col">
       {tasks.map((task, index) => (
@@ -63,7 +67,7 @@ export default function TaskList({ tasks, changingTaskId, onToggle, onMove, onEd
               size="icon-sm"
               type="button"
               aria-label="ลบงาน"
-              onClick={() => onDelete(task)}
+              onClick={() => setDeleteTask(task)}
             >
               <FiTrash2 aria-hidden="true" />
             </Button>
@@ -71,6 +75,18 @@ export default function TaskList({ tasks, changingTaskId, onToggle, onMove, onEd
         </article>
       ))}
       {tasks.length === 0 && <p className="m-0 py-7 text-center text-sm text-text-secondary">ยังไม่มีงานในโปรเจกต์นี้</p>}
+      <AlertDialog open={deleteTask !== null} onOpenChange={(open) => { if (!open) setDeleteTask(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบงานนี้หรือไม่</AlertDialogTitle>
+            <AlertDialogDescription>งาน “{deleteTask?.name}” จะถูกลบออกจากโปรเจกต์</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteTask) onDelete(deleteTask); setDeleteTask(null) }}>ลบงาน</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

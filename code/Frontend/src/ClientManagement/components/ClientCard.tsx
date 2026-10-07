@@ -1,6 +1,8 @@
 import { Card } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog'
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { FiArchive, FiEdit2, FiRotateCcw } from 'react-icons/fi'
 import type { ClientCardProps } from '../../types/clientsPage'
 import { formatDurationSeconds } from '../../utils/duration'
@@ -15,6 +17,7 @@ function getAvatarColor(seed: string) {
 }
 
 export default function ClientCard({ client, projectCount, minutes, onEdit, onArchive }: ClientCardProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const displayName = client.name || 'ไม่ระบุชื่อ'
   const companyName = client.company_name || 'ไม่มีชื่อบริษัท'
   const avatarColor = getAvatarColor(client.id || displayName)
@@ -69,12 +72,24 @@ export default function ClientCard({ client, projectCount, minutes, onEdit, onAr
             size="sm"
             className="text-muted-foreground hover:bg-red-soft hover:text-destructive"
             type="button"
-            onClick={() => onArchive(client)}
+            onClick={() => setConfirmOpen(true)}
           >
             {client.status === 'ARCHIVED' ? <FiRotateCcw aria-hidden="true" /> : <FiArchive aria-hidden="true" />}
             {client.status === 'ARCHIVED' ? 'นำกลับ' : 'เก็บถาวร'}
           </Button>
         </div>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{client.status === 'ARCHIVED' ? 'นำลูกค้ากลับมาใช้งานหรือไม่' : 'เก็บลูกค้าเข้าคลังหรือไม่'}</AlertDialogTitle>
+            <AlertDialogDescription>{client.status === 'ARCHIVED' ? 'ลูกค้าจะกลับมาแสดงในรายการที่ใช้งานอยู่' : 'ลูกค้าจะไม่แสดงในรายการที่ใช้งานอยู่ แต่ข้อมูลเดิมจะยังคงอยู่'}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onArchive(client)}>{client.status === 'ARCHIVED' ? 'นำกลับมาใช้งาน' : 'เก็บถาวร'}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </article>
     </Card>
   )
