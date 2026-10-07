@@ -1,6 +1,6 @@
 import type { OwnedRecord } from './common'
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+export type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED'
 
 export interface Task extends OwnedRecord {
   project_id: string
