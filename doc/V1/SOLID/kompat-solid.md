@@ -8,10 +8,10 @@
 | Principle | หลักฐานในโค้ด | เหตุผลที่ใช้ |
 |---|---|---|
 | Single Responsibility | `TimerServiceImpl.startTimer/getCurrentTimer/stopTimer/cancelTimer` | ประสานวงจรชีวิตของ timer รวมถึงเรียก `Task.start()` เมื่อเริ่ม timer ที่มี Task และเผยแพร่ event เมื่อหยุด timer |
-| Single Responsibility | `TimeEntryServiceImpl` | รวมงานอ่าน สร้าง แก้ ลบ ล็อก และรวมเวลาในขอบเขต Time Entry; controller, mapper และ repository แยกหน้าที่กัน |
+| Single Responsibility | `TimeEntryServiceImpl` | รวมงานอ่าน สร้าง แก้ ลบ ล็อก และรวมเวลาในขอบเขต Time Entry; `createManual()` เรียก `Task.start()` เมื่อมี Task โดยกฎเปลี่ยนสถานะอยู่ใน Task; controller, mapper และ repository แยกหน้าที่กัน |
 | Single Responsibility | `TimerStoppedProgressListener.onTimerStopped` | รับ event หลัง transaction หยุด timer commit แล้ว คำนวณความคืบหน้าโปรเจกต์และเผยแพร่ `ProjectProgressThresholdEvent` เมื่อถึงเกณฑ์ |
 | Single Responsibility | `TimerController`, `TimeEntryController`, `TimeTrackingExceptionHandler` | Controller รับ request และสร้าง `ApiResult`; handler แปลง exception ของ Time Tracking เป็น HTTP error โดยไม่ใส่กฎธุรกิจใน controller |
-| Single Responsibility | `TimeEntryMapper`, `TimeEntryRepository` | Mapper แปลง entity เป็น response DTO ส่วน Repository กำหนด data-access contract |
+| Single Responsibility | `TimeEntryMapper`, `TimeEntryRepository` | Mapper แปลง entity เป็น `TimeEntryResponse` รวมสถานะปัจจุบันของ Project/Task เพื่อให้ response DTO นำไปใช้ ส่วน Repository กำหนด data-access contract |
 | Open/Closed | `TimerServiceImpl.stopTimer`, `TimerStoppedEvent`, `TimerStoppedProgressListener` | `stopTimer()` เผยแพร่ event โดยไม่ต้องฝังการคำนวณความคืบหน้าไว้ในเมธอด; listener ที่มีอยู่รับ event หลัง commit และเผยแพร่ `ProjectProgressThresholdEvent` เมื่อถึง 80% หรือ 100% |
 | Liskov Substitution | `TimerService`/`TimerServiceImpl`, `TimeEntryService`/`TimeEntryServiceImpl` | Controller รับ dependency เป็น service interface และเรียกเมธอดตาม contract โดยไม่อ้างถึง implementation โดยตรง จึงสามารถใช้ implementation ที่รักษา contract เดียวกันแทนได้ในเชิงโครงสร้าง; ยังไม่ได้พิสูจน์พฤติกรรมของ implementation หลายตัว |
 | Interface Segregation | `TimerService`,`TimeEntryService` | แยกงานของ TimeEntry และ Timer|
