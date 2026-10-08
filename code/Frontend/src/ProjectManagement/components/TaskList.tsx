@@ -21,9 +21,9 @@ export default function TaskList({ tasks, startIndex = 0, totalTasks = tasks.len
             size="icon-sm"
             className={`rounded-md border ${task.status === 'COMPLETED' ? 'border-green bg-green text-white hover:bg-green hover:text-white' : 'border-border bg-background text-text-secondary'}`}
             type="button"
-            aria-label={task.status === 'COMPLETED' ? 'งานเสร็จแล้ว' : 'ทำเครื่องหมายว่าเสร็จแล้ว'}
+            aria-label={task.status === 'COMPLETED' ? 'กลับไปทำงานต่อ' : 'ทำเครื่องหมายว่าเสร็จแล้ว'}
             aria-pressed={task.status === 'COMPLETED'}
-            disabled={task.status !== 'IN_PROGRESS' || changingTaskId === task.id}
+            disabled={task.status === 'OPEN' || changingTaskId !== null}
             onClick={() => onToggle(task)}
           >
             {task.status === 'COMPLETED' && <FiCheck aria-hidden="true" />}

@@ -141,7 +141,19 @@ function ProjectDetailPage() {
   };
 
   const toggleTask = async (task: Task) => {
-    if (task.status !== 'IN_PROGRESS' || changingTaskId) return;
+    if (task.status === 'OPEN' || changingTaskId) return;
+    if (task.status === 'COMPLETED') {
+      setChangingTaskId(task.id);
+      try {
+        await changeTaskStatus(task.id, 'IN_PROGRESS');
+        await refresh();
+      } catch (reason: unknown) {
+        toast.error(getErrorMessage(reason, 'เปลี่ยนสถานะงานไม่สำเร็จ'));
+      } finally {
+        setChangingTaskId(null);
+      }
+      return;
+    }
     setChangingTaskId(task.id);
     try {
       const summary = await summarizeTimeEntries({ projectId: project.id, taskId: task.id });
