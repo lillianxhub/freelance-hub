@@ -289,7 +289,65 @@ class ProjectServiceImplTest {
     }
 
     @Test
+    void rejectsCompletionWhenActiveTasksRemainIncomplete() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        TaskRepository.TaskProgressSummary summary =
+                mock(TaskRepository.TaskProgressSummary.class);
+        when(summary.getTotalTasks()).thenReturn(2L);
+        when(summary.getCompletedTasks()).thenReturn(1L);
+        when(taskRepository.summarizeProgressByProjectIds(
+                OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
+                .thenReturn(List.of(summary));
+
+        assertThatThrownBy(() -> service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.COMPLETED)
+                        .build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ยังมีงานย่อยที่ไม่เสร็จ");
+
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        verify(projectRepository, never()).save(any(Project.class));
+        verifyNoInteractions(timeEntryService);
+    }
+
+    @Test
     void locksTimeEntriesWhenProjectBecomesCompleted() {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        TaskRepository.TaskProgressSummary summary =
+                mock(TaskRepository.TaskProgressSummary.class);
+        when(summary.getTotalTasks()).thenReturn(2L);
+        when(summary.getCompletedTasks()).thenReturn(2L);
+        when(taskRepository.summarizeProgressByProjectIds(
+                OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED))
+                .thenReturn(List.of(summary));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.changeStatus(
+                OWNER_ID,
+                PROJECT_ID,
+                ChangeProjectStatusRequest.builder()
+                        .status(ProjectStatus.COMPLETED)
+                        .build()
+        );
+
+        assertThat(response.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verify(timeEntryService).lockByProject(OWNER_ID, PROJECT_ID);
+        verify(projectRepository).save(project);
+    }
+
+    @Test
+    void allowsCompletionWhenProjectHasNoActiveTasks() {
         Project project = new Project(owner, client, "Website");
         ReflectionTestUtils.setField(project, "id", PROJECT_ID);
         project.changeStatus(ProjectStatus.ACTIVE);
@@ -306,8 +364,9 @@ class ProjectServiceImplTest {
         );
 
         assertThat(response.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verify(taskRepository).summarizeProgressByProjectIds(
+                OWNER_ID, List.of(PROJECT_ID), TaskStatus.COMPLETED);
         verify(timeEntryService).lockByProject(OWNER_ID, PROJECT_ID);
-        verify(projectRepository).save(project);
     }
 
     @Test
@@ -579,6 +638,7 @@ class ProjectServiceImplTest {
         assertThat(project.getIsActive()).isFalse();
 
         verify(projectRepository).save(project);
+        verifyNoInteractions(taskRepository);
     }
 
     @Test

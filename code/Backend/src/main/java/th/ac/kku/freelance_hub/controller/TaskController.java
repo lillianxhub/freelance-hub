@@ -48,32 +48,32 @@ public class TaskController {
 
     @Operation(
             summary = "Create a task",
-            description = "สร้างงานย่อยในโปรเจกต์ตามตำแหน่งที่ระบุ "
-                    + "โดย sortOrder เริ่มจาก 0"
+            description = "Create a task at the specified position within a project. "
+                    + "sortOrder is zero-based."
     )
     @ApiResponse(
             responseCode = "201",
-            description = "สร้างงานย่อยสำเร็จ",
+            description = "Task created",
             useReturnTypeSchema = true
     )
     @ApiResponse(
             responseCode = "400",
-            description = "ข้อมูลงานย่อยหรือลำดับไม่ถูกต้อง"
+            description = "Invalid task data or sort order"
     )
     @ApiResponse(
             responseCode = "401",
-            description = "ต้องเข้าสู่ระบบ"
+            description = "Authentication required"
     )
     @ApiResponse(
             responseCode = "404",
-            description = "ไม่พบโปรเจกต์",
+            description = "Project not found",
             content = @Content(
                     schema = @Schema(implementation = ApiResult.class)
             )
     )
     @ApiResponse(
             responseCode = "409",
-            description = "สถานะโปรเจกต์ไม่อนุญาตให้สร้างงานย่อย",
+            description = "Project status does not allow creating tasks",
             content = @Content(
                     schema = @Schema(implementation = ApiResult.class)
             )
@@ -103,15 +103,14 @@ public class TaskController {
 
     @Operation(
             summary = "List tasks",
-            description = "ดึงรายการงานย่อยในโปรเจกต์ กรองด้วย is_active "
-                    + "โดยค่าเริ่มต้นเป็น true และรองรับ page, limit, sort "
-                    + "โดย page เริ่มจาก 1 และยังรับ size แบบเดิม"
+            description = "List tasks in a project, optionally filtered by is_active (true by default). "
+                    + "Supports page, limit, and sort; page is one-based, and size remains supported."
     )
-    @ApiResponse(responseCode = "200", description = "ดึงรายการงานย่อยสำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Page of tasks returned",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "400", description = "ข้อมูลตัวกรองหรือแบ่งหน้าไม่ถูกต้อง")
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
+    @ApiResponse(responseCode = "400", description = "Invalid filter or pagination options")
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Project not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping
     public ResponseEntity<ApiResult<List<TaskResponse>>> list(
@@ -215,7 +214,7 @@ public class TaskController {
 
     @Operation(
             summary = "Complete a task",
-            description = "Mark a task as COMPLETED and record its completion time"
+            description = "Mark an IN_PROGRESS task as COMPLETED and record its completion time"
     )
     @ApiResponse(responseCode = "200", description = "Task completed",
             content = @Content(schema = @Schema(implementation = TaskResponse.class)))
@@ -261,13 +260,13 @@ public class TaskController {
 
     @Operation(
             summary = "Delete a task",
-            description = "ลบงานย่อยแบบ soft delete และปรับลำดับงานที่ยังใช้งาน โดยเก็บข้อมูลเวลาเดิมไว้"
+            description = "Soft-delete a task and reorder the remaining active tasks while preserving time entries"
     )
     @ApiResponse(responseCode = "204", description = "Task deleted", content = @Content)
     @ApiResponse(responseCode = "401", description = "Authentication required")
     @ApiResponse(responseCode = "404", description = "Project or task not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้ลบงานย่อย",
+    @ApiResponse(responseCode = "409", description = "Project status does not allow deleting tasks",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> delete(
@@ -280,16 +279,15 @@ public class TaskController {
 
     @Operation(
             summary = "Reorder a task within a project",
-            description = "ส่ง taskId และ sortOrder เพื่อย้ายงานย่อยไปยังตำแหน่งใหม่ "
-                    + "โดยตำแหน่งเริ่มจาก 0 และนับเฉพาะงานที่ยังใช้งาน"
+            description = "Provide taskId and sortOrder to move an active task to a new zero-based position"
     )
-    @ApiResponse(responseCode = "200", description = "เรียงลำดับงานย่อยสำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Task order updated",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "400", description = "ข้อมูลงานย่อยหรือลำดับไม่ถูกต้อง")
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์หรืองานย่อย",
+    @ApiResponse(responseCode = "400", description = "Invalid task data or sort order")
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Project or task not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้เรียงลำดับงาน",
+    @ApiResponse(responseCode = "409", description = "Project status does not allow reordering tasks",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/reorder")
     public ResponseEntity<ApiResult<TaskResponse>> reorderInProject(
