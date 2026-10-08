@@ -1,6 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +27,8 @@ public class UserController {
      * GET /api/users/me
      */
     @Tag(name = "Authentication")
+    @ApiResponse(responseCode = "200", description = "Current user returned", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<UserResponse>> getCurrentUser() {
@@ -38,6 +41,8 @@ public class UserController {
      * PATCH /api/users/me
      */
     @Tag(name = "Authentication")
+    @ApiResponse(responseCode = "200", description = "User profile updated", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
     @PatchMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<UserResponse>> updateCurrentUser(
@@ -51,6 +56,8 @@ public class UserController {
      * PATCH /api/users/me/password
      */
     @Tag(name = "Authentication")
+    @ApiResponse(responseCode = "200", description = "Password changed", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", description = "Authentication required")
     @PatchMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResult<Void>> changePassword(

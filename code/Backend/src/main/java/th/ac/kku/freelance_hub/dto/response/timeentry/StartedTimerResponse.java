@@ -6,8 +6,8 @@ import java.util.UUID;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
-/** Time-entry details exposed by create, detail, and update endpoints. */
-public record TimeEntryDetailResponse(
+/** Public response for starting a timer, with related data nested like entry details. */
+public record StartedTimerResponse(
         UUID id,
         ProjectSummary project,
         TaskSummary task,
@@ -19,23 +19,22 @@ public record TimeEntryDetailResponse(
         Instant updatedAt
 ) {
 
-    public static TimeEntryDetailResponse from(TimeEntryResponse source) {
-        ProjectSummary project = new ProjectSummary(
-                source.getProjectId(),
-                source.getProjectName(),
-                source.getProjectStatus()
-        );
-        TaskSummary task = source.getTaskId() == null
+    public static StartedTimerResponse from(TimeEntryResponse source) {
+        TaskSummary task = source.getTask() == null
                 ? null
                 : new TaskSummary(
-                        source.getTaskId(),
+                        source.getTask().id(),
                         source.getTaskName(),
                         source.getTask().status()
                 );
 
-        return new TimeEntryDetailResponse(
+        return new StartedTimerResponse(
                 source.getId(),
-                project,
+                new ProjectSummary(
+                        source.getProjectId(),
+                        source.getProjectName(),
+                        source.getProjectStatus()
+                ),
                 task,
                 source.getStartedAt(),
                 source.getEndedAt(),
@@ -46,7 +45,9 @@ public record TimeEntryDetailResponse(
         );
     }
 
-    public record ProjectSummary(UUID id, String name, ProjectStatus status) {}
+    public record ProjectSummary(UUID id, String name, ProjectStatus status) {
+    }
 
-    public record TaskSummary(UUID id, String title, TaskStatus status) {}
+    public record TaskSummary(UUID id, String title, TaskStatus status) {
+    }
 }

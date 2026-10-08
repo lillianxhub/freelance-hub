@@ -237,6 +237,7 @@ export function fetchMultipartClient<T>(
     formData: FormData,
     init: Omit<RequestInit, "body"> = {},
 ): Promise<ApiResponse<T>> {
+    inFlightGets.clear();
     return request<T>(
         path,
         { ...init, method: init.method || "POST", body: formData },
@@ -253,6 +254,7 @@ function jsonRequest<T>(
     body: unknown,
     options: ApiOptions = {},
 ): Promise<ApiResponse<T>> {
+    inFlightGets.clear();
     return fetchClient<T>(path, {
         ...options,
         method,
@@ -260,15 +262,37 @@ function jsonRequest<T>(
     });
 }
 
+// StrictMode can start the same GET twice before the first request settles.
+// Share only in-flight reads; mutations clear the map so their refreshes are fresh.
+const inFlightGets = new Map<string, Promise<ApiResponse<unknown>>>();
+
+function getOnce<T>(path: string, options: ApiOptions = {}): Promise<ApiResponse<T>> {
+    if (Object.keys(options).length > 0) {
+        return fetchClient<T>(path, { ...options, method: "GET" });
+    }
+    const key = `${getApiToken() ?? ''}:${path}`;
+    const existing = inFlightGets.get(key);
+    if (existing) return existing as Promise<ApiResponse<T>>;
+
+    const pending = fetchClient<T>(path, { method: "GET" });
+    inFlightGets.set(key, pending);
+    const remove = () => {
+        if (inFlightGets.get(key) === pending) inFlightGets.delete(key);
+    };
+    void pending.then(remove, remove);
+    return pending;
+}
+
 export const api = {
-    get: <T>(path: string, options: ApiOptions = {}) =>
-        fetchClient<T>(path, { ...options, method: "GET" }),
+    get: getOnce,
     post: <T>(path: string, body?: unknown, options: ApiOptions = {}) =>
         jsonRequest<T>("POST", path, body, options),
     put: <T>(path: string, body?: unknown, options: ApiOptions = {}) =>
         jsonRequest<T>("PUT", path, body, options),
     patch: <T>(path: string, body?: unknown, options: ApiOptions = {}) =>
         jsonRequest<T>("PATCH", path, body, options),
-    delete: <T = void>(path: string, options: ApiOptions = {}) =>
-        fetchClient<T>(path, { ...options, method: "DELETE" }),
+    delete: <T = void>(path: string, options: ApiOptions = {}) => {
+        inFlightGets.clear();
+        return fetchClient<T>(path, { ...options, method: "DELETE" });
+    },
 };

@@ -519,7 +519,8 @@ class ClientIntegrationTest {
                 .andExpect(jsonPath("$.data.name").value("Updated Acme"));
         mockMvc.perform(delete("/api/clients/{id}", clientId)
                 .header("Authorization", bearer(ownerToken)))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray()).isEmpty());
         var deletedClient = clientRepository.findById(clientId).orElseThrow();
         assertThat(deletedClient.getIsActive()).isTrue();
         assertThat(deletedClient.getDeletedAt()).isNotNull();
