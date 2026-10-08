@@ -65,23 +65,22 @@ public class ProjectController {
 
     @Operation(
             summary = "List projects",
-            description = "ค้นหา Project จากชื่อ Project หรือ Client "
-                    + "กรองสถานะ เรียงลำดับ และแบ่งหน้า; "
-                    + "ส่ง include=tasks เมื่อต้องการรายการ Task ที่ยังใช้งานของแต่ละ Project; "
-                    + "status=ALL จะแสดงทุกสถานะรวม ARCHIVED"
+            description = "Search projects by project or client name, filter by status, sort, and paginate. "
+                    + "Use include=tasks to include active tasks for each project. "
+                    + "Use status=ALL to include every status, including ARCHIVED."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "ดึงรายการโปรเจกต์สำเร็จ",
+            description = "Page of projects returned",
             useReturnTypeSchema = true
     )
     @ApiResponse(
             responseCode = "400",
-            description = "ข้อมูลค้นหา เรียงลำดับ หรือแบ่งหน้าไม่ถูกต้อง"
+            description = "Invalid search, sorting, or pagination options"
     )
     @ApiResponse(
             responseCode = "401",
-            description = "ต้องเข้าสู่ระบบ"
+            description = "Authentication required"
     )
     @GetMapping
     public ResponseEntity<ApiResult<List<ProjectListItemResponse>>> list(
@@ -148,13 +147,12 @@ public class ProjectController {
 
     @Operation(
             summary = "Get project detail",
-            description = "ดึงรายละเอียดโปรเจกต์ของผู้ใช้ พร้อมข้อมูล Client "
-                    + "เวลาเป้าหมายเป็นชั่วโมง และความคืบหน้าของงานย่อยที่ยังใช้งาน"
+            description = "Get an owned project with its client, target hours, and active task progress"
     )
-    @ApiResponse(responseCode = "200", description = "ดึงรายละเอียดโปรเจกต์สำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Project returned",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบโปรเจกต์",
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Project not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping("/{id}")
     public ResponseEntity<ApiResult<ProjectListItemResponse>> getById(
@@ -171,24 +169,24 @@ public class ProjectController {
 
     @Operation(
             summary = "Update a project",
-            description = "แก้ไขรายละเอียดและ Client ของโปรเจกต์ที่ผู้ใช้เป็นเจ้าของ"
+            description = "Update the details and client of a project belonging to the authenticated user"
     )
     @ApiResponse(
             responseCode = "200",
-            description = "แก้ไขโปรเจกต์สำเร็จ",
+            description = "Project updated",
             useReturnTypeSchema = true
     )
     @ApiResponse(
             responseCode = "400",
-            description = "ข้อมูลโปรเจกต์ไม่ถูกต้อง"
+            description = "Invalid project data"
     )
     @ApiResponse(
             responseCode = "401",
-            description = "ต้องเข้าสู่ระบบ"
+            description = "Authentication required"
     )
     @ApiResponse(
             responseCode = "404",
-            description = "ไม่พบโปรเจกต์หรือ Client",
+            description = "Project or client not found",
             content = @Content(
                     schema = @Schema(implementation = ApiResult.class)
             )
@@ -214,32 +212,32 @@ public class ProjectController {
 
     @Operation(
             summary = "Change project status",
-            description = "เปลี่ยนสถานะโปรเจกต์ตามกฎ State "
-                    + "โดย ARCHIVED จะตั้ง is_active เป็น false"
+            description = "Change a project status according to its allowed transitions. "
+                    + "ARCHIVED sets is_active to false."
     )
     @ApiResponse(
             responseCode = "200",
-            description = "เปลี่ยนสถานะโปรเจกต์สำเร็จ",
+            description = "Project status updated",
             useReturnTypeSchema = true
     )
     @ApiResponse(
             responseCode = "400",
-            description = "ข้อมูลสถานะไม่ถูกต้อง"
+            description = "Invalid project status"
     )
     @ApiResponse(
             responseCode = "401",
-            description = "ต้องเข้าสู่ระบบ"
+            description = "Authentication required"
     )
     @ApiResponse(
             responseCode = "404",
-            description = "ไม่พบโปรเจกต์",
+            description = "Project not found",
             content = @Content(
                     schema = @Schema(implementation = ApiResult.class)
             )
     )
     @ApiResponse(
             responseCode = "409",
-            description = "ไม่อนุญาตให้เปลี่ยนไปยังสถานะที่ระบุ",
+            description = "Project status change is not allowed",
             content = @Content(
                     schema = @Schema(implementation = ApiResult.class)
             )
@@ -265,21 +263,21 @@ public class ProjectController {
 
     @Operation(
             summary = "Delete a project",
-            description = "ลบโปรเจกต์แบบ soft delete "
-                    + "โดยตั้งสถานะ ARCHIVED, is_active=false และบันทึก deleted_at"
+            description = "Soft-delete a project by setting its status to ARCHIVED, "
+                    + "is_active to false, and deleted_at to the deletion time"
     )
     @ApiResponse(
             responseCode = "200",
-            description = "ลบโปรเจกต์สำเร็จ",
+            description = "Project deleted",
             useReturnTypeSchema = true
     )
     @ApiResponse(
             responseCode = "401",
-            description = "ต้องเข้าสู่ระบบ"
+            description = "Authentication required"
     )
     @ApiResponse(
             responseCode = "404",
-            description = "ไม่พบโปรเจกต์",
+            description = "Project not found",
             content = @Content(
                     schema = @Schema(implementation = ApiResult.class)
             )

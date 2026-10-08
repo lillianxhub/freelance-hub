@@ -38,13 +38,12 @@ public class TaskDetailController {
 
     @Operation(
             summary = "Get task detail",
-            description = "ดึงรายละเอียดงานย่อยด้วย taskId "
-                    + "โดยผู้ใช้ต้องเป็นเจ้าของโปรเจกต์ของงานนั้น"
+            description = "Get a task by taskId from a project belonging to the authenticated user"
     )
-    @ApiResponse(responseCode = "200", description = "ดึงข้อมูลงานย่อยสำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Task returned",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Task not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping("/{taskId}")
     public ResponseEntity<ApiResult<TaskResponse>> getById(
@@ -63,17 +62,15 @@ public class TaskDetailController {
 
     @Operation(
             summary = "Update a task",
-            description = "แก้ชื่อและรายละเอียดงานย่อยด้วย taskId "
-                    + "โดยผู้ใช้ต้องเป็นเจ้าของโปรเจกต์ "
-                    + "และสถานะโปรเจกต์ต้องอนุญาตให้แก้ไขงานย่อย"
+            description = "Update a task's name and description in an owned project that allows task editing"
     )
-    @ApiResponse(responseCode = "200", description = "แก้ไขงานย่อยสำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Task updated",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "400", description = "ข้อมูลงานย่อยไม่ถูกต้อง")
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
+    @ApiResponse(responseCode = "400", description = "Invalid task data")
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Task not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้แก้ไขงานย่อย",
+    @ApiResponse(responseCode = "409", description = "Project status does not allow editing tasks",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PutMapping("/{taskId}")
     public ResponseEntity<ApiResult<TaskResponse>> update(
@@ -93,18 +90,17 @@ public class TaskDetailController {
 
     @Operation(
             summary = "Change task status",
-            description = "เปลี่ยนสถานะ OPEN เป็น IN_PROGRESS หรือ COMPLETED "
-                    + "และ IN_PROGRESS เป็น COMPLETED โดย COMPLETED ย้อนเป็น IN_PROGRESS ได้ แต่ย้อนเป็น OPEN ไม่ได้ "
-                    + "การส่งสถานะเดิมจะไม่เปลี่ยนข้อมูล "
-                    + "และสถานะโปรเจกต์ต้องอนุญาตให้แก้ไขงานย่อย"
+            description = "Move a task from OPEN to IN_PROGRESS before completing it. "
+                    + "COMPLETED can return to IN_PROGRESS but not OPEN. "
+                    + "Sending the current status makes no change. The project must allow task editing."
     )
-    @ApiResponse(responseCode = "200", description = "เปลี่ยนสถานะงานย่อยสำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Task status updated",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "400", description = "สถานะงานย่อยไม่ถูกต้อง")
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
+    @ApiResponse(responseCode = "400", description = "Invalid task status")
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Task not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "409", description = "ไม่อนุญาตให้เปลี่ยนสถานะงานย่อย",
+    @ApiResponse(responseCode = "409", description = "Task status change is not allowed",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PatchMapping("/{taskId}/status")
     public ResponseEntity<ApiResult<TaskResponse>> changeStatus(
@@ -124,17 +120,15 @@ public class TaskDetailController {
 
     @Operation(
             summary = "Delete a task",
-            description = "ลบงานย่อยแบบ soft delete โดยตั้ง is_active=false "
-                    + "และบันทึก deleted_at พร้อมเก็บข้อมูลเวลาเดิมไว้ "
-                    + "ผู้ใช้ต้องเป็นเจ้าของโปรเจกต์ "
-                    + "และสถานะโปรเจกต์ต้องอนุญาตให้แก้ไขงานย่อย"
+            description = "Soft-delete a task by setting is_active to false and deleted_at to the deletion time. "
+                    + "Time entries are preserved, and the owned project must allow task editing."
     )
-    @ApiResponse(responseCode = "200", description = "ลบงานย่อยสำเร็จ",
+    @ApiResponse(responseCode = "200", description = "Task deleted",
             useReturnTypeSchema = true)
-    @ApiResponse(responseCode = "401", description = "ต้องเข้าสู่ระบบ")
-    @ApiResponse(responseCode = "404", description = "ไม่พบงานย่อย",
+    @ApiResponse(responseCode = "401", description = "Authentication required")
+    @ApiResponse(responseCode = "404", description = "Task not found",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
-    @ApiResponse(responseCode = "409", description = "สถานะโปรเจกต์ไม่อนุญาตให้ลบงานย่อย",
+    @ApiResponse(responseCode = "409", description = "Project status does not allow deleting tasks",
             content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @DeleteMapping("/{taskId}")
     public ResponseEntity<ApiResult<Void>> delete(

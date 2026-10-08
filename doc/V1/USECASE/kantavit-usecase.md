@@ -71,11 +71,12 @@
 ### UC-PRJ-05 เปลี่ยนสถานะ Project
 
 1. ส่ง `PATCH /api/projects/{id}/status` พร้อม `status` ใหม่; Service ค้นเฉพาะ Project ของผู้ใช้ที่ยังไม่ถูก soft delete แล้วตรวจว่าไม่มี timer ของ Project นี้กำลังทำงานก่อนเปลี่ยนสถานะ
-2. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; การคืนจาก `ARCHIVED` ทำได้ต่อเมื่อ Project ยังไม่ถูก soft delete และ Client ยังใช้งาน (`isActive=true`, `deletedAt=null`); ส่งสถานะเดิมซ้ำได้
-3. ถ้าเพิ่งเปลี่ยนจากสถานะอื่นเป็น `COMPLETED`, Service เรียก `TimeEntryService.lockByProject(ownerId, projectId)` ก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่มีอยู่ของ Project จะถูกล็อกและแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ
-4. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
+2. หากเปลี่ยนจาก `ACTIVE` เป็น `COMPLETED`, Service ใช้ `TaskRepository.summarizeProgressByProjectIds()` นับเฉพาะ Task ที่ยังใช้งาน (`isActive=true`) และปฏิเสธถ้ายังมี Task ที่ไม่เป็น `COMPLETED`; Project ที่ไม่มี Task ที่ยังใช้งานไม่ถูกเงื่อนไขนี้ปฏิเสธ การเปลี่ยนเป็น `ARCHIVED` ไม่ต้องรอให้ Task เสร็จ
+3. `Project.changeStatus()` ให้ State ของสถานะปัจจุบันตรวจ transition ก่อนบันทึก: `PLANNED → ACTIVE/ARCHIVED`, `ACTIVE → ON_HOLD/COMPLETED/ARCHIVED`, `ON_HOLD → ACTIVE/ARCHIVED`, `COMPLETED → ARCHIVED`, `ARCHIVED → ACTIVE/PLANNED`; การคืนจาก `ARCHIVED` ทำได้ต่อเมื่อ Project ยังไม่ถูก soft delete และ Client ยังใช้งาน (`isActive=true`, `deletedAt=null`); ส่งสถานะเดิมซ้ำได้
+4. ถ้าเพิ่งเปลี่ยนจากสถานะอื่นเป็น `COMPLETED`, Service เรียก `TimeEntryService.lockByProject(ownerId, projectId)` ก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่มีอยู่ของ Project จะถูกล็อกและแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ
+5. เมื่อเป็น `ARCHIVED` จะตั้ง `isActive=false`; เมื่อเปลี่ยนจาก `ARCHIVED` กลับ `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` การเปลี่ยนสถานะนี้ไม่ตั้ง `deletedAt`
 
-**ทางเลือก:** สถานะไม่ถูกต้อง = `400`; ไม่พบ Project = `404`; transition ผิดกฎ, Client ถูกจัดเก็บ/soft delete หรือ timer ของ Project กำลังทำงาน = `409`
+**ทางเลือก:** สถานะไม่ถูกต้อง = `400`; ไม่พบ Project = `404`; transition ผิดกฎ, Client ถูกจัดเก็บ/soft delete, timer ของ Project กำลังทำงาน หรือ `ACTIVE → COMPLETED` ขณะที่ยังมี Task ที่ยังใช้งานและไม่เสร็จ = `409`
 
 **Postcondition ของการเปลี่ยนเป็น COMPLETED:** รายการเวลาที่ถูกล็อกแล้วจะถูก API ปฏิเสธหากพยายามแก้หรือลบ (`409`)
 
@@ -107,7 +108,7 @@
 
 ### UC-TSK-05 เปลี่ยนสถานะ Task
 
-`PATCH /api/tasks/{taskId}/status` ใช้ enum ของ Task เอง (`OPEN`, `IN_PROGRESS`, `COMPLETED`) ไม่ใช้ `ProjectStatus`: `OPEN → IN_PROGRESS/COMPLETED`, `IN_PROGRESS → COMPLETED`, `COMPLETED → IN_PROGRESS` เท่านั้นเมื่อย้อนงาน; ย้อนเป็น `OPEN` ไม่ได้ การย้อนจะล้าง `completedAt` เป็น `null` และหากทำเสร็จอีกครั้งจะบันทึกเวลาใหม่ การส่งสถานะเดิมซ้ำจะไม่เปลี่ยนข้อมูล Service ตรวจ `project.canEditTasks()` ก่อนเปลี่ยนสถานะ จึงไม่ให้ย้อน Task ใน Project ที่ `COMPLETED` หรือ `ARCHIVED` (`409`)
+`PATCH /api/tasks/{taskId}/status` ใช้ enum ของ Task เอง (`OPEN`, `IN_PROGRESS`, `COMPLETED`) ไม่ใช้ `ProjectStatus`: ผ่าน API ใช้ `OPEN → IN_PROGRESS`, `IN_PROGRESS → COMPLETED` และ `COMPLETED → IN_PROGRESS` เมื่อย้อนงาน; ย้อนเป็น `OPEN` ไม่ได้ `TaskServiceImpl` ปฏิเสธ `OPEN → COMPLETED` ทั้งเส้นนี้และเส้นเดิม `/complete` ด้วย `409` ก่อนเรียก `Task.changeStatus()` (ตัว Entity ยังไม่ได้ห้าม transition นี้เอง) การย้อนจะล้าง `completedAt` เป็น `null` และหากทำเสร็จอีกครั้งจะบันทึกเวลาใหม่ การส่งสถานะเดิมซ้ำจะไม่เปลี่ยนข้อมูล Service ตรวจ `project.canEditTasks()` ก่อนเปลี่ยนสถานะ จึงไม่ให้ย้อน Task ใน Project ที่ `COMPLETED` หรือ `ARCHIVED` (`409`)
 
 ### UC-TSK-06 เรียงลำดับ Task
 
@@ -134,6 +135,7 @@ sequenceDiagram
     participant C as ProjectController
     participant S as ProjectServiceImpl
     participant R as ProjectRepository
+    participant TR as TaskRepository
     participant T as TimerService
     participant P as Project
     participant ST as ProjectStates / ProjectState
@@ -149,6 +151,14 @@ sequenceDiagram
         S-->>H: IllegalStateException
         H-->>F: 409 Conflict
     else ไม่มี timer กำลังทำงาน
+        opt ACTIVE → COMPLETED
+            S->>TR: summarizeProgressByProjectIds(ownerId, [id], COMPLETED)
+            TR-->>S: จำนวน Task ที่ยังใช้งานและจำนวนที่เสร็จ
+            break ยังมี Task ที่ไม่เสร็จ
+                S-->>H: IllegalStateException
+                H-->>F: 409 Conflict; ไม่เปลี่ยนสถานะ
+            end
+        end
         S->>P: changeStatus(nextStatus)
         P->>ST: from(status), canTransitionTo(nextStatus)
         ST-->>P: อนุญาตหรือปฏิเสธ
