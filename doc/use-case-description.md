@@ -293,7 +293,7 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 - `FR-CLI-04` ยังครบไม่หมด: Client detail แนบ Project/Task แบบเลือกได้แล้ว แต่ยังไม่คืนเวลาที่ใช้ในแต่ละ Project; method รวมเวลาปัจจุบันรวมตาม Client สำหรับ Dashboard/Analytics ไม่ใช่เวลาราย Project ในหน้า Client detail
 - `FR-CLI-05` ยังต้องยืนยันการตีความ soft delete กับทีม หรือเพิ่มกติกาตรวจธุรกรรมตาม requirement; เอกสารนี้ไม่เปลี่ยนพฤติกรรม DELETE ให้เอง
 - การค้นหาใน `FR-CLI-03` เป็น prefix search จากชื่อ บริษัท อีเมล เบอร์โทร และที่อยู่ตามรูปแบบที่บันทึกไว้; ยังไม่ใช่การค้นหาแบบตัดช่องว่างหรือเครื่องหมายในเบอร์โทร
-- ยังไม่พบ Use Case Diagram ใน `doc/diagrams/`; ก่อนรวมเอกสารหลักควรเทียบชื่อ actor/use case กับ diagram ฉบับทีม
+- มี [Use Case Diagram](diagrams/use-case-diagram.md) แล้ว โดยใช้ actors/IDs ของฉบับรวม; diagram ไม่ถือว่าปิด requirement gaps ของ Client ที่ระบุข้างต้น
 
 **หลักฐานการทดสอบ:** `ClientControllerTest`, `ClientServiceImplTest`, `ClientRepositoryTest` และ `ClientIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
 
@@ -764,7 +764,7 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 
 ## 8. Diagram และเอกสารต้นฉบับ
 
-Sequence และ Activity ที่มีต้นฉบับในเอกสารสมาชิกถูกรวมไว้ใน [Diagram index](diagrams/README.md) ส่วน Use Case Diagram, State Diagram และ Deployment Diagram แบบแยกยังไม่มีต้นฉบับที่ครบ จึงยังไม่สร้างแทนในรอบนี้ รายละเอียด Use Case ในเอกสารนี้ต้องนำไปเทียบกับ diagram เหล่านั้นก่อนส่งฉบับสมบูรณ์
+Sequence และ Activity จากเอกสารสมาชิกถูกรวมไว้ใน [Diagram index](diagrams/README.md) และเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Domain Model](diagrams/domain-model.md), [State Diagram](diagrams/state-diagram.md) และ [Deployment Diagram](diagrams/deployment-diagram.md) จาก source ณ ca77d74 แล้ว ใช้ actors/IDs และกฎของ implementation ไม่ถือว่าการเพิ่ม diagram implement requirement ที่ยังขาด
 
 | Feature | เอกสารต้นฉบับ |
 |---|---|

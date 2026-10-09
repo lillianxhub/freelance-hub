@@ -101,5 +101,5 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 - [Kompat - Time Tracking](V1/DESIGN/kompat-design.md)
 - [Nattadol - Dashboard/Reports](V1/DESIGN/nattadol-design.md)
 
-Diagram ที่มีต้นฉบับถูกคัดลอกและตรวจชื่อ method/path ใน [diagrams/](diagrams/README.md) โดยคงเอกสารสมาชิกเดิมไว้ ส่วน diagram ที่ไม่มีต้นฉบับและสไลด์ยังไม่ถูกสร้างในงานรวมเอกสารรอบนี้
+Diagram จากต้นฉบับถูกตรวจชื่อ method/path ใน [diagrams/](diagrams/README.md) โดยคงเอกสารสมาชิกเดิมไว้ และเพิ่ม Conceptual Domain/Use Case/Deployment/State diagrams จาก implementation แล้ว สไลด์ยังไม่สร้างตามขอบเขตงาน ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
 

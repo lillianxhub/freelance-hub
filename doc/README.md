@@ -10,9 +10,10 @@
 | [Design Patterns](design-patterns.md) | Architectural patterns และ Behavioral GoF patterns ที่มีจริง พร้อมตำแหน่งใน diagram |
 | [Use Case Description](use-case-description.md) | Actors, endpoint contracts, flows, alternative flows และ requirement boundaries ของทุก feature |
 | [Data Dictionary](data-dictionary.md) | Schema หลัง Flyway V1-V20, constraints, indexes, ความสัมพันธ์และ archive/soft-delete semantics |
-| [Diagram Index](diagrams/README.md) | Domain/class, ER, Sequence 6 scenarios, Activity และ component view จากต้นฉบับที่มี |
+| [Diagram Index](diagrams/README.md) | Use Case, Domain, Class, ER, Sequence 6 scenarios, Activity, Component, Deployment และ State |
 | [Reports API](reports-summary-api.md) | Contract ของข้อมูลหน้า Reports ที่มีอยู่เดิม |
 | [CI/CD](ci-cd.md) | Pipeline, Docker/Flyway checks, quality gates และเงื่อนไข deploy จากเอกสาร Petpinyo |
+| [Test Plan / Report / Coverage](../test/README.md) | ผลรันทดสอบจริงและขอบเขตหลักฐานที่ยังไม่ได้เก็บ |
 
 วิธีติดตั้ง/รันระบบ, Swagger, test commands, สมาชิกและ Deployment URL ดู [README ของ repository](../README.md) และข้อกำหนดผลิตภัณฑ์ดู [REQUIREMENTS](../REQUIREMENTS.md)
 
@@ -30,15 +31,16 @@
 | Kompat / `kompat_673380262-4_02` | Time Tracking | [SOLID](V1/SOLID/kompat-solid.md), [Design](V1/DESIGN/kompat-design.md), [Use Cases](V1/USECASE/kompat-usecase.md) |
 | Nattadol / `nattadol_673380511-9_02` | Dashboard, Reports และ Frontend | [SOLID](V1/SOLID/nattadol-solid.md), [Design](V1/DESIGN/nattadol-design.md), [Use Cases](V1/USECASE/nattadol-usecase.md) |
 
-## ขอบเขตการส่งมอบที่ยังต้องรวมจากทีม
+## Diagram และผลทดสอบที่เพิ่มหลังฉบับรวม
 
-รอบนี้รวมเฉพาะเนื้อหา/diagram ที่มีต้นฉบับ ไม่สร้างงานที่ยังไม่มีแทนสมาชิก:
+ตรวจ source ณ `ca77d74` แล้วเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Conceptual Domain Model](diagrams/domain-model.md), [Deployment Diagram](diagrams/deployment-diagram.md) และ [State Diagrams](diagrams/state-diagram.md) โดยไม่เพิ่ม feature หรือ production code
 
-- Use Case Diagram ยังไม่มีต้นฉบับแยก: ต้องเทียบ actors/ชื่อ use case กับคำอธิบายก่อนส่ง
-- Domain Class Model มีแล้วใน class-diagram.md; Domain Model แบบ conceptual แยกยังไม่มี
-- Deployment Diagram ของ cloud nodes และ State Diagram แบบแยกยังไม่มี; component view ไม่ถือว่าแทนสองชนิดนี้ได้
-- สไลด์นำเสนอใน slide/ ยังมีเพียง README ไม่สร้างสไลด์ในรอบนี้
-- Test Report/coverage/หลักฐาน CI ต้องใช้ผลรันของ release จริงจาก test/ หรือ CI; รายชื่อ test ในเอกสารไม่ใช่รายงานผลผ่าน
+## ขอบเขตการส่งมอบที่ยังต้องตรวจจากทีม
+
+- สไลด์นำเสนอใน slide/ ยังมีเพียง README ไม่สร้างสไลด์ตามขอบเขตที่ผู้ใช้กำหนด
+- Test Report มีผล local Backend 446/Frontend 30 tests ผ่าน พร้อม typecheck/build แต่ Frontend lint ยังติด local dependency; ต้องรัน lint ซ้ำก่อนอ้างว่า gates ทุกตัวผ่าน
+- Coverage มีเฉพาะ 11 Frontend TypeScript files ที่ชุดทดสอบโหลด; Backend/React UI coverage ยังไม่ได้เก็บ และยังไม่ได้แนบผล CI/PostgreSQL/cloud verification ใหม่
+- Deployment Diagram อธิบาย configuration ไม่ใช่หลักฐานว่า public URL ใช้งานได้จริง; ทีมต้องตรวจ environment/settings/health ของ release ก่อนส่ง
 - ข้อจำกัดของ feature เช่นเวลาราย Project ใน Client detail, การตีความ FR-CLI-05, UI บาง metric และ notification แยกไว้ใน Use Case/Design ไม่ถูกประกาศว่าเสร็จจากการรวมเอกสาร
 
-เอกสารที่มีอยู่ถูกจัดเป็นฉบับรวมใช้อ่านและรีวิวสำหรับส่ง แต่รายการข้างต้นต้องครบและตรวจ deployment/test จริงก่อนประกาศว่างานส่งมอบทั้งโครงการสมบูรณ์
+เอกสารและ diagram หลักที่เคยขาดจัดทำแล้ว แต่ข้อจำกัดข้างต้นต้องตรวจเพิ่มก่อนประกาศว่างานส่งมอบทั้งโครงการสมบูรณ์
