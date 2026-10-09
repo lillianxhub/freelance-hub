@@ -1,6 +1,6 @@
 # Freelance Hub MVP - Domain Class Diagram
 
-ฉบับตรวจจาก JPA entities และเอกสารสมาชิก ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ส่วนแรกแสดง Domain Class Model ส่วนท้ายแสดง Application Layers และตำแหน่ง Design Patterns
+ฉบับตรวจจาก JPA entities และเอกสารสมาชิก ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 ส่วนแรกแสดง Domain Class Model ส่วนท้ายแสดง Application Layers และตำแหน่ง Design Patterns
 ข้อมูล Address เป็น value object แบบ `@Embeddable` ใน `UserProfile` และ `Client` โดยยังเก็บคอลัมน์ในตารางเดิม
 ในเอกสารนี้ใช้ชื่อ audit field มาตรฐาน `deletedAt` แทน typo `deleate_at` จาก DBML ต้นทาง
 
@@ -214,7 +214,7 @@ classDiagram
 
 ## Authentication Patterns
 
-ที่มา: [Petpinyo Design](../V1/DESIGN/petpinyo-design.md) Strategy / Template Method / Chain of Responsibility ผ่าน Spring Security
+ที่มา: Petpinyo Design ตรวจตามการแก้ PR #127 เพิ่ม cookie/origin, refresh repository และ authentication provider dependencies Strategy / Template Method / Chain of Responsibility ใช้ abstractions ของ Spring Security; profile persistence ผ่าน UserRepository ไม่ใช่ UserProfileRepository
 
 ```mermaid
 classDiagram
@@ -243,6 +243,16 @@ classDiagram
     class UserRepository {
         <<Repository>>
     }
+    class RefreshTokenRepository {
+        <<Repository>>
+    }
+    class AuthenticationManager
+    class DaoAuthenticationProvider
+    class CustomUserDetailsService
+    class RefreshTokenCookie
+    class TrustedOriginValidator
+    class LoginAttemptLimiter
+    class PlatformTransactionManager
     class RefreshTokenService
     class JwtTokenProvider
     class UserMapper
@@ -250,6 +260,8 @@ classDiagram
     class UserProfile
 
     AuthController --> AuthService
+    AuthController --> RefreshTokenCookie
+    AuthController --> TrustedOriginValidator
     AuthServiceImpl ..|> AuthService
     UserController --> UserService
     UserService ..|> CurrentUserProvider
@@ -262,12 +274,24 @@ classDiagram
     AuthServiceImpl --> RefreshTokenService
     AuthServiceImpl --> JwtTokenProvider
     AuthServiceImpl --> UserMapper
+    AuthServiceImpl --> AuthenticationManager
+    AuthenticationManager --> DaoAuthenticationProvider : delegates to provider
+    DaoAuthenticationProvider --> CustomUserDetailsService
+    DaoAuthenticationProvider --> PasswordEncoder
+    AuthServiceImpl --> LoginAttemptLimiter
+    AuthServiceImpl --> PlatformTransactionManager
+    UserService --> UserRepository
+    UserService --> UserMapper
+    UserService --> RefreshTokenService
+    RefreshTokenService --> RefreshTokenRepository
+    JwtAuthenticationFilter --> JwtTokenProvider
+    JwtAuthenticationFilter --> CustomUserDetailsService
     User "1" *-- "0..1" UserProfile
 ```
 
 ## Project State Pattern
 
-ที่มา: [Kantavit Design](../V1/DESIGN/kantavit-design.md) State object ตัดสิน transition/permissions; Service ตรวจ Task, running timer และประสานการล็อกเวลา
+ที่มา: Kantavit Design State object ตัดสิน transition/permissions; Service ตรวจ Task, running timer และประสานการล็อกเวลา
 
 ```mermaid
 classDiagram
@@ -305,18 +329,18 @@ classDiagram
     class TaskRepository {
         +summarizeProgressByProjectIds(ownerId, projectIds, completedStatus)
     }
-    Project ..> ProjectStates : เลือกจากสถานะปัจจุบัน
-    ProjectStates ..> ProjectState : คืน State
+    Project ..> ProjectStates : select current State
+    ProjectStates ..> ProjectState : resolve State
     ProjectState <|.. PlannedState
     ProjectState <|.. ActiveState
     ProjectState <|.. OnHoldState
     ProjectState <|.. CompletedState
     ProjectState <|.. ArchivedState
     ProjectServiceImpl --> Project : changeStatus
-    ProjectServiceImpl --> TaskRepository : ตรวจ Task ก่อน COMPLETED
-    ProjectServiceImpl --> TimeEntryService : lockByProject เมื่อ COMPLETED
+    ProjectServiceImpl --> TaskRepository : check Tasks before COMPLETED
+    ProjectServiceImpl --> TimeEntryService : lockByProject on completion
     TaskServiceImpl --> Project : canEditTasks
     TaskServiceImpl --> Task : changeStatus
 ```
 
-Observer แสดงผู้เผยแพร่และผู้รับสองระดับใน [Progress Event Sequence](sequence-06-progress-events.md) และอธิบายเหตุผลพร้อมข้อจำกัดใน [Design Patterns](../design-patterns.md)
+Observer แสดงผู้เผยแพร่และผู้รับสองระดับใน [Progress Event Sequence](sequence-diagram.md#scenario-06-progress-threshold-events) และอธิบายเหตุผลพร้อมข้อจำกัดใน [Design Patterns](../design-patterns.md)
