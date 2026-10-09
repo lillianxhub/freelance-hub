@@ -1,6 +1,6 @@
 # Use Case Description - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026
+ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026
 
 ## 1. ขอบเขตระบบและ Actor
 
@@ -27,19 +27,28 @@ Spring Security/JWT, repositories และ event listeners เป็นส่�
 
 ## 3. Authentication และ User/Profile
 
+ตรวจเทียบเอกสาร Petpinyo ใน PR #127 กับโค้ดจริง:
+
+| ส่วนงาน | โค้ดอ้างอิง |
+|---|---|
+| HTTP / cookies / origin | [AuthController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java), [RefreshTokenCookie](../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/RefreshTokenCookie.java), [TrustedOriginValidator](../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/TrustedOriginValidator.java) |
+| Login / register / refresh / logout | [AuthServiceImpl](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java), [RefreshTokenService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/RefreshTokenService.java) |
+| Profile / password / PATCH mapping | [UserController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/UserController.java), [UserService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java), [UserMapper](../code/Backend/src/main/java/th/ac/kku/freelance_hub/mapper/UserMapper.java) |
+
 ### Actors
 
 | Actor | หน้าที่ |
 |---|---|
 | Guest | สมัครสมาชิกและเข้าสู่ระบบ |
-| Authenticated User | ออกจากระบบ ดู/แก้ profile และเปลี่ยนรหัสผ่านของตนเอง |
+| Authenticated User | ดู/แก้ profile และเปลี่ยนรหัสผ่านของตนเอง |
+| User with refresh cookie | Refresh session และ logout; logout ยังเรียกโดยไม่มี cookie ได้ภายใต้ origin validation |
 
 ### Use Case Summary
 
 | ID | Use Case | Actor | Endpoint | ผลลัพธ์ |
 |---|---|---|---|---|
-| UC-AUTH-01 | Register | Guest | `POST /api/auth/register` | สร้าง User + UserProfile, hash password และคืน JWT (`201`) |
-| UC-AUTH-02 | Login | Guest | `POST /api/auth/login` | ตรวจ credentials และคืน JWT (`200`) |
+| UC-AUTH-01 | Register | Guest | `POST /api/auth/register` | สร้าง User + UserProfile, hash password, ตั้ง HttpOnly refresh cookie และคืน `ApiResult<AuthResponse>` พร้อม access JWT (`201`) |
+| UC-AUTH-02 | Login | Guest | `POST /api/auth/login` | ตรวจ credentials, ตั้ง HttpOnly refresh cookie และคืน `ApiResult<AuthResponse>` พร้อม access JWT (`200`) |
 | UC-AUTH-03 | Logout | User with refresh cookie | `POST /api/auth/logout` | เพิกถอน refresh-token family และคืน `204` |
 | UC-AUTH-04 | Refresh | User with refresh cookie | `POST /api/auth/refresh` | หมุน cookie และคืน access JWT ใหม่ (`200`) |
 | UC-USER-01 | View My Profile | Authenticated User | `GET /api/users/me` | คืนข้อมูล User + Profile ของตนเอง (`200`) |
@@ -72,7 +81,7 @@ response ห้ามเผย `passwordHash`, profile ต้องเชื่�
 **Main flow:** Controller เรียก `AuthService.login`; `AuthenticationManager` ตรวจ
 credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง access JWT อายุเริ่มต้น 15 นาที
 และ refresh token สุ่มอายุเริ่มต้น 7 วัน ส่ง refresh token ใน HttpOnly cookie;
-คืน `200 AuthResponse` โดยไม่ส่ง refresh token ใน JSON
+คืน `200 ApiResult<AuthResponse>` โดยไม่ส่ง refresh token ใน JSON
 
 **Alternative flow:** validation ไม่ผ่าน = `400`; email/password ไม่ถูกต้อง = `401`;
 เมื่อสะสม login ผิดครบ 10 ครั้งต่อ email ใน 15 นาที หรือครบ 300 ครั้งต่อนาทีต่อ IP คำขอถัดไป = `429`
@@ -82,7 +91,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 
 ### UC-AUTH-03 Logout
 
-**Precondition:** มี refresh cookie หรือเคย login มาก่อน
+**Precondition:** ไม่ต้องมี access JWT หรือ refresh cookie แต่คำขอต้องผ่าน Origin/Referer validation
 
 **Main flow:** Service เพิกถอน refresh-token family จาก cookie, ล้าง cookie และ
 คืน `204 No Content`; logout ไม่เพิกถอน access JWT จึงยังใช้ได้จนหมดอายุ (ค่าเริ่มต้น 15 นาที)
@@ -92,17 +101,15 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 
 ### UC-AUTH-04 Refresh
 
-`POST /api/auth/refresh` อ่าน HttpOnly cookie, หมุน token ใน transaction โดยคง
-`family_id` และวันหมดอายุเดิม หาก token ถูกใช้แล้วให้เพิกถอนทั้ง family และตอบ `401`
-ต้องตรวจ `Origin` หรือ `Referer` ตามเงื่อนไขเดียวกับ logout ก่อนอ่าน cookie
+`POST /api/auth/refresh` รับ HttpOnly cookie ที่ Spring bind ให้ แล้วตรวจ `Origin`/`Referer` ก่อนเรียก service เช่นเดียวกับ logout จากนั้นหมุน token ใน transaction โดยคง `family_id` และวันหมดอายุเดิม สำเร็จตั้ง cookie ใหม่และคืน `200 ApiResult<AuthResponse>` หาก token ถูกใช้แล้วและยังไม่หมดอายุจะเพิกถอนทั้ง family โดย commit การเพิกถอนก่อนตอบ `401`; missing/invalid/expired/revoked token ได้ `401` เมื่อผ่าน origin validation แล้ว
 
 ### UC-USER-02 Update My Profile
 
 1. ผู้ใช้เรียก `PATCH /api/users/me` พร้อม bearer JWT
 2. `JwtAuthenticationFilter` ตรวจ token และใส่ authenticated principal ใน SecurityContext
 3. `UserService` อ่าน user จาก principal ไม่รับ `userId` หรือ `ownerId` จาก body
-4. Service แก้ข้อมูล profile และ field ที่อยู่โดยตรงใน `user_profiles`
-5. Controller คืน `200 UserResponse` โดยแสดงข้อมูลที่อยู่เป็น flat fields
+4. Service โหลด User ผ่าน UserRepository แล้วให้ UserMapper แก้ profile และ embedded Address ใน `user_profiles`; ฟิลด์ที่ไม่ได้ส่งหรือเป็น null คงค่าเดิมตาม PATCH mapping ไม่ได้ใช้ UserProfileRepository ใน flow นี้
+5. Controller คืน `200 ApiResult<UserResponse>` โดยแสดงข้อมูลที่อยู่เป็น flat fields
 
 **Alternative flow:** ไม่มี/malformed JWT = `401`; validation ไม่ผ่าน = `400`
 
@@ -120,7 +127,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 1. ผู้ใช้เรียก `PATCH /api/users/me/password` พร้อม bearer JWT
 2. Service โหลด user จาก authenticated principal และตรวจ `oldPassword` ด้วย `PasswordEncoder`
 3. เมื่อถูกต้อง ระบบ hash และบันทึก `newPassword`; ห้ามบันทึกรหัสผ่านแบบ plain text
-4. คืน `200`; old password ผิด = `401` และ `message: "รหัสผ่านไม่ถูกต้อง"`, validation หรือ new password ซ้ำค่าเดิม = `400`; เมื่อสำเร็จเพิกถอน refresh-token families ทั้งหมด
+4. คืน `200 ApiResult<Void>`; old password ผิด = `401` และ `message: "รหัสผ่านไม่ถูกต้อง"`, validation หรือ new password ซ้ำค่าเดิม = `400`; เมื่อสำเร็จเพิกถอน refresh-token families ทั้งหมด
 
 MVP นี้ไม่มี forgot/reset-password flow และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
 
@@ -130,12 +137,12 @@ MVP นี้ไม่มี forgot/reset-password flow และไม่มี
 2. `JwtAuthenticationFilter` ใส่ principal ใน SecurityContext
 3. `UserService` อ่าน email จาก context และโหลด User
 4. `UserMapper` รวมข้อมูล UserProfile เป็น `UserResponse`
-5. คืน `200 OK`
+5. คืน `200 ApiResult<UserResponse>`
 
 
 ### Sequence: Login และ protected request
 
-ดู [Sequence 01: Login และ protected request](diagrams/sequence-01-auth.md)
+ดู [Sequence 01: Login และ protected request](diagrams/sequence-diagram.md#scenario-01-login-and-protected-request)
 
 ## 4. Client Management
 
@@ -278,7 +285,7 @@ method นี้ยังใช้กติกาเดิมสำหรับ 
 
 ### Sequence: Soft-delete Client
 
-ดู [Sequence 04: Soft-delete Client](diagrams/sequence-04-client.md)
+ดู [Sequence 04: Soft-delete Client](diagrams/sequence-diagram.md#scenario-04-soft-delete-client)
 
 Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; RequestTraceFilter สร้าง X-Request-ID/MDC ก่อนหน้าและล้าง MDC เมื่อคำขอจบ ส่วน 401 ถูกตอบจาก security ก่อนถึง controller
 
@@ -428,7 +435,7 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 
 ### Sequence: เปลี่ยนสถานะ Project
 
-ดู [Sequence 03: เปลี่ยนสถานะ Project](diagrams/sequence-03-project-status.md)
+ดู [Sequence 03: เปลี่ยนสถานะ Project](diagrams/sequence-diagram.md#scenario-03-change-project-status)
 
 ### ขอบเขตปัจจุบัน
 
@@ -599,7 +606,7 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 
 ### Sequence: Start และ Stop Timer
 
-ดู [Sequence 02: Start และ Stop Timer](diagrams/sequence-02-timer.md)
+ดู [Sequence 02: Start และ Stop Timer](diagrams/sequence-diagram.md#scenario-02-start-and-stop-timer)
 
 ### ขอบเขตที่ยังไม่เสร็จ
 
@@ -750,7 +757,7 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 
 ### Sequence: โหลด Reports และเปลี่ยน filter
 
-ดู [Sequence 05: Reports และตัวกรอง](diagrams/sequence-05-reports.md)
+ดู [Sequence 05: Reports และตัวกรอง](diagrams/sequence-diagram.md#scenario-05-load-reports-and-change-filters)
 
 ### ขอบเขตที่ยังไม่ครบตาม requirement
 

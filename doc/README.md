@@ -1,6 +1,6 @@
 # เอกสารส่งมอบ - Freelance Hub
 
-เอกสารฉบับรวมสำหรับรายวิชา CP353002 ตรวจจาก implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026 เนื้อหารวมจากสมาชิกทั้ง 5 คน โดยคงต้นฉบับใน V1 ไว้และไม่แก้ production code ในการรวมเอกสารรอบนี้
+เอกสารฉบับรวมสำหรับรายวิชา CP353002 ตรวจจาก implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 เนื้อหารวมจากสมาชิกทั้ง 5 คน โดยคงต้นฉบับใน V1 ไว้และไม่แก้ production code ในการรวมเอกสารรอบนี้
 
 ## เอกสารหลัก
 
@@ -17,7 +17,7 @@
 
 วิธีติดตั้ง/รันระบบ, Swagger, test commands, สมาชิกและ Deployment URL ดู [README ของ repository](../README.md) และข้อกำหนดผลิตภัณฑ์ดู [REQUIREMENTS](../REQUIREMENTS.md)
 
-หลัง pull ล่าสุดตรวจเทียบ source ที่ `131305f` และนำการแก้ Time Tracking documentation ใน `f0a949c` (PR #125) เข้าฉบับรวมแล้ว โค้ดใน code/ และ workflows ไม่เปลี่ยนจาก snapshot `cb8002d` ที่ใช้รวมเอกสารครั้งก่อน แต่ตรวจคำอธิบายซ้ำและแก้รายละเอียดที่ไม่ครบด้วย
+หลัง pull ล่าสุดตรวจ source ที่ `5f55faf` และนำเอกสาร Auth/Profile/SOLID/Design/CI-CD ที่ Petpinyo ปรับใน `4e96e4b` (PR #127) มาเทียบและปรับฉบับรวมแล้ว รวมถึงคงการแก้ Time Tracking ของ PR #125 โค้ดใน code/ และ workflows ไม่เปลี่ยนจาก snapshot `ca77d74` ที่ใช้รันทดสอบก่อนหน้านี้; Test Report จึงยังระบุ commit ของรอบที่รันจริง ไม่เปลี่ยนเป็นผลทดสอบใหม่
 
 ไฟล์หลักใน doc/ และ diagrams/ เป็นฉบับอ้างอิงปัจจุบัน ส่วน V1/ เป็นต้นฉบับงานแยกของสมาชิกที่คงไว้เพื่อดูที่มา บางส่วนยังมี endpoint/path/คำอธิบายรุ่นเก่า จึงไม่ควรใช้ V1 ทุกไฟล์เป็น current API contract โดยไม่เทียบฉบับรวม
 
@@ -33,7 +33,7 @@
 
 ## Diagram และผลทดสอบที่เพิ่มหลังฉบับรวม
 
-ตรวจ source ณ `ca77d74` แล้วเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Conceptual Domain Model](diagrams/domain-model.md), [Deployment Diagram](diagrams/deployment-diagram.md) และ [State Diagrams](diagrams/state-diagram.md) โดยไม่เพิ่ม feature หรือ production code
+ตรวจ source ณ `ca77d74` แล้วเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Conceptual Domain Model](diagrams/domain-model.md), [Deployment Diagram](diagrams/deployment-diagram.md) และ [State Diagrams](diagrams/state-diagram.md) โดยไม่เพิ่ม feature หรือ production code ปัจจุบันรวม Sequence ทั้ง 6 scenarios ใน [ไฟล์เดียว](diagrams/sequence-diagram.md) และข้อความภายใน Mermaid diagrams ของฉบับส่งมอบใช้ภาษาอังกฤษ โดยคงคำอธิบายภาษาไทยและต้นฉบับ V1 ไว้
 
 ## ขอบเขตการส่งมอบที่ยังต้องตรวจจากทีม
 

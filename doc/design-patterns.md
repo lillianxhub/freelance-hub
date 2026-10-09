@@ -1,6 +1,6 @@
 # Design Patterns - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
+ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
 
 ## 1. Enterprise / Architectural Patterns
 
@@ -9,7 +9,7 @@
 | Layered Architecture | ไม่ให้ HTTP handler รับผิดชอบ business logic และ persistence พร้อมกัน | `controller/` → `service/` / `service/impl/` → `repository/` → `domain/` | [Application layers](diagrams/class-diagram.md#application-layers) |
 | MVC / REST Presentation | แยก routing/status/validation ออกจาก business use cases และ React View | AuthController, ClientController, ProjectController, TimerController, DashboardController, ReportController; `code/Frontend/src/` | [Component view](diagrams/component.md) |
 | Repository | ซ่อน JPA data access, derived queries, JPQL, Specification และ aggregate projections จาก controller | UserRepository, ClientRepository, ProjectRepository, TaskRepository, TimeEntryRepository, ReportQueryRepository | [Application layers](diagrams/class-diagram.md#application-layers) |
-| Service Layer | รวม owner checks, กฎสถานะ, transaction และการประสานงานหลาย entity | AuthServiceImpl, ClientServiceImpl, ProjectServiceImpl, TaskServiceImpl, TimerServiceImpl, TimeEntryServiceImpl, DashboardServiceImpl, ReportServiceImpl | [Project status sequence](diagrams/sequence-03-project-status.md) |
+| Service Layer | รวม owner checks, กฎสถานะ, transaction และการประสานงานหลาย entity | AuthServiceImpl, ClientServiceImpl, ProjectServiceImpl, TaskServiceImpl, TimerServiceImpl, TimeEntryServiceImpl, DashboardServiceImpl, ReportServiceImpl | [Project status sequence](diagrams/sequence-diagram.md#scenario-03-change-project-status) |
 | DTO + Mapper | กำหนด API contract ไม่ส่ง JPA entities หรือ password/token hashes ออกไป | `dto/request/`, `dto/response/`; UserMapper, ClientMapper, ProjectMapper, TaskMapper, TimeEntryMapper | [Domain model และ layers](diagrams/class-diagram.md) |
 | Dependency Injection | เปลี่ยน dependency/test double โดยไม่สร้าง repository หรือ clock ใน use case | Constructor injection ใน services/controllers; PasswordEncoder bean; Clock จาก TimeConfiguration; CurrentUserProvider | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 
@@ -25,7 +25,7 @@
 | Template Method | ใช้ filter lifecycle ที่ framework จัดไว้และกำหนดเฉพาะขั้นตรวจ JWT | JwtAuthenticationFilter สืบทอด OncePerRequestFilter และ override doFilterInternal | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | Chain of Responsibility | ส่ง HTTP request ผ่าน security filters ก่อน Controller | SecurityConfig สร้าง SecurityFilterChain และวาง JwtAuthenticationFilter ด้วย addFilterBefore โดยอ้างตำแหน่ง UsernamePasswordAuthenticationFilter; ไม่ได้เปิด form login จึงไม่ถือว่า filter อ้างอิงนี้ต้องมี instance ใน chain; JWT filter ส่งต่อผ่าน FilterChain หรือคืน error ตามหน้าที่ | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | State | แยกกฎ transition และสิทธิ์ของ Project แต่ละสถานะ | ProjectState, PlannedState, ActiveState, OnHoldState, CompletedState, ArchivedState; ProjectStates.from เลือก state ตาม ProjectStatus ที่เก็บใน DB | [Project State](diagrams/class-diagram.md#project-state-pattern) |
-| Observer | เมื่อ timer หยุด ให้ workflow ความคืบหน้าตอบสนองโดยไม่ฝัง logic ใน TimerService | TimerServiceImpl เผยแพร่ TimerStoppedEvent; TimerStoppedProgressListener รับหลัง commit และเผยแพร่ ProjectProgressThresholdEvent; ProjectProgressThresholdListener เขียน log | [Observer sequence](diagrams/sequence-06-progress-events.md) |
+| Observer | เมื่อ timer หยุด ให้ workflow ความคืบหน้าตอบสนองโดยไม่ฝัง logic ใน TimerService | TimerServiceImpl เผยแพร่ TimerStoppedEvent; TimerStoppedProgressListener รับหลัง commit และเผยแพร่ ProjectProgressThresholdEvent; ProjectProgressThresholdListener เขียน log | [Observer sequence](diagrams/sequence-diagram.md#scenario-06-progress-threshold-events) |
 
 ### ขอบเขตของ State
 
@@ -57,6 +57,14 @@ Project API ตรวจ running timer ก่อนเปลี่ยนสถ�
 | Project/Task | State ตรวจ transition; service ประสาน Task completion, running timer และการล็อก Time Entry; Task ใช้ enum/domain rules และจัด sortOrder |
 | Time Tracking | Inject Clock สำหรับเวลา UTC; unique running-timer index และ pessimistic write lock คุม concurrency; แยก TimerService กับ TimeEntryService |
 | Dashboard/Reports | Service ประกอบ read models; repository/query projections รวมเวลา; React Context/hook/component composition; CSV และการแปลงจุดกราฟเป็น utilities แยกต่างหาก |
+
+### Authentication/Profile: ขอบเขต dependency ตาม PR #127
+
+[AuthController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java) รับ AuthService, RefreshTokenCookie และ TrustedOriginValidator แยก HTTP/cookie/origin validation ออกจาก use case ส่วน [AuthServiceImpl](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java) รับ AuthenticationManager, LoginAttemptLimiter และ PlatformTransactionManager เพิ่มจาก repository/encoder/mapper/token components
+
+[UserService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java) โหลด/บันทึก User และ Profile ผ่าน UserRepository กับ cascade ของ User.profile; UserProfileRepository มีอยู่แต่ไม่ได้ถูกเรียกใน flow นี้ [RefreshTokenService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/RefreshTokenService.java) พึ่ง RefreshTokenRepository และจัด issue/rotate/revoke ภายใน token lifecycle
+
+[SecurityConfig](../code/Backend/src/main/java/th/ac/kku/freelance_hub/config/SecurityConfig.java) กำหนด DaoAuthenticationProvider ที่พึ่ง CustomUserDetailsService และ PasswordEncoder; ไม่ใช่ AuthServiceImpl เรียก UserDetailsService โดยตรง หลักฐานเหล่านี้แสดงใน [Authentication Class Diagram](diagrams/class-diagram.md#authentication-patterns) และ [Login Sequence](diagrams/sequence-diagram.md#scenario-01-login-and-protected-request) ไม่ได้นับ token rotation หรือ limiter เป็น GoF pattern เพิ่ม
 
 ### Client: archive ไม่ใช่ soft delete
 

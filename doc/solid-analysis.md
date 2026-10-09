@@ -1,6 +1,6 @@
 # SOLID Analysis - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 จากงาน Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports ของสมาชิกทั้ง 5 คน ตรวจอ้างอิง source ณ commit `131305f` วันที่ 9 ตุลาคม 2026
+ฉบับรวมสำหรับส่งรายวิชา CP353002 จากงาน Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports ของสมาชิกทั้ง 5 คน ตรวจอ้างอิง source ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026
 
 เอกสารนี้อธิบายหลักฐานที่มีจริง ไม่ถือว่าการมี interface เพียงอย่างเดียวพิสูจน์ SOLID ได้ครบ และไม่อ้างว่าข้อเสนอปรับปรุงถูกนำไป implement แล้ว
 
@@ -9,7 +9,7 @@
 - เส้นทาง Backend ในตารางเริ่มจาก `code/Backend/src/main/java/th/ac/kku/freelance_hub/`
 - เส้นทาง Frontend เริ่มจาก `code/Frontend/src/`
 - เลขบรรทัดเป็นตำแหน่งเริ่มต้นของ class, method หรือส่วนที่เกี่ยวข้อง ไม่ใช่เลขจากเอกสารเก่าก่อน merge
-- ต้องตรวจเลขบรรทัดอีกครั้งเมื่อโค้ดเปลี่ยนหลัง commit ที่อ้างอิง
+- ต้องตรวจเลขบรรทัดอีกครั้งเมื่อโค้ดเปลี่ยนหลัง commit ที่อ้างอิง; ลิงก์โค้ดตามชื่อ class/method ด้านล่างใช้เทียบกับการแก้เอกสาร Petpinyo ใน PR #127
 - รายละเอียดการออกแบบดู [Design Patterns](design-patterns.md) และพฤติกรรมดู [Use Case Description](use-case-description.md)
 
 ## 2. Single Responsibility Principle (SRP)
@@ -76,6 +76,14 @@ implementation ต้องรักษา preconditions, ผลลัพธ์�
 
 ข้อจำกัด: UserService, mapper, ApiErrorFactory, RefreshTokenService และ JPA EntityManager บางจุดยังเป็น concrete dependencies; Frontend services เป็น concrete functions การแยกไฟล์หรือใช้ hook ไม่ใช่หลักฐาน DIP ของทั้งระบบโดยอัตโนมัติ
 
+### Authentication/Profile: หลักฐานที่ตรวจเพิ่มจาก PR #127
+
+- SRP: [AuthController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java) จัด HTTP/cookie และ TrustedOriginValidator ตรวจ origin; [UserMapper](../code/Backend/src/main/java/th/ac/kku/freelance_hub/mapper/UserMapper.java) แยก PATCH mapping; [LoginAttemptLimiter](../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/LoginAttemptLimiter.java) แยก email/IP failure counters
+- OCP/ISP: [AuthService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/AuthService.java) เป็น auth contract และ [CurrentUserProvider](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/CurrentUserProvider.java) มี currentUserId เพียง method เดียว; ไม่ถือว่าการมี interface อย่างเดียวพิสูจน์ LSP/OCP สมบูรณ์
+- DIP: [AuthServiceImpl](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java) inject UserRepository, PasswordEncoder, AuthenticationManager และ PlatformTransactionManager; JwtTokenProvider, UserMapper, RefreshTokenService และ LoginAttemptLimiter ยังเป็น concrete dependencies จึงไม่อ้างว่าทั้งหมดเป็น interface
+- [UserService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java) พึ่ง UserRepository ไม่ใช่ UserProfileRepository สำหรับ profile/password; UserMapper และ RefreshTokenService เป็น concrete dependencies แม้รับผ่าน constructor
+- ข้อจำกัด: AuthServiceImpl.login ยังใช้ RuntimeException เมื่อ authentication ผ่านแต่ค้น user ไม่พบ และ UserService.getCurrentUserEmail ใช้ RuntimeException เมื่อไม่มี authentication การบันทึกข้อสังเกตนี้ไม่ใช่การแก้ production code
+
 ## 7. หลักฐานการทดสอบและขอบเขต
 
 Test source อยู่ใน `code/Backend/src/test/java/th/ac/kku/freelance_hub/`:
@@ -99,5 +107,5 @@ Test source อยู่ใน `code/Backend/src/test/java/th/ac/kku/freelance_h
 - [Kompat - Time Tracking](V1/SOLID/kompat-solid.md)
 - [Nattadol - Dashboard/Reports](V1/SOLID/nattadol-solid.md)
 
-ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้ายหลังเอกสารต้นฉบับ และนำข้อจำกัด SRP/LSP/ISP ของ Kompat ใน PR #125 มารวมแล้ว โดยคงต้นฉบับของสมาชิกไว้สำหรับตรวจที่มา
+ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้าย นำข้อจำกัด SRP/LSP/ISP ของ Kompat ใน PR #125 และหลักฐาน Auth/Profile ที่ Petpinyo ปรับใน PR #127 มารวมแล้ว โดยคงต้นฉบับของสมาชิกไว้สำหรับตรวจที่มา
 

@@ -4,24 +4,24 @@
 
 ```mermaid
 flowchart TD
-    A[ผู้ใช้ส่งคำขอเปลี่ยนสถานะ Project] --> B[ProjectServiceImpl โหลด Project ของ owner ที่ยังไม่ถูก soft delete]
-    B --> C{Project นี้มี timer กำลังทำงาน?}
-    C -- มี --> D[คืน 409 และให้หยุด timer ก่อน]
-    C -- ไม่มี --> E{ACTIVE → COMPLETED?}
-    E -- ใช่ --> N[TaskRepository นับ Task ที่ยังใช้งานและ Task ที่เสร็จ]
-    N --> O{ไม่มี Task ที่ยังไม่เสร็จ?}
-    O -- ไม่ --> G[คืน 409]
-    O -- ใช่ --> P[ProjectStates เลือก State ปัจจุบัน]
-    E -- ไม่ --> P
-    P --> F{State อนุญาตสถานะใหม่?}
-    F -- ไม่ --> G[คืน 409]
-    F -- ใช่ --> H{กำลังคืนจาก ARCHIVED?}
-    H -- ใช่ --> I{Client ยัง active และไม่ถูก soft delete?}
-    I -- ไม่ --> G
-    I -- ใช่ --> J[เปลี่ยน status และ isActive]
-    H -- ไม่ --> J
-    J --> K{เพิ่งเปลี่ยนเป็น COMPLETED?}
-    K -- ใช่ --> L[TimeEntryService.lockByProject ใน transaction เดียวกัน]
-    K -- ไม่ --> M[บันทึก Project และคืน response]
+    A[User requests Project status change] --> B[Load owned non-deleted Project]
+    B --> C{This Project has a running timer?}
+    C -- Yes --> D[Return 409; stop timer first]
+    C -- No --> E{ACTIVE to COMPLETED?}
+    E -- Yes --> N[Count active Tasks and completed Tasks]
+    N --> O{All active Tasks completed?}
+    O -- No --> G[Return 409]
+    O -- Yes --> P[ProjectStates selects current State]
+    E -- No --> P
+    P --> F{State permits the next status?}
+    F -- No --> G
+    F -- Yes --> H{Restoring from ARCHIVED?}
+    H -- Yes --> I{Client active and not soft-deleted?}
+    I -- No --> G
+    I -- Yes --> J[Update status and isActive]
+    H -- No --> J
+    J --> K{Newly entered COMPLETED?}
+    K -- Yes --> L[TimeEntryService.lockByProject in the same transaction]
+    K -- No --> M[Save Project; commit and return response]
     L --> M
 ```

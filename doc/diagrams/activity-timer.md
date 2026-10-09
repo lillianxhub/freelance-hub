@@ -4,26 +4,26 @@
 
 ```mermaid
 flowchart TD
-    A[ผู้ใช้ส่งคำขอเริ่ม timer] --> B[Controller ดึง owner จากผู้ใช้ที่ล็อกอิน]
-    B --> C[Service ตรวจ Project, optional Task และสิทธิ์เจ้าของ]
-    C --> G[เรียก TimeEntry.startTimer ด้วย server Clock]
-    G --> D{Project จับเวลาได้และ Client active?}
-    D -- ไม่ได้ --> E[คืน 409]
-    D -- ได้ --> F{มี running timer อยู่แล้ว?}
-    F -- มี --> E
-    F -- ไม่มี --> H[บันทึกและให้ unique index กัน timer ซ้อน]
-    H --> T{มี Task?}
-    T -- ไม่มี --> I[คืน 201 พร้อม StartedTimerResponse]
-    T -- มี --> U[เรียก Task.start]
-    U -- COMPLETED --> E2[คืน 409 และ rollback]
-    U -- OPEN --> V[บันทึก Task ที่เปลี่ยนเป็น IN_PROGRESS]
+    A[User requests timer start] --> B[Controller reads authenticated owner]
+    B --> C[Service loads owned Project and optional Task]
+    C --> G[Call TimeEntry.startTimer with server Clock]
+    G --> D{Project can track time and Client is active?}
+    D -- No --> E[Return 409]
+    D -- Yes --> F{A running timer already exists?}
+    F -- Yes --> E
+    F -- No --> H[Insert timer; unique index prevents concurrent timers]
+    H --> T{Task supplied?}
+    T -- No --> I[Commit and return 201 StartedTimerResponse]
+    T -- Yes --> U[Call Task.start]
+    U -- COMPLETED --> E2[Return 409 and roll back transaction]
+    U -- OPEN --> V[Save Task as IN_PROGRESS]
     U -- IN_PROGRESS --> I
     V --> I
-    I --> J[ผู้ใช้ส่งคำขอหยุด timer]
-    J --> K[อ่าน running timer พร้อม pessimistic write lock]
-    K --> L{พบ timer?}
-    L -- ไม่พบ --> M[คืน 404]
-    L -- พบ --> N[ตั้ง endedAt และคำนวณ durationSeconds]
-    N --> O[เผยแพร่ TimerStoppedEvent]
-    O --> P[commit แล้วคืน 200 พร้อมข้อมูลที่หยุด]
+    I --> J[User requests timer stop]
+    J --> K[Load running timer with pessimistic write lock]
+    K --> L{Timer found?}
+    L -- No --> M[Return 404]
+    L -- Yes --> N[Set endedAt and calculate durationSeconds]
+    N --> O[Publish TimerStoppedEvent]
+    O --> P[Commit and return 200 stopped entry]
 ```
