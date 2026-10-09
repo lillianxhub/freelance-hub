@@ -28,17 +28,17 @@ export function toProject(source: ApiProject): Project {
     updated_at: source.updatedAt,
     task_progress: source.taskProgress
       ? {
-          total_tasks: source.taskProgress.totalTasks,
-          completed_tasks: source.taskProgress.completedTasks,
-          percent: source.taskProgress.percent,
-        }
+        total_tasks: source.taskProgress.totalTasks,
+        completed_tasks: source.taskProgress.completedTasks,
+        percent: source.taskProgress.percent,
+      }
       : undefined,
     time_tracking: source.timeTracking
       ? {
-          tracked_seconds: source.timeTracking.trackedSeconds,
-          tracked_hours: source.timeTracking.trackedHours,
-          usage_percent: source.timeTracking.usagePercent,
-        }
+        tracked_seconds: source.timeTracking.trackedSeconds,
+        tracked_hours: source.timeTracking.trackedHours,
+        usage_percent: source.timeTracking.usagePercent,
+      }
       : (source.timeTracking ?? undefined),
   }
 }
@@ -109,10 +109,10 @@ export async function listProjectsPage(
 export async function saveProject(input: ProjectInput): Promise<Project> {
   if (!input.id)
     return toProject((await api.post<ApiProject>('/projects', projectPayload(input))).data)
-  if (input.status === 'ARCHIVED') {
-    await api.delete(`/projects/${input.id}`)
-    return { ...input, status: 'ARCHIVED' } as Project
-  }
+  // if (input.status === 'ARCHIVED') {
+  //   await api.delete(`/projects/${input.id}`)
+  //   return { ...input, status: 'ARCHIVED' } as Project
+  // }
   return toProject((await api.put<ApiProject>(`/projects/${input.id}`, projectPayload(input))).data)
 }
 
