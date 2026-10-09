@@ -7,20 +7,20 @@ export default defineConfig(({ mode }) => {
   const { BACKEND_ORIGIN, VITE_API_BASE_URL } = loadEnv(mode, '.', '')
 
   return {
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      '@': `${import.meta.dirname}/src`,
-    },
-  },
-  server: {
-    proxy: {
-      [VITE_API_BASE_URL || "/api"]: {
-        target: BACKEND_ORIGIN || "http://localhost:8080",
-        changeOrigin: true,
-        secure: true,
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': `${import.meta.dirname}/src`,
       },
     },
-  },
+    server: {
+      proxy: {
+        [VITE_API_BASE_URL || '/api']: {
+          target: BACKEND_ORIGIN || 'http://localhost:8080',
+          changeOrigin: true,
+          secure: true,
+        },
+      },
+    },
   }
 })

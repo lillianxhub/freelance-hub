@@ -6,7 +6,14 @@ import type { TimeEntry } from './timeTracking'
 import type { TablePaginationProps } from '../components/ui/table'
 
 export type ManualMode = 'RANGE' | 'DURATION'
-export type ManualTimeFieldName = 'project_id' | 'task_id' | 'entry_date' | 'manual_mode' | 'start_time' | 'end_time' | 'duration_minutes'
+export type ManualTimeFieldName =
+  | 'project_id'
+  | 'task_id'
+  | 'entry_date'
+  | 'manual_mode'
+  | 'start_time'
+  | 'end_time'
+  | 'duration_minutes'
 export type ManualTimeFieldErrors = Partial<Record<ManualTimeFieldName, string>>
 
 export interface ManualTimeForm {

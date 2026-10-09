@@ -1,12 +1,6 @@
 import * as React from 'react'
 import { cn } from 'cn'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 
 const emptyValue = '__freelance_hub_empty_select_value__'
 
@@ -45,12 +39,10 @@ function NativeSelect({
 }: NativeSelectProps) {
   const options = React.Children.toArray(children).filter(isOption)
   const toInternalValue = (nextValue: string) => nextValue || emptyValue
-  const fromInternalValue = (nextValue: string) =>
-    nextValue === emptyValue ? '' : nextValue
+  const fromInternalValue = (nextValue: string) => (nextValue === emptyValue ? '' : nextValue)
   const selectedValue = value === undefined ? undefined : toInternalValue(String(value))
-  const initialValue = defaultValue === undefined
-    ? undefined
-    : toInternalValue(String(defaultValue))
+  const initialValue =
+    defaultValue === undefined ? undefined : toInternalValue(String(defaultValue))
 
   const notifyChange = (nextValue: string) => {
     if (!onChange) return
@@ -89,11 +81,16 @@ function NativeSelect({
       </SelectTrigger>
       <SelectContent position="popper">
         {options.map((option) => {
-          const optionValue = option.props.value === undefined
-            ? String(option.props.children)
-            : String(option.props.value)
+          const optionValue =
+            option.props.value === undefined
+              ? String(option.props.children)
+              : String(option.props.value)
           return (
-            <SelectItem key={option.key ?? optionValue} value={toInternalValue(optionValue)} disabled={option.props.disabled}>
+            <SelectItem
+              key={option.key ?? optionValue}
+              value={toInternalValue(optionValue)}
+              disabled={option.props.disabled}
+            >
               {option.props.children}
             </SelectItem>
           )

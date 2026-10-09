@@ -27,9 +27,20 @@ const clientSortParams: Record<ClientSort, Pick<ClientListFilters, 'sortBy' | 'd
   CREATED_ASC: { sortBy: 'createdAt', direction: 'ASC' },
 }
 
-
 const emptyForm: ClientInput = {
-  name: '', company_name: '', email: '', phone: '', address: '', province: '', district: '', sub_district: '', postal_code: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#4F6BFF',
+  name: '',
+  company_name: '',
+  email: '',
+  phone: '',
+  address: '',
+  province: '',
+  district: '',
+  sub_district: '',
+  postal_code: '',
+  tax_id: '',
+  notes: '',
+  status: 'ACTIVE',
+  color: '#4F6BFF',
 }
 
 function toClientForm(value: Partial<ClientInput> = {}): ClientInput {
@@ -60,7 +71,12 @@ function ClientsPage() {
   const [sortBy, setSortBy] = useState<ClientSort>('UPDATED_DESC')
   const [page, setPage] = useState(1)
   const [pageRequestKey, setPageRequestKey] = useState(0)
-  const [pageResult, setPageResult] = useState<{ key: string; clients: Client[]; meta: ApiMeta; error: string } | null>(null)
+  const [pageResult, setPageResult] = useState<{
+    key: string
+    clients: Client[]
+    meta: ApiMeta
+    error: string
+  } | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [formError, setFormError] = useState('')
@@ -68,7 +84,12 @@ function ClientsPage() {
   const pageQueryKey = JSON.stringify([page, query, status, sortBy, pageRequestKey])
   const currentPageResult = pageResult?.key === pageQueryKey ? pageResult : null
   const pageClients = currentPageResult?.clients ?? []
-  const pageMeta = currentPageResult?.meta ?? { page: 1, limit: clientPageLimit, total: 0, totalPages: 1 }
+  const pageMeta = currentPageResult?.meta ?? {
+    page: 1,
+    limit: clientPageLimit,
+    total: 0,
+    totalPages: 1,
+  }
   const pageLoading = !currentPageResult
   const pageError = currentPageResult?.error ?? ''
 
@@ -78,22 +99,27 @@ function ClientsPage() {
       search: query,
       status: status === 'ALL' ? undefined : status,
       ...clientSortParams[sortBy],
-    }).then((result) => {
-      if (!active) return
-      if (page > Math.max(1, result.meta.totalPages)) {
-        setPage(Math.max(1, result.meta.totalPages))
-        return
-      }
-      setPageResult({ key: pageQueryKey, clients: result.clients, meta: result.meta, error: '' })
-    }).catch((loadError: unknown) => {
-      if (active) setPageResult({
-        key: pageQueryKey,
-        clients: [],
-        meta: { page, limit: clientPageLimit, total: 0, totalPages: 1 },
-        error: getErrorMessage(loadError, 'ไม่สามารถโหลดรายชื่อลูกค้าได้'),
-      })
     })
-    return () => { active = false }
+      .then((result) => {
+        if (!active) return
+        if (page > Math.max(1, result.meta.totalPages)) {
+          setPage(Math.max(1, result.meta.totalPages))
+          return
+        }
+        setPageResult({ key: pageQueryKey, clients: result.clients, meta: result.meta, error: '' })
+      })
+      .catch((loadError: unknown) => {
+        if (active)
+          setPageResult({
+            key: pageQueryKey,
+            clients: [],
+            meta: { page, limit: clientPageLimit, total: 0, totalPages: 1 },
+            error: getErrorMessage(loadError, 'ไม่สามารถโหลดรายชื่อลูกค้าได้'),
+          })
+      })
+    return () => {
+      active = false
+    }
   }, [page, pageQueryKey, query, sortBy, status])
 
   const totalPages = Math.max(1, pageMeta.totalPages)
@@ -112,13 +138,16 @@ function ClientsPage() {
     setModalOpen(true)
   }
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = event.target
-    const normalizedValue = name === 'phone'
-      ? normalizeDigits(value, 10)
-      : name === 'tax_id'
-        ? normalizeDigits(value, 13)
-        : value
+    const normalizedValue =
+      name === 'phone'
+        ? normalizeDigits(value, 10)
+        : name === 'tax_id'
+          ? normalizeDigits(value, 13)
+          : value
     setForm((current) => ({ ...current, [name]: normalizedValue }))
   }
 
@@ -137,7 +166,11 @@ function ClientsPage() {
     setSaving(true)
     setFormError('')
     try {
-      await saveClient({ ...form, name: (form.name ?? '').trim(), company_name: (form.company_name ?? '').trim() })
+      await saveClient({
+        ...form,
+        name: (form.name ?? '').trim(),
+        company_name: (form.company_name ?? '').trim(),
+      })
       setModalOpen(false)
       if (page === 1) setPageRequestKey((current) => current + 1)
       else setPage(1)
@@ -155,7 +188,16 @@ function ClientsPage() {
   }
 
   if (loading || pageLoading) return <LoadingState label="กำลังโหลดรายชื่อลูกค้า..." />
-  if (error || pageError) return <ErrorState message={error || pageError} onRetry={() => { void refresh(); setPageRequestKey((current) => current + 1) }} />
+  if (error || pageError)
+    return (
+      <ErrorState
+        message={error || pageError}
+        onRetry={() => {
+          void refresh()
+          setPageRequestKey((current) => current + 1)
+        }}
+      />
+    )
 
   return (
     <div className="mx-auto w-full max-w-auto">
@@ -164,7 +206,8 @@ function ClientsPage() {
         actions={
           <Button variant="default" className="h-10" type="button" onClick={openCreate}>
             <FiPlus aria-hidden="true" /> เพิ่มลูกค้า
-          </Button>}
+          </Button>
+        }
       />
 
       <FilterBar
@@ -177,29 +220,85 @@ function ClientsPage() {
         placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร"
         searchAriaLabel="ค้นหาลูกค้า"
       >
-        <NativeSelect value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองสถานะลูกค้า">
+        <NativeSelect
+          value={status}
+          onChange={(event) => {
+            setStatus(event.target.value as ClientFilter)
+            setPage(1)
+          }}
+          aria-label="กรองสถานะลูกค้า"
+        >
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งานอยู่</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </NativeSelect>
-        <NativeSelect value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับลูกค้า"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></NativeSelect>
+        <NativeSelect
+          value={sortBy}
+          onChange={(event) => {
+            setSortBy(event.target.value as ClientSort)
+            setPage(1)
+          }}
+          aria-label="เรียงลำดับลูกค้า"
+        >
+          <option value="UPDATED_DESC">อัปเดตล่าสุด</option>
+          <option value="NAME_ASC">ชื่อ A–Z</option>
+          <option value="CREATED_ASC">เพิ่มก่อนสุด</option>
+        </NativeSelect>
       </FilterBar>
 
       {visibleClients.length === 0 ? (
-        <Card asChild><section className="p-4 sm:p-6"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบลูกค้า" description="เพิ่มลูกค้ารายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<Button variant="default" className="h-10" type="button" onClick={openCreate}>เพิ่มลูกค้า</Button>} /></section></Card>
+        <Card asChild>
+          <section className="p-4 sm:p-6">
+            <EmptyState
+              icon={<FiUsers aria-hidden="true" />}
+              title="ยังไม่พบลูกค้า"
+              description="เพิ่มลูกค้ารายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง"
+              action={
+                <Button variant="default" className="h-10" type="button" onClick={openCreate}>
+                  เพิ่มลูกค้า
+                </Button>
+              }
+            />
+          </section>
+        </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleClients.map((client) => {
-            const clientProjects = data.projects.filter((project) => project.client_id === client.id)
-            const minutes = clientProjects.reduce((sum, project) => sum + (project.time_tracking?.tracked_seconds ?? 0) / 60, 0)
-            return <ClientCard key={client.id} client={client} projectCount={clientProjects.length} minutes={minutes} revenue={0} onEdit={openEdit} onArchive={archiveClients} />
+            const clientProjects = data.projects.filter(
+              (project) => project.client_id === client.id,
+            )
+            const minutes = clientProjects.reduce(
+              (sum, project) => sum + (project.time_tracking?.tracked_seconds ?? 0) / 60,
+              0,
+            )
+            return (
+              <ClientCard
+                key={client.id}
+                client={client}
+                projectCount={clientProjects.length}
+                minutes={minutes}
+                revenue={0}
+                onEdit={openEdit}
+                onArchive={archiveClients}
+              />
+            )
           })}
         </div>
       )}
 
-      <PaginationControls page={safePage} totalPages={totalPages} onPageChange={setPage} className="mt-6" />
+      <PaginationControls
+        page={safePage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="mt-6"
+      />
 
-      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => {
+          if (!open) setModalOpen(false)
+        }}
+      >
         <DialogContent className="max-h-[calc(100dvh-2rem)] !max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้า'}</DialogTitle>

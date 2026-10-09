@@ -16,7 +16,9 @@ export async function getDashboard(): Promise<DashboardData> {
   }
 }
 
-export async function getDashboardActivity(period: DashboardChartPeriod): Promise<DashboardActivity> {
+export async function getDashboardActivity(
+  period: DashboardChartPeriod,
+): Promise<DashboardActivity> {
   const response = await api.get<DashboardActivity>(`/dashboard/activity?period=${period}`)
   return response.data
 }

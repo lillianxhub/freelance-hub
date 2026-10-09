@@ -3,9 +3,13 @@ import { Badge } from './ui/badge'
 import { cn } from 'cn'
 
 const statusLabels = {
-  ACTIVE: 'กำลังดำเนินการ', ARCHIVED: 'เก็บถาวร', PLANNED: 'วางแผน', ON_HOLD: 'พักงาน', COMPLETED: 'เสร็จแล้ว',
-  OPEN: 'รอดำเนินการ', IN_PROGRESS: 'กำลังดำเนินการ',
-  
+  ACTIVE: 'กำลังดำเนินการ',
+  ARCHIVED: 'เก็บถาวร',
+  PLANNED: 'วางแผน',
+  ON_HOLD: 'พักงาน',
+  COMPLETED: 'เสร็จแล้ว',
+  OPEN: 'รอดำเนินการ',
+  IN_PROGRESS: 'กำลังดำเนินการ',
 } satisfies Record<SupportedStatus, string>
 
 const statusClasses = {
@@ -22,7 +26,11 @@ function StatusBadge({ status, label, className }: StatusBadgeProps) {
   return (
     <Badge
       variant="secondary"
-      className={cn('h-auto min-h-5 rounded-full border-0 px-2 py-1 text-xs font-semibold', statusClasses[status], className)}
+      className={cn(
+        'h-auto min-h-5 rounded-full border-0 px-2 py-1 text-xs font-semibold',
+        statusClasses[status],
+        className,
+      )}
     >
       {label || statusLabels[status]}
     </Badge>

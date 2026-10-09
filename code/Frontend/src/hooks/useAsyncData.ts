@@ -5,8 +5,15 @@ function errorMessage(error: unknown): string {
 }
 
 export function useAsyncData<T>(load: () => Promise<T>, initialData: T, key?: unknown) {
-  const [storedData, setStoredData] = useState<{ key: unknown; value: T }>({ key, value: initialData })
-  const [status, setStatus] = useState<{ key: unknown; loading: boolean; error: string }>({ key, loading: true, error: '' })
+  const [storedData, setStoredData] = useState<{ key: unknown; value: T }>({
+    key,
+    value: initialData,
+  })
+  const [status, setStatus] = useState<{ key: unknown; loading: boolean; error: string }>({
+    key,
+    loading: true,
+    error: '',
+  })
   const requestId = useRef(0)
   const loadedKeys = useRef(new Set<unknown>())
   const invalidateRequest = useCallback(() => {
@@ -24,7 +31,8 @@ export function useAsyncData<T>(load: () => Promise<T>, initialData: T, key?: un
         setStatus({ key, loading: false, error: '' })
       }
     } catch (reason) {
-      if (currentRequest === requestId.current) setStatus({ key, loading: false, error: errorMessage(reason) })
+      if (currentRequest === requestId.current)
+        setStatus({ key, loading: false, error: errorMessage(reason) })
     }
   }, [key, load])
 
