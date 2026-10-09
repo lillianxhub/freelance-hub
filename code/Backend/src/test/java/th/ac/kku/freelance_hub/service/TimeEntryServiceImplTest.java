@@ -208,8 +208,8 @@ class TimeEntryServiceImplTest {
                         .startedAt(NOW)
                         .durationSeconds(90L)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
 
         verify(timeEntryRepository, never()).save(any(TimeEntry.class));
         verify(taskRepository, never()).saveAndFlush(any(Task.class));
@@ -373,8 +373,8 @@ class TimeEntryServiceImplTest {
                         .startedAt(NOW)
                         .durationSeconds(90L)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
 
         assertThat(entry.getProject()).isSameAs(project);
         assertThat(entry.getStartedAt()).isEqualTo(originalStart);
@@ -397,8 +397,8 @@ class TimeEntryServiceImplTest {
                         .startedAt(NOW)
                         .durationSeconds(90L)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
 
         verifyNoInteractions(projectRepository, taskRepository);
         verify(timeEntryRepository, never()).flush();

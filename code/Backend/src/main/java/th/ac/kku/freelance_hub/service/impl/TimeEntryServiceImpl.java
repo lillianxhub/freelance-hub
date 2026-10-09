@@ -142,7 +142,9 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             throw new TimeEntryLockedException(entryId);
         }
         if (!entry.getProject().canTrackTime()) {
-            throw new IllegalStateException("project must be active to track time");
+            throw new InvalidStateException(
+                    "โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา",
+                    Map.of("rule", "ACTIVE_PROJECT_REQUIRED"));
         }
 
         Project targetProject = findOwnedProject(
@@ -150,7 +152,9 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                 request.getProjectId()
         );
         if (!targetProject.canTrackTime()) {
-            throw new IllegalStateException("project must be active to track time");
+            throw new InvalidStateException(
+                    "โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา",
+                    Map.of("rule", "ACTIVE_PROJECT_REQUIRED"));
         }
         Task targetTask = findTask(
                 request.getTaskId(),

@@ -321,7 +321,9 @@ class TimeEntryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(manualEntryJson(projectId, "Changed work")))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"))
+                .andExpect(jsonPath("$.message").value("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา"))
+                .andExpect(jsonPath("$.error.details.rule").value("ACTIVE_PROJECT_REQUIRED"));
         mockMvc.perform(get("/api/time-entries/{id}", entryId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())

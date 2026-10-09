@@ -188,8 +188,8 @@ class TimeEntryTest {
                 "Past work",
                 STARTED_AT,
                 endedAt
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
         assertThatThrownBy(() -> TimeEntry.createManualWithDurationSeconds(
                 owner,
                 nonActiveProject,
@@ -197,8 +197,8 @@ class TimeEntryTest {
                 "Past work",
                 STARTED_AT,
                 1800
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
     }
 
     @Test
@@ -328,8 +328,8 @@ class TimeEntryTest {
 
         assertThatThrownBy(() -> entry.updateDetails(
                 plannedProject, null, "Changed work"
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
         assertThat(entry.getProject()).isSameAs(activeProject);
         assertThat(entry.getDescription()).isEqualTo("Original work");
     }

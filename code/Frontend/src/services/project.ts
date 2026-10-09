@@ -28,17 +28,17 @@ export function toProject(source: ApiProject): Project {
     updated_at: source.updatedAt,
     task_progress: source.taskProgress
       ? {
-        total_tasks: source.taskProgress.totalTasks,
-        completed_tasks: source.taskProgress.completedTasks,
-        percent: source.taskProgress.percent,
-      }
+          total_tasks: source.taskProgress.totalTasks,
+          completed_tasks: source.taskProgress.completedTasks,
+          percent: source.taskProgress.percent,
+        }
       : undefined,
     time_tracking: source.timeTracking
       ? {
-        tracked_seconds: source.timeTracking.trackedSeconds,
-        tracked_hours: source.timeTracking.trackedHours,
-        usage_percent: source.timeTracking.usagePercent,
-      }
+          tracked_seconds: source.timeTracking.trackedSeconds,
+          tracked_hours: source.timeTracking.trackedHours,
+          usage_percent: source.timeTracking.usagePercent,
+        }
       : (source.timeTracking ?? undefined),
   }
 }
