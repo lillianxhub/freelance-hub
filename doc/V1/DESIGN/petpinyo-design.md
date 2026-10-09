@@ -9,7 +9,7 @@
 | Layered Architecture | แยก HTTP, use case, data access และ domain | `AuthController` → `AuthServiceImpl` → `UserRepository` → `User` |
 | MVC / REST Controller | แยก routing/status/cookie จาก business logic | `AuthController`, `UserController` |
 | Service Layer | รวม transaction และกฎของ auth/profile/token | `AuthServiceImpl`, `UserService`, `RefreshTokenService` |
-| Repository | ซ่อน JPA queries จาก service | `UserRepository`, `UserProfileRepository`, `RefreshTokenRepository` |
+| Repository | ซ่อน JPA queries จาก service | `UserRepository`, `RefreshTokenRepository`; เส้นทาง auth/profile ใช้ `UserRepository` โหลดและบันทึก `User` พร้อม `UserProfile` ผ่านความสัมพันธ์แบบ cascade ส่วน `UserProfileRepository` ไม่ได้ถูกเรียกใน flow นี้ |
 | DTO + Mapper | ป้องกัน API ผูกกับ Entity และข้อมูลลับ | request/response DTO ใน `dto/`, `UserMapper` |
 | Dependency Injection | ลด coupling และรองรับ mock ใน unit test | constructor injection ใน services/controllers/filter และ beans ใน `SecurityConfig` |
 
@@ -52,6 +52,13 @@ classDiagram
     class UserRepository {
         <<Repository>>
     }
+    class RefreshTokenRepository {
+        <<Repository>>
+    }
+    class AuthenticationManager
+    class CustomUserDetailsService
+    class RefreshTokenCookie
+    class TrustedOriginValidator
     class RefreshTokenService
     class JwtTokenProvider
     class UserMapper
@@ -59,6 +66,8 @@ classDiagram
     class UserProfile
 
     AuthController --> AuthService
+    AuthController --> RefreshTokenCookie
+    AuthController --> TrustedOriginValidator
     AuthServiceImpl ..|> AuthService
     UserController --> UserService
     UserService ..|> CurrentUserProvider
@@ -71,6 +80,14 @@ classDiagram
     AuthServiceImpl --> RefreshTokenService
     AuthServiceImpl --> JwtTokenProvider
     AuthServiceImpl --> UserMapper
+    AuthServiceImpl --> AuthenticationManager
+    AuthenticationManager --> CustomUserDetailsService
+    UserService --> UserRepository
+    UserService --> UserMapper
+    UserService --> PasswordEncoder
+    UserService --> RefreshTokenService
+    RefreshTokenService --> RefreshTokenRepository
+    JwtAuthenticationFilter --> CustomUserDetailsService
     User "1" *-- "0..1" UserProfile
 ```
 

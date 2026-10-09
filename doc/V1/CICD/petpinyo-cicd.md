@@ -13,10 +13,10 @@
 | Dockerfile | build image จริงและเปิด application container | `backend.yml:146–210`, `code/Backend/Dockerfile` |
 | Database smoke check | ตรวจ 7 ตารางหลักและ migration history | `backend.yml:212–221` |
 | Auth smoke test | สมัครผู้ใช้ผ่าน `POST /api/auth/register` และตรวจว่ามี token | `backend.yml:223–229` |
-| Quality gate | รวมผล test, migration และ Docker เป็น status เดียวสำหรับ branch protection | `backend.yml:241–274` |
-| Staging deployment | push เข้า `dev` และ gate ผ่านจึงเรียก Render staging deploy hook | `backend.yml:276–289` |
-| Production deployment | push เข้า `main` และ gate ผ่านจึงเรียก Render production deploy hook | `backend.yml:291–304` |
-| Branch workflow | PR เข้า `main` ต้องมาจาก `dev` | `backend.yml:54–68` |
+| Quality gate | รวมผล test, migration และ Docker เป็น status `Backend gate` | `backend.yml:241–274` |
+| Staging deployment | push เข้า `dev` และ Backend gate ผ่านจึงเรียก Render staging deploy hook; job ไม่ตรวจ readiness หลัง deploy | `backend.yml:276–289` |
+| Production deployment | push เข้า `main` และ Backend gate ผ่านจึงเรียก Render production deploy hook; job ไม่ตรวจ readiness หลัง deploy | `backend.yml:291–304` |
+| Branch workflow | มี job แยกตรวจว่า PR เข้า `main` มาจาก `dev`; ไม่ได้เป็น dependency ของ `Backend gate` | `backend.yml:54–68` |
 | Secret handling | deploy URL อ่านจาก GitHub Environment secrets ไม่เขียนลง repository | `backend.yml:281–289,296–304` |
 
 ## Pipeline
@@ -24,18 +24,21 @@
 ```mermaid
 flowchart LR
     A[PR หรือ Push] --> B[Detect backend changes]
-    B -->|มีการเปลี่ยน Backend| C[Maven verify]
-    B -->|มีการเปลี่ยน Backend| D[Flyway migrate + validate]
-    C --> E[Build Docker image]
+    B -->|Backend changed| C[Maven verify]
+    B -->|Backend changed| D[Flyway migrate + validate]
+    C --> E[Build Docker image and run container]
     D --> E
     E --> F[Runtime health check]
     F --> G[Verify tables]
-    G --> H[Register API smoke test]
+    G --> H[Register endpoint smoke test]
     H --> I[Backend gate]
     I -->|push dev| J[Render staging]
     I -->|push main| K[Render production]
-    I -->|pull request| L[Checks only]
+    A -->|PR to main| M[Main PR must come from dev]
+    I -->|pull request| L[Checks only; no deploy]
 ```
+
+Backend test and Flyway validation are separate jobs and run in parallel after change detection. Docker waits for both. `Main PR must come from dev` is another job; the workflow does not make `Backend gate` depend on it.
 
 Frontend ใช้ pipeline แยกเพื่อลดเวลารันงานที่ไม่เกี่ยวข้อง:
 
@@ -48,30 +51,21 @@ flowchart LR
     E --> F[Unit tests]
     F --> G[Vite build]
     G --> H[Frontend gate]
-    H --> I[Vercel Git integration]
 ```
+
+Vercel deployment is handled through its Git integration outside this workflow; the workflow has no Vercel deploy job or dependency from `Frontend gate` to a Vercel deployment.
 
 ## Environment และความปลอดภัย
 
 - Workflow ใช้ permission แบบ read-only (`contents: read`, `pull-requests: read`)
-- `concurrency.cancel-in-progress` ยกเลิก run เก่าของ ref เดียวกัน ลดการ deploy code เก่า
+- `concurrency.cancel-in-progress` ยกเลิก run เก่าของ ref เดียวกัน
 - CI ใช้ credential PostgreSQL เฉพาะ runner และ JWT secret สำหรับ smoke test ไม่ใช่ production secret
 - Render deploy hooks เก็บใน `staging` และ `production` GitHub Environments
 - Pull request ทำเฉพาะ checks; deploy เกิดจาก push เข้า branch ที่กำหนดและ gate ต้องสำเร็จ
 
-## สิ่งที่ต้องตั้งค่าบน GitHub/Cloud
+## Deployment Configuration
 
-1. ตั้ง required status checks เป็น `Backend gate` และ `Frontend gate`
-2. สร้าง GitHub Environments ชื่อ `staging` และ `production`
-3. เพิ่ม secrets `RENDER_STAGING_DEPLOY_HOOK_URL` และ `RENDER_PRODUCTION_DEPLOY_HOOK_URL`
-4. ตั้ง Render environment variables เช่น datasource, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` และ `REFRESH_COOKIE_SECURE=true`
-5. เชื่อม Frontend กับ Vercel และกำหนด `BACKEND_ORIGIN`/`VITE_API_BASE_URL` ตาม environment
-
-## วิธีตรวจผล
-
-- เปิด GitHub Actions แล้วตรวจว่า test, migration, Docker และ gate เป็นสีเขียว
-- เปิด `/actuator/health` ของ Backend deployment
-- เปิด Swagger UI ใน local/dev/staging เมื่อ `OPENAPI_ENABLED=true`
-- ทดลอง register/login/profile/refresh/logout ด้วย public deployment URL
-
-> CI/CD เป็นคะแนนพิเศษตามใบงาน แต่เอกสารนี้ไม่ถือว่า deployment สำเร็จจนกว่า URL staging/production จะเข้าถึงได้จริงในวันส่งงาน
+- Render staging และ production รับ deploy hook จาก GitHub Actions หลัง `Backend gate` ผ่าน โดยอ่าน hook URL จาก secrets ใน GitHub Environments ชื่อ `staging` และ `production`
+- Backend environment ใช้ datasource credentials, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` และ `REFRESH_COOKIE_SECURE=true` ตาม environment
+- Frontend deploy ผ่าน Vercel Git integration โดยกำหนด `BACKEND_ORIGIN` และ `VITE_API_BASE_URL` ให้ตรงกับ environment
+- Workflow เรียก deploy hook สำหรับ Backend; Frontend deployment ถูกจัดการโดย Vercel
