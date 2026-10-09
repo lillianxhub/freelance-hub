@@ -4,7 +4,7 @@
 ข้อมูล Address เป็น value object แบบ `@Embeddable` ใน `UserProfile` และ `Client` โดยยังเก็บคอลัมน์ในตารางเดิม
 ในเอกสารนี้ใช้ชื่อ audit field มาตรฐาน `deletedAt` แทน typo `deleate_at` จาก DBML ต้นทาง
 
-Domain view เลือกเฉพาะ fields/methods สำคัญ ไม่ใช่ภาพ reflection ทุก member; `+` แสดงข้อมูล/operation ที่อ่านใช้งานผ่าน public API/getters ไม่ได้หมายความว่า JPA fields ทั้งหมดประกาศ public ความสัมพันธ์ Project–Task แสดง domain ownership ไม่ใช่การอ้างว่ามี tasks collection หรือ cascade remove ใน Project
+Domain view เลือกเฉพาะ fields/methods สำคัญ ไม่ใช่ภาพ reflection ทุก member; `+` แสดงข้อมูล/operation ที่อ่านใช้งานผ่าน public API/getters ไม่ได้หมายความว่า JPA fields ทั้งหมดประกาศ public Project มี tasks collection แบบ OneToMany(mappedBy="project", fetch=LAZY) แต่ไม่มี cascade remove; เส้นความสัมพันธ์ในภาพไม่ใช่การอ้างว่า soft delete Project จะลบ Task ทุกแถว
 
 ```mermaid
 classDiagram
