@@ -6,13 +6,19 @@ function emptyString(value: string | null | undefined): string { return value ??
 
 export function toTask(source: ApiTask): Task {
   return { id: source.id, owner_id: '', project_id: source.projectId, name: source.name,
-    description: emptyString(source.description), status: source.status === 'OPEN' ? 'TODO' : source.status === 'COMPLETED' ? 'DONE' : 'IN_PROGRESS',
+    description: emptyString(source.description), status: source.status,
     sort_order: source.sortOrder, due_date: '', created_at: source.createdAt, updated_at: source.updatedAt }
 }
 
 export async function listTasks(projectId: string): Promise<Task[]> {
-  const response = await api.get<ApiTask[]>(`/projects/${encodeURIComponent(projectId)}/tasks?page=1&limit=10&sort=sortOrder,asc`)
-  return response.data.map(toTask)
+  const path = `/projects/${encodeURIComponent(projectId)}/tasks`
+  const firstPage = await api.get<ApiTask[]>(`${path}?page=1&limit=100&sort=sortOrder,asc`)
+  const remainingPages = await Promise.all(
+    Array.from({ length: Math.max(0, (firstPage.meta?.totalPages ?? 1) - 1) }, (_, index) =>
+      api.get<ApiTask[]>(`${path}?page=${index + 2}&limit=100&sort=sortOrder,asc`),
+    ),
+  )
+  return [...firstPage.data, ...remainingPages.flatMap((page) => page.data)].map(toTask)
 }
 
 export async function saveTask(input: TaskInput): Promise<Task> {
@@ -22,14 +28,22 @@ export async function saveTask(input: TaskInput): Promise<Task> {
   })).data)
   const path = `/projects/${input.project_id}/tasks/${input.id}`
   const task = (await api.patch<ApiTask>(path, { name: input.name, description: input.description || undefined })).data
-  if (input.status === 'DONE') return toTask((await api.patch<ApiTask>(`${path}/complete`)).data)
+  if (input.status === 'COMPLETED') return toTask((await api.patch<ApiTask>(`${path}/complete`)).data)
   return toTask((await api.patch<ApiTask>(`${path}/reorder`, { sortOrder: input.sort_order ?? task.sortOrder })).data)
 }
 
-export async function changeTaskStatus(id: string, status: 'TODO' | 'DONE'): Promise<Task> {
+export async function changeTaskStatus(id: string, status: Task['status']): Promise<Task> {
   const response = await api.patch<ApiTask>(`/tasks/${encodeURIComponent(id)}/status`, {
-    status: status === 'DONE' ? 'COMPLETED' : 'OPEN',
+    status,
   })
+  return toTask(response.data)
+}
+
+export async function reorderTask(projectId: string, taskId: string, sortOrder: number): Promise<Task> {
+  const response = await api.patch<ApiTask>(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}/reorder`,
+    { sortOrder },
+  )
   return toTask(response.data)
 }
 

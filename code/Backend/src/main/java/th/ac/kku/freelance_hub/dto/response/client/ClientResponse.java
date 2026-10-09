@@ -45,5 +45,6 @@ public class ClientResponse {
 
     /** Absent unless the caller requests include=projects or include=projects.tasks. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Returned only by GET /api/clients/{id} when include=projects or include=projects.tasks; each project's tasks are returned only for include=projects.tasks", accessMode = Schema.AccessMode.READ_ONLY)
     private List<ClientProjectSummaryResponse> projects;
 }

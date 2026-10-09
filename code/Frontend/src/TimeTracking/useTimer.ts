@@ -7,18 +7,19 @@ import { useCurrentTimer } from './useCurrentTimer'
 
 interface UseTimerOptions {
   loadTaskOptions?: boolean
+  initialProjectId?: string
+  initialTaskId?: string
 }
 
-export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = false }: UseTimerOptions = {}) {
-  const [selectedProject, setSelectedProject] = useState('')
-  const [selectedTask, setSelectedTask] = useState('')
+export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = false, initialProjectId = '', initialTaskId = '' }: UseTimerOptions = {}) {
+  const [selectedProject, setSelectedProject] = useState(initialProjectId)
+  const [selectedTask, setSelectedTask] = useState(initialTaskId)
   const [description, setDescription] = useState('')
   const [billable, setBillable] = useState(true)
   const [tick, setTick] = useState(() => Date.now())
   const [taskOptions, setTaskOptions] = useState<{ projectId: string; tasks: Task[]; error: string } | null>(null)
   const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
   const activeProjects = useMemo(() => data.projects.filter((project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED'), [data.projects])
-  const fallbackRunningEntry = data.time_entries.find((entry) => !entry.ended_at) || null
   const currentEntry = currentTimer?.running ? currentTimer.timeEntry : null
   const runningEntry = useMemo(() => currentEntry
     ? {
@@ -28,11 +29,12 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
       description: currentEntry.description ?? '',
       started_at: currentEntry.startedAt,
     }
-    : fallbackRunningEntry, [currentEntry, fallbackRunningEntry])
-  const timerProjectId = selectedProject || activeProjects[0]?.id || ''
+    : null, [currentEntry])
+  const timerProjectId = activeProjects.some((project) => project.id === selectedProject) ? selectedProject : activeProjects[0]?.id || ''
   const hasRunningEntry = Boolean(runningEntry)
   const selectedProjectData = data.projects.find((project) => project.id === timerProjectId)
-  const selectedTasks = (taskOptions?.projectId === timerProjectId ? taskOptions.tasks : []).filter((task) => task.status !== 'DONE')
+  const selectedTasks = (taskOptions?.projectId === timerProjectId ? taskOptions.tasks : []).filter((task) => task.status !== 'COMPLETED')
+  const selectedTaskReady = !selectedTask || selectedTasks.some((task) => task.id === selectedTask)
   const optionsError = taskOptions?.projectId === timerProjectId ? taskOptions.error : ''
   const runningProject = runningEntry && (data.projects.find((project) => project.id === runningEntry.project_id) || (currentEntry ? { id: currentEntry.project.id, name: currentEntry.project.name, color: '#4F6BFF' } : null))
   const runningTask = runningEntry && (data.tasks.find((task) => task.id === runningEntry.task_id) || (currentEntry?.task ? { id: currentEntry.task.id, name: currentEntry.task.title } : null))
@@ -63,7 +65,7 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
   }, [loadTaskOptions, hasRunningEntry, timerProjectId])
 
   async function startTimer() {
-    if (!selectedProjectData || runningEntry) return
+    if (!selectedProjectData || runningEntry || !selectedTaskReady) return
     await startTimerRequest({
       projectId: timerProjectId,
       taskId: selectedTask || undefined,
@@ -88,5 +90,5 @@ export function useTimer({ data, refresh }: TimerWorkspace, { loadTaskOptions = 
     await refreshCurrentTimer()
   }
 
-  return { activeProjects, runningEntry, timerProjectId, selectedTask, setSelectedProject, setSelectedTask, description, setDescription, billable, setBillable, selectedTasks, runningProject, runningTask, elapsedSeconds, startTimer, stopTimer, cancelTimer, optionsError }
+  return { activeProjects, runningEntry, timerProjectId, selectedTask, selectedTaskReady, setSelectedProject, setSelectedTask, description, setDescription, billable, setBillable, selectedTasks, runningProject, runningTask, elapsedSeconds, startTimer, stopTimer, cancelTimer, optionsError }
 }

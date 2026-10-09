@@ -72,6 +72,18 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void startingTaskAgainKeepsItInProgress() {
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
+        Task task = taskRepository.saveAndFlush(new Task(project, "Timer task", 0));
+
+        assertThat(taskService.start(owner.getId(), project.getId(), task.getId())
+                .getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(taskService.start(owner.getId(), project.getId(), task.getId())
+                .getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
     void latestTimeEntryTaskNameUsesMostRecentEntryForOwner() {
         Task firstTask = taskRepository.findById(taskService.create(
                 owner.getId(), project.getId(), request("Design", 0)
@@ -423,7 +435,7 @@ class TaskServiceImplTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"OPEN, IN_PROGRESS", "OPEN, COMPLETED", "IN_PROGRESS, COMPLETED"})
+    @CsvSource({"OPEN, IN_PROGRESS", "IN_PROGRESS, COMPLETED"})
     void changeTaskStatusAllowsExistingForwardTransitions(TaskStatus before, TaskStatus after) {
         Task task = new Task(project, "Task", 0);
         if (before == TaskStatus.IN_PROGRESS) {
@@ -442,6 +454,27 @@ class TaskServiceImplTest {
         } else {
             assertThat(result.getCompletedAt()).isNull();
         }
+    }
+
+    @Test
+    void changeTaskStatusCannotCompleteOpenTask() {
+        Task task = taskRepository.saveAndFlush(new Task(project, "Task", 0));
+
+        assertThatThrownBy(() -> taskService.changeStatus(owner.getId(), task.getId(),
+                ChangeTaskStatusRequest.builder().status(TaskStatus.COMPLETED).build()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getStatus())
+                .isEqualTo(TaskStatus.OPEN);
+    }
+
+    @Test
+    void completeEndpointCannotCompleteOpenTask() {
+        Task task = taskRepository.saveAndFlush(new Task(project, "Task", 0));
+
+        assertThatThrownBy(() -> taskService.complete(owner.getId(), project.getId(), task.getId()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(taskRepository.findById(task.getId()).orElseThrow().getStatus())
+                .isEqualTo(TaskStatus.OPEN);
     }
 
     @ParameterizedTest

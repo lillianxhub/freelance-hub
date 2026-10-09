@@ -108,7 +108,10 @@ class ProjectControllerTest {
         mockMvc.perform(post("/api/projects")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"clientId\":\"" + CLIENT_ID + "\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 
         verify(projectService, never()).create(any(), any());
     }
@@ -223,7 +226,10 @@ class ProjectControllerTest {
                 .thenThrow(new ProjectNotFoundException(PROJECT_ID));
 
         mockMvc.perform(get("/api/projects/{id}", PROJECT_ID))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("PROJECT_NOT_FOUND"));
 
         verify(projectService).getById(OWNER_ID, PROJECT_ID);
     }
@@ -243,7 +249,10 @@ class ProjectControllerTest {
         mockMvc.perform(patch("/api/projects/{id}/status", PROJECT_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }
 
     @Test

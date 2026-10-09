@@ -1,13 +1,4 @@
 import { Card } from '../../../components/ui/card'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '../../../components/ui/pagination'
 import { Button } from '../../../components/ui/button'
 import { NativeSelect } from '../../../components/ui/native-select'
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
@@ -26,6 +17,7 @@ import { normalizeDigits, validateClient } from '../../client.validators'
 import { getErrorMessage } from '../../../api/apiError'
 import { listClientsPage, type ClientListFilters } from '../../../services/client'
 import type { ApiMeta } from '../../../types/api'
+import PaginationControls from '../../../components/PaginationControls'
 
 const clientPageLimit = 10
 
@@ -35,17 +27,6 @@ const clientSortParams: Record<ClientSort, Pick<ClientListFilters, 'sortBy' | 'd
   CREATED_ASC: { sortBy: 'createdAt', direction: 'ASC' },
 }
 
-function getPaginationItems(currentPage: number, totalPages: number): Array<number | 'ellipsis'> {
-  if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1)
-
-  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
-  return [...pages]
-    .filter((item) => item >= 1 && item <= totalPages)
-    .sort((a, b) => a - b)
-    .flatMap((item, index, items) =>
-      index > 0 && item - items[index - 1] > 1 ? ['ellipsis' as const, item] : [item],
-    )
-}
 
 const emptyForm: ClientInput = {
   name: '', company_name: '', email: '', phone: '', address: '', province: '', district: '', sub_district: '', postal_code: '', tax_id: '', notes: '', status: 'ACTIVE', color: '#4F6BFF',
@@ -117,7 +98,6 @@ function ClientsPage() {
 
   const totalPages = Math.max(1, pageMeta.totalPages)
   const safePage = Math.min(pageMeta.page, totalPages)
-  const paginationItems = getPaginationItems(safePage, totalPages)
   const visibleClients = pageClients
 
   const openCreate = () => {
@@ -171,7 +151,6 @@ function ClientsPage() {
   const archiveClients = async (client: Client) => {
     if (client.status === 'ARCHIVED') await saveClient({ ...client, status: 'ACTIVE' })
     else await archiveClient(client.id)
-    await refresh()
     setPageRequestKey((current) => current + 1)
   }
 
@@ -196,18 +175,18 @@ function ClientsPage() {
           setPage(1)
         }}
         placeholder="ค้นหาชื่อ บริษัท อีเมล หรือเบอร์โทร"
-        searchAriaLabel="ค้นหาClients"
+        searchAriaLabel="ค้นหาลูกค้า"
       >
-        <NativeSelect value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองStatusClients">
+        <NativeSelect value={status} onChange={(event) => { setStatus(event.target.value as ClientFilter); setPage(1) }} aria-label="กรองสถานะลูกค้า">
           <option value="ALL">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งานอยู่</option>
           <option value="ARCHIVED">เก็บถาวร</option>
         </NativeSelect>
-        <NativeSelect value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับClients"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></NativeSelect>
+        <NativeSelect value={sortBy} onChange={(event) => { setSortBy(event.target.value as ClientSort); setPage(1) }} aria-label="เรียงลำดับลูกค้า"><option value="UPDATED_DESC">อัปเดตล่าสุด</option><option value="NAME_ASC">ชื่อ A–Z</option><option value="CREATED_ASC">เพิ่มก่อนสุด</option></NativeSelect>
       </FilterBar>
 
       {visibleClients.length === 0 ? (
-        <Card asChild><section className="p-4 sm:p-6"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบClients" description="เพิ่มClientsรายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<Button variant="default" className="h-10" type="button" onClick={openCreate}>เพิ่มลูกค้า</Button>} /></section></Card>
+        <Card asChild><section className="p-4 sm:p-6"><EmptyState icon={<FiUsers aria-hidden="true" />} title="ยังไม่พบลูกค้า" description="เพิ่มลูกค้ารายแรกหรือเปลี่ยนคำค้นหาและตัวกรอง" action={<Button variant="default" className="h-10" type="button" onClick={openCreate}>เพิ่มลูกค้า</Button>} /></section></Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleClients.map((client) => {
@@ -218,57 +197,12 @@ function ClientsPage() {
         </div>
       )}
 
-      <Pagination className="mt-6">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              href={`?page=${safePage - 1}`}
-              text="ก่อนหน้า"
-              aria-disabled={safePage === 1}
-              className={safePage === 1 ? 'pointer-events-none opacity-50' : undefined}
-              onClick={(event) => {
-                event.preventDefault()
-                if (safePage > 1) setPage(safePage - 1)
-              }}
-            />
-          </PaginationItem>
-          {paginationItems.map((item, index) => (
-            <PaginationItem key={`${item}-${index}`}>
-              {item === 'ellipsis' ? (
-                <PaginationEllipsis />
-              ) : (
-                <PaginationLink
-                  href={`?page=${item}`}
-                  isActive={item === safePage}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setPage(item)
-                  }}
-                >
-                  {item}
-                </PaginationLink>
-              )}
-            </PaginationItem>
-          ))}
-          <PaginationItem>
-            <PaginationNext
-              href={`?page=${safePage + 1}`}
-              text="ถัดไป"
-              aria-disabled={safePage === totalPages}
-              className={safePage === totalPages ? 'pointer-events-none opacity-50' : undefined}
-              onClick={(event) => {
-                event.preventDefault()
-                if (safePage < totalPages) setPage(safePage + 1)
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      <PaginationControls page={safePage} totalPages={totalPages} onPageChange={setPage} className="mt-6" />
 
       <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) setModalOpen(false) }}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] !max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มClients'}</DialogTitle>
+            <DialogTitle>{form.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้า'}</DialogTitle>
           </DialogHeader>
           <ClientForm
             value={form}

@@ -91,7 +91,7 @@ public class Task {
             name = "sort_order",
             nullable = false
     )
-    private int sortOrder;
+    private int sortOrder; //เก็บเป็นเลขเอาไว้เป็น sort
 
     @Column(name = "completed_at")
     private Instant completedAt;
@@ -150,15 +150,17 @@ public class Task {
         this.description = description;
     }
 
-    // Allow .OPEN ONly
-    public void start() {
-        if (status != TaskStatus.OPEN) {
-            throw new IllegalStateException(
-                    "only an open task can be started"
-            );
+    /** Returns true only when this call changes the task to in progress. */
+    public boolean start() {
+        if (status == TaskStatus.COMPLETED) {
+            throw new IllegalStateException("completed task cannot be started");
+        }
+        if (status == TaskStatus.IN_PROGRESS) {
+            return false;
         }
 
         status = TaskStatus.IN_PROGRESS;
+        return true;
     }
 
     public void complete(Instant completedAt) {

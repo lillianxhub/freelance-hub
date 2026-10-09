@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { ApiTask } from '../types/api'
-import { changeTaskStatus, deleteTask, toTask } from './task'
+import { changeTaskStatus, deleteTask, reorderTask, toTask } from './task'
 
 test('task mapper translates backend status and field names', () => {
   const source = {
@@ -10,8 +10,17 @@ test('task mapper translates backend status and field names', () => {
   } as ApiTask
   assert.deepEqual(toTask(source), {
     id: 'task-1', owner_id: '', project_id: 'project-1', name: 'Build page', description: '',
-    status: 'DONE', sort_order: 2, due_date: '', created_at: source.createdAt, updated_at: source.updatedAt,
+    status: 'COMPLETED', sort_order: 2, due_date: '', created_at: source.createdAt, updated_at: source.updatedAt,
   })
+})
+
+test('task mapper preserves every backend task status', () => {
+  for (const status of ['OPEN', 'IN_PROGRESS', 'COMPLETED'] as const) {
+    const source = {
+      id: 'task-1', projectId: 'project-1', name: 'Task', status, sortOrder: 0,
+    } as ApiTask
+    assert.equal(toTask(source).status, status)
+  }
 })
 
 test('deleteTask addresses the task under the supplied project', async () => {
@@ -32,7 +41,7 @@ test('deleteTask addresses the task under the supplied project', async () => {
   }
 })
 
-test('changeTaskStatus reopens a completed task through the status endpoint', async () => {
+test('changeTaskStatus reopens a completed task as in progress through the status endpoint', async () => {
   const originalFetch = globalThis.fetch
   let requestedUrl = ''
   let requestedMethod = ''
@@ -43,15 +52,37 @@ test('changeTaskStatus reopens a completed task through the status endpoint', as
     requestedBody = String(init?.body)
     return Response.json({
       success: true, message: 'Updated', meta: null, error: null,
-      data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'OPEN', sortOrder: 0 },
+      data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'IN_PROGRESS', sortOrder: 0 },
     })
   }
   try {
-    const task = await changeTaskStatus('task-1', 'TODO')
+    const task = await changeTaskStatus('task-1', 'IN_PROGRESS')
     assert.equal(requestedUrl, '/api/tasks/task-1/status')
     assert.equal(requestedMethod, 'PATCH')
-    assert.deepEqual(JSON.parse(requestedBody), { status: 'OPEN' })
-    assert.equal(task.status, 'TODO')
+    assert.deepEqual(JSON.parse(requestedBody), { status: 'IN_PROGRESS' })
+    assert.equal(task.status, 'IN_PROGRESS')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('reorderTask sends one request with the destination position', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = async (input, init) => {
+    calls++
+    assert.equal(input, '/api/projects/project-1/tasks/task-1/reorder')
+    assert.equal(init?.method, 'PATCH')
+    assert.deepEqual(JSON.parse(String(init?.body)), { sortOrder: 3 })
+    return Response.json({
+      success: true, message: '', meta: null, error: null,
+      data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'OPEN', sortOrder: 3 },
+    })
+  }
+  try {
+    const task = await reorderTask('project-1', 'task-1', 3)
+    assert.equal(task.sort_order, 3)
+    assert.equal(calls, 1)
   } finally {
     globalThis.fetch = originalFetch
   }

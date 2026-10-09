@@ -86,7 +86,7 @@ function TimeTrackerPage() {
   const manualTasksLoaded = Boolean(manualOpen && manualForm.project_id && manualTaskResult?.projectId === manualForm.project_id);
   const manualTasks = manualTasksLoaded ? manualTaskResult?.tasks ?? [] : [];
   const filterTasks = filters.project === 'ALL' || filterTaskResult?.projectId !== filters.project ? [] : filterTaskResult.tasks;
-  const timeEntryQueryKey = JSON.stringify([filters, timeEntryPage, timeEntriesRequestKey, loading]);
+  const timeEntryQueryKey = JSON.stringify([filters, timeEntryPage, timeEntriesRequestKey]);
   const currentTimeEntryResult = timeEntryResult?.key === timeEntryQueryKey ? timeEntryResult : null;
   const serverEntries = currentTimeEntryResult?.entries ?? [];
   const timeEntryMeta = currentTimeEntryResult?.meta ?? { page: 1, limit: TIME_ENTRY_PAGE_LIMIT, total: 0, totalPages: 0 };
@@ -165,9 +165,9 @@ function TimeTrackerPage() {
     return () => {
       active = false;
     };
-  }, [data.time_entries, filters, loading, timeEntriesRequestKey, timeEntryPage, timeEntryQueryKey]);
+  }, [filters, loading, timeEntryPage, timeEntryQueryKey]);
 
-  if (loading) return <LoadingState label="LoadingTime entries..." />;
+  if (loading) return <LoadingState label="กำลังโหลดรายการเวลา..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
 
   const entries = serverEntries.filter((entry) => entry.ended_at);
@@ -264,7 +264,6 @@ function TimeTrackerPage() {
             : { durationSeconds: duration * 60 }),
         });
       }
-      await refresh();
       reloadTimeEntryData();
       setManualOpen(false);
     } catch (saveError: unknown) {
@@ -378,7 +377,7 @@ function TimeTrackerPage() {
 
       <Dialog open={manualOpen} onOpenChange={(open) => { if (!open) setManualOpen(false) }}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] !max-w-4xl overflow-y-auto">
-          <DialogHeader><DialogTitle>{manualForm.id ? "แก้ไขTime entries" : "เพิ่มTime entries"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{manualForm.id ? "แก้ไขเวลา" : "เพิ่มเวลา"}</DialogTitle></DialogHeader>
           <TimeEntryForm
           value={manualForm}
           projects={data.projects}

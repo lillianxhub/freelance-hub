@@ -1,12 +1,14 @@
 import { Input } from '../../components/ui/input'
 import { Textarea } from '../../components/ui/textarea'
 import { Button } from '../../components/ui/button'
+import { FiLoader } from 'react-icons/fi'
 import FormLabel from "../../components/FormLabel";
 import type { TaskFormProps } from "../../types/projectDetailPage";
 
 export default function TaskForm({
   value,
   error,
+  saving = false,
   onChange,
   onSubmit,
   onCancel,
@@ -20,32 +22,19 @@ export default function TaskForm({
           <Input
             id="task-name"
             value={value.name}
+            disabled={saving}
             onChange={(event) =>
               onChange({ ...value, name: event.target.value })
             }
             required
           />
         </div>
-        {/* <div className="flex flex-col gap-1.5">
-          <label htmlFor="task-status">สถานะ</label>
-          <select
-            id="task-status"
-            value={value.status}
-            onChange={(event) =>
-              onChange({ ...value, status: event.target.value as TaskStatus })
-            }
-          >
-            <option value="TODO">รอดำเนินการ</option>
-            <option value="IN_PROGRESS">กำลังทำ</option>
-            <option value="IN_REVIEW">ตรวจสอบ</option>
-            <option value="DONE">เสร็จแล้ว</option>
-          </select>
-        </div> */}
         <div className="col-span-full flex flex-col gap-1.5">
           <FormLabel htmlFor="task-description">รายละเอียด</FormLabel>
           <Textarea
             id="task-description"
             value={value.description}
+            disabled={saving}
             onChange={(event) =>
               onChange({ ...value, description: event.target.value })
             }
@@ -56,12 +45,14 @@ export default function TaskForm({
         <Button variant="outline"
           className="h-10"
           type="button"
+          disabled={saving}
           onClick={onCancel}
         >
           ยกเลิก
         </Button>
-        <Button variant="default" className="h-10" type="submit">
-          บันทึก งาน
+        <Button variant="default" className="h-10" type="submit" disabled={saving} aria-busy={saving}>
+          {saving && <FiLoader className="animate-spin" aria-hidden="true" />}
+          {saving ? 'กำลังบันทึกงาน...' : 'บันทึกงาน'}
         </Button>
       </div>
     </form>
