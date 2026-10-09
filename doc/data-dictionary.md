@@ -1,15 +1,17 @@
 # Data Dictionary - Freelance Hub MVP
 
-เอกสารนี้อ้างอิงจาก DBML รุ่นปรับปรุงล่าสุดของ MVP โดยใช้ soft delete เป็นมาตรฐานร่วมกัน:
+เอกสารฉบับส่งมอบตรวจจาก Flyway migrations V1-V20 และ JPA entities ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ตารางด้านล่างเป็น schema หลังใช้ migrations ครบ ไม่ใช่เฉพาะ CREATE TABLE รุ่นแรก
 
 - `is_active = true` หมายถึง record ยังใช้งานอยู่
-- `is_active = false` หมายถึง record ถูก archive หรือ soft delete
+- ความหมายของ `is_active` และ `deleted_at` ต้องอ่านตาม feature ไม่ใช่ถือว่าสองฟิลด์เปลี่ยนพร้อมกันเสมอ
+- Client archive เปลี่ยน `is_active=false` โดยไม่ตั้ง `deleted_at`; Client soft delete ตั้งเฉพาะ `deleted_at` และคง `is_active` เดิม
+- Project status `ARCHIVED` ทำให้ inactive แต่ยังไม่ลบ; Project/Task/completed Time Entry soft delete ตั้ง inactive พร้อม `deleted_at`
 - `deleted_at` เก็บเวลาที่ soft delete และเป็น `NULL` สำหรับ record ปกติ
 - ตาราง Finance, Invoice, Payment, Income, Expense และ Analytics Snapshot ไม่อยู่ใน MVP
 
 > หมายเหตุ: DBML ต้นทางสะกด field นี้เป็น `deleate_at`; เอกสารและ schema ที่ใช้งานจริงกำหนดชื่อมาตรฐานเป็น `deleted_at`
 
-> หมายเหตุ: schema นี้เป็น target schema ตาม DBML ล่าสุด ดังนั้น Flyway migration และ JPA Entity ต้องปรับให้ตรงก่อนเปิดใช้ `ddl-auto=validate` ใน Backend
+> แหล่ง schema: `code/Backend/src/main/resources/db/migration/` โดย V11/V13/V14 ปรับ activation/address/time units, V15 เพิ่ม profile tax_id, V17/V18 เปลี่ยน token storage, V19 normalize email และ V20 ลบ date_format ส่วน `addresses`/`revoked_tokens` เป็นตารางเก่าที่ไม่อยู่ใน schema สุดท้าย
 
 ## `users`
 
@@ -68,10 +70,10 @@ Indexes: `idx_user_profiles_province`, `idx_user_profiles_postal_code`
 | `postal_code` | `varchar(20)` | Yes | | รหัสไปรษณีย์ |
 | `tax_id` | `varchar(30)` | Yes | | เลขประจำตัวผู้เสียภาษี |
 | `notes` | `text` | Yes | | หมายเหตุภายใน |
-| `is_active` | `boolean` | No | `true` | สถานะการใช้งานหรือ Archive |
+| `is_active` | `boolean` | No | `true` | ACTIVE/ARCHIVED; soft delete ไม่เปลี่ยนฟิลด์นี้ |
 | `created_at` | `timestamptz` | No | `now()` | เวลาสร้าง |
 | `updated_at` | `timestamptz` | No | `now()` | เวลาแก้ไขล่าสุด |
-| `deleted_at` | `timestamptz` | Yes | `NULL` | เวลา soft delete |
+| `deleted_at` | `timestamptz` | Yes | `NULL` | เวลา soft delete; Client API ตัดรายการนี้ออกไม่ว่า is_active เป็นค่าใด |
 | `version` | `bigint` | No | `0` | Optimistic locking |
 
 Indexes: unique `(id, owner_id)`, `(owner_id, is_active)`, `(owner_id, name)`, `email`, `province`, `postal_code`
@@ -87,7 +89,7 @@ Indexes: unique `(id, owner_id)`, `(owner_id, is_active)`, `(owner_id, name)`, `
 | `description` | `text` | Yes | | รายละเอียด |
 | `start_date` | `date` | Yes | | วันที่เริ่ม |
 | `end_date` | `date` | Yes | `end_date >= start_date` | วันที่สิ้นสุด |
-| `color` | `varchar(7)` | Yes | `#RRGGBB` | สีแสดงผล |
+| `color` | `varchar(7)` | Yes | DB CHECK แบบ `#______`; API validate hex `#RRGGBB` | สีแสดงผล |
 | `target_minutes` | `integer` | Yes | `> 0` | เป้าหมายเวลาทำงาน |
 | `status` | `varchar(20)` | No | `PLANNED` | Project lifecycle |
 | `is_active` | `boolean` | No | `true` | สถานะ record |
@@ -122,7 +124,7 @@ Indexes: unique `(project_id, sort_order)`, unique `(id, project_id)`, `(project
 | Column | Type | Null | Constraint / Default | Description |
 |---|---|---:|---|---|
 | `id` | `uuid` | No | PK, `gen_random_uuid()` | รหัส Time Entry |
-| `owner_id` | `uuid` | No | FK through composite Project FK | เจ้าของรายการ |
+| `owner_id` | `uuid` | No | FK -> users.id และส่วนหนึ่งของ composite Project FK | เจ้าของรายการ |
 | `project_id` | `uuid` | No | Composite FK -> `projects` | Project ที่ทำงาน |
 | `task_id` | `uuid` | Yes | Composite FK -> `tasks` | Task ที่เกี่ยวข้อง |
 | `description` | `text` | Yes | | รายละเอียดงาน |
@@ -137,7 +139,9 @@ Indexes: unique `(project_id, sort_order)`, unique `(id, project_id)`, `(project
 | `deleted_at` | `timestamptz` | Yes | `NULL` | เวลา soft delete |
 | `version` | `bigint` | No | `0` | Optimistic locking |
 
-Constraints: completed entry ต้องมี `ended_at` และ `duration_seconds`; running timer ต้องมี `ended_at = NULL`; ผู้ใช้หนึ่งคนมี running timer ได้สูงสุดหนึ่งรายการ
+Application rules: completed entry มี `ended_at` และ `duration_seconds > 0`; running timer มี `ended_at = NULL` และ `duration_seconds = NULL` ส่วน DB มี CHECK ชนิด/ช่วงเวลา/สถานะ completion และ `locked_at` ต้องไม่ถูกตั้งบน running timer
+
+DB CHECK ของ completed duration ใช้ `duration_seconds > 0` บนคอลัมน์ที่ nullable; PostgreSQL CHECK ไม่เท่ากับ NOT NULL จึงไม่ควรอ้างว่า constraint นี้เพียงอย่างเดียวกัน completed duration ที่เป็น NULL ได้ กฎ Entity/Service เป็นหลักฐานส่วนเพิ่มเติม
 
 Indexes: `(owner_id, started_at)`, `(project_id, started_at)`, `(task_id, started_at)`, `(owner_id, is_active)` และ partial unique index ของ running timer
 
@@ -150,13 +154,15 @@ Indexes: `(owner_id, started_at)`, `(project_id, started_at)`, `(task_id, starte
 | `family_id` | `uuid` | No | | กลุ่ม token จากการ login ครั้งเดียว |
 | `token_hash` | `varchar(64)` | No | Unique | SHA-256 hex ของ token สุ่ม 256 บิต; ไม่เก็บ token จริง |
 | `created_at` | `timestamptz` | No | `now()` | เวลาสร้าง token |
-| `expires_at` | `timestamptz` | No | `> created_at` | อายุสิ้นสุดคงที่ 7 วันจาก login |
+| `expires_at` | `timestamptz` | No | `> created_at` | อายุ family เริ่มจาก register/login; ค่าเริ่มต้น 7 วันตาม app.auth.refresh-expiration-ms และไม่ต่ออายุเมื่อ rotate |
 | `used_at` | `timestamptz` | Yes | | เวลาที่หมุน token; ใช้ซ้ำถือเป็น replay |
 | `revoked_at` | `timestamptz` | Yes | | เวลาที่เพิกถอน family |
 
 Indexes: `user_id`, `family_id`, `expires_at`; unique `token_hash` มี index ของตัวเอง
 
 ## Enum และ Check Values
+
+รายการนี้เป็นค่าที่ application enum รองรับ; Project/Task/Entry Type มี DB CHECK แต่ users.role ไม่มี CHECK จำกัดให้เหลือสองค่านี้ใน migration ปัจจุบัน
 
 | Field | Allowed values |
 |---|---|
@@ -169,7 +175,7 @@ Indexes: `user_id`, `family_id`, `expires_at`; unique `token_hash` มี index 
 
 | Relationship | Cardinality | Rule |
 |---|---|---|
-| `users` -> `user_profiles` | 1:1 | `user_profiles.user_id` เป็น PK/FK |
+| `users` -> `user_profiles` | 1:0..1 | Shared PK/FK จำกัดไม่เกินหนึ่ง profile; registration สร้าง profile แต่ FK ไม่บังคับทุก user ต้องมีแถวลูก |
 | `users` -> `clients` | 1:N | ทุก Client ต้องมี Owner |
 | `users` -> `projects` | 1:N | Owner isolation |
 | `users` -> `time_entries` | 1:N | Owner isolation |
@@ -180,3 +186,13 @@ Indexes: `user_id`, `family_id`, `expires_at`; unique `token_hash` มี index 
 | `tasks` -> `time_entries` | 0..1:N | ใช้ composite FK `(task_id, project_id)` |
 
 Dashboard และ Productivity Insights เป็น query/projection จาก `projects`, `tasks` และ `time_entries` โดยไม่สร้างตาราง Analytics แยกใน MVP
+
+## ข้อมูลที่คำนวณและ Infrastructure
+
+- `Client.status` คำนวณจาก `is_active`; `totalTrackedSeconds` เป็น aggregate ใน GET responses ไม่ใช่คอลัมน์ clients
+- Task progress, tracked hours, utilization และ Project usage percentage คำนวณจาก Task/Time Entry กับ `target_minutes` ไม่เก็บซ้ำในตาราง Project
+- `flyway_schema_history` เป็น metadata ของ migrations; `local_seed_records` เป็น mapping สำหรับ local seed เมื่อเปิดใช้ ไม่ใช่ business tables ใน ER ของ MVP
+- Unique running-timer index ใช้เงื่อนไข `entry_type='TIMER' AND ended_at IS NULL` ไม่ใช่ index ที่กรอง `is_active`; cancel timer ลบ running row จริง ส่วน completed entry ใช้ soft delete
+- Schema constraints กับ API authorization เป็นคนละชั้น: composite FKs รักษาความสัมพันธ์ owner/project/task แต่ Service ยังต้องตรวจ current-user ownership ก่อนทุก use case
+- Project.status กับ is_active ไม่มี DB CHECK บังคับให้สอดคล้องกัน; V14 กำหนด is_active=true ให้ Project ที่มีอยู่ทั้งหมด แม้เคยมี status=ARCHIVED จึงไม่ควรอ้างว่าค่าสอดคล้องเสมอจาก migrations เพียงอย่างเดียว กฎการเปลี่ยนสถานะใน Entity ใช้กับคำสั่งที่ application เรียกภายหลัง
+- ยังไม่ได้รัน migrations/ตรวจฐานข้อมูล live ใหม่ในงานรวมเอกสารรอบนี้; test report และผล Flyway CI ต้องตรวจแยกก่อนส่ง
