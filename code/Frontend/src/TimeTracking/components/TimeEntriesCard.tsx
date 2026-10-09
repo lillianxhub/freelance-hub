@@ -1,4 +1,11 @@
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card'
 import { Label } from '../../components/ui/label'
 import { NativeSelect } from '../../components/ui/native-select'
 import { DatePicker } from '../../components/ui/date-picker'
@@ -69,7 +76,11 @@ export default function TimeEntriesCard({
           <div>
             <CardTitle>รายการเวลา</CardTitle>
             <CardDescription className="mt-1 text-sm text-text-secondary">
-              รวม <strong className="text-text-primary">{formatDurationSeconds(summary.totalSeconds).replace(/\sนาที$/, '')}</strong> จาก {summary.entryCount} รายการ
+              รวม{' '}
+              <strong className="text-text-primary">
+                {formatDurationSeconds(summary.totalSeconds).replace(/\sนาที$/, '')}
+              </strong>{' '}
+              จาก {summary.entryCount} รายการ
             </CardDescription>
           </div>
           <CardAction>
@@ -115,7 +126,9 @@ export default function TimeEntriesCard({
               >
                 <option value="ALL">ทุกโปรเจกต์</option>
                 {projects
-                  .filter((project) => filters.client === 'ALL' || project.client_id === filters.client)
+                  .filter(
+                    (project) => filters.client === 'ALL' || project.client_id === filters.client,
+                  )
                   .map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.name}

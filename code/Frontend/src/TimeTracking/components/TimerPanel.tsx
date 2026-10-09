@@ -21,7 +21,11 @@ interface TimerPanelProps {
 
 type TimerAction = 'starting' | 'stopping' | 'cancelling'
 
-export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerChanged }: TimerPanelProps) {
+export default function TimerPanel({
+  workspace,
+  onProjectOptionsOpen,
+  onTimerChanged,
+}: TimerPanelProps) {
   const [searchParams] = useSearchParams()
   const timer = useTimer(workspace, {
     loadTaskOptions: true,
@@ -44,13 +48,14 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
     }
   }
 
-  const pendingActionLabel = pendingAction === 'starting'
-    ? 'กำลังเริ่มจับเวลา...'
-    : pendingAction === 'stopping'
-      ? 'กำลังหยุดเวลา...'
-      : pendingAction === 'cancelling'
-        ? 'กำลังยกเลิก...'
-        : ''
+  const pendingActionLabel =
+    pendingAction === 'starting'
+      ? 'กำลังเริ่มจับเวลา...'
+      : pendingAction === 'stopping'
+        ? 'กำลังหยุดเวลา...'
+        : pendingAction === 'cancelling'
+          ? 'กำลังยกเลิก...'
+          : ''
 
   return (
     <Card asChild>
@@ -63,13 +68,19 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
             variant="secondary"
             className={`h-auto shrink-0 gap-2 rounded-full border-0 px-3 py-1.5 text-xs font-semibold ${timer.runningEntry ? 'bg-green-soft text-green' : 'bg-surface-soft text-text-secondary'}`}
           >
-            <span className={`size-2 rounded-full ${timer.runningEntry ? 'bg-green shadow-[0_0_0_3px_rgba(27,156,104,0.12)]' : 'bg-subtle'}`} />
+            <span
+              className={`size-2 rounded-full ${timer.runningEntry ? 'bg-green shadow-[0_0_0_3px_rgba(27,156,104,0.12)]' : 'bg-subtle'}`}
+            />
             {timer.runningEntry ? 'กำลังจับเวลา' : 'พร้อมเริ่มทำงาน'}
           </Badge>
         </div>
 
         {pendingActionLabel && (
-          <div className="flex items-center gap-2 text-sm text-text-secondary" role="status" aria-live="polite">
+          <div
+            className="flex items-center gap-2 text-sm text-text-secondary"
+            role="status"
+            aria-live="polite"
+          >
             <FiLoader className="size-4 animate-spin" aria-hidden="true" />
             <span>{pendingActionLabel}</span>
           </div>
@@ -80,19 +91,25 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
             <div className="grid min-w-0 gap-2">
               <p className="text-xs text-text-secondary">โปรเจกต์</p>
               <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                <p className="truncate text-sm font-semibold text-text-primary">{timer.runningProject?.name || 'ไม่ระบุโปรเจกต์'}</p>
+                <p className="truncate text-sm font-semibold text-text-primary">
+                  {timer.runningProject?.name || 'ไม่ระบุโปรเจกต์'}
+                </p>
               </div>
             </div>
             <div className="grid min-w-0 gap-2">
               <p className="text-xs text-text-secondary">งาน</p>
               <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                <p className="truncate text-sm font-semibold text-text-primary">{timer.runningTask?.name || 'ไม่ระบุงาน'}</p>
+                <p className="truncate text-sm font-semibold text-text-primary">
+                  {timer.runningTask?.name || 'ไม่ระบุงาน'}
+                </p>
               </div>
             </div>
             <div className="grid min-w-0 gap-2 md:col-span-2 xl:col-span-1">
               <p className="text-xs text-text-secondary">คำอธิบาย</p>
               <div className="flex h-[41px] min-w-0 items-center rounded-lg border border-input bg-white px-[11px] py-[9px]">
-                <p className="truncate text-sm font-semibold text-text-primary">{timer.runningEntry.description || 'ไม่มีรายละเอียด'}</p>
+                <p className="truncate text-sm font-semibold text-text-primary">
+                  {timer.runningEntry.description || 'ไม่มีรายละเอียด'}
+                </p>
               </div>
             </div>
             <div className="flex w-full min-w-0 items-center gap-2 @min-[900px]:min-w-[205px]">
@@ -128,14 +145,18 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
                   id="timer-project"
                   className="min-w-0"
                   value={timer.timerProjectId}
-                  onOpenChange={(open) => { if (open) onProjectOptionsOpen?.() }}
+                  onOpenChange={(open) => {
+                    if (open) onProjectOptionsOpen?.()
+                  }}
                   onChange={(event) => {
                     timer.setSelectedProject(event.target.value)
                     timer.setSelectedTask('')
                   }}
                 >
                   {timer.activeProjects.map((project) => (
-                    <option key={project.id} value={project.id}>{project.name}</option>
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
                   ))}
                 </NativeSelect>
               </div>
@@ -149,7 +170,9 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
                 >
                   <option value="">ไม่ระบุงาน</option>
                   {timer.selectedTasks.map((task) => (
-                    <option key={task.id} value={task.id}>{task.name}</option>
+                    <option key={task.id} value={task.id}>
+                      {task.name}
+                    </option>
                   ))}
                 </NativeSelect>
               </div>
@@ -166,7 +189,9 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
                 variant="default"
                 className="h-[41px] w-full min-w-0 gap-2 whitespace-nowrap @min-[900px]:min-w-[165px]"
                 type="button"
-                disabled={!timer.timerProjectId || !timer.selectedTaskReady || pendingAction !== null}
+                disabled={
+                  !timer.timerProjectId || !timer.selectedTaskReady || pendingAction !== null
+                }
                 onClick={() => void runTimerAction(timer.startTimer, 'starting')}
               >
                 <FiPlay aria-hidden="true" /> เริ่มจับเวลา

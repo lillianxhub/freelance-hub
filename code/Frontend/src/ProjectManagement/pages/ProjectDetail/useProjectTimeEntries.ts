@@ -32,7 +32,9 @@ export function useProjectTimeEntries(projectId: string) {
         setTrackedSeconds(null)
         setError(getErrorMessage(reason, 'โหลดรายการเวลาไม่สำเร็จ'))
       })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [page, projectId])
 
   return {

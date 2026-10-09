@@ -18,30 +18,40 @@ function AuthInput({
 
   return (
     <div className="auth-field">
-      <FormLabel htmlFor={name} required={required}>{label}</FormLabel>
-      {type === 'password' ? <PasswordInput
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete || 'current-password'}
-        required={required}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
-        {...inputProps}
-      /> : <Input
-        id={name}
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete || (type === 'password' ? 'current-password' : name)}
-        required={required}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
-        {...inputProps}
-      />}
-      {error && <p id={errorId} className="field-error">{error}</p>}
+      <FormLabel htmlFor={name} required={required}>
+        {label}
+      </FormLabel>
+      {type === 'password' ? (
+        <PasswordInput
+          id={name}
+          name={name}
+          value={value}
+          onChange={onChange}
+          autoComplete={autoComplete || 'current-password'}
+          required={required}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          {...inputProps}
+        />
+      ) : (
+        <Input
+          id={name}
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          autoComplete={autoComplete || (type === 'password' ? 'current-password' : name)}
+          required={required}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          {...inputProps}
+        />
+      )}
+      {error && (
+        <p id={errorId} className="field-error">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

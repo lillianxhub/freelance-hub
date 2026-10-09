@@ -1,4 +1,5 @@
-const THAI_ADDRESS_API = 'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json'
+const THAI_ADDRESS_API =
+  'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest/province_with_district_and_sub_district.json'
 
 export interface ThaiSubDistrict {
   id: number
@@ -48,7 +49,9 @@ function parseDistrict(value: unknown): ThaiDistrict | null {
   if (!isRecord(value) || !isNumber(value.id) || !Array.isArray(value.sub_districts)) return null
   const name = thaiName(value)
   if (!name) return null
-  const subDistricts = value.sub_districts.map(parseSubDistrict).filter((item): item is ThaiSubDistrict => item !== null)
+  const subDistricts = value.sub_districts
+    .map(parseSubDistrict)
+    .filter((item): item is ThaiSubDistrict => item !== null)
   return { id: value.id, name_th: name, sub_districts: subDistricts }
 }
 
@@ -56,7 +59,9 @@ function parseProvince(value: unknown): ThaiProvince | null {
   if (!isRecord(value) || !isNumber(value.id) || !Array.isArray(value.districts)) return null
   const name = thaiName(value)
   if (!name) return null
-  const districts = value.districts.map(parseDistrict).filter((item): item is ThaiDistrict => item !== null)
+  const districts = value.districts
+    .map(parseDistrict)
+    .filter((item): item is ThaiDistrict => item !== null)
   return { id: value.id, name_th: name, districts }
 }
 
@@ -72,7 +77,7 @@ export function loadThaiAddressData(): Promise<ThaiProvince[]> {
     addressDataPromise = fetch(THAI_ADDRESS_API)
       .then(async (response) => {
         if (!response.ok) throw new Error('ไม่สามารถโหลดข้อมูลที่อยู่ได้')
-        return parseAddressData(await response.json() as unknown)
+        return parseAddressData((await response.json()) as unknown)
       })
       .catch((error: unknown) => {
         addressDataPromise = null

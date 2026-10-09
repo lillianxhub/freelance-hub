@@ -9,9 +9,16 @@ test('reports use filtered API endpoints and project pagination metadata', async
     const url = new URL(String(input), 'http://localhost')
     paths.push(`${url.pathname}${url.search}`)
     const data = url.pathname.endsWith('/summary')
-      ? { generatedAt: '2026-10-05T00:00:00Z', filters: { clients: [], projects: [] }, summary: { totalTrackedSeconds: 3600 } }
+      ? {
+          generatedAt: '2026-10-05T00:00:00Z',
+          filters: { clients: [], projects: [] },
+          summary: { totalTrackedSeconds: 3600 },
+        }
       : url.pathname.endsWith('/distribution')
-        ? { groupBy: 'PROJECT', items: [{ id: 'project-1', name: 'Website', trackedSeconds: 3600, percent: 100 }] }
+        ? {
+            groupBy: 'PROJECT',
+            items: [{ id: 'project-1', name: 'Website', trackedSeconds: 3600, percent: 100 }],
+          }
         : []
     const meta = url.pathname.endsWith('/projects')
       ? { page: 2, limit: 10, total: 12, totalPages: 2 }
@@ -46,13 +53,20 @@ test('report overview can load all time without date parameters', async () => {
   let requestedPath = ''
   globalThis.fetch = async (input) => {
     requestedPath = String(input)
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'ok',
-      data: { generatedAt: '2026-10-05T00:00:00Z', filters: { clients: [], projects: [] }, summary: { totalTrackedSeconds: 5400, trackedTimeTrendPercent: null } },
-      meta: null,
-      error: null,
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'ok',
+        data: {
+          generatedAt: '2026-10-05T00:00:00Z',
+          filters: { clients: [], projects: [] },
+          summary: { totalTrackedSeconds: 5400, trackedTimeTrendPercent: null },
+        },
+        meta: null,
+        error: null,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )
   }
 
   try {

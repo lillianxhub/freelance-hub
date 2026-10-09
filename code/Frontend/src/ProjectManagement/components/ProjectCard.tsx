@@ -7,7 +7,11 @@ import { FiEdit2 } from 'react-icons/fi'
 import type { Project, ProjectStatus } from '../../types/project'
 import { formatDate } from '../../utils/date'
 import { formatTimer } from '../../utils/duration'
-import { allowedStatusTransitions, projectStatusLabels, statusSelectClasses } from './projectStatusOptions'
+import {
+  allowedStatusTransitions,
+  projectStatusLabels,
+  statusSelectClasses,
+} from './projectStatusOptions'
 
 interface ProjectCardProps {
   project: Project
@@ -35,7 +39,13 @@ function isPastEndDate(endDate: string) {
   return new Date(`${endDate}T00:00:00`) < today
 }
 
-export default function ProjectCard({ project, clientName, changing, onEdit, onStatusChange }: ProjectCardProps) {
+export default function ProjectCard({
+  project,
+  clientName,
+  changing,
+  onEdit,
+  onStatusChange,
+}: ProjectCardProps) {
   const totalTasks = project.task_progress?.total_tasks ?? 0
   const completedTasks = project.task_progress?.completed_tasks ?? 0
   const taskPercent = Math.max(0, Math.min(100, Math.round(project.task_progress?.percent ?? 0)))
@@ -51,13 +61,21 @@ export default function ProjectCard({ project, clientName, changing, onEdit, onS
         className="relative min-w-0 border-l-4 p-5 transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-lg"
         style={{ borderLeftColor: project.color }}
       >
-        <Link className="absolute inset-0 z-0 rounded-xl" to={`/projects/${project.id}`} aria-label={`เปิด ${project.name}`} />
+        <Link
+          className="absolute inset-0 z-0 rounded-xl"
+          to={`/projects/${project.id}`}
+          aria-label={`เปิด ${project.name}`}
+        />
 
         <div className="pointer-events-none relative z-10 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-semibold text-text-primary">{project.name}</h2>
-            <p className="mt-0.5 truncate text-sm text-text-secondary">{clientName} · {totalTasks} งาน</p>
-            <p className={`mt-0.5 text-sm ${isOverdue ? 'font-semibold text-destructive' : 'text-text-secondary'}`}>
+            <p className="mt-0.5 truncate text-sm text-text-secondary">
+              {clientName} · {totalTasks} งาน
+            </p>
+            <p
+              className={`mt-0.5 text-sm ${isOverdue ? 'font-semibold text-destructive' : 'text-text-secondary'}`}
+            >
               {project.end_date ? `สิ้นสุด ${formatDate(project.end_date)}` : 'ไม่กำหนดวันสิ้นสุด'}
             </p>
           </div>
@@ -75,21 +93,35 @@ export default function ProjectCard({ project, clientName, changing, onEdit, onS
 
         <div className="pointer-events-none relative z-10 grid grid-cols-2 gap-4 pt-2">
           <div className="grid gap-0.5">
-            <strong className="text-xl font-semibold leading-tight text-text-primary tabular-nums">{trackedSeconds === null ? '—' : formatTimer(trackedSeconds)}</strong>
+            <strong className="text-xl font-semibold leading-tight text-text-primary tabular-nums">
+              {trackedSeconds === null ? '—' : formatTimer(trackedSeconds)}
+            </strong>
             <span className="text-sm text-text-secondary">เวลาที่บันทึก</span>
           </div>
           <div className="grid gap-0.5">
-            <strong className="text-xl font-semibold leading-tight text-text-primary tabular-nums">{formatHours(project.budget_hours)}</strong>
+            <strong className="text-xl font-semibold leading-tight text-text-primary tabular-nums">
+              {formatHours(project.budget_hours)}
+            </strong>
             <span className="text-sm text-text-secondary">จำนวนชั่วโมง</span>
           </div>
         </div>
 
         <div className="pointer-events-none relative z-10 grid gap-2 pt-2">
-          <div className={`flex items-center justify-between gap-3 text-sm ${isOverdue ? 'font-semibold text-destructive' : 'text-text-secondary'}`}>
-            <span>ความคืบหน้างาน ({completedTasks}/{totalTasks})</span>
-            <strong className={isOverdue ? 'text-destructive' : 'text-text-primary'}>{taskPercent}%</strong>
+          <div
+            className={`flex items-center justify-between gap-3 text-sm ${isOverdue ? 'font-semibold text-destructive' : 'text-text-secondary'}`}
+          >
+            <span>
+              ความคืบหน้างาน ({completedTasks}/{totalTasks})
+            </span>
+            <strong className={isOverdue ? 'text-destructive' : 'text-text-primary'}>
+              {taskPercent}%
+            </strong>
           </div>
-          <Progress className="h-2 bg-border" value={taskPercent} indicatorColor={isOverdue ? 'var(--red)' : project.color} />
+          <Progress
+            className="h-2 bg-border"
+            value={taskPercent}
+            indicatorColor={isOverdue ? 'var(--red)' : project.color}
+          />
         </div>
 
         {budgetPercent !== null && (
@@ -98,7 +130,11 @@ export default function ProjectCard({ project, clientName, changing, onEdit, onS
               <span>ใช้เวลาไปแล้ว</span>
               <strong className="text-text-primary">{budgetPercent}%</strong>
             </div>
-            <Progress className="h-2 bg-border" value={budgetPercent} indicatorColor={budgetColor} />
+            <Progress
+              className="h-2 bg-border"
+              value={budgetPercent}
+              indicatorColor={budgetColor}
+            />
           </div>
         )}
 
@@ -113,7 +149,9 @@ export default function ProjectCard({ project, clientName, changing, onEdit, onS
             onChange={(event) => onStatusChange(project, event.target.value as ProjectStatus)}
           >
             {allowedStatusTransitions[project.status].map((status) => (
-              <option key={status} value={status}>{projectStatusLabels[status]}</option>
+              <option key={status} value={status}>
+                {projectStatusLabels[status]}
+              </option>
             ))}
           </NativeSelect>
         </div>
