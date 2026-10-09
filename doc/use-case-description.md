@@ -527,13 +527,13 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 
 1. Freelancer ส่ง `projectId`, optional `taskId`, optional `description`, `startedAt` และเลือกส่งอย่างใดอย่างหนึ่งระหว่าง `endedAt` หรือ `durationSeconds`
 2. Controller validate ว่ามีวิธีกำหนดเวลาสิ้นสุดเพียงแบบเดียวและเวลาสิ้นสุดอยู่หลังเวลาเริ่ม
-3. Service ตรวจ User, Project, Task และ owner relationship
+3. Service ตรวจ User, Project, Task และ owner relationship; Project ต้องเป็น `ACTIVE` และ Client ต้อง active จึงบันทึกเวลาได้
 4. Entity สร้างรายการชนิด `MANUAL`; หากส่ง duration ระบบคำนวณ `endedAt` หรือหากส่งช่วงเวลาระบบคำนวณ duration
 5. หากส่ง Task จะเรียก `Task.start()` ก่อนบันทึก: `OPEN` เปลี่ยนเป็น `IN_PROGRESS`, `IN_PROGRESS` คงเดิม และ `COMPLETED` ถูกปฏิเสธ; การบันทึก Time Entry และการเปลี่ยนสถานะ Task อยู่ใน transaction เดียวกัน
 6. Repository บันทึก แล้ว controller คืน `201 Created` พร้อม `Location` และ `TimeEntryDetailResponse` ใน `ApiResult.data` ซึ่งมี `createdAt`, `updatedAt`, `project.status` และ `task.status` เมื่อมี Task
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
-**Postcondition:** มี completed manual entry ที่ duration มากกว่า 0; Task ที่ส่งมามีสถานะ `IN_PROGRESS`; การบันทึกย้อนหลังไม่บังคับให้ Project เป็น `ACTIVE`
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่เป็น `ACTIVE`, Client ไม่ active หรือ Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
+**Postcondition:** มี completed manual entry ที่ duration มากกว่า 0 บน Project ที่เป็น `ACTIVE`; Task ที่ส่งมามีสถานะ `IN_PROGRESS`
 
 ### UC-TIME-06 List and Filter Time Entries
 
@@ -563,11 +563,11 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 1. Freelancer ส่ง UUID ของรายการใน path และข้อมูลทดแทนผ่าน `PUT` ได้แก่ `projectId`, `startedAt`, optional `taskId`/`description` และอย่างใดอย่างหนึ่งระหว่าง `endedAt` หรือ `durationSeconds`
 2. Controller validate ข้อมูลที่จำเป็นและเวลาที่ส่งมา; `taskId` ที่ไม่ส่งหรือเป็น `null` จะล้าง Task เดิม และ `description` ที่ไม่ส่งหรือเป็น `null` จะล้างคำอธิบายเดิม
 3. Service ค้นหารายการด้วย `entryId` และ `ownerId` แล้วตรวจว่าไม่ถูกล็อก
-4. หากเปลี่ยน Project หรือ Task ระบบตรวจ owner และ task-project relationship อีกครั้ง
+4. ระบบตรวจว่า Project เดิมและ Project ปลายทางเป็น `ACTIVE` และ Client ปลายทาง active; หากเปลี่ยน Project หรือ Task จะตรวจ owner และ task-project relationship อีกครั้ง
 5. Entity แก้ข้อมูลและคำนวณ `durationSeconds` ใหม่ตามช่วงเวลาหรือค่าที่ส่งมา
 6. Controller คืน `200` พร้อม `TimeEntryDetailResponse` ใน `ApiResult.data`
 
-**Alternative flow:** ไม่พบหรือเป็นของผู้ใช้อื่นหรือถูก soft delete = `404`; รายการถูกล็อก = `409`; ช่วงเวลาไม่ถูกต้องหรือ request ไม่ครบ = `400`; พยายามแก้ running timer = `409`; Project/Task ไม่ถูกต้อง = `404`; ไม่มี JWT = `401`
+**Alternative flow:** ไม่พบหรือเป็นของผู้ใช้อื่นหรือถูก soft delete = `404`; รายการถูกล็อก = `409`; Project เดิมหรือปลายทางไม่เป็น `ACTIVE` หรือ Client ปลายทางไม่ active = `409`; ช่วงเวลาไม่ถูกต้องหรือ request ไม่ครบ = `400`; พยายามแก้ running timer = `409`; Project/Task ไม่ถูกต้อง = `404`; ไม่มี JWT = `401`
 **Postcondition:** ข้อมูลที่ส่งมาแทนค่าเดิม; ไม่ส่ง Task จะล้าง Task เดิม
 
 ### UC-TIME-09 Delete Time Entry
@@ -602,7 +602,7 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 **Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `IllegalStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
 **Postcondition:** เมื่อ transaction commit รายการที่ถูกเลือกมี `lockedAt` ถาวรและไม่สามารถแก้ไขหรือ soft delete ผ่าน Entity/service ปกติได้; การล็อกแถวฐานข้อมูลสิ้นสุดเมื่อ transaction จบ แต่ค่า `lockedAt` ยังอยู่
 
-**สถานะการเชื่อมต่อ:** `ProjectServiceImpl.changeStatus()` เรียกเมธอดล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` แล้ว; integration test ตรวจว่าการเปลี่ยนสถานะผ่าน API ตั้ง `lockedAt` ในฐานข้อมูล และการแก้ไข/ลบ Time Entry หลังจากนั้นได้ `409 TIME_ENTRY_LOCKED` แต่ยังต้องพิจารณาการสร้างหรือย้ายรายการใหม่เข้ามาใน Project ที่ปิดแล้ว
+**สถานะการเชื่อมต่อ:** `ProjectServiceImpl.changeStatus()` เรียกเมธอดล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` แล้ว; integration test ตรวจว่าการเปลี่ยนสถานะผ่าน API ตั้ง `lockedAt` ในฐานข้อมูล และการแก้ไข/ลบ Time Entry หลังจากนั้นได้ `409 TIME_ENTRY_LOCKED` การสร้าง manual entry หรือ PUT ย้ายรายการเข้า Project ที่ไม่เป็น `ACTIVE` ถูกปฏิเสธ
 
 ### Sequence: Start และ Stop Timer
 
@@ -615,7 +615,7 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
 - มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันแล้ว แต่ยังต้องจัดการ concurrent creation/reassignment
-- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; ปัจจุบันยังไม่มีการล็อกอัตโนมัติสำหรับ manual entry ที่สร้างใหม่หรือรายการที่ย้ายเข้ามาภายหลังใน Project ที่ `COMPLETED`
+- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; การสร้าง manual entry และ PUT ไปยัง Project ที่ไม่เป็น `ACTIVE` จะถูกปฏิเสธ 
 - Audit event สำหรับการแก้ไข Time Entry ตาม non-functional requirement ยังไม่ได้แสดงใน implementation นี้
 
 **หลักฐานการทดสอบ:** `TimerControllerTest`, `TimeEntryControllerTest`, `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest`, `ProjectServiceImplTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`

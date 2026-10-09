@@ -15,6 +15,7 @@ import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.dto.request.report.ReportFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.report.ReportGranularity;
 import th.ac.kku.freelance_hub.dto.request.report.ReportGroupBy;
@@ -149,6 +150,7 @@ class ReportIntegrationTest {
         project.updateDetails(
                 name, null, null, null, null, targetMinutes
         );
+        project.changeStatus(ProjectStatus.ACTIVE);
         return projects.saveAndFlush(project);
     }
 

@@ -139,11 +139,17 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         if (entry.isLocked()) {
             throw new TimeEntryLockedException(entryId);
         }
+        if (!entry.getProject().canTrackTime()) {
+            throw new IllegalStateException("project must be active to track time");
+        }
 
         Project targetProject = findOwnedProject(
                 ownerId,
                 request.getProjectId()
         );
+        if (!targetProject.canTrackTime()) {
+            throw new IllegalStateException("project must be active to track time");
+        }
         Task targetTask = findTask(
                 request.getTaskId(),
                 targetProject.getId(),
