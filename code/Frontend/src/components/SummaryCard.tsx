@@ -33,16 +33,27 @@ export default function SummaryCard({
   const classes = accentClasses[accent]
 
   return (
-    <Card className={`relative min-w-0 gap-0 rounded-xl border border-border border-t-4 bg-surface p-5 shadow-soft ring-0 ${classes.card}`}>
+    <Card
+      className={`relative min-w-0 gap-0 rounded-xl border border-border border-t-4 bg-surface p-5 shadow-soft ring-0 ${classes.card}`}
+    >
       <div className="flex items-center justify-between gap-3 text-sm text-text-secondary">
         <span>{label}</span>
-        <span className={`grid size-7 shrink-0 place-items-center rounded-lg text-sm ${classes.icon}`} aria-hidden="true">
+        <span
+          className={`grid size-7 shrink-0 place-items-center rounded-lg text-sm ${classes.icon}`}
+          aria-hidden="true"
+        >
           {icon}
         </span>
       </div>
-      <div className={`my-4 break-words text-2xl font-bold leading-none tracking-tight text-text-primary ${compact ? 'text-xl' : ''}`}>
+      <div
+        className={`my-4 break-words text-2xl font-bold leading-none tracking-tight text-text-primary ${compact ? 'text-xl' : ''}`}
+      >
         {value}
-        {unit && <span className="ml-1 text-sm font-semibold tracking-normal text-text-secondary">{unit}</span>}
+        {unit && (
+          <span className="ml-1 text-sm font-semibold tracking-normal text-text-secondary">
+            {unit}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-1.5 text-xs text-text-secondary">{foot}</div>
     </Card>

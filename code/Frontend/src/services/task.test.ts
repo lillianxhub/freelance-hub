@@ -5,19 +5,37 @@ import { changeTaskStatus, deleteTask, reorderTask, toTask } from './task'
 
 test('task mapper translates backend status and field names', () => {
   const source = {
-    id: 'task-1', projectId: 'project-1', name: 'Build page', description: undefined,
-    status: 'COMPLETED', sortOrder: 2, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-02T00:00:00Z',
+    id: 'task-1',
+    projectId: 'project-1',
+    name: 'Build page',
+    description: undefined,
+    status: 'COMPLETED',
+    sortOrder: 2,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-02T00:00:00Z',
   } as ApiTask
   assert.deepEqual(toTask(source), {
-    id: 'task-1', owner_id: '', project_id: 'project-1', name: 'Build page', description: '',
-    status: 'COMPLETED', sort_order: 2, due_date: '', created_at: source.createdAt, updated_at: source.updatedAt,
+    id: 'task-1',
+    owner_id: '',
+    project_id: 'project-1',
+    name: 'Build page',
+    description: '',
+    status: 'COMPLETED',
+    sort_order: 2,
+    due_date: '',
+    created_at: source.createdAt,
+    updated_at: source.updatedAt,
   })
 })
 
 test('task mapper preserves every backend task status', () => {
   for (const status of ['OPEN', 'IN_PROGRESS', 'COMPLETED'] as const) {
     const source = {
-      id: 'task-1', projectId: 'project-1', name: 'Task', status, sortOrder: 0,
+      id: 'task-1',
+      projectId: 'project-1',
+      name: 'Task',
+      status,
+      sortOrder: 0,
     } as ApiTask
     assert.equal(toTask(source).status, status)
   }
@@ -51,8 +69,17 @@ test('changeTaskStatus reopens a completed task as in progress through the statu
     requestedMethod = init?.method ?? ''
     requestedBody = String(init?.body)
     return Response.json({
-      success: true, message: 'Updated', meta: null, error: null,
-      data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'IN_PROGRESS', sortOrder: 0 },
+      success: true,
+      message: 'Updated',
+      meta: null,
+      error: null,
+      data: {
+        id: 'task-1',
+        projectId: 'project-1',
+        name: 'Task',
+        status: 'IN_PROGRESS',
+        sortOrder: 0,
+      },
     })
   }
   try {
@@ -75,7 +102,10 @@ test('reorderTask sends one request with the destination position', async () => 
     assert.equal(init?.method, 'PATCH')
     assert.deepEqual(JSON.parse(String(init?.body)), { sortOrder: 3 })
     return Response.json({
-      success: true, message: '', meta: null, error: null,
+      success: true,
+      message: '',
+      meta: null,
+      error: null,
       data: { id: 'task-1', projectId: 'project-1', name: 'Task', status: 'OPEN', sortOrder: 3 },
     })
   }

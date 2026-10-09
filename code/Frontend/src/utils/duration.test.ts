@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatDuration, formatDurationSeconds, formatTimer, splitDurationSeconds } from './duration'
+import {
+  formatDuration,
+  formatDurationSeconds,
+  formatTimer,
+  splitDurationSeconds,
+} from './duration'
 
 test('formatDuration converts minute values to the shared time display format', () => {
   assert.equal(formatDuration(135), '02:15:00 นาที')

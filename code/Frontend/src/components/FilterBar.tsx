@@ -28,9 +28,17 @@ export default function FilterBar({
   }
 
   return (
-    <div className={cn('mb-[18px] flex items-center gap-2.5 rounded-[13px] border border-border bg-surface p-[11px] max-[680px]:flex-wrap', className)}>
+    <div
+      className={cn(
+        'mb-[18px] flex items-center gap-2.5 rounded-[13px] border border-border bg-surface p-[11px] max-[680px]:flex-wrap',
+        className,
+      )}
+    >
       <div className="relative min-w-[220px] flex-1 max-[680px]:basis-full">
-        <FiSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-subtle" aria-hidden="true" />
+        <FiSearch
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
+          aria-hidden="true"
+        />
         <Input
           value={value}
           onChange={onChange}

@@ -22,9 +22,12 @@ export function validateClientField(
 
   if (!isRequired(value)) return 'กรุณากรอกข้อมูลในช่องนี้'
   if (field === 'email' && !isValidEmail(toText(client.email))) return 'กรุณากรอกอีเมลให้ถูกต้อง'
-  if (field === 'phone' && !isValidPhone(toText(client.phone))) return 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก'
-  if (field === 'postal_code' && !/^\d{5}$/.test(toText(client.postal_code))) return 'กรุณาเลือกรหัสไปรษณีย์ 5 หลัก'
-  if (field === 'tax_id' && !/^\d{13}$/.test(toText(client.tax_id))) return 'กรุณากรอกเลขประจำตัวผู้เสียภาษี 13 หลัก'
+  if (field === 'phone' && !isValidPhone(toText(client.phone)))
+    return 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก'
+  if (field === 'postal_code' && !/^\d{5}$/.test(toText(client.postal_code)))
+    return 'กรุณาเลือกรหัสไปรษณีย์ 5 หลัก'
+  if (field === 'tax_id' && !/^\d{13}$/.test(toText(client.tax_id)))
+    return 'กรุณากรอกเลขประจำตัวผู้เสียภาษี 13 หลัก'
 
   return undefined
 }
@@ -56,7 +59,8 @@ export function validateClient(client: ClientInput): string | null {
   const companyName = toText(client.company_name)
   const email = toText(client.email)
 
-  if (!name.trim() && !companyName.trim()) return 'กรุณากรอกชื่อผู้ติดต่อหรือชื่อบริษัทอย่างน้อยหนึ่งรายการ'
+  if (!name.trim() && !companyName.trim())
+    return 'กรุณากรอกชื่อผู้ติดต่อหรือชื่อบริษัทอย่างน้อยหนึ่งรายการ'
   if (email && !isValidEmail(email)) return 'รูปแบบอีเมลไม่ถูกต้อง'
   return null
 }

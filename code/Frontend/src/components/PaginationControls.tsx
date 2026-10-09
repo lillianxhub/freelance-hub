@@ -46,7 +46,9 @@ export default function PaginationControls({
         </PaginationItem>
         {items.map((item, index) => (
           <PaginationItem key={`${item}-${index}`}>
-            {item === 'ellipsis' ? <PaginationEllipsis /> : (
+            {item === 'ellipsis' ? (
+              <PaginationEllipsis />
+            ) : (
               <PaginationLink
                 href={href(item)}
                 isActive={item === safePage}
