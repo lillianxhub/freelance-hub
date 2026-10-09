@@ -13,7 +13,6 @@
 | [Diagram Index](diagrams/README.md) | Domain/class, ER, Sequence 6 scenarios, Activity และ component view จากต้นฉบับที่มี |
 | [Reports API](reports-summary-api.md) | Contract ของข้อมูลหน้า Reports ที่มีอยู่เดิม |
 | [CI/CD](ci-cd.md) | Pipeline, Docker/Flyway checks, quality gates และเงื่อนไข deploy จากเอกสาร Petpinyo |
-| [บันทึกตรวจเอกสาร](review-notes.md) | จุดที่แก้หลัง PR #125, หลักฐานที่ตรวจ และข้อจำกัดที่ไม่ใช่งานเอกสาร |
 
 วิธีติดตั้ง/รันระบบ, Swagger, test commands, สมาชิกและ Deployment URL ดู [README ของ repository](../README.md) และข้อกำหนดผลิตภัณฑ์ดู [REQUIREMENTS](../REQUIREMENTS.md)
 
