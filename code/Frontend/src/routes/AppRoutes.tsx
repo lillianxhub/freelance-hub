@@ -1,144 +1,140 @@
-import { lazy } from "react";
-import { Navigate, useParams, useRoutes, type RouteObject } from "react-router-dom";
-import AppLayout from "../components/AppLayout";
-import ProtectedRoute from "../Authentication/components/ProtectedRoute";
-import { ClientsProvider } from "../ClientManagement/ClientsContext";
-import { DashboardProvider } from "../Analytics/DashboardContext";
-import { ProfileProvider } from "../Profile/ProfileContext";
-import { ProjectsProvider } from "../ProjectManagement/ProjectsContext";
-import { TimeEntriesProvider } from "../TimeTracking/TimeEntriesContext";
-import { TimerProvider } from "../TimeTracking/TimerContext";
-import type { AppRouteDefinition } from "../types/routes";
-import ProfilePage from "../Profile/pages/Profile/page";
+import { lazy } from 'react'
+import { Navigate, useParams, useRoutes, type RouteObject } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
+import ProtectedRoute from '../Authentication/components/ProtectedRoute'
+import { ClientsProvider } from '../ClientManagement/ClientsContext'
+import { DashboardProvider } from '../Analytics/DashboardContext'
+import { ProfileProvider } from '../Profile/ProfileContext'
+import { ProjectsProvider } from '../ProjectManagement/ProjectsContext'
+import { TimeEntriesProvider } from '../TimeTracking/TimeEntriesContext'
+import { TimerProvider } from '../TimeTracking/TimerContext'
+import type { AppRouteDefinition } from '../types/routes'
+import ProfilePage from '../Profile/pages/Profile/page'
 
-const LoginPage = lazy(() => import("../Authentication/pages/Login/page"));
-const RegisterPage = lazy(
-    () => import("../Authentication/pages/Register/page"),
-);
-const DashboardPage = lazy(() => import("../Analytics/pages/Dashboard/page"));
-const ClientsPage = lazy(
-    () => import("../ClientManagement/pages/Clients/page"),
-);
-const ClientDetailPage = lazy(
-    () => import("../ClientManagement/pages/ClientDetail/page"),
-);
-const ProjectsPage = lazy(
-    () => import("../ProjectManagement/pages/Projects/page"),
-);
-const ProjectDetailPage = lazy(
-    () => import("../ProjectManagement/pages/ProjectDetail/page"),
-);
-const TimeTrackerPage = lazy(
-    () => import("../TimeTracking/pages/TimeTracker/page"),
-);
-const ReportsPage = lazy(() => import("../Analytics/pages/Reports/page"));
+const LoginPage = lazy(() => import('../Authentication/pages/Login/page'))
+const RegisterPage = lazy(() => import('../Authentication/pages/Register/page'))
+const DashboardPage = lazy(() => import('../Analytics/pages/Dashboard/page'))
+const ClientsPage = lazy(() => import('../ClientManagement/pages/Clients/page'))
+const ClientDetailPage = lazy(() => import('../ClientManagement/pages/ClientDetail/page'))
+const ProjectsPage = lazy(() => import('../ProjectManagement/pages/Projects/page'))
+const ProjectDetailPage = lazy(() => import('../ProjectManagement/pages/ProjectDetail/page'))
+const TimeTrackerPage = lazy(() => import('../TimeTracking/pages/TimeTracker/page'))
+const ReportsPage = lazy(() => import('../Analytics/pages/Reports/page'))
 
 function ProjectDetailRoute() {
-    const { projectId } = useParams();
-    if (!projectId) return <Navigate to="/projects" replace />;
+  const { projectId } = useParams()
+  if (!projectId) return <Navigate to="/projects" replace />
 
-    return (
-        <ProjectsProvider key={projectId} projectId={projectId}>
-            <ProjectDetailPage />
-        </ProjectsProvider>
-    );
+  return (
+    <ProjectsProvider key={projectId} projectId={projectId}>
+      <ProjectDetailPage />
+    </ProjectsProvider>
+  )
 }
 
 const publicRoutes: AppRouteDefinition[] = [
-    { path: "/login", label: "Login", element: <LoginPage /> },
-    { path: "/register", label: "Register", element: <RegisterPage /> },
-];
+  { path: '/login', label: 'Login', element: <LoginPage /> },
+  { path: '/register', label: 'Register', element: <RegisterPage /> },
+]
 
 const protectedRoutes: AppRouteDefinition[] = [
-    {
-        path: "/dashboard",
-        label: "Dashboard",
-        element: <DashboardProvider><DashboardPage /></DashboardProvider>,
-    },
-    {
-        path: "/clients",
-        label: "ลูกค้า",
-        element: (
-            <ClientsProvider>
-                <ClientsPage />
-            </ClientsProvider>
-        ),
-    },
-    {
-        path: "/clients/:clientId",
-        label: "Clients detail",
-        element: <ClientDetailPage />,
-    },
-    {
-        path: "/projects",
-        label: "โปรเจกต์",
-        element: (
-            <ProjectsProvider>
-                <ProjectsPage />
-            </ProjectsProvider>
-        ),
-    },
-    {
-        path: "/projects/:projectId",
-        label: "Projects detail",
-        element: <ProjectDetailRoute />,
-    },
-    {
-        path: "/time-tracker",
-        label: "บันทึกเวลา",
-        element: <TimeEntriesProvider><TimeTrackerPage /></TimeEntriesProvider>,
-    },
-    {
-        path: "/reports",
-        label: "รายงาน",
-        element: <ReportsPage />,
-    },
-    {
-        path: "/profile",
-        label: "โปรไฟล์",
-        element: (
-            <ProfileProvider>
-                <ProfilePage />
-            </ProfileProvider>
-        ),
-    },
-    // {
-    //     path: "/setting",
-    //     label: "โปรไฟล์",
-    //     element: <Navigate to="/profile" replace />,
-    // },
-    // {
-    //     path: "/settings",
-    //     label: "โปรไฟล์",
-    //     element: <Navigate to="/profile" replace />,
-    // },
-];
+  {
+    path: '/dashboard',
+    label: 'Dashboard',
+    element: (
+      <DashboardProvider>
+        <DashboardPage />
+      </DashboardProvider>
+    ),
+  },
+  {
+    path: '/clients',
+    label: 'ลูกค้า',
+    element: (
+      <ClientsProvider>
+        <ClientsPage />
+      </ClientsProvider>
+    ),
+  },
+  {
+    path: '/clients/:clientId',
+    label: 'Clients detail',
+    element: <ClientDetailPage />,
+  },
+  {
+    path: '/projects',
+    label: 'โปรเจกต์',
+    element: (
+      <ProjectsProvider>
+        <ProjectsPage />
+      </ProjectsProvider>
+    ),
+  },
+  {
+    path: '/projects/:projectId',
+    label: 'Projects detail',
+    element: <ProjectDetailRoute />,
+  },
+  {
+    path: '/time-tracker',
+    label: 'บันทึกเวลา',
+    element: (
+      <TimeEntriesProvider>
+        <TimeTrackerPage />
+      </TimeEntriesProvider>
+    ),
+  },
+  {
+    path: '/reports',
+    label: 'รายงาน',
+    element: <ReportsPage />,
+  },
+  {
+    path: '/profile',
+    label: 'โปรไฟล์',
+    element: (
+      <ProfileProvider>
+        <ProfilePage />
+      </ProfileProvider>
+    ),
+  },
+  // {
+  //     path: "/setting",
+  //     label: "โปรไฟล์",
+  //     element: <Navigate to="/profile" replace />,
+  // },
+  // {
+  //     path: "/settings",
+  //     label: "โปรไฟล์",
+  //     element: <Navigate to="/profile" replace />,
+  // },
+]
 
 function ProtectedWorkspace() {
-    return (
-        <ProtectedRoute>
-            <TimerProvider>
-                <AppLayout />
-            </TimerProvider>
-        </ProtectedRoute>
-    );
+  return (
+    <ProtectedRoute>
+      <TimerProvider>
+        <AppLayout />
+      </TimerProvider>
+    </ProtectedRoute>
+  )
 }
 
 const routeObjects: RouteObject[] = [
-    ...publicRoutes.map(({ path, element }) => ({ path, element })),
-    {
-        element: <ProtectedWorkspace />,
-        children: protectedRoutes.map(({ path, element }) => ({
-            path,
-            element,
-        })),
-    },
-    { path: "/", element: <Navigate to="/dashboard" replace /> },
-    { path: "*", element: <Navigate to="/dashboard" replace /> },
-];
+  ...publicRoutes.map(({ path, element }) => ({ path, element })),
+  {
+    element: <ProtectedWorkspace />,
+    children: protectedRoutes.map(({ path, element }) => ({
+      path,
+      element,
+    })),
+  },
+  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
+]
 
 function AppRoutes() {
-    return useRoutes(routeObjects);
+  return useRoutes(routeObjects)
 }
 
-export default AppRoutes;
+export default AppRoutes

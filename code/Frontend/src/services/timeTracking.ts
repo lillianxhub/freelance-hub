@@ -1,17 +1,40 @@
 import { api } from '../api/apiClient'
 import type { ApiCurrentTimer, ApiMeta, ApiTimeEntry } from '../types/api'
 import type { TimeEntryInput } from '../types/timeTracking'
-import type { ManualTimeEntryPayload, StartTimerPayload, TimeEntry, UpdateTimeEntryPayload } from '../types/timeTracking'
+import type {
+  ManualTimeEntryPayload,
+  StartTimerPayload,
+  TimeEntry,
+  UpdateTimeEntryPayload,
+} from '../types/timeTracking'
 
-function emptyString(value: string | null | undefined): string { return value ?? '' }
+function emptyString(value: string | null | undefined): string {
+  return value ?? ''
+}
 
 export function toTimeEntry(source: ApiTimeEntry): TimeEntry {
-  return { id: source.id, owner_id: '', project_id: source.projectId ?? source.project?.id ?? '',
-    project_name: source.projectName ?? source.project?.name, task_id: source.taskId ?? source.task?.id ?? null,
-    task_name: source.taskName ?? source.task?.title, description: emptyString(source.description), started_at: source.startedAt,
-    ended_at: source.endedAt || null, duration_minutes: source.durationMinutes ?? (source.durationSeconds === undefined ? null : source.durationSeconds / 60),
-    duration_seconds: source.durationSeconds ?? (source.durationMinutes === undefined ? null : source.durationMinutes * 60),
-    billable: true, rate_snapshot: 0, currency: 'THB', created_at: source.createdAt, updated_at: source.updatedAt }
+  return {
+    id: source.id,
+    owner_id: '',
+    project_id: source.projectId ?? source.project?.id ?? '',
+    project_name: source.projectName ?? source.project?.name,
+    task_id: source.taskId ?? source.task?.id ?? null,
+    task_name: source.taskName ?? source.task?.title,
+    description: emptyString(source.description),
+    started_at: source.startedAt,
+    ended_at: source.endedAt || null,
+    duration_minutes:
+      source.durationMinutes ??
+      (source.durationSeconds === undefined ? null : source.durationSeconds / 60),
+    duration_seconds:
+      source.durationSeconds ??
+      (source.durationMinutes === undefined ? null : source.durationMinutes * 60),
+    billable: true,
+    rate_snapshot: 0,
+    currency: 'THB',
+    created_at: source.createdAt,
+    updated_at: source.updatedAt,
+  }
 }
 
 export interface TimeEntryListQuery {
@@ -60,7 +83,9 @@ export async function listTimeEntriesPage(query: TimeEntryListQuery = {}): Promi
   }
 }
 
-export async function summarizeTimeEntries(query: TimeEntryListQuery = {}): Promise<TimeEntrySummary> {
+export async function summarizeTimeEntries(
+  query: TimeEntryListQuery = {},
+): Promise<TimeEntrySummary> {
   const params = new URLSearchParams()
   if (query.clientId) params.set('clientId', query.clientId)
   if (query.projectId) params.set('projectId', query.projectId)
@@ -73,14 +98,17 @@ export async function summarizeTimeEntries(query: TimeEntryListQuery = {}): Prom
 }
 
 export async function listTimeEntries(projectId?: string): Promise<TimeEntry[]> {
-  const query = new URLSearchParams({ page: '1', limit: '10', sortBy: 'startedAt', direction: 'DESC' })
+  const query = new URLSearchParams({
+    page: '1',
+    limit: '10',
+    sortBy: 'startedAt',
+    direction: 'DESC',
+  })
   if (projectId) query.set('projectId', projectId)
   const response = await api.get<ApiTimeEntry[]>(`/time-entries?${query.toString()}`)
   return response.data.map((source) => {
     const entry = toTimeEntry(source)
-    return projectId && !entry.project_id
-      ? { ...entry, project_id: projectId }
-      : entry
+    return projectId && !entry.project_id ? { ...entry, project_id: projectId } : entry
   })
 }
 
@@ -105,7 +133,10 @@ export async function saveTimeEntry(entry: TimeEntryInput): Promise<TimeEntry> {
   })
 }
 
-export async function createManualTimeEntry({ durationSeconds, ...payload }: ManualTimeEntryPayload): Promise<TimeEntry> {
+export async function createManualTimeEntry({
+  durationSeconds,
+  ...payload
+}: ManualTimeEntryPayload): Promise<TimeEntry> {
   const response = await api.post<ApiTimeEntry>('/time-entries', {
     ...payload,
     ...(durationSeconds === undefined ? {} : { durationSeconds }),
@@ -113,7 +144,10 @@ export async function createManualTimeEntry({ durationSeconds, ...payload }: Man
   return toTimeEntry(response.data)
 }
 
-export async function updateTimeEntry(id: string, payload: UpdateTimeEntryPayload): Promise<TimeEntry> {
+export async function updateTimeEntry(
+  id: string,
+  payload: UpdateTimeEntryPayload,
+): Promise<TimeEntry> {
   const response = await api.put<ApiTimeEntry>(`/time-entries/${encodeURIComponent(id)}`, payload)
   return toTimeEntry(response.data)
 }

@@ -44,3 +44,6 @@ skills-lock.json
 .agents
 
 code/.m2-local
+
+# Individual document drafts are kept locally; submit consolidated docs instead.
+# /doc/V1/

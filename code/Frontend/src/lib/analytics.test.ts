@@ -17,7 +17,10 @@ test('summarizeTime calculates tracked, billable and utilization', () => {
 
 test('groupTimeBy aggregates and sorts project time', () => {
   const groups = groupTimeBy(entries, (entry) => entry.project_id)
-  assert.deepEqual(groups.map((group) => group.key), ['p1', 'p2'])
+  assert.deepEqual(
+    groups.map((group) => group.key),
+    ['p1', 'p2'],
+  )
   assert.equal(groups[0].minutes, 180)
   assert.equal(groups[0].value, 2000)
 })

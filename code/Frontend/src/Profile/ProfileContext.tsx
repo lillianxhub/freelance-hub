@@ -13,10 +13,13 @@ export interface ProfileContextValue extends AsyncDataState<Profile | null> {
 export function ProfileProvider({ children }: PropsWithChildren) {
   const load = useCallback(() => loadProfile(), [])
   const state = useAsyncData<Profile | null>(load, null)
-  const value: ProfileContextValue = { ...state, async updateProfile(input) {
-    const response = await updateProfileRequest(input)
-    await state.refresh()
-    return response
-  } }
+  const value: ProfileContextValue = {
+    ...state,
+    async updateProfile(input) {
+      const response = await updateProfileRequest(input)
+      await state.refresh()
+      return response
+    },
+  }
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
 }
