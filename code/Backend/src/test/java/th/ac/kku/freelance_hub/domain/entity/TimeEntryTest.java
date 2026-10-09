@@ -11,6 +11,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
@@ -166,27 +168,37 @@ class TimeEntryTest {
                 .hasMessage("ตัวจับเวลาไม่ได้กำลังทำงาน");
     }
 
-    @Test
-    @DisplayName("creates a completed manual entry for a non-active project")
-    void createsManualEntryForNonActiveProject() {
-        Project completedProject = new Project(owner, client, "Completed Project");
-        completedProject.changeStatus(ProjectStatus.ACTIVE);
-        completedProject.changeStatus(ProjectStatus.COMPLETED);
+    @ParameterizedTest
+    @EnumSource(value = ProjectStatus.class, names = {
+            "PLANNED", "ON_HOLD", "COMPLETED", "ARCHIVED"
+    })
+    @DisplayName("rejects manual entries for a project that cannot track time")
+    void rejectsManualEntryForNonActiveProject(ProjectStatus status) {
+        Project nonActiveProject = new Project(owner, client, "Non-active Project");
+        if (status == ProjectStatus.ON_HOLD || status == ProjectStatus.COMPLETED) {
+            nonActiveProject.changeStatus(ProjectStatus.ACTIVE);
+        }
+        nonActiveProject.changeStatus(status);
         Instant endedAt = STARTED_AT.plusSeconds(30 * 60);
 
-        TimeEntry entry = TimeEntry.createManual(
+        assertThatThrownBy(() -> TimeEntry.createManual(
                 owner,
-                completedProject,
+                nonActiveProject,
                 null,
                 "Past work",
                 STARTED_AT,
                 endedAt
-        );
-
-        assertThat(entry.getEntryType()).isEqualTo(EntryType.MANUAL);
-        assertThat(entry.getEndedAt()).isEqualTo(endedAt);
-        assertThat(entry.getDurationSeconds()).isEqualTo(1800L);
-        assertThat(entry.isRunning()).isFalse();
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("project must be active to track time");
+        assertThatThrownBy(() -> TimeEntry.createManualWithDurationSeconds(
+                owner,
+                nonActiveProject,
+                null,
+                "Past work",
+                STARTED_AT,
+                1800
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("project must be active to track time");
     }
 
     @Test
@@ -303,6 +315,23 @@ class TimeEntryTest {
         assertThat(entry.getStartedAt()).isEqualTo(STARTED_AT.plusSeconds(120));
         assertThat(entry.getEndedAt()).isEqualTo(STARTED_AT.plusSeconds(301));
         assertThat(entry.getDurationSeconds()).isEqualTo(181L);
+    }
+
+    @Test
+    @DisplayName("rejects moving an existing entry to a non-active project")
+    void rejectsUpdatingDetailsToNonActiveProject() {
+        TimeEntry entry = TimeEntry.createManual(
+                owner, activeProject, null, "Original work",
+                STARTED_AT, STARTED_AT.plusSeconds(60)
+        );
+        Project plannedProject = new Project(owner, client, "Planned Project");
+
+        assertThatThrownBy(() -> entry.updateDetails(
+                plannedProject, null, "Changed work"
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("project must be active to track time");
+        assertThat(entry.getProject()).isSameAs(activeProject);
+        assertThat(entry.getDescription()).isEqualTo("Original work");
     }
 
     @Test

@@ -94,6 +94,9 @@ class TaskServiceImplTest {
                 owner.getId(), project.getId(), request("Review", 1)
         ).getId()).orElseThrow();
 
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
+
         timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 owner, project, firstTask, "Earlier work",
                 Instant.parse("2026-01-01T09:00:00Z"), 600
@@ -112,6 +115,8 @@ class TaskServiceImplTest {
                 clientRepository.saveAndFlush(new Client(otherOwner, "Other client")),
                 "Other project"
         ));
+        otherProject.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(otherProject);
         Task otherTask = taskRepository.saveAndFlush(new Task(otherProject, "Other task", 0));
         timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 otherOwner, otherProject, otherTask, "Other user's latest work",
@@ -129,6 +134,8 @@ class TaskServiceImplTest {
         Task task = taskRepository.findById(taskService.create(
                 owner.getId(), project.getId(), request("Design", 0)
         ).getId()).orElseThrow();
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
         timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 owner, project, task, "Earlier work",
                 Instant.parse("2026-01-01T09:00:00Z"), 600
@@ -187,6 +194,8 @@ class TaskServiceImplTest {
                 owner.getId(), project.getId(), request("A", 0)
         );
         Task task = taskRepository.findById(response.getId()).orElseThrow();
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
         TimeEntry entry = timeEntryRepository.saveAndFlush(
                 TimeEntry.createManualWithDurationSeconds(
                         owner,

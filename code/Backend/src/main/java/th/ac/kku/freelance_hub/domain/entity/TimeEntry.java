@@ -155,6 +155,7 @@ public class TimeEntry {
             Instant startedAt,
             Instant endedAt
     ) {
+        requireTrackableProject(owner, project);
         TimeEntry entry = new TimeEntry(
                 owner,
                 project,
@@ -176,6 +177,7 @@ public class TimeEntry {
             Instant startedAt,
             long durationSeconds
     ) {
+        requireTrackableProject(owner, project);
         if (durationSeconds <= 0) {
             throw new InvalidArgumentException(
                     "ระยะเวลาต้องมากกว่าศูนย์", Map.of("field", "durationSeconds")
@@ -219,7 +221,7 @@ public class TimeEntry {
             String description
     ) {
         requireUnlocked();
-        this.project = requireOwnedProject(owner, project);
+        this.project = requireTrackableProject(owner, project);
         this.task = requireTaskInProject(task, project);
         this.description = trimToNull(description);
     }

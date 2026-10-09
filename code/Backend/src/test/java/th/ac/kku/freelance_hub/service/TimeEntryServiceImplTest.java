@@ -185,35 +185,34 @@ class TimeEntryServiceImplTest {
     }
 
     @Test
-    void createsManualEntryFromDurationForNonActiveProject() {
+    void rejectsManualEntryForPlannedProjectBeforeSavingOrStartingTask() {
         Project plannedProject = new Project(
                 owner,
                 project.getClient(),
-                "Historical Project"
+                "Planned Project"
         );
         ReflectionTestUtils.setField(plannedProject, "id", PROJECT_ID);
         when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
                 .thenReturn(Optional.of(plannedProject));
-        when(timeEntryRepository.save(any(TimeEntry.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(new Task(plannedProject, "Planned Task", 0)));
 
-        var response = service.createManual(
+        assertThatThrownBy(() -> service.createManual(
                 OWNER_ID,
                 ManualTimeEntryRequest.builder()
                         .projectId(PROJECT_ID)
-                        .description("Historical work")
+                        .taskId(TASK_ID)
+                        .description("Planned work")
                         .startedAt(NOW)
                         .durationSeconds(90L)
                         .build()
-        );
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("project must be active to track time");
 
-        assertThat(response.getStartedAt()).isEqualTo(NOW);
-        assertThat(response.getEndedAt())
-                .isEqualTo(NOW.plusSeconds(90));
-        assertThat(response.getDurationSeconds()).isEqualTo(90L);
-        assertThat(response.isRunning()).isFalse();
-        verifyNoInteractions(taskRepository);
+        verify(timeEntryRepository, never()).save(any(TimeEntry.class));
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
     }
 
     @Test
@@ -293,6 +292,7 @@ class TimeEntryServiceImplTest {
                 project.getClient(),
                 "New Project"
         );
+        newProject.changeStatus(ProjectStatus.ACTIVE);
         ReflectionTestUtils.setField(newProject, "id", newProjectId);
         when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
                 .thenReturn(Optional.of(entry));
@@ -325,6 +325,7 @@ class TimeEntryServiceImplTest {
                 project.getClient(),
                 "New Project"
         );
+        newProject.changeStatus(ProjectStatus.ACTIVE);
         ReflectionTestUtils.setField(newProject, "id", newProjectId);
         Task newTask = new Task(newProject, "New Task", 0);
         ReflectionTestUtils.setField(newTask, "id", newTaskId);
@@ -350,6 +351,57 @@ class TimeEntryServiceImplTest {
 
         assertThat(response.getProjectId()).isEqualTo(newProjectId);
         assertThat(response.getTaskId()).isEqualTo(newTaskId);
+    }
+
+    @Test
+    void rejectsUpdateToPlannedProjectWithoutChangingEntry() {
+        TimeEntry entry = manualEntry(project, task);
+        Instant originalStart = entry.getStartedAt();
+        UUID plannedProjectId = UUID.randomUUID();
+        Project plannedProject = new Project(owner, project.getClient(), "Planned Project");
+        ReflectionTestUtils.setField(plannedProject, "id", plannedProjectId);
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
+                .thenReturn(Optional.of(entry));
+        when(projectRepository.findByIdAndOwnerId(plannedProjectId, OWNER_ID))
+                .thenReturn(Optional.of(plannedProject));
+
+        assertThatThrownBy(() -> service.update(
+                OWNER_ID,
+                ENTRY_ID,
+                UpdateTimeEntryRequest.builder()
+                        .projectId(plannedProjectId)
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
+                        .build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("project must be active to track time");
+
+        assertThat(entry.getProject()).isSameAs(project);
+        assertThat(entry.getStartedAt()).isEqualTo(originalStart);
+        verify(timeEntryRepository, never()).flush();
+        verifyNoInteractions(taskRepository);
+    }
+
+    @Test
+    void rejectsUpdatingEntryWhoseCurrentProjectIsOnHold() {
+        TimeEntry entry = manualEntry(project, task);
+        project.changeStatus(ProjectStatus.ON_HOLD);
+        when(timeEntryRepository.findByIdAndOwnerIdAndIsActiveTrue(ENTRY_ID, OWNER_ID))
+                .thenReturn(Optional.of(entry));
+
+        assertThatThrownBy(() -> service.update(
+                OWNER_ID,
+                ENTRY_ID,
+                UpdateTimeEntryRequest.builder()
+                        .projectId(UUID.randomUUID())
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
+                        .build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("project must be active to track time");
+
+        verifyNoInteractions(projectRepository, taskRepository);
+        verify(timeEntryRepository, never()).flush();
     }
 
     @Test

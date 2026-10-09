@@ -264,6 +264,71 @@ class TimeEntryIntegrationTest {
     }
 
     @Test
+    void manualEntryRejectsPlannedProject() throws Exception {
+        String token = registerAndGetToken("manual-planned-project@example.com");
+        MvcResult client = mockMvc.perform(post("/api/clients")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of("name", "Planned client"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID clientId = responseId(client);
+        MvcResult project = mockMvc.perform(post("/api/projects")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of(
+                                "clientId", clientId,
+                                "name", "Planned project"
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.status").value("PLANNED"))
+                .andReturn();
+        UUID projectId = responseId(project);
+
+        mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(manualEntryJson(projectId, "Not started")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+        mockMvc.perform(get("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .param("projectId", projectId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.total").value(0));
+    }
+
+    @Test
+    void updatingManualEntryRejectsProjectOnHold() throws Exception {
+        String token = registerAndGetToken("manual-on-hold-project@example.com");
+        UUID projectId = createActiveProject(token, "On-hold project");
+        MvcResult created = mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(manualEntryJson(projectId, "Original work")))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID entryId = responseId(created);
+
+        mockMvc.perform(patch("/api/projects/{id}/status", projectId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of("status", "ON_HOLD"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/time-entries/{id}", entryId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(manualEntryJson(projectId, "Changed work")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+        mockMvc.perform(get("/api/time-entries/{id}", entryId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.description").value("Original work"));
+    }
+
+    @Test
     void ownerCanCreateUpdateListSummarizeAndDeleteManualEntry()
             throws Exception {
         String token = registerAndGetToken("manual-flow@example.com");
