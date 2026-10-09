@@ -1,6 +1,6 @@
 # เอกสารส่งมอบ - Freelance Hub
 
-เอกสารฉบับรวมสำหรับรายวิชา CP353002 ตรวจจาก implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 เนื้อหารวมจากสมาชิกทั้ง 5 คน โดยคงต้นฉบับใน V1 ไว้และไม่แก้ production code ในการรวมเอกสารรอบนี้
+เอกสารฉบับรวมสำหรับรายวิชา CP353002 ตรวจจาก implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 เนื้อหารวมจากสมาชิกทั้ง 5 คน โดยไม่แก้ production code ในการรวมเอกสารรอบนี้ ต้นฉบับใน V1 เก็บเฉพาะ local และประวัติ Git ไม่รวมในไฟล์ส่งมอบปัจจุบัน
 
 ## เอกสารหลัก
 
@@ -19,17 +19,17 @@
 
 หลัง pull ล่าสุดตรวจ source ที่ `5f55faf` และนำเอกสาร Auth/Profile/SOLID/Design/CI-CD ที่ Petpinyo ปรับใน `4e96e4b` (PR #127) มาเทียบและปรับฉบับรวมแล้ว รวมถึงคงการแก้ Time Tracking ของ PR #125 โค้ดใน code/ และ workflows ไม่เปลี่ยนจาก snapshot `ca77d74` ที่ใช้รันทดสอบก่อนหน้านี้; Test Report จึงยังระบุ commit ของรอบที่รันจริง ไม่เปลี่ยนเป็นผลทดสอบใหม่
 
-ไฟล์หลักใน doc/ และ diagrams/ เป็นฉบับอ้างอิงปัจจุบัน ส่วน V1/ เป็นต้นฉบับงานแยกของสมาชิกที่คงไว้เพื่อดูที่มา บางส่วนยังมี endpoint/path/คำอธิบายรุ่นเก่า จึงไม่ควรใช้ V1 ทุกไฟล์เป็น current API contract โดยไม่เทียบฉบับรวม
+ไฟล์หลักใน doc/ และ diagrams/ เป็นฉบับอ้างอิงปัจจุบัน ส่วน doc/V1/ เป็นร่าง local ที่ไม่ติดตามใน Git บางส่วนยังมี endpoint/path/คำอธิบายรุ่นเก่า จึงไม่ควรใช้ V1 ทุกไฟล์เป็น current API contract โดยไม่เทียบฉบับรวม หากต้องการอ่านต้นฉบับที่เคย commit ใช้ `git show 33e6f4f:doc/V1/SOLID/thirawat-solid.md` โดยเปลี่ยน path เป็นไฟล์ที่ต้องการ
 
 ## ที่มาของงานสมาชิก
 
 | สมาชิก / Branch | ขอบเขต | ต้นฉบับ |
 |---|---|---|
-| Petpinyo / `petpinyo_673380073-7_02` | Authentication, Profile, Security, CI/CD | [SOLID](V1/SOLID/petpinyo-solid.md), [Design](V1/DESIGN/petpinyo-design.md), [Use Cases](V1/USECASE/petpinyo-usecase.md), [CI/CD](V1/CICD/petpinyo-cicd.md) |
-| Thirawat / `thirawat_673380039-7_02` | Client Management | [SOLID](V1/SOLID/thirawat-solid.md), [Design](V1/DESIGN/thirawat-design.md), [Use Cases](V1/USECASE/thirawat-usecase.md) |
-| Kantavit / `kantavit_673380027-4_01` | Project, Task และ Progress Events | [SOLID](V1/SOLID/kantavit-solid.md), [Design](V1/DESIGN/kantavit-design.md), [Use Cases](V1/USECASE/kantavit-usecase.md) |
-| Kompat / `kompat_673380262-4_02` | Time Tracking | [SOLID](V1/SOLID/kompat-solid.md), [Design](V1/DESIGN/kompat-design.md), [Use Cases](V1/USECASE/kompat-usecase.md) |
-| Nattadol / `nattadol_673380511-9_02` | Dashboard, Reports และ Frontend | [SOLID](V1/SOLID/nattadol-solid.md), [Design](V1/DESIGN/nattadol-design.md), [Use Cases](V1/USECASE/nattadol-usecase.md) |
+| Petpinyo / `petpinyo_673380073-7_02` | Authentication, Profile, Security, CI/CD | SOLID (`doc/V1/SOLID/petpinyo-solid.md`; ต้นฉบับ local/ประวัติ Git), Design (`doc/V1/DESIGN/petpinyo-design.md`; ต้นฉบับ local/ประวัติ Git), Use Cases (`doc/V1/USECASE/petpinyo-usecase.md`; ต้นฉบับ local/ประวัติ Git), CI/CD (`doc/V1/CICD/petpinyo-cicd.md`; ต้นฉบับ local/ประวัติ Git) |
+| Thirawat / `thirawat_673380039-7_02` | Client Management | SOLID (`doc/V1/SOLID/thirawat-solid.md`; ต้นฉบับ local/ประวัติ Git), Design (`doc/V1/DESIGN/thirawat-design.md`; ต้นฉบับ local/ประวัติ Git), Use Cases (`doc/V1/USECASE/thirawat-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Kantavit / `kantavit_673380027-4_01` | Project, Task และ Progress Events | SOLID (`doc/V1/SOLID/kantavit-solid.md`; ต้นฉบับ local/ประวัติ Git), Design (`doc/V1/DESIGN/kantavit-design.md`; ต้นฉบับ local/ประวัติ Git), Use Cases (`doc/V1/USECASE/kantavit-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Kompat / `kompat_673380262-4_02` | Time Tracking | SOLID (`doc/V1/SOLID/kompat-solid.md`; ต้นฉบับ local/ประวัติ Git), Design (`doc/V1/DESIGN/kompat-design.md`; ต้นฉบับ local/ประวัติ Git), Use Cases (`doc/V1/USECASE/kompat-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Nattadol / `nattadol_673380511-9_02` | Dashboard, Reports และ Frontend | SOLID (`doc/V1/SOLID/nattadol-solid.md`; ต้นฉบับ local/ประวัติ Git), Design (`doc/V1/DESIGN/nattadol-design.md`; ต้นฉบับ local/ประวัติ Git), Use Cases (`doc/V1/USECASE/nattadol-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
 
 ## Diagram และผลทดสอบที่เพิ่มหลังฉบับรวม
 

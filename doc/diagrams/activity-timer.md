@@ -1,6 +1,6 @@
 # Activity: เริ่มและหยุด Timer
 
-ที่มา: [Kompat](../V1/DESIGN/kompat-design.md) ณ `131305f` นอกจากการตรวจ running timer ใน service ยังมี partial unique index ของ PostgreSQL ป้องกันคำขอ start พร้อมกัน กรณี Task COMPLETED การบันทึกใน transaction จะ rollback
+ที่มา: Kompat (`doc/V1/DESIGN/kompat-design.md`; ต้นฉบับ local/ประวัติ Git) ณ `131305f` นอกจากการตรวจ running timer ใน service ยังมี partial unique index ของ PostgreSQL ป้องกันคำขอ start พร้อมกัน กรณี Task COMPLETED การบันทึกใน transaction จะ rollback
 
 ```mermaid
 flowchart TD

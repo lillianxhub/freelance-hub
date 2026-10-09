@@ -101,11 +101,11 @@ Test source อยู่ใน `code/Backend/src/test/java/th/ac/kku/freelance_h
 
 ## 8. เอกสารต้นฉบับของสมาชิก
 
-- [Petpinyo - Authentication/Profile](V1/SOLID/petpinyo-solid.md)
-- [Thirawat - Client](V1/SOLID/thirawat-solid.md)
-- [Kantavit - Project/Task](V1/SOLID/kantavit-solid.md)
-- [Kompat - Time Tracking](V1/SOLID/kompat-solid.md)
-- [Nattadol - Dashboard/Reports](V1/SOLID/nattadol-solid.md)
+- Petpinyo - Authentication/Profile (`doc/V1/SOLID/petpinyo-solid.md`; ต้นฉบับ local/ประวัติ Git)
+- Thirawat - Client (`doc/V1/SOLID/thirawat-solid.md`; ต้นฉบับ local/ประวัติ Git)
+- Kantavit - Project/Task (`doc/V1/SOLID/kantavit-solid.md`; ต้นฉบับ local/ประวัติ Git)
+- Kompat - Time Tracking (`doc/V1/SOLID/kompat-solid.md`; ต้นฉบับ local/ประวัติ Git)
+- Nattadol - Dashboard/Reports (`doc/V1/SOLID/nattadol-solid.md`; ต้นฉบับ local/ประวัติ Git)
 
-ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้าย นำข้อจำกัด SRP/LSP/ISP ของ Kompat ใน PR #125 และหลักฐาน Auth/Profile ที่ Petpinyo ปรับใน PR #127 มารวมแล้ว โดยคงต้นฉบับของสมาชิกไว้สำหรับตรวจที่มา
+ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้าย นำข้อจำกัด SRP/LSP/ISP ของ Kompat ใน PR #125 และหลักฐาน Auth/Profile ที่ Petpinyo ปรับใน PR #127 มารวมแล้ว โดยคงต้นฉบับของสมาชิกไว้เฉพาะ local และประวัติ Git สำหรับตรวจที่มา
 

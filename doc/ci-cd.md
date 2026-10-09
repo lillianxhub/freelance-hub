@@ -1,6 +1,6 @@
 # CI/CD - Freelance Hub
 
-ฉบับรวมจาก [Petpinyo CI/CD](V1/CICD/petpinyo-cicd.md) ตรวจ workflow ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 นำรายละเอียดที่ Petpinyo ปรับใน PR #127 มาเทียบกับ workflow แล้ว ไม่แก้ workflow หรือ deploy ระบบในรอบรวมเอกสาร
+ฉบับรวมจาก Petpinyo CI/CD (`doc/V1/CICD/petpinyo-cicd.md`; ต้นฉบับ local/ประวัติ Git) ตรวจ workflow ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 นำรายละเอียดที่ Petpinyo ปรับใน PR #127 มาเทียบกับ workflow แล้ว ไม่แก้ workflow หรือ deploy ระบบในรอบรวมเอกสาร
 
 **ผู้รับผิดชอบ:** เพชรภิญโญ ธนศิรินรากร (`petpinyo_673380073-7_02`)  
 **ขอบเขต:** GitHub Actions ของ Backend/Frontend, Docker verification, Flyway validation, Auth smoke test และ Render deployment

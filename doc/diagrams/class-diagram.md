@@ -214,7 +214,7 @@ classDiagram
 
 ## Authentication Patterns
 
-ที่มา: [Petpinyo Design](../V1/DESIGN/petpinyo-design.md) ตรวจตามการแก้ PR #127 เพิ่ม cookie/origin, refresh repository และ authentication provider dependencies Strategy / Template Method / Chain of Responsibility ใช้ abstractions ของ Spring Security; profile persistence ผ่าน UserRepository ไม่ใช่ UserProfileRepository
+ที่มา: Petpinyo Design (`doc/V1/DESIGN/petpinyo-design.md`; ต้นฉบับ local/ประวัติ Git) ตรวจตามการแก้ PR #127 เพิ่ม cookie/origin, refresh repository และ authentication provider dependencies Strategy / Template Method / Chain of Responsibility ใช้ abstractions ของ Spring Security; profile persistence ผ่าน UserRepository ไม่ใช่ UserProfileRepository
 
 ```mermaid
 classDiagram
@@ -291,7 +291,7 @@ classDiagram
 
 ## Project State Pattern
 
-ที่มา: [Kantavit Design](../V1/DESIGN/kantavit-design.md) State object ตัดสิน transition/permissions; Service ตรวจ Task, running timer และประสานการล็อกเวลา
+ที่มา: Kantavit Design (`doc/V1/DESIGN/kantavit-design.md`; ต้นฉบับ local/ประวัติ Git) State object ตัดสิน transition/permissions; Service ตรวจ Task, running timer และประสานการล็อกเวลา
 
 ```mermaid
 classDiagram

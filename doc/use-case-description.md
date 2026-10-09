@@ -775,11 +775,11 @@ Sequence และ Activity จากเอกสารสมาชิกถู�
 
 | Feature | เอกสารต้นฉบับ |
 |---|---|
-| Authentication/Profile | [Petpinyo](V1/USECASE/petpinyo-usecase.md) |
-| Client | [Thirawat](V1/USECASE/thirawat-usecase.md) |
-| Project/Task | [Kantavit](V1/USECASE/kantavit-usecase.md) |
-| Time Tracking | [Kompat](V1/USECASE/kompat-usecase.md) |
-| Dashboard/Reports | [Nattadol](V1/USECASE/nattadol-usecase.md) |
+| Authentication/Profile | Petpinyo (`doc/V1/USECASE/petpinyo-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Client | Thirawat (`doc/V1/USECASE/thirawat-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Project/Task | Kantavit (`doc/V1/USECASE/kantavit-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Time Tracking | Kompat (`doc/V1/USECASE/kompat-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Dashboard/Reports | Nattadol (`doc/V1/USECASE/nattadol-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
 
 ฉบับรวมคงความหมายและ requirement boundaries ของสมาชิก ไม่ถือว่าการจัดทำเอกสารเป็นการ implement requirement ที่ยังไม่เสร็จ และไม่ใช้ผล test ในเอกสารเก่าแทน Test Report ของ release ปัจจุบัน
 
