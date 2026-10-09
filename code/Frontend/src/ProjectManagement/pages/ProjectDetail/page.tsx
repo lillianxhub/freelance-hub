@@ -289,7 +289,7 @@ function ProjectDetailPage() {
           <CardContent className="p-6 pt-0">
             <div className="grid gap-4">
             <div className="grid gap-1.5 [&>span:first-child]:text-xs [&>span:first-child]:text-text-secondary [&>strong]:text-sm [&>strong]:leading-relaxed">
-              <span>ลูกค้า</span>
+              <span>บริษัทผู้ว่าจ้าง</span>
               <Link className="min-w-0 truncate font-semibold text-primary hover:underline" title={client?.company_name || client?.name || project.client_name || "ไม่พบลูกค้า"} to={`/clients/${client?.id}`}>
                 <strong>{client?.company_name || client?.name || project.client_name || "ไม่พบลูกค้า"}</strong>
               </Link>
