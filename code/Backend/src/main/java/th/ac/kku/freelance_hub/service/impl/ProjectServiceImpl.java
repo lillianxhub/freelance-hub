@@ -351,6 +351,8 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.toResponse(projectRepository.save(project));
     }
 
+
+    //Method Change status
     @Override
     @Transactional
     public ProjectResponse changeStatus(
@@ -363,6 +365,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findOwnedProject(ownerId, projectId);
         ProjectStatus previousStatus = project.getStatus();
         requireNoRunningTimer(ownerId, projectId);
+        
         if (previousStatus == ProjectStatus.ACTIVE
                 && request.getStatus() == ProjectStatus.COMPLETED) {
             List<TaskRepository.TaskProgressSummary> summaries =
