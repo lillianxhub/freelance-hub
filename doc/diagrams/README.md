@@ -1,6 +1,6 @@
 # Diagram Index - Freelance Hub
 
-รวม diagram ของฉบับส่งมอบและตรวจชื่อ class/method/response กับ implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 รวมการปรับเอกสาร Petpinyo ใน PR #127 โดยไม่เปลี่ยนไฟล์ V1 ข้อความภายใน Mermaid diagrams ใช้ภาษาอังกฤษ ส่วนคำอธิบายภายนอกคงภาษาไทย
+รวม diagram ของฉบับส่งมอบและตรวจชื่อ class/method/response กับ implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 รวมการปรับเอกสาร Petpinyo ใน PR #127 ข้อความภายใน Mermaid diagrams ใช้ภาษาอังกฤษ ส่วนคำอธิบายภายนอกคงภาษาไทย
 
 ## Diagram ที่จัดไว้แล้ว
 
