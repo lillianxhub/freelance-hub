@@ -157,7 +157,7 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 sequenceDiagram
     actor F as Freelancer
     participant C as TimerController
-    participant U as UserService
+    participant U as CurrentUserProvider
     participant S as TimerServiceImpl
     participant P as Project/Task Repository
     participant R as TimeEntryRepository
@@ -166,7 +166,7 @@ sequenceDiagram
     participant B as ApplicationEventPublisher
 
     F->>C: POST /api/timer/start + Bearer JWT
-    C->>U: getCurrentUserEntity().getId()
+    C->>U: currentUserId()
     U-->>C: ownerId
     C->>S: startTimer(ownerId, request)
     S->>P: validate owned Project/Task
