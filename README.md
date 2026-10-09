@@ -152,8 +152,8 @@ npm run build
 
 | จุดเข้าใช้งาน | URL |
 | --- | --- |
-| เว็บแอป (Vercel) | [เปิด Freelance Hub](https://freelance-hub-self.vercel.app/) |
-| API Documentation — staging | [เปิด Swagger UI](https://freelance-hub-backend-staging.onrender.com/swagger-ui/index.html) |
+| เว็บแอป (Vercel) | <https://freelance-hub-self.vercel.app/> |
+| API Documentation — staging | <https://freelance-hub-backend-staging.onrender.com/swagger-ui/index.html> |
 
 ตรวจการเข้าถึงวันที่ **9 ตุลาคม 2026 (Asia/Bangkok)**: เว็บแอปเปิดหน้าเข้าสู่ระบบได้, Swagger staging โหลดรายการ API และ OpenAPI JSON ได้ และ health endpoint ของ Backend staging/production ตอบ `UP` ส่วน Swagger UI/OpenAPI JSON ของ production ตอบ `404` ตามการปิดเอกสาร API ใน environment นั้น ลิงก์ Swagger ข้างต้นจึงเป็นของ staging ไม่ใช่ production
 
