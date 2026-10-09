@@ -1,11 +1,11 @@
 package th.ac.kku.freelance_hub.exception;
 
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
-/** Thrown when a time entry is missing or does not belong to the current user. */
-public class TimeEntryNotFoundException extends RuntimeException {
-
+public class TimeEntryNotFoundException extends ApiException {
     public TimeEntryNotFoundException(UUID id) {
-        super("Time entry not found with id: " + id);
+        super(HttpStatus.NOT_FOUND, "TIME_ENTRY_NOT_FOUND", "ไม่พบรายการเวลา", Map.of("id", id));
     }
 }

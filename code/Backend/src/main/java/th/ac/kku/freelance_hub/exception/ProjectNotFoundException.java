@@ -1,13 +1,11 @@
 package th.ac.kku.freelance_hub.exception;
 
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
-/**
- * When can't find Project or Project does not belong to the current user.
- */
-public class ProjectNotFoundException extends RuntimeException {
-
+public class ProjectNotFoundException extends ApiException {
     public ProjectNotFoundException(UUID id) {
-        super("Project not found with id: " + id);
+        super(HttpStatus.NOT_FOUND, "PROJECT_NOT_FOUND", "ไม่พบโปรเจกต์", Map.of("id", id));
     }
 }

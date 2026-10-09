@@ -17,6 +17,7 @@ function reportParams(query: ReportSummaryQuery): URLSearchParams {
   }
   if (query.clientId) params.set('clientId', query.clientId)
   if (query.projectId) params.set('projectId', query.projectId)
+  if (query.status) params.set('status', query.status)
   return params
 }
 

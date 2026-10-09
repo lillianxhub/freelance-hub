@@ -1,4 +1,4 @@
-import type { ApiMeta, ApiOptions, ApiResponse, JsonMethod } from '../types/api'
+import type { ApiMeta, ApiOptions, ApiResponse, ApiResponseError, JsonMethod } from '../types/api'
 import { ApiError } from './apiError'
 
 const apiBase = (import.meta.env?.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
@@ -18,6 +18,25 @@ function readErrorMessage(body: unknown): string | undefined {
   return Object.values(body.errors).find(
     (error): error is string => typeof error === 'string' && Boolean(error),
   )
+}
+
+function createApiError(body: unknown, status: number, fallback: string): ApiError {
+  const source = isRecord(body) && isRecord(body.error) ? body.error : {}
+  const fieldErrors = isRecord(source.fieldErrors)
+    ? Object.fromEntries(
+        Object.entries(source.fieldErrors).filter(
+          (entry): entry is [string, string] => typeof entry[1] === 'string',
+        ),
+      )
+    : null
+  const metadata: ApiResponseError = {
+    code: typeof source.code === 'string' ? source.code : undefined,
+    details: isRecord(source.details) ? source.details : null,
+    fieldErrors,
+    timestamp: typeof source.timestamp === 'string' ? source.timestamp : undefined,
+    traceId: typeof source.traceId === 'string' ? source.traceId : undefined,
+  }
+  return new ApiError(readErrorMessage(body) || fallback, status, metadata)
 }
 
 function isApiResponse(value: unknown): value is ApiResponse<unknown> {
@@ -173,14 +192,13 @@ async function request<T>(
     })
   }
   if (!response.ok) {
-    let message = `API error (${response.status})`
+    let body: unknown
     try {
-      const body: unknown = await response.json()
-      message = readErrorMessage(body) || message
+      body = await response.json()
     } catch {
       /* The server did not return JSON. */
     }
-    throw new ApiError(message, response.status)
+    throw createApiError(body, response.status, `API error (${response.status})`)
   }
   if (response.status === 204 || response.status === 205) {
     return {
@@ -195,7 +213,7 @@ async function request<T>(
   const body: unknown = await response.json()
   const normalized = normalizeResponse<T>(body)
   if (!normalized.success)
-    throw new ApiError(readErrorMessage(normalized) || 'API ไม่สามารถดำเนินการได้', response.status)
+    throw createApiError(normalized, response.status, 'API ไม่สามารถดำเนินการได้')
   return normalized
 }
 

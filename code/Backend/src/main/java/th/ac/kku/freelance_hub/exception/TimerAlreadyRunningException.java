@@ -1,9 +1,9 @@
 package th.ac.kku.freelance_hub.exception;
 
-/** Thrown when the current user attempts to start a second timer. */
-public class TimerAlreadyRunningException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
+public class TimerAlreadyRunningException extends ApiException {
     public TimerAlreadyRunningException() {
-        super("A timer is already running");
+        super(HttpStatus.CONFLICT, "TIMER_ALREADY_RUNNING", "มีตัวจับเวลาที่กำลังทำงานอยู่ กรุณาหยุดก่อนเริ่มใหม่", null);
     }
 }

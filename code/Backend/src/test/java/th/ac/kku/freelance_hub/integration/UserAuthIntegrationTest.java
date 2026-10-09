@@ -130,7 +130,7 @@ class UserAuthIntegrationTest {
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.error.code").value("AUTHENTICATION_REQUIRED"))
                                 .andExpect(jsonPath("$.error.status").value(401))
-                                .andExpect(jsonPath("$.message").value("Authentication is required"))
+                                .andExpect(jsonPath("$.message").value("กรุณาเข้าสู่ระบบก่อนดำเนินการ"))
                                 .andReturn();
                 assertThat(objectMapper.readTree(unauthorized.getResponse().getContentAsString())
                                 .path("error").path("traceId").asText())

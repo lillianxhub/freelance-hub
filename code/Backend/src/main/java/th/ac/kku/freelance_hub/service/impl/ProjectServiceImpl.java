@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Locale;
@@ -198,8 +200,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         String searchTerm = search == null ? null : search.trim();
         if (searchTerm != null && searchTerm.length() > 180) {
-            throw new IllegalArgumentException(
-                    "Search must not exceed 180 characters"
+            throw new InvalidArgumentException(
+                    "คำค้นหาต้องไม่เกิน 180 ตัวอักษร", Map.of("field", "search")
             );
         }
 
@@ -334,7 +336,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = findOwnedProject(ownerId, projectId);
         if (project.getStatus() == ProjectStatus.ARCHIVED) {
-            throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
+            throw new InvalidStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
         }
         if (project.getStatus() == ProjectStatus.COMPLETED) {
             throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
@@ -377,7 +379,7 @@ public class ProjectServiceImpl implements ProjectService {
             if (!summaries.isEmpty()
                     && summaries.get(0).getTotalTasks()
                             > summaries.get(0).getCompletedTasks()) {
-                throw new IllegalStateException(
+                throw new InvalidStateException(
                         "ไม่สามารถเปลี่ยนโปรเจกต์เป็นเสร็จสิ้นได้ เพราะยังมีงานย่อยที่ไม่เสร็จ");
             }
         }
@@ -433,7 +435,7 @@ public class ProjectServiceImpl implements ProjectService {
         if (timerService.getCurrentTimer(ownerId)
                 .filter(timer -> projectId.equals(timer.getProjectId()))
                 .isPresent()) {
-            throw new IllegalStateException("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
+            throw new InvalidStateException("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
         }
     }
 
@@ -458,16 +460,15 @@ public class ProjectServiceImpl implements ProjectService {
         Objects.requireNonNull(pageable, "pageable is required");
 
         if (pageable.isUnpaged() || pageable.getPageSize() > 100) {
-            throw new IllegalArgumentException(
-                    "Project page size must be between 1 and 100"
+            throw new InvalidArgumentException(
+                    "จำนวนโปรเจกต์ต่อหน้าต้องอยู่ระหว่าง 1 ถึง 100"
             );
         }
 
         for (Sort.Order order : pageable.getSort()) {
             if (!SORT_FIELDS.contains(order.getProperty())) {
-                throw new IllegalArgumentException(
-                        "Unsupported project sort field: "
-                                + order.getProperty()
+                throw new InvalidArgumentException(
+                        "ฟิลด์ที่ใช้เรียงลำดับไม่ถูกต้อง", Map.of("field", "sortBy")
                 );
             }
         }

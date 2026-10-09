@@ -155,7 +155,7 @@ class ClientRepositoryTest {
         assertThat(clientService.summarizeTimeByClient(owner.getId(), to.plusSeconds(1), to.plusSeconds(2)))
                 .isEmpty();
         assertThatThrownBy(() -> clientService.summarizeTimeByClient(owner.getId(), to, from))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(th.ac.kku.freelance_hub.exception.InvalidArgumentException.class);
     }
 
     @Test
@@ -185,7 +185,7 @@ class ClientRepositoryTest {
         locked.lock(start.plusSeconds(900));
         TimeEntry deletedEntry = saveManualEntry(owner, first, start.plusSeconds(1000), 1800);
         deletedEntry.softDelete(start.plusSeconds(3000));
-        timeEntryRepository.saveAndFlush(TimeEntry.startTimer(owner, first, null, null, start.plusSeconds(4000)));
+        TimeEntry runningTimer = timeEntryRepository.saveAndFlush(TimeEntry.startTimer(owner, first, null, null, start.plusSeconds(4000)));
         saveManualEntry(owner, betaProject, start.plusSeconds(5000), 75);
         saveManualEntry(otherOwner, foreignProject, start, 7200);
         archived.changeStatus(ProjectStatus.ARCHIVED);
@@ -212,6 +212,9 @@ class ClientRepositoryTest {
                 .getContent()).extracting(ClientResponse::getTotalTrackedSeconds).containsExactly(0L);
         assertThat(clientService.getById(owner.getId(), alpha.getId(), true, true).getTotalTrackedSeconds())
                 .isEqualTo(1110L);
+        // Cancel the running fixture before archiving; running entries never contribute to totals.
+        timeEntryRepository.deleteById(runningTimer.getId());
+        timeEntryRepository.flush();
         clientService.changeStatus(owner.getId(), alpha.getId(), false);
         entityManager.flush();
         entityManager.clear();

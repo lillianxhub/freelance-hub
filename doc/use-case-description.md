@@ -166,7 +166,7 @@ Error contract หลัง PR #107:
 | `error.fieldErrors` | รายฟิลด์ของ validation เช่น `{ "name": "Client name is required" }`; ไม่ใส่ซ้ำใน details และเป็น null สำหรับ error ที่ไม่ใช่ validation |
 | `error.traceId` | UUID ที่ server สร้าง ตรงกับ response header X-Request-ID |
 
-`ClientExceptionHandler` ใช้ `ApiErrorFactory` สร้าง error ส่วน 401 สร้างผ่าน `JwtAuthenticationEntryPoint` ด้วย factory เดียวกัน; `RequestTraceFilter` สร้าง trace ID ก่อน security/MVC ไม่ใช้ trace ID ที่ผู้เรียกส่งมาเป็นตัวระบุของระบบ
+`GlobalExceptionHandler` และ Security entry points ใช้ `ErrorHandlerChain` เลือก `ErrorDescriptor` แล้วให้ `ApiErrorFactory` สร้าง error ตาม [Error Contract](error-contract.md); `RequestTraceFilter` สร้าง trace ID ก่อน security/MVC ไม่ใช้ trace ID ที่ผู้เรียกส่งมาเป็นตัวระบุของระบบ
 
 ### Use Case Summary
 

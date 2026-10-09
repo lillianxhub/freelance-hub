@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -117,7 +119,7 @@ class UserServiceTest {
         UpdateUserProfileRequest request = UpdateUserProfileRequest.builder().displayName("New name").build();
 
         assertThatThrownBy(() -> userService.updateCurrentUser(request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InvalidStateException.class)
                 .hasMessage("ไม่พบข้อมูลโปรไฟล์ผู้ใช้");
 
         verify(userRepository, never()).save(any());
@@ -150,7 +152,7 @@ class UserServiceTest {
                 .oldPassword("same-password")
                 .newPassword("same-password")
                 .build()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidArgumentException.class)
                 .hasMessage("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
 
         verify(userRepository, never()).save(any());

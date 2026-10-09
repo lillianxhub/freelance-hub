@@ -17,7 +17,8 @@ public record ReportSummaryResponse(
 
     public record ClientOption(UUID id, String name) {}
 
-    public record ProjectOption(UUID id, String name, UUID clientId) {}
+    public record ProjectOption(UUID id, String name, UUID clientId,
+            th.ac.kku.freelance_hub.domain.enums.ProjectStatus status) {}
 
     public record Summary(
             long totalTrackedSeconds,

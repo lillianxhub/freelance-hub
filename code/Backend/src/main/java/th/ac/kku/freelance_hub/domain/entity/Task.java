@@ -1,6 +1,9 @@
 package th.ac.kku.freelance_hub.domain.entity;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
+import java.util.Map;
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -153,7 +156,7 @@ public class Task {
     /** Returns true only when this call changes the task to in progress. */
     public boolean start() {
         if (status == TaskStatus.COMPLETED) {
-            throw new IllegalStateException("completed task cannot be started");
+            throw new InvalidStateException("ไม่สามารถเริ่มงานที่เสร็จสิ้นแล้ว");
         }
         if (status == TaskStatus.IN_PROGRESS) {
             return false;
@@ -165,8 +168,8 @@ public class Task {
 
     public void complete(Instant completedAt) {
         if (status == TaskStatus.COMPLETED) {
-            throw new IllegalStateException(
-                    "task is already completed"
+            throw new InvalidStateException(
+                    "งานเสร็จสิ้นแล้ว"
             );
         }
 
@@ -185,8 +188,8 @@ public class Task {
         }
 
         switch (nextStatus) {
-            case OPEN -> throw new IllegalStateException(
-                    "cannot change task status from " + status + " to OPEN"
+            case OPEN -> throw new InvalidStateException(
+                    "ไม่สามารถเปลี่ยนงานกลับเป็นสถานะยังไม่เริ่มได้", Map.of("currentStatus", status.name(), "requestedStatus", "OPEN")
             );
             case IN_PROGRESS -> {
                 if (status == TaskStatus.COMPLETED) {
@@ -211,8 +214,8 @@ public class Task {
     //ถ้า sortOrder เป็นลบจะเกิด IllegalArgumentException
     public void reorder(int position) {
         if (position < 0) {
-            throw new IllegalArgumentException(
-                    "sortOrder must not be negative"
+            throw new InvalidArgumentException(
+                    "ลำดับงานต้องไม่ติดลบ", Map.of("field", "sortOrder")
             );
         }
         sortOrder = position;
@@ -221,8 +224,8 @@ public class Task {
 
     private static String requireName(String name) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException(
-                    "name is required"
+            throw new InvalidArgumentException(
+                    "กรุณาระบุชื่อ", Map.of("field", "name")
             );
         }
         return name.trim();

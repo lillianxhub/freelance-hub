@@ -42,7 +42,7 @@ public interface TimeEntryService {
      *
      * <p>The caller must verify ownership and the transition to COMPLETED,
      * and call this inside the same transaction as that transition.
-     * A running timer causes an IllegalStateException; timers are not stopped
+     * A running timer causes an InvalidStateException; timers are not stopped
      * automatically.</p>
      *
      * <p>The caller must also prevent concurrent entry creation or reassignment

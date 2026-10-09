@@ -41,6 +41,7 @@ export interface ReportSummaryQuery {
   to: string
   clientId?: string
   projectId?: string
+  status?: ProjectStatus
 }
 
 export interface ReportFilterOption {
@@ -50,6 +51,7 @@ export interface ReportFilterOption {
 
 export interface ReportProjectOption extends ReportFilterOption {
   clientId: string
+  status: ProjectStatus
 }
 
 export interface ReportSummaryKpi {
