@@ -8,7 +8,14 @@ import './styles/App.css'
 function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<div className="flex min-h-screen flex-col items-center justify-center gap-2.5 text-center text-sm text-text-secondary"><Spinner className="size-6 text-primary" /><p>กำลังเปิดหน้า...</p></div>}>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen flex-col items-center justify-center gap-2.5 text-center text-sm text-text-secondary">
+            <Spinner className="size-6 text-primary" />
+            <p>กำลังเปิดหน้า...</p>
+          </div>
+        }
+      >
         <AppRoutes />
       </Suspense>
       <Toaster richColors closeButton />

@@ -1,7 +1,14 @@
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { formatDuration } from "../../utils/duration";
-import { formatMoney } from "../../utils/number";
-import type { TimeSummaryProps } from "../../types/timeTrackerPage";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card'
+import { formatDuration } from '../../utils/duration'
+import { formatMoney } from '../../utils/number'
+import type { TimeSummaryProps } from '../../types/timeTrackerPage'
 
 export default function TimeSummary({
   totalMinutes,
@@ -25,15 +32,14 @@ export default function TimeSummary({
           <div className="grid">
             <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
               <span className="text-text-secondary">เวลาที่คิดค่าบริการ</span>
-              <strong className="text-base text-text-primary">{formatDuration(billableMinutes)}</strong>
+              <strong className="text-base text-text-primary">
+                {formatDuration(billableMinutes)}
+              </strong>
             </div>
             <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
               <span className="text-text-secondary">สัดส่วนเวลาที่คิดเงินได้</span>
               <strong className="text-base text-text-primary">
-                {totalMinutes
-                  ? Math.round((billableMinutes / totalMinutes) * 100)
-                  : 0}
-                %
+                {totalMinutes ? Math.round((billableMinutes / totalMinutes) * 100) : 0}%
               </strong>
             </div>
             <div className="flex items-center justify-between border-b border-border py-3 text-sm last:border-b-0">
@@ -48,5 +54,5 @@ export default function TimeSummary({
         </CardContent>
       </section>
     </Card>
-  );
+  )
 }

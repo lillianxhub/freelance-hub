@@ -1,5 +1,14 @@
 import { Button } from '../../components/ui/button'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog'
 import { useState } from 'react'
 import type { TaskListProps } from '../../types/projectDetailPage'
 import type { Task } from '../../types/task'
@@ -7,7 +16,16 @@ import StatusBadge from '../../components/StatusBadge'
 import { Link } from 'react-router-dom'
 import { FiArrowDown, FiArrowUp, FiCheck, FiEdit2, FiTrash2 } from 'react-icons/fi'
 
-export default function TaskList({ tasks, startIndex = 0, totalTasks = tasks.length, changingTaskId, onToggle, onMove, onEdit, onDelete }: TaskListProps) {
+export default function TaskList({
+  tasks,
+  startIndex = 0,
+  totalTasks = tasks.length,
+  changingTaskId,
+  onToggle,
+  onMove,
+  onEdit,
+  onDelete,
+}: TaskListProps) {
   const [deleteTask, setDeleteTask] = useState<Task | null>(null)
   return (
     <div className="flex flex-col">
@@ -21,7 +39,9 @@ export default function TaskList({ tasks, startIndex = 0, totalTasks = tasks.len
             size="icon-sm"
             className={`rounded-md border ${task.status === 'COMPLETED' ? 'border-green bg-green text-white hover:bg-green hover:text-white' : 'border-border bg-background text-text-secondary'}`}
             type="button"
-            aria-label={task.status === 'COMPLETED' ? 'กลับไปทำงานต่อ' : 'ทำเครื่องหมายว่าเสร็จแล้ว'}
+            aria-label={
+              task.status === 'COMPLETED' ? 'กลับไปทำงานต่อ' : 'ทำเครื่องหมายว่าเสร็จแล้ว'
+            }
             aria-pressed={task.status === 'COMPLETED'}
             disabled={task.status === 'OPEN' || changingTaskId !== null}
             onClick={() => onToggle(task)}
@@ -30,7 +50,12 @@ export default function TaskList({ tasks, startIndex = 0, totalTasks = tasks.len
           </Button>
           <div className="min-w-0">
             {task.status === 'COMPLETED' ? (
-              <strong className="block truncate text-sm font-semibold text-text-primary" title={task.name}>{task.name}</strong>
+              <strong
+                className="block truncate text-sm font-semibold text-text-primary"
+                title={task.name}
+              >
+                {task.name}
+              </strong>
             ) : (
               <Link
                 className="block truncate text-sm font-semibold text-text-primary hover:text-primary hover:underline"
@@ -40,7 +65,9 @@ export default function TaskList({ tasks, startIndex = 0, totalTasks = tasks.len
                 {task.name}
               </Link>
             )}
-            <small className="mt-1 block truncate text-xs text-text-secondary">{task.description || 'ไม่มีรายละเอียด'}</small>
+            <small className="mt-1 block truncate text-xs text-text-secondary">
+              {task.description || 'ไม่มีรายละเอียด'}
+            </small>
           </div>
           <StatusBadge className="shrink-0" status={task.status} />
           <div className="col-start-2 col-end-[-1] flex items-center gap-1 lg:col-auto">
@@ -85,16 +112,32 @@ export default function TaskList({ tasks, startIndex = 0, totalTasks = tasks.len
           </div>
         </article>
       ))}
-      {tasks.length === 0 && <p className="m-0 py-7 text-center text-sm text-text-secondary">ยังไม่มีงานในโปรเจกต์นี้</p>}
-      <AlertDialog open={deleteTask !== null} onOpenChange={(open) => { if (!open) setDeleteTask(null) }}>
+      {tasks.length === 0 && (
+        <p className="m-0 py-7 text-center text-sm text-text-secondary">ยังไม่มีงานในโปรเจกต์นี้</p>
+      )}
+      <AlertDialog
+        open={deleteTask !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTask(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>ลบงานนี้หรือไม่</AlertDialogTitle>
-            <AlertDialogDescription>งาน “{deleteTask?.name}” จะถูกลบออกจากโปรเจกต์</AlertDialogDescription>
+            <AlertDialogDescription>
+              งาน “{deleteTask?.name}” จะถูกลบออกจากโปรเจกต์
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteTask) onDelete(deleteTask); setDeleteTask(null) }}>ลบงาน</AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTask) onDelete(deleteTask)
+                setDeleteTask(null)
+              }}
+            >
+              ลบงาน
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

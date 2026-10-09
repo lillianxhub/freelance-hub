@@ -1,4 +1,8 @@
-import type { ManualTimeFieldErrors, ManualTimeFieldName, ManualTimeForm } from '../types/timeTrackerPage'
+import type {
+  ManualTimeFieldErrors,
+  ManualTimeFieldName,
+  ManualTimeForm,
+} from '../types/timeTrackerPage'
 
 export function validateManualTimeField(
   field: ManualTimeFieldName,
@@ -6,13 +10,15 @@ export function validateManualTimeField(
 ): string | undefined {
   if (field === 'project_id' && !value.project_id) return 'กรุณาเลือกโปรเจกต์'
   if (field === 'task_id' && !value.task_id) return 'กรุณาเลือกงาน'
-  if (field === 'entry_date' && !/^\d{4}-\d{2}-\d{2}$/.test(value.entry_date)) return 'กรุณาเลือกวันที่'
+  if (field === 'entry_date' && !/^\d{4}-\d{2}-\d{2}$/.test(value.entry_date))
+    return 'กรุณาเลือกวันที่'
   if (field === 'manual_mode' && !value.manual_mode) return 'กรุณาเลือกวิธีระบุเวลา'
   if (field === 'start_time' && !value.start_time) return 'กรุณาระบุเวลาเริ่ม'
 
   if (field === 'end_time') {
     if (!value.end_time) return 'กรุณาระบุเวลาสิ้นสุด'
-    if (value.start_time && value.end_time <= value.start_time) return 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม'
+    if (value.start_time && value.end_time <= value.start_time)
+      return 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม'
   }
 
   if (field === 'duration_minutes' && Number(value.duration_minutes) <= 0) {

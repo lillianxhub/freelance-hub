@@ -26,6 +26,13 @@ const emptyDashboard: DashboardData = {
 export function DashboardProvider({ children }: PropsWithChildren) {
   const load = useCallback(() => getDashboard(), [])
   const state = useAsyncData(load, emptyDashboard)
-  const loadActivity = useCallback((period: DashboardChartPeriod) => getDashboardActivity(period), [])
-  return <DashboardContext.Provider value={{ ...state, loadActivity }}>{children}</DashboardContext.Provider>
+  const loadActivity = useCallback(
+    (period: DashboardChartPeriod) => getDashboardActivity(period),
+    [],
+  )
+  return (
+    <DashboardContext.Provider value={{ ...state, loadActivity }}>
+      {children}
+    </DashboardContext.Provider>
+  )
 }

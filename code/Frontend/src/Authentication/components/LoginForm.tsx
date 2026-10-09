@@ -1,36 +1,36 @@
 import { Button } from '../../components/ui/button'
-import AuthenticationLayout from "./AuthenticationLayout";
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import AuthInput from "./AuthInput";
-import { useAuth } from "../useAuthentication";
-import { getErrorMessage } from "../../api/apiError";
+import AuthenticationLayout from './AuthenticationLayout'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import AuthInput from './AuthInput'
+import { useAuth } from '../useAuthentication'
+import { getErrorMessage } from '../../api/apiError'
 
 function LoginForm() {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [form, setForm] = useState({ email: '', password: '' })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
     try {
-      await login(form.email, form.password);
-      navigate("/dashboard", { replace: true });
+      await login(form.email, form.password)
+      navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError(getErrorMessage(err, "เข้าสู่ระบบไม่สำเร็จ"));
+      setError(getErrorMessage(err, 'เข้าสู่ระบบไม่สำเร็จ'))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <AuthenticationLayout>
@@ -58,12 +58,8 @@ function LoginForm() {
           onChange={handleChange}
         />
 
-        <Button variant="default"
-          className="h-10 w-full"
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+        <Button variant="default" className="h-10 w-full" type="submit" disabled={loading}>
+          {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
         </Button>
 
         <p className="auth-footer">
@@ -71,7 +67,7 @@ function LoginForm() {
         </p>
       </form>
     </AuthenticationLayout>
-  );
+  )
 }
 
-export default LoginForm;
+export default LoginForm
