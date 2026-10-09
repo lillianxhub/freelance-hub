@@ -1,11 +1,11 @@
 package th.ac.kku.freelance_hub.exception;
 
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
-/** Same response for a missing client and a client owned by another user. */
-public class ClientNotFoundException extends RuntimeException {
-
+public class ClientNotFoundException extends ApiException {
     public ClientNotFoundException(UUID id) {
-        super("Client not found with id: " + id);
+        super(HttpStatus.NOT_FOUND, "CLIENT_NOT_FOUND", "ไม่พบลูกค้า", Map.of("id", id));
     }
 }

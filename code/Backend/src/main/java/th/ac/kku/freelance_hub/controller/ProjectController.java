@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.net.URI;
 import java.util.UUID;
 import java.util.List;
@@ -91,7 +92,7 @@ public class ProjectController {
             case "update_at" -> "updatedAt";
             case "end_date" -> "endDate";
             case "project_name" -> "name";
-            default -> throw new IllegalArgumentException(
+            default -> throw new InvalidArgumentException(
                     "ฟิลด์ที่ใช้เรียงลำดับไม่ถูกต้อง"
             );
         };

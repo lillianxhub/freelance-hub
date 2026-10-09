@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,10 +113,10 @@ public class ClientServiceImpl implements ClientService {
         int pageSize = filter.getLimit() != null ? filter.getLimit() : filter.getSize();
         if (filter.getPage() < 1 || filter.getSize() < 1 || filter.getSize() > 100
                 || pageSize < 1 || pageSize > 100) {
-            throw new IllegalArgumentException("Invalid client page, size, or limit");
+            throw new InvalidArgumentException("หมายเลขหน้าหรือจำนวนลูกค้าต่อหน้าไม่ถูกต้อง");
         }
         if (!SORT_FIELDS.contains(filter.getSortBy()) || filter.getDirection() == null) {
-            throw new IllegalArgumentException("Invalid client sort field or direction");
+            throw new InvalidArgumentException("ฟิลด์หรือทิศทางการเรียงลูกค้าไม่ถูกต้อง");
         }
 
         Specification<Client> specification = (root, query, cb) -> {
@@ -160,7 +162,7 @@ public class ClientServiceImpl implements ClientService {
             UUID ownerId, Instant fromInclusive, Instant toExclusive) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         if (fromInclusive == null || toExclusive == null || !fromInclusive.isBefore(toExclusive)) {
-            throw new IllegalArgumentException("ช่วงเวลาที่ใช้สรุปต้องมีจุดเริ่มต้นก่อนจุดสิ้นสุด");
+            throw new InvalidArgumentException("ช่วงเวลาที่ใช้สรุปต้องมีจุดเริ่มต้นก่อนจุดสิ้นสุด");
         }
         return clientRepository.sumCompletedTimeByClient(ownerId, fromInclusive, toExclusive)
                 .stream()
@@ -197,7 +199,7 @@ public class ClientServiceImpl implements ClientService {
                     .filter(projectId -> projects.stream().anyMatch(project ->
                             project.getId().equals(projectId)))
                     .ifPresent(projectId -> {
-                        throw new IllegalStateException(
+                        throw new InvalidStateException(
                                 "กรุณาหยุดจับเวลาก่อนเก็บถาวรลูกค้า");
                     });
             // JPA persists these managed projects with the Client in this transaction.

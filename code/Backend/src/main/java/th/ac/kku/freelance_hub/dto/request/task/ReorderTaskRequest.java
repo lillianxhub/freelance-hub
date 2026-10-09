@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReorderTaskRequest {
 
-    @NotNull(message = "Sort order is required")
-    @PositiveOrZero(message = "Sort order must not be negative")
+    @NotNull(message = "กรุณาระบุลำดับงาน")
+    @PositiveOrZero(message = "ลำดับงานต้องไม่ติดลบ")
     private Integer sortOrder;
 }

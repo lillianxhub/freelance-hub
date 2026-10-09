@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChangeClientStatusRequest {
 
-    @NotNull(message = "isActive is required")
+    @NotNull(message = "กรุณาระบุสถานะลูกค้า")
     private Boolean isActive;
 }

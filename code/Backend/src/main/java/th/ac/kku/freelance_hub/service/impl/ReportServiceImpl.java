@@ -24,7 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import th.ac.kku.freelance_hub.exception.ReportRequestException;
 
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
@@ -136,7 +136,7 @@ public class ReportServiceImpl implements ReportService {
         validateSelection(ownerId, filter);
         Objects.requireNonNull(granularity, "granularity is required");
         if (filter.getFrom() == null) {
-            throw new ResponseStatusException(
+            throw new ReportRequestException(
                     HttpStatus.BAD_REQUEST, "กรุณาระบุช่วงวันที่สำหรับกราฟแนวโน้ม"
             );
         }
@@ -416,7 +416,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate to = filter.getTo();
 
         if ((from == null) != (to == null)) {
-            throw new ResponseStatusException(
+            throw new ReportRequestException(
                     HttpStatus.BAD_REQUEST, "กรุณาระบุวันที่เริ่มและวันที่สิ้นสุดให้ครบ"
             );
         }
@@ -426,7 +426,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if (from.isAfter(to)) {
-            throw new ResponseStatusException(
+            throw new ReportRequestException(
                     HttpStatus.BAD_REQUEST,
                     "วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด"
             );
@@ -462,7 +462,7 @@ public class ReportServiceImpl implements ReportService {
 
         if (clientId != null && clients.stream()
                 .noneMatch(c -> c.getId().equals(clientId))) {
-            throw new ResponseStatusException(
+            throw new ReportRequestException(
                     HttpStatus.NOT_FOUND, "ไม่พบลูกค้า"
             );
         }
@@ -471,7 +471,7 @@ public class ReportServiceImpl implements ReportService {
                 .noneMatch(p -> p.getId().equals(projectId)
                         && (clientId == null
                         || p.getClient().getId().equals(clientId)))) {
-            throw new ResponseStatusException(
+            throw new ReportRequestException(
                     HttpStatus.NOT_FOUND, "ไม่พบโปรเจกต์"
             );
         }

@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -251,7 +252,7 @@ class ClientServiceImplTest {
     void invalidSortFieldIsRejected() {
         assertThatThrownBy(() -> service.list(OWNER_ID,
             ClientFilterRequest.builder().sortBy("owner.id").build()))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(InvalidArgumentException.class);
         verify(clientRepository, never()).findAll(any(Specification.class), any(Pageable.class));
     }
 }

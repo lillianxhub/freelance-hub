@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -223,8 +224,8 @@ class TimerServiceImplTest {
                 OWNER_ID,
                 StartTimerRequest.builder().projectId(PROJECT_ID).build()
         ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
 
         verify(timeEntryRepository, never()).saveAndFlush(any());
     }
@@ -238,8 +239,8 @@ class TimerServiceImplTest {
                 OWNER_ID,
                 StartTimerRequest.builder().projectId(PROJECT_ID).build()
         ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("client must be active to track time");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("กรุณาคืนสถานะลูกค้าก่อนบันทึกเวลา");
 
         verify(timeEntryRepository, never()).saveAndFlush(any());
     }
@@ -292,8 +293,8 @@ class TimerServiceImplTest {
         assertThatThrownBy(() -> timerService.startTimer(
                 OWNER_ID,
                 StartTimerRequest.builder().projectId(PROJECT_ID).taskId(TASK_ID).build()
-        )).isInstanceOf(IllegalStateException.class)
-                .hasMessage("completed task cannot be started");
+        )).isInstanceOf(InvalidStateException.class)
+                .hasMessage("ไม่สามารถเริ่มงานที่เสร็จสิ้นแล้ว");
 
         assertThat(task.getStatus()).isEqualTo(TaskStatus.COMPLETED);
         verify(taskRepository, never()).saveAndFlush(any(Task.class));

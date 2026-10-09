@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.domain.entity;
 
+import java.util.Map;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -85,7 +87,7 @@ public class Client {
     @PreUpdate void onUpdate() { updatedAt = Instant.now(); }
 
     private static String requireName(String value) {
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("name is required");
+        if (value == null || value.isBlank()) throw new InvalidArgumentException("กรุณาระบุชื่อ", Map.of("field", "name"));
         return value.trim();
     }
     private static String trimToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }

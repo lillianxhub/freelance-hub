@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.domain.entity;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -71,8 +73,8 @@ class TimeEntryTest {
                 null,
                 STARTED_AT
         ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("project must be active to track time");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา");
     }
 
     @Test
@@ -87,8 +89,8 @@ class TimeEntryTest {
                 null,
                 STARTED_AT
         ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("client must be active to track time");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("กรุณาคืนสถานะลูกค้าก่อนบันทึกเวลา");
     }
 
     @Test
@@ -107,8 +109,8 @@ class TimeEntryTest {
                 null,
                 STARTED_AT
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("project must belong to owner");
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("โปรเจกต์ไม่ถูกต้อง");
     }
 
     @Test
@@ -124,8 +126,8 @@ class TimeEntryTest {
                 null,
                 STARTED_AT
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("task must belong to project");
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("งานไม่อยู่ในโปรเจกต์ที่เลือก");
     }
 
     @Test
@@ -160,8 +162,8 @@ class TimeEntryTest {
         entry.stop(STARTED_AT.plusSeconds(60));
 
         assertThatThrownBy(() -> entry.stop(STARTED_AT.plusSeconds(120)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("timer is not running");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("ตัวจับเวลาไม่ได้กำลังทำงาน");
     }
 
     @Test
@@ -217,8 +219,8 @@ class TimeEntryTest {
                 STARTED_AT,
                 0
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("durationSeconds must be greater than zero");
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("ระยะเวลาต้องมากกว่าศูนย์");
     }
 
     @Test
@@ -232,8 +234,8 @@ class TimeEntryTest {
                 STARTED_AT,
                 -1
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("durationSeconds must be greater than zero");
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("ระยะเวลาต้องมากกว่าศูนย์");
     }
 
     @Test
@@ -262,8 +264,8 @@ class TimeEntryTest {
                 STARTED_AT,
                 STARTED_AT
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("endedAt must be after startedAt");
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น");
     }
 
     @Test
@@ -277,8 +279,8 @@ class TimeEntryTest {
                 STARTED_AT,
                 STARTED_AT.minusSeconds(60)
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("endedAt must be after startedAt");
+                .isInstanceOf(InvalidArgumentException.class)
+                .hasMessage("เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น");
     }
 
     @Test
@@ -322,14 +324,14 @@ class TimeEntryTest {
                 null,
                 "Changed description"
         ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("locked time entry cannot be changed");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("รายการเวลาถูกล็อกแล้ว ไม่สามารถแก้ไขได้");
         assertThatThrownBy(() -> entry.updateTimeRange(
                 STARTED_AT,
                 STARTED_AT.plusSeconds(120)
         ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("locked time entry cannot be changed");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("รายการเวลาถูกล็อกแล้ว ไม่สามารถแก้ไขได้");
     }
 
     @Test
@@ -344,7 +346,7 @@ class TimeEntryTest {
         );
 
         assertThatThrownBy(() -> entry.lock(STARTED_AT.plusSeconds(60)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("a running timer cannot be locked");
+                .isInstanceOf(InvalidStateException.class)
+                .hasMessage("กรุณาหยุดตัวจับเวลาก่อนล็อกรายการเวลา");
     }
 }

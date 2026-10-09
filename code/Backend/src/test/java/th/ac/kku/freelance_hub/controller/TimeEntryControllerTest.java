@@ -36,7 +36,7 @@ import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
-import th.ac.kku.freelance_hub.exception.TimeTrackingExceptionHandler;
+import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.TimeEntryNotFoundException;
 import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.service.UserService;
@@ -81,7 +81,7 @@ class TimeEntryControllerTest {
                                 userService
                         )
                 )
-                .setControllerAdvice(new TimeTrackingExceptionHandler(new ApiErrorFactory()))
+                .setControllerAdvice(th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.advice())
                 .setValidator(validator)
                 .build();
     }

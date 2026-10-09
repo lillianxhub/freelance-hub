@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -179,8 +181,8 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             throw new TimeEntryLockedException(entryId);
         }
         if (entry.isRunning()) {
-            throw new IllegalStateException(
-                    "a running timer must be cancelled"
+            throw new InvalidStateException(
+                    "กรุณายกเลิกตัวจับเวลาก่อนลบรายการเวลา"
             );
         }
 
@@ -199,7 +201,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
 
         // Validate the entire batch before changing any entry.
         if (entries.stream().anyMatch(TimeEntry::isRunning)) {
-            throw new IllegalStateException(
+            throw new InvalidStateException(
                     "กรุณาหยุดตัวจับเวลาก่อนล็อกรายการเวลาของโปรเจกต์"
             );
         }
@@ -247,34 +249,34 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         boolean hasEndTime = request.getEndedAt() != null;
         boolean hasDuration = request.getDurationSeconds() != null;
         if (hasEndTime == hasDuration) {
-            throw new IllegalArgumentException(
-                    "Provide either end time or duration seconds, but not both"
+            throw new InvalidArgumentException(
+                    "กรุณาระบุเวลาสิ้นสุดหรือระยะเวลาอย่างใดอย่างหนึ่ง", Map.of("fields", List.of("endedAt", "durationSeconds"))
             );
         }
     }
 
     private static void validateUpdateRequest(UpdateTimeEntryRequest request) {
         if (request.getProjectId() == null) {
-            throw new IllegalArgumentException("Project ID is required");
+            throw new InvalidArgumentException("กรุณาระบุโปรเจกต์", Map.of("field", "projectId"));
         }
         if (request.getStartedAt() == null) {
-            throw new IllegalArgumentException("Start time is required");
+            throw new InvalidArgumentException("กรุณาระบุเวลาเริ่มต้น", Map.of("field", "startedAt"));
         }
         boolean hasEndTime = request.getEndedAt() != null;
         boolean hasDuration = request.getDurationSeconds() != null;
         if (hasEndTime == hasDuration) {
-            throw new IllegalArgumentException(
-                    "Provide either end time or duration seconds, but not both"
+            throw new InvalidArgumentException(
+                    "กรุณาระบุเวลาสิ้นสุดหรือระยะเวลาอย่างใดอย่างหนึ่ง", Map.of("fields", List.of("endedAt", "durationSeconds"))
             );
         }
         if (hasDuration && request.getDurationSeconds() <= 0) {
-            throw new IllegalArgumentException(
-                    "Duration seconds must be greater than zero"
+            throw new InvalidArgumentException(
+                    "ระยะเวลาต้องมากกว่าศูนย์", Map.of("field", "durationSeconds")
             );
         }
         if (!request.isTimeRangeValid()) {
-            throw new IllegalArgumentException(
-                    "End time must be after start time"
+            throw new InvalidArgumentException(
+                    "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น", Map.of("field", "endedAt")
             );
         }
     }
@@ -456,8 +458,8 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         Objects.requireNonNull(fromInclusive, "fromInclusive is required");
         Objects.requireNonNull(toExclusive, "toExclusive is required");
         if (!fromInclusive.isBefore(toExclusive)) {
-            throw new IllegalArgumentException(
-                    "fromInclusive must be before toExclusive"
+            throw new InvalidArgumentException(
+                    "เวลาเริ่มต้นต้องอยู่ก่อนเวลาสิ้นสุด", Map.of("field", "from")
             );
         }
 
@@ -551,20 +553,19 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         if (filter.getPage() < 1
                 || filter.getLimit() < 1
                 || filter.getLimit() > 100) {
-            throw new IllegalArgumentException(
-                    "Time entry page must be at least 1 and limit must be between 1 and 100"
+            throw new InvalidArgumentException(
+                    "หมายเลขหน้าต้องเริ่มจาก 1 และจำนวนรายการต่อหน้าต้องอยู่ระหว่าง 1 ถึง 100"
             );
         }
         if (filter.getSortBy() == null
                 || !SORT_FIELDS.contains(filter.getSortBy())) {
-            throw new IllegalArgumentException(
-                    "Unsupported time entry sort field: "
-                            + filter.getSortBy()
+            throw new InvalidArgumentException(
+                    "ฟิลด์ที่ใช้เรียงลำดับไม่ถูกต้อง", Map.of("field", "sortBy")
             );
         }
         if (filter.getDirection() == null) {
-            throw new IllegalArgumentException(
-                    "Time entry sort direction is required"
+            throw new InvalidArgumentException(
+                    "กรุณาระบุทิศทางการเรียงรายการเวลา", Map.of("field", "direction")
             );
         }
         validateTimeRange(filter);
@@ -572,8 +573,8 @@ public class TimeEntryServiceImpl implements TimeEntryService {
 
     private static void validateTimeRange(TimeEntryFilterRequest filter) {
         if (!filter.isTimeRangeValid()) {
-            throw new IllegalArgumentException(
-                    "From time must be before to time"
+            throw new InvalidArgumentException(
+                    "เวลาเริ่มต้นต้องอยู่ก่อนเวลาสิ้นสุด", Map.of("field", "from")
             );
         }
     }

@@ -1,7 +1,9 @@
 package th.ac.kku.freelance_hub.exception;
 
-public class InvalidRefreshTokenException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class InvalidRefreshTokenException extends ApiException {
     public InvalidRefreshTokenException() {
-        super("Invalid refresh token");
+        super(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "เซสชันหมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่", null);
     }
 }
