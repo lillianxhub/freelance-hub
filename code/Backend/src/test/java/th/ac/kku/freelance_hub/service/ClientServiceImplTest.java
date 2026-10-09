@@ -32,6 +32,7 @@ import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
+import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.impl.ClientServiceImpl;
 import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
@@ -44,6 +45,7 @@ class ClientServiceImplTest {
 
     @Mock ClientRepository clientRepository;
     @Mock UserRepository userRepository;
+    @Mock TimerService timerService;
 
     private ClientServiceImpl service;
     private User owner;
@@ -52,7 +54,8 @@ class ClientServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new ClientServiceImpl(clientRepository, userRepository, new ClientMapper());
+        service = new ClientServiceImpl(
+                clientRepository, userRepository, new ClientMapper(), timerService);
         owner = User.builder().id(OWNER_ID).build();
         client = new Client(owner, "Existing Client");
         clientId = UUID.randomUUID();

@@ -27,6 +27,8 @@ import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ClientService;
+import th.ac.kku.freelance_hub.service.TimerService;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
@@ -43,14 +45,17 @@ public class ClientServiceImpl implements ClientService {
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
     private final ClientMapper clientMapper;
+    private final TimerService timerService;
 
     public ClientServiceImpl(
             ClientRepository clientRepository,
             UserRepository userRepository,
-            ClientMapper clientMapper) {
+            ClientMapper clientMapper,
+            TimerService timerService) {
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.clientMapper = clientMapper;
+        this.timerService = timerService;
     }
 
     @Override
@@ -185,9 +190,18 @@ public class ClientServiceImpl implements ClientService {
     public ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive) {
         Client client = findOwnedClient(ownerId, clientId);
         if (!isActive) {
+            List<th.ac.kku.freelance_hub.domain.entity.Project> projects =
+                    clientRepository.findProjectsForClientStatusChange(ownerId, clientId);
+            timerService.getCurrentTimer(ownerId)
+                    .map(TimeEntryResponse::getProjectId)
+                    .filter(projectId -> projects.stream().anyMatch(project ->
+                            project.getId().equals(projectId)))
+                    .ifPresent(projectId -> {
+                        throw new IllegalStateException(
+                                "กรุณาหยุดจับเวลาก่อนเก็บถาวรลูกค้า");
+                    });
             // JPA persists these managed projects with the Client in this transaction.
-            clientRepository.findProjectsForClientStatusChange(ownerId, clientId)
-                    .forEach(project -> project.changeStatus(ProjectStatus.ARCHIVED));
+            projects.forEach(project -> project.changeStatus(ProjectStatus.ARCHIVED));
         }
         client.setActive(isActive);
         return clientMapper.toResponse(clientRepository.save(client));
