@@ -336,6 +336,9 @@ public class ProjectServiceImpl implements ProjectService {
         if (project.getStatus() == ProjectStatus.ARCHIVED) {
             throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
         }
+        if (project.getStatus() == ProjectStatus.COMPLETED) {
+            throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
+        }
         Client client = findOwnedClient(ownerId, request.getClientId());
 
         project.changeClient(client);
