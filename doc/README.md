@@ -1,6 +1,6 @@
 # เอกสารส่งมอบ - Freelance Hub
 
-เอกสารฉบับรวมสำหรับรายวิชา CP353002 ตรวจจาก implementation ณ commit `cb8002d` วันที่ 9 ตุลาคม 2026 เนื้อหารวมจากสมาชิกทั้ง 5 คน โดยคงต้นฉบับใน V1 ไว้และไม่แก้ production code ในการรวมเอกสารรอบนี้
+เอกสารฉบับรวมสำหรับรายวิชา CP353002 ตรวจจาก implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026 เนื้อหารวมจากสมาชิกทั้ง 5 คน โดยคงต้นฉบับใน V1 ไว้และไม่แก้ production code ในการรวมเอกสารรอบนี้
 
 ## เอกสารหลัก
 
@@ -13,8 +13,13 @@
 | [Diagram Index](diagrams/README.md) | Domain/class, ER, Sequence 6 scenarios, Activity และ component view จากต้นฉบับที่มี |
 | [Reports API](reports-summary-api.md) | Contract ของข้อมูลหน้า Reports ที่มีอยู่เดิม |
 | [CI/CD](ci-cd.md) | Pipeline, Docker/Flyway checks, quality gates และเงื่อนไข deploy จากเอกสาร Petpinyo |
+| [บันทึกตรวจเอกสาร](review-notes.md) | จุดที่แก้หลัง PR #125, หลักฐานที่ตรวจ และข้อจำกัดที่ไม่ใช่งานเอกสาร |
 
 วิธีติดตั้ง/รันระบบ, Swagger, test commands, สมาชิกและ Deployment URL ดู [README ของ repository](../README.md) และข้อกำหนดผลิตภัณฑ์ดู [REQUIREMENTS](../REQUIREMENTS.md)
+
+หลัง pull ล่าสุดตรวจเทียบ source ที่ `131305f` และนำการแก้ Time Tracking documentation ใน `f0a949c` (PR #125) เข้าฉบับรวมแล้ว โค้ดใน code/ และ workflows ไม่เปลี่ยนจาก snapshot `cb8002d` ที่ใช้รวมเอกสารครั้งก่อน แต่ตรวจคำอธิบายซ้ำและแก้รายละเอียดที่ไม่ครบด้วย
+
+ไฟล์หลักใน doc/ และ diagrams/ เป็นฉบับอ้างอิงปัจจุบัน ส่วน V1/ เป็นต้นฉบับงานแยกของสมาชิกที่คงไว้เพื่อดูที่มา บางส่วนยังมี endpoint/path/คำอธิบายรุ่นเก่า จึงไม่ควรใช้ V1 ทุกไฟล์เป็น current API contract โดยไม่เทียบฉบับรวม
 
 ## ที่มาของงานสมาชิก
 

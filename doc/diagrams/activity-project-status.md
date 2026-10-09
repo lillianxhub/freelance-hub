@@ -1,6 +1,6 @@
 # Activity: เปลี่ยนสถานะ Project
 
-ที่มา: [Kantavit](../V1/DESIGN/kantavit-design.md) ณ `cb8002d` ใช้กับ Project API; Client archive cascade เรียก Project.changeStatus โดยตรงจึงไม่ผ่าน running-timer guard นี้
+ที่มา: [Kantavit](../V1/DESIGN/kantavit-design.md) ณ `131305f` ใช้กับ Project API; Client archive cascade เรียก Project.changeStatus โดยตรงจึงไม่ผ่าน running-timer guard นี้
 
 ```mermaid
 flowchart TD

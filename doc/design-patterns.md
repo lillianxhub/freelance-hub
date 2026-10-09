@@ -1,6 +1,6 @@
 # Design Patterns - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `cb8002d` วันที่ 9 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
+ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
 
 ## 1. Enterprise / Architectural Patterns
 
@@ -13,7 +13,7 @@
 | DTO + Mapper | กำหนด API contract ไม่ส่ง JPA entities หรือ password/token hashes ออกไป | `dto/request/`, `dto/response/`; UserMapper, ClientMapper, ProjectMapper, TaskMapper, TimeEntryMapper | [Domain model และ layers](diagrams/class-diagram.md) |
 | Dependency Injection | เปลี่ยน dependency/test double โดยไม่สร้าง repository หรือ clock ใน use case | Constructor injection ใน services/controllers; PasswordEncoder bean; Clock จาก TimeConfiguration; CurrentUserProvider | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 
-เส้นทาง Backend ในตารางเริ่มจาก `code/Backend/src/main/java/th/ac/kku/freelance_hub/` Repository ใช้ Spring Data JPA; `@Query` ใน ClientRepository เป็น JPQL ไม่ใช่ native SQL ส่วน migration scripts เป็น SQL สำหรับสร้าง schema ไม่ใช่ query ใน controller
+เส้นทาง Backend ในตารางเริ่มจาก `code/Backend/src/main/java/th/ac/kku/freelance_hub/` Repository interfaces ใช้ Spring Data JPA; `@Query` ใน ClientRepository เป็น JPQL ไม่ใช่ native SQL ส่วน ReportQueryRepository เป็น concrete repository ที่ใช้ JPA EntityManager ทั้ง JPQL และ native SQL สำหรับจัดกลุ่มวัน/ชั่วโมงใน Asia/Bangkok จึงไม่อ้างว่าทุก repository ใช้แต่ JPQL ส่วน migration scripts เป็น SQL สำหรับสร้าง schema ไม่ใช่ query ใน controller
 
 ## 2. GoF Patterns: กลุ่ม Behavioral
 
@@ -23,7 +23,7 @@
 |---|---|---|---|
 | Strategy | Auth/Profile เปลี่ยน password encoding โดยไม่เปลี่ยน use case | AuthServiceImpl และ UserService พึ่ง PasswordEncoder; SecurityConfig กำหนด BCryptPasswordEncoder เป็น implementation ปัจจุบัน **เป็นการใช้ strategy ของ framework ไม่ใช่ระบบ metric strategies ที่ทีมสร้าง** | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | Template Method | ใช้ filter lifecycle ที่ framework จัดไว้และกำหนดเฉพาะขั้นตรวจ JWT | JwtAuthenticationFilter สืบทอด OncePerRequestFilter และ override doFilterInternal | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
-| Chain of Responsibility | ส่ง HTTP request ผ่าน security filters ก่อน Controller | SecurityConfig สร้าง SecurityFilterChain และเพิ่ม JwtAuthenticationFilter ก่อน UsernamePasswordAuthenticationFilter; filter ส่งต่อผ่าน FilterChain หรือคืน error ตามหน้าที่ | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
+| Chain of Responsibility | ส่ง HTTP request ผ่าน security filters ก่อน Controller | SecurityConfig สร้าง SecurityFilterChain และวาง JwtAuthenticationFilter ด้วย addFilterBefore โดยอ้างตำแหน่ง UsernamePasswordAuthenticationFilter; ไม่ได้เปิด form login จึงไม่ถือว่า filter อ้างอิงนี้ต้องมี instance ใน chain; JWT filter ส่งต่อผ่าน FilterChain หรือคืน error ตามหน้าที่ | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | State | แยกกฎ transition และสิทธิ์ของ Project แต่ละสถานะ | ProjectState, PlannedState, ActiveState, OnHoldState, CompletedState, ArchivedState; ProjectStates.from เลือก state ตาม ProjectStatus ที่เก็บใน DB | [Project State](diagrams/class-diagram.md#project-state-pattern) |
 | Observer | เมื่อ timer หยุด ให้ workflow ความคืบหน้าตอบสนองโดยไม่ฝัง logic ใน TimerService | TimerServiceImpl เผยแพร่ TimerStoppedEvent; TimerStoppedProgressListener รับหลัง commit และเผยแพร่ ProjectProgressThresholdEvent; ProjectProgressThresholdListener เขียน log | [Observer sequence](diagrams/sequence-06-progress-events.md) |
 
@@ -69,6 +69,8 @@ ClientStatus ใน response คำนวณจาก isActive ไม่มี s
 ### Analytics และเวลา
 
 Client GET totalTrackedSeconds รวม Time Entry ที่ active และจบแล้วตลอดช่วงข้อมูล รวมประวัติบน Project/Task ที่ archive/soft delete เช่นเดียวกับ Time Entry summary ส่วน service method summarizeTimeByClient และ analytics queries บางชุดตัด inactive/deleted Project/Task ออก จึงต้องเลือกกติกาให้ตรง use case ไม่ถือว่าทุกยอดมีความหมายเดียวกัน
+
+กติกาแต่ละชุดเทียบไว้ใน [ตารางขอบเขตยอดเวลา](use-case-description.md#ตารางขอบเขตยอดเวลา) โดย Reports ยังรวม Project/Client ที่ archive แต่ไม่ถูก soft delete และรวมประวัติของ Task ที่ถูก soft delete ต่างจาก Dashboard; การจัดกลุ่มใช้ startedAt ไม่ได้แบ่งรายการที่ข้ามวันเป็นหลายช่วง
 
 Dashboard และ Reports ไม่สร้างตารางสรุปใหม่ กราฟใช้วินาทีจนถึงชั้นแสดงผล; React utilities อยู่ใน `lib/dashboard.ts`, `utils/duration.ts` และ `utils/csv.ts` ไม่ใช่ชื่อไฟล์เก่าที่ถูกย้ายไปแล้ว
 

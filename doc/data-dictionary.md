@@ -1,6 +1,6 @@
 # Data Dictionary - Freelance Hub MVP
 
-เอกสารฉบับส่งมอบตรวจจาก Flyway migrations V1-V20 และ JPA entities ณ commit `cb8002d` วันที่ 9 ตุลาคม 2026 ตารางด้านล่างเป็น schema หลังใช้ migrations ครบ ไม่ใช่เฉพาะ CREATE TABLE รุ่นแรก
+เอกสารฉบับส่งมอบตรวจจาก Flyway migrations V1-V20 และ JPA entities ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ตารางด้านล่างเป็น schema หลังใช้ migrations ครบ ไม่ใช่เฉพาะ CREATE TABLE รุ่นแรก
 
 - `is_active = true` หมายถึง record ยังใช้งานอยู่
 - ความหมายของ `is_active` และ `deleted_at` ต้องอ่านตาม feature ไม่ใช่ถือว่าสองฟิลด์เปลี่ยนพร้อมกันเสมอ
@@ -124,7 +124,7 @@ Indexes: unique `(project_id, sort_order)`, unique `(id, project_id)`, `(project
 | Column | Type | Null | Constraint / Default | Description |
 |---|---|---:|---|---|
 | `id` | `uuid` | No | PK, `gen_random_uuid()` | รหัส Time Entry |
-| `owner_id` | `uuid` | No | FK through composite Project FK | เจ้าของรายการ |
+| `owner_id` | `uuid` | No | FK -> users.id และส่วนหนึ่งของ composite Project FK | เจ้าของรายการ |
 | `project_id` | `uuid` | No | Composite FK -> `projects` | Project ที่ทำงาน |
 | `task_id` | `uuid` | Yes | Composite FK -> `tasks` | Task ที่เกี่ยวข้อง |
 | `description` | `text` | Yes | | รายละเอียดงาน |
@@ -154,13 +154,15 @@ Indexes: `(owner_id, started_at)`, `(project_id, started_at)`, `(task_id, starte
 | `family_id` | `uuid` | No | | กลุ่ม token จากการ login ครั้งเดียว |
 | `token_hash` | `varchar(64)` | No | Unique | SHA-256 hex ของ token สุ่ม 256 บิต; ไม่เก็บ token จริง |
 | `created_at` | `timestamptz` | No | `now()` | เวลาสร้าง token |
-| `expires_at` | `timestamptz` | No | `> created_at` | อายุสิ้นสุดคงที่ 7 วันจาก login |
+| `expires_at` | `timestamptz` | No | `> created_at` | อายุ family เริ่มจาก register/login; ค่าเริ่มต้น 7 วันตาม app.auth.refresh-expiration-ms และไม่ต่ออายุเมื่อ rotate |
 | `used_at` | `timestamptz` | Yes | | เวลาที่หมุน token; ใช้ซ้ำถือเป็น replay |
 | `revoked_at` | `timestamptz` | Yes | | เวลาที่เพิกถอน family |
 
 Indexes: `user_id`, `family_id`, `expires_at`; unique `token_hash` มี index ของตัวเอง
 
 ## Enum และ Check Values
+
+รายการนี้เป็นค่าที่ application enum รองรับ; Project/Task/Entry Type มี DB CHECK แต่ users.role ไม่มี CHECK จำกัดให้เหลือสองค่านี้ใน migration ปัจจุบัน
 
 | Field | Allowed values |
 |---|---|
@@ -192,4 +194,5 @@ Dashboard และ Productivity Insights เป็น query/projection จา�
 - `flyway_schema_history` เป็น metadata ของ migrations; `local_seed_records` เป็น mapping สำหรับ local seed เมื่อเปิดใช้ ไม่ใช่ business tables ใน ER ของ MVP
 - Unique running-timer index ใช้เงื่อนไข `entry_type='TIMER' AND ended_at IS NULL` ไม่ใช่ index ที่กรอง `is_active`; cancel timer ลบ running row จริง ส่วน completed entry ใช้ soft delete
 - Schema constraints กับ API authorization เป็นคนละชั้น: composite FKs รักษาความสัมพันธ์ owner/project/task แต่ Service ยังต้องตรวจ current-user ownership ก่อนทุก use case
+- Project.status กับ is_active ไม่มี DB CHECK บังคับให้สอดคล้องกัน; V14 กำหนด is_active=true ให้ Project ที่มีอยู่ทั้งหมด แม้เคยมี status=ARCHIVED จึงไม่ควรอ้างว่าค่าสอดคล้องเสมอจาก migrations เพียงอย่างเดียว กฎการเปลี่ยนสถานะใน Entity ใช้กับคำสั่งที่ application เรียกภายหลัง
 - ยังไม่ได้รัน migrations/ตรวจฐานข้อมูล live ใหม่ในงานรวมเอกสารรอบนี้; test report และผล Flyway CI ต้องตรวจแยกก่อนส่ง

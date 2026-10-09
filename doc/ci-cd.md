@@ -1,6 +1,6 @@
 # CI/CD - Freelance Hub
 
-ฉบับรวมจาก [Petpinyo CI/CD](V1/CICD/petpinyo-cicd.md) ตรวจ workflow ณ commit `cb8002d` วันที่ 9 ตุลาคม 2026 ไม่แก้ workflow หรือ deploy ระบบในรอบรวมเอกสาร
+ฉบับรวมจาก [Petpinyo CI/CD](V1/CICD/petpinyo-cicd.md) ตรวจ workflow ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ไม่แก้ workflow หรือ deploy ระบบในรอบรวมเอกสาร
 
 **ผู้รับผิดชอบ:** เพชรภิญโญ ธนศิรินรากร (`petpinyo_673380073-7_02`)  
 **ขอบเขต:** GitHub Actions ของ Backend/Frontend, Docker verification, Flyway validation, Auth smoke test และ Render deployment
@@ -44,14 +44,19 @@ Frontend ใช้ pipeline แยกเพื่อลดเวลารัน�
 ```mermaid
 flowchart LR
     A[PR หรือ Push] --> B[Detect frontend changes]
-    B --> C[npm ci]
+    B -->|มีการเปลี่ยน Frontend| C[npm ci]
+    B -->|ไม่มีการเปลี่ยน Frontend ใน PR| H[Frontend gate]
     C --> D[ESLint]
     D --> E[TypeScript typecheck]
     E --> F[Unit tests]
     F --> G[Vite build]
-    G --> H[Frontend gate]
-    H --> I[Vercel Git integration]
+    G --> H
+    A --> I[Vercel Git integration แยกจาก Actions]
 ```
+
+Frontend workflow ไม่มี job deploy หรือเรียก Vercel API; Vercel Git integration ทำงานแยกและอาจสร้าง preview ของ PR ได้ จึงไม่อ้างว่า Frontend gate เป็น dependency ที่บังคับก่อน Vercel deploy เว้นแต่ทีมตั้งนโยบายใน Vercel เพิ่มเอง
+
+การตรวจ changed paths ใช้เฉพาะ PR: ถ้าไม่มี Backend/Frontend changes งานตรวจของส่วนนั้นจะ skipped และ gate คืน success แบบไม่ต้องตรวจ แต่ push เข้า dev/main จะตั้ง changed=true แล้วตรวจทุกครั้ง Gate สีเขียวใน PR ที่แก้เฉพาะเอกสารจึงไม่ใช่หลักฐานว่ารัน tests ใหม่แล้ว
 
 ## Environment และความปลอดภัย
 
@@ -59,7 +64,7 @@ flowchart LR
 - `concurrency.cancel-in-progress` ยกเลิก run เก่าของ ref เดียวกัน ลดการ deploy code เก่า
 - CI ใช้ credential PostgreSQL เฉพาะ runner และ JWT secret สำหรับ smoke test ไม่ใช่ production secret
 - Render deploy hooks เก็บใน `staging` และ `production` GitHub Environments
-- Pull request ทำเฉพาะ checks; deploy เกิดจาก push เข้า branch ที่กำหนดและ gate ต้องสำเร็จ
+- Backend pull request ทำเฉพาะ checks; Render deploy-hook jobs เกิดจาก push เข้า branch ที่กำหนดและ Backend gate ต้องสำเร็จ เงื่อนไขนี้ไม่ครอบคลุม Vercel Git integration หรือ auto-deploy ที่ cloud ตั้งไว้นอก workflow
 
 ## สิ่งที่ต้องตั้งค่าบน GitHub/Cloud
 

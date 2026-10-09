@@ -1,6 +1,6 @@
 # Use Case Description - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `cb8002d` วันที่ 9 ตุลาคม 2026
+ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026
 
 ## 1. ขอบเขตระบบและ Actor
 
@@ -21,7 +21,7 @@ Spring Security/JWT, repositories และ event listeners เป็นส่�
 - API หลักที่มี body ใช้ ApiResult: `success`, `message`, `data`, `meta`, `error`
 - Success มี `error=null`; errors ใช้ ApiErrorFactory โดยมี `code`, `status`, UTC `timestamp`, `traceId` และ optional `details`/`fieldErrors`
 - RequestTraceFilter สร้าง trace ID ฝั่ง server และ header `X-Request-ID`; validation field errors อยู่ใน `error.fieldErrors` ไม่ใช่ `error.details`
-- Pagination ของ Client/Project/Time Entry/Reports เริ่ม page ที่ 1; meta มี page, limit, total และ totalPages
+- Pagination ของ Client/Project/Task/Time Entry/Reports เริ่ม page ที่ 1; meta มี page, limit, total และ totalPages
 - Client DELETE และ Logout สำเร็จเป็น 204 ไม่มี body; Time Entry/Project/Task DELETE หลักคืน 200 ตาม contract ของ feature
 - Task nested legacy routes บางเส้นยังคืน raw TaskResponse หรือ 204 ไม่ได้ใช้ envelope เหมือนเส้นหลัก จึงไม่อ้างว่า API ทุกเส้นเป็นรูปแบบเดียวกันแล้ว
 
@@ -70,20 +70,22 @@ response ห้ามเผย `passwordHash`, profile ต้องเชื่�
 **Precondition:** มี account และ request ผ่าน validation
 
 **Main flow:** Controller เรียก `AuthService.login`; `AuthenticationManager` ตรวจ
-credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง access JWT อายุ 15 นาที
-และ refresh token สุ่มอายุสูงสุด 7 วัน ส่ง refresh token ใน HttpOnly cookie;
+credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง access JWT อายุเริ่มต้น 15 นาที
+และ refresh token สุ่มอายุเริ่มต้น 7 วัน ส่ง refresh token ใน HttpOnly cookie;
 คืน `200 AuthResponse` โดยไม่ส่ง refresh token ใน JSON
 
 **Alternative flow:** validation ไม่ผ่าน = `400`; email/password ไม่ถูกต้อง = `401`;
-login ผิดครบ 10 ครั้งต่อ email ใน 15 นาที หรือครบ 300 ครั้งต่อนาทีต่อ IP = `429`
-พร้อม `Retry-After` และ `LOGIN_RATE_LIMITED`
+เมื่อสะสม login ผิดครบ 10 ครั้งต่อ email ใน 15 นาที หรือครบ 300 ครั้งต่อนาทีต่อ IP คำขอถัดไป = `429`
+พร้อม `Retry-After` และ `LOGIN_RATE_LIMITED`; นับเฉพาะ BadCredentialsException ไม่ใช่จำกัดทุก request ต่อ IP และ login สำเร็จล้างเฉพาะตัวนับ email
+
+อายุ token ปรับได้ด้วย `jwt.expiration` และ `app.auth.refresh-expiration-ms` จึงไม่ใช่ค่าตายตัวทุก deployment; limiter เก็บใน memory ของแต่ละ instance ไม่ใช่ shared counter ข้าม server
 
 ### UC-AUTH-03 Logout
 
 **Precondition:** มี refresh cookie หรือเคย login มาก่อน
 
 **Main flow:** Service เพิกถอน refresh-token family จาก cookie, ล้าง cookie และ
-คืน `204 No Content`; access JWT ที่มีอยู่ยังใช้ได้จนหมดอายุ (สูงสุด 15 นาที)
+คืน `204 No Content`; logout ไม่เพิกถอน access JWT จึงยังใช้ได้จนหมดอายุ (ค่าเริ่มต้น 15 นาที)
 
 **Alternative flow:** ไม่มี cookie หรือ logout ซ้ำยังคืน `204` แบบ idempotent;
 `Origin`/`Referer` ไม่อยู่ใน allowlist หรือไม่มีทั้งคู่ = `403`
@@ -189,6 +191,8 @@ Error contract หลัง PR #107:
 3. Repository คืน `Page<Client>`; mapper แปลงรายการเป็น `ClientResponse` และ service รวมเวลาของ IDs ในหน้าปัจจุบันด้วย aggregate query เดียวเพื่อเติม `totalTrackedSeconds` ให้แต่ละลูกค้า (ไม่มีเวลา = `0`; หน้าว่างไม่เรียก aggregate query)
 4. Controller คืน `200 ApiResult` พร้อม `PaginationMeta`; ทั้ง query `page` และ `meta.page` เริ่มที่ 1 โดย service แปลงเป็น index เริ่มที่ 0 สำหรับ Spring Data ภายใน และยอดรวมเวลาไม่เปลี่ยนจำนวนลูกค้าหรือการแบ่งหน้า
 
+ค่าเริ่มต้น: `page=1`, `size=20`, `sortBy=name`, `direction=ASC`; `limit`/`size` ต้องอยู่ใน 1–100, `sortBy` รับ `name`, `companyName`, `email`, `createdAt`, `updatedAt` การค้นหา trim หัวท้ายและ escape `%`/`_` แต่ใช้ LIKE แบบ case-sensitive บน PostgreSQL ไม่ใช่ ILIKE
+
 **Alternative flow:** ไม่ระบุ status = รวมทั้ง `isActive=true/false` ที่ยังไม่ถูก soft delete; ไม่มีผลลัพธ์ = `data` เป็นรายการว่าง; filter/page/size/limit/sort ไม่ถูกต้อง = `400`; ไม่มี JWT = `401`
 **Postcondition:** ไม่มีการเปลี่ยนข้อมูล และไม่แสดง Client ของผู้ใช้อื่น
 
@@ -202,6 +206,11 @@ Error contract หลัง PR #107:
 **Postcondition:** ไม่มีการเปลี่ยนข้อมูล
 
 `include` ใช้รูปแบบ path คล้าย JSON:API แต่ response ยังคงเป็น `ApiResult` ของทีม ไม่ใช่เอกสาร JSON:API เต็มรูปแบบ และยังไม่แนบเวลาที่ใช้ในแต่ละ Project
+
+- `include=projects` คืน `projects[]` ที่มี `id`, `name`, `color`, `status`, `targetMinutes`; ไม่แนบ `tasks`
+- `include=projects.tasks` คืน Project fields เดียวกันพร้อม `tasks[]` (`id`, `name`, `status`); Task ต้องผ่าน Project ของ Client นั้นและไม่มี pagination แยก
+- Project และ Task ใน include ตัดด้วย `deletedAt IS NULL` ไม่กรองสถานะ: Project ที่ ARCHIVED หรือ Task ที่ COMPLETED แต่ไม่ถูก soft delete ยังแนบมาได้; Project เรียง name/id และ Task เรียง sortOrder/id ภายใน Project
+- `include` นี้มีเฉพาะ Client detail ไม่ใช่พารามิเตอร์ของ Client list; ไม่พบ Project/Task ให้คืน array ว่างในส่วนที่ขอ
 
 ### ยอดเวลารวมใน Client GET responses
 
@@ -276,6 +285,8 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 ### หลักฐานข้าม feature: BR-06
 
 การเริ่ม timer ใหม่เมื่อ Client ถูก archive ถูกป้องกันใน `TimeEntry.startTimer()` ผ่าน `requireTrackableProject()` ที่ตรวจ Client isActive; มี test `rejectsTimerForArchivedClient` ใน `domain/entity/TimeEntryTest.java` และ `service/TimerServiceImplTest.java` แล้ว เป็นหลักฐานจาก Time Tracking ไม่ใช่การอ้างว่า Client endpoint ตรวจการเริ่ม timer เอง
+
+ขอบเขตสำคัญ: guard นี้ไม่ตรวจ Client.deletedAt โดยตรง และ Client soft delete คง isActive เดิม/ไม่ archive Project จึงยังไม่อ้างว่าห้ามเริ่ม timer บน Project ของ Client ที่ soft delete ได้ครบ การ archive Client ก็ไม่หยุด running timer ที่มีอยู่โดยอัตโนมัติ
 
 ### ขอบเขตที่ยังไม่เสร็จ
 
@@ -425,6 +436,7 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 - `FR-PRJ-07` มีการตรวจเกณฑ์และเผยแพร่ event แล้ว แต่การแจ้งเตือนถึงผู้ใช้จริงยังไม่ปรากฏในส่วนนี้
 - การล็อกรายการเวลาเกิดเมื่อเปลี่ยนเข้าสู่ `COMPLETED` ครั้งใหม่; Project ที่เป็น `COMPLETED` อยู่ก่อนเพิ่ม flow นี้ไม่ได้ถูกล็อกย้อนหลังโดยอัตโนมัติ
 - เมื่อ Client ถูกตั้ง inactive, `ClientServiceImpl.changeStatus()` เปลี่ยน Project ที่ยังไม่ถูก soft delete ของ Client เป็น `ARCHIVED` โดยตรง ไม่ผ่านการตรวจ running timer ของ `ProjectServiceImpl`; การ soft delete Client ไม่เปลี่ยนสถานะ Project อัตโนมัติ จึงเป็นคนละ flow กับ UC-PRJ-05/06
+- Project list เรียก `timeTracking()` ซึ่งเรียก `TimeEntryService.summarize()` แยกแต่ละ Project และ summary โหลด Time Entry มารวมใน Java ปัจจุบัน จึงยังไม่ใช่ aggregate query เดียวต่อหน้า และเป็นจุดที่ควรปรับหากข้อมูลเพิ่มขึ้น
 
 ## 6. Time Tracking
 
@@ -455,6 +467,8 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 ทุก endpoint ใน UC-TIME-01 ถึง UC-TIME-10 คืน `ApiResult` รูปแบบ `{success, message, data, meta, error}` โดย `message` ของ Time Tracking เป็นภาษาไทย; `meta` มีข้อมูล pagination เฉพาะ list ส่วน error ที่ controller จัดการคืน `success: false` และรหัสใน `error.code` ยกเว้น `401` ซึ่งจัดการโดยระบบ authentication ส่วนกลาง; UC-TIME-11 เป็นคำสั่งภายใน Backend จึงไม่มี HTTP response ของตัวเอง
 
 Response ที่มี `project` หรือ `task` ส่งสถานะปัจจุบันใน `project.status` และ `task.status` ด้วย; หากไม่ได้ระบุ Task จะคืน `task: null` ส่วน `StoppedTimerResponse` ไม่มี object ทั้งสอง
+
+ชื่อ Task ใน nested DTO ของ Timer/Time Entry ใช้ `task.title` ไม่ใช่ `task.name` (ต่างจาก TaskResponse และ Client include); list DTO ไม่ส่ง entryType/lockedAt แม้ service response ภายในมีข้อมูลเหล่านี้
 
 ### UC-TIME-01 Start Timer
 
@@ -522,6 +536,8 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 4. Repository คืน `Page<TimeEntry>` และ mapper แปลงเป็น `Page<TimeEntryResponse>`
 5. Controller คืน `200 OK` พร้อม `TimeEntryListItemResponse` ใน `data` ซึ่งมี `description` ของแต่ละรายการ รวมถึง timer ที่หยุดแล้ว และ `{page, limit, total, totalPages}` ใน `meta` โดย `page` เริ่มที่ 1
 
+List ยังรวม running timer ที่เข้า filter ด้วย (`endedAt`/`durationSeconds` เป็น null); การตัด running timer ออกใช้เฉพาะ summary ไม่ใช่ list
+
 **Alternative flow:** ไม่มีผลลัพธ์ = `data` เป็นรายการว่าง; `from` ไม่น้อยกว่า `to`, page/limit, sort field หรือ direction ไม่ถูกต้อง = `400`; ไม่มี JWT = `401`
 **Postcondition:** ไม่มีการเปลี่ยนข้อมูลและไม่แสดง Time Entry ของผู้ใช้อื่น
 
@@ -588,7 +604,7 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 ### ขอบเขตที่ยังไม่เสร็จ
 
 - `FR-TIME-09` การคัดลอกรายการเดิมเพื่อบันทึกซ้ำยังไม่มี endpoint หรือ service operation
-- `GET /api/time-entries/summary` มีอยู่ใน implementation แต่ไม่อยู่ใน API contract ที่ได้รับมา; ยังต้องยืนยันกับทีมว่าจะเก็บ endpoint นี้ไว้หรือไม่
+- ตาราง API ใน REQUIREMENTS ยังระบุ PATCH สำหรับแก้ Time Entry และไม่ได้ลงเส้น `/summary` แต่ implementation ปัจจุบันใช้ PUT และมี `/summary` ซึ่ง Client/Project ใช้เทียบยอดด้วย; ทีมต้องปรับ requirement contract ให้ตรง ไม่ใช่อ้างว่าเอกสารนี้เพิ่ม/ลบ endpoint ให้แล้ว
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
 - มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันแล้ว แต่ยังต้องจัดการ concurrent creation/reassignment
@@ -629,9 +645,13 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 
 1. ผู้ใช้เปิด `/dashboard`; `DashboardProvider` โหลด `/api/dashboard` และ `TimerProvider` มี current timer ส่วนกลาง
 2. หน้าแสดง KPI 4 ใบ: เวลาที่บันทึกสัปดาห์นี้และเทียบสัปดาห์ก่อน, การใช้ชั่วโมงเป้าหมาย, จำนวนโปรเจกต์ active, งานที่เสร็จแล้วต่อทั้งหมด
-3. กราฟเริ่มต้นเป็น `WEEK` โดยอ่าน `dailyWork` ย้อนหลัง 7 วันจาก dashboard response และแสดงเวลาเป็นวินาที/นาที/ชั่วโมงตามขนาดค่า; KPI สัปดาห์นี้ใช้ช่วงตั้งแต่วันจันทร์ถึงปัจจุบัน
+3. กราฟเริ่มต้นเป็น `WEEK` โดยอ่าน `dailyWork` ย้อนหลัง 7 วันจาก dashboard response และแสดงเวลาเป็นวินาที/นาที/ชั่วโมงตามขนาดค่า; KPI สัปดาห์นี้ใช้ช่วงตั้งแต่วันจันทร์ถึงสิ้นวันนี้ตาม Asia/Bangkok
 4. ตารางโปรเจกต์แสดงชื่อ ลูกค้า ความคืบหน้า จำนวนงานที่เสร็จ และสถานะ; ตารางงานแสดงงานที่ยังเปิดพร้อมลิงก์ไปหน้าโปรเจกต์
 5. Card ตัวจับเวลาแสดง timer ที่กำลังวิ่งอยู่ หากไม่มีจะแสดงเวลาล่าสุด; ใต้ card แสดง `recentTimeEntries` จาก dashboard response
+
+ขอบเขต Backend ปัจจุบัน: `activeProjects` ไม่เกิน 5 รายการเรียง taskProgressPercent มากไปน้อยแล้ว name; `openTasks` ไม่เกิน 5 รายการที่ไม่เป็น COMPLETED เรียง updatedAt ใหม่ก่อน; `recentTimeEntries` **ไม่เกิน 2 รายการ** ที่จบแล้ว เรียง startedAt ใหม่ก่อน (ไม่ใช่ endedAt และไม่ใช่ 5 รายการ)
+
+KPI งานที่เสร็จนับ Task ที่ยังใช้งานของ Project ทุกสถานะที่ยังไม่ถูก soft delete ไม่ได้จำกัดเฉพาะ 5 Project ในตารางหรือเฉพาะ ACTIVE; KPI เป้าหมายรวมเวลาและ target เฉพาะ ACTIVE Project ที่ตั้ง targetMinutes ใช้เวลาตลอดประวัติ ไม่ใช่เฉพาะสัปดาห์นี้
 
 **Alternative flow:** API หลักผิดพลาด แสดง `ErrorState` พร้อมปุ่มลองใหม่; ยังไม่มีรายการ แสดงข้อความว่าง; task ของ timer หรือรายการล่าสุดเป็น `null` แสดงได้โดยไม่ล้ม
 
@@ -643,6 +663,8 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 2. `WEEK` ใช้ `dailyWork` ที่โหลดไว้ ไม่เรียก activity endpoint เพิ่ม
 3. `MONTH` หรือ `YEAR` เรียก `/api/dashboard/activity?period=...`
 4. `lib/dashboard.ts` แปลงจุดกราฟและ label ก่อน `ProductivityChart` แสดงผล โดยคงหน่วยวินาทีไว้จนถึงขั้นจัดรูปแบบ
+
+Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเริ่มต้น WEEK), ไม่มี `/api/dashboard/chart?startDate=...&endDate=...` ตามข้อเสนอเก่า WEEK เป็น 7 วันล่าสุดรวมวันนี้; MONTH ส่งทุกวันในเดือนปัจจุบัน และ YEAR ส่ง 12 จุดรายเดือนของปีปัจจุบัน รวมช่วงที่ยังไม่มีข้อมูลด้วยค่า 0 ไม่ใช่กรองถึงเวลาปัจจุบันเสมอ
 
 **Alternative flow:** โหลดกราฟไม่สำเร็จ แสดง error เฉพาะกราฟและปุ่มลองใหม่; ระหว่างรอแสดง loading; ค่า 0 แสดงเป็น 0 ได้
 
@@ -708,6 +730,24 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 - `GET /api/reports/work-pattern` รับ filter แบบเดียวกับ Reports และคืนชั่วโมงตามวันในสัปดาห์/ชั่วโมงในวัน พร้อมวันที่และช่วงเวลาที่มากที่สุด; เมื่อดูทุกช่วงเวลา `trackedTimeTrendPercent` เป็น `null`
 - ทั้งสอง endpoint จำกัดข้อมูลด้วย owner ปัจจุบัน แต่ `ReportsPage` ยังไม่เรียก จึงไม่อ้างว่าเป็น UI ที่เสร็จแล้ว
 
+### ตารางขอบเขตยอดเวลา
+
+ทุกชุดด้านล่างจำกัด owner และนับเฉพาะ entry ที่จบแล้วและมี durationSeconds แต่เงื่อนไขความสัมพันธ์ไม่เหมือนกัน:
+
+| ชุดข้อมูล | เงื่อนไขที่ query ตรวจจริง | ผลเมื่อ archive/soft delete ความสัมพันธ์ |
+|---|---|---|
+| Client GET totalTrackedSeconds / Time Entry summary / Project timeTracking | Time Entry.isActive=true; ไม่กรอง deletedAt ของ Client/Project/Task | ยังรวมประวัติบน Client/Project/Task ที่ archive หรือ soft delete; entry ที่ soft delete ปกติมี isActive=false จึงไม่รวม |
+| ClientService.summarizeTimeByClient | Time Entry/Project ต้อง active และ deletedAt=null; Task ไม่มีหรือ active และ deletedAt=null; ไม่กรอง Client activation/deletion | ไม่รวมเวลา Project ที่ archive หรือ Task ที่ soft delete แต่ยังอาจคืนกลุ่ม Client ที่ soft delete |
+| Dashboard KPI เวลาและ daily/activity | Time Entry active; Project active; Task ไม่มีหรือ active; projection ไม่อ่าน deletedAt/Client | ไม่รวมเวลา Project ที่ archive/Task ที่ soft delete ตาม flow ปกติ แต่ไม่ใช่ query ตรวจ deletedAt ทุกความสัมพันธ์โดยตรง |
+| Dashboard ยอดเวลาเทียบเป้าหมายและ recent entries | Time Entry active; Project active และ deletedAt=null; Task ไม่มีหรือ active; ไม่กรอง Client.deletedAt | ไม่รวมเวลา Project ที่ archive; ประวัติ Task ที่ soft delete ปกติไม่รวม; recent คืนไม่เกิน 2 รายการ |
+| Reports summary/distribution/projects/work-trend/work-pattern | Time Entry active และ deletedAt=null; Project/Client deletedAt=null; ไม่กรอง Project/Client.isActive หรือ Task | รวม Client/Project ที่ archive และประวัติ Task ที่ soft delete แต่ไม่รวม Project/Client ที่ soft delete |
+
+หลักฐาน: `repository/ClientRepository.java`, `repository/TimeEntryRepository.java`, `repository/ReportQueryRepository.java`, `service/impl/TimeEntryServiceImpl.java` และ `service/impl/DashboardServiceImpl.java` หากเทียบตัวเลขข้ามหน้าต้องใช้ชุดเงื่อนไขเดียวกันก่อน ไม่ถือว่ายอดต่างกันเป็นความผิดของ Frontend เสมอ
+
+**ช่วงเวลาและการจัดกลุ่ม:** Time Entry API/Client internal summary ใช้ Instant แบบ `[from,to)` ส่วน Dashboard/Reports แปลงวันด้วย Asia/Bangkok แล้วกรอง startedAt แบบขอบบนไม่รวม เวลาทั้งรายการถูกลงในวัน/ชั่วโมงที่เริ่ม ไม่ได้แบ่ง duration ข้ามเที่ยงคืนหรือหลายชั่วโมง และไม่ตัด duration ให้เหลือเฉพาะส่วนที่ทับซ้อนช่วงที่เลือก
+
+**การเทียบช่วงก่อน:** Dashboard weekTrackedSeconds ใช้วันจันทร์ถึงสิ้นวันนี้ (toExclusive=พรุ่งนี้) เทียบกับสัปดาห์ก่อนครบจันทร์–อาทิตย์ ไม่ใช่เทียบจำนวนวันที่ผ่านไปเท่ากัน; Reports เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่าช่วงวันที่เลือก สูตร `(current-previous)/previous*100` และคืน null หาก previous=0; เมื่อไม่ส่งวันที่ Reports trend เป็น null
+
 ### Sequence: โหลด Reports และเปลี่ยน filter
 
 ดู [Sequence 05: Reports และตัวกรอง](diagrams/sequence-05-reports.md)
@@ -718,6 +758,7 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 - `GET /api/reports/work-trend` และ `/work-pattern` มีใน Backend และ service ฝั่ง Frontend แต่หน้า Reports ปัจจุบันยังไม่แสดงกราฟแนวโน้ม ค่าเฉลี่ยรายวัน วัน/ช่วงเวลาที่ทำงานมากที่สุด หรือ productivity trend ทุกมิติตาม `FR-ANA-05`/`FR-ANA-07`
 - CSV ปัจจุบันส่งออกตารางโปรเจกต์เฉพาะหน้าที่เห็น ไม่ใช่รายงาน Time Entry ทุกแถวตาม `FR-ANA-08`
 - งานที่ต้องทำใน Dashboard ยังไม่แสดง due date; ข้อมูล `OpenTaskResponse` ปัจจุบันไม่มีฟิลด์นี้
+- Dashboard summary ยังไม่มี completedProjectCount หรือรายการใกล้เกินเป้าหมายตาม FR-ANA-04 โดยตรง; method countActiveAndCompleted/getProgress มีใน Project service แต่ไม่ใช่หลักฐานว่า Dashboard response/UI ส่งข้อมูลนี้แล้ว
 
 **หลักฐานการทดสอบ:** `code/Frontend/src/lib/dashboard.test.ts`, `dashboard.test.tsx`, `code/Frontend/src/services/report.test.ts`, `code/Backend/src/test/java/th/ac/kku/freelance_hub/integration/DashboardIntegrationTest.java` และ `ReportIntegrationTest.java`
 

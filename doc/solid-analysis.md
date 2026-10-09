@@ -1,6 +1,6 @@
 # SOLID Analysis - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 จากงาน Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports ของสมาชิกทั้ง 5 คน ตรวจอ้างอิง source ณ commit `cb8002d` วันที่ 9 ตุลาคม 2026
+ฉบับรวมสำหรับส่งรายวิชา CP353002 จากงาน Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports ของสมาชิกทั้ง 5 คน ตรวจอ้างอิง source ณ commit `131305f` วันที่ 9 ตุลาคม 2026
 
 เอกสารนี้อธิบายหลักฐานที่มีจริง ไม่ถือว่าการมี interface เพียงอย่างเดียวพิสูจน์ SOLID ได้ครบ และไม่อ้างว่าข้อเสนอปรับปรุงถูกนำไป implement แล้ว
 
@@ -20,8 +20,8 @@
 |---|---|---:|---|
 | Authentication/Profile | `controller/AuthController.java`; `mapper/UserMapper.java`; `service/RefreshTokenService.java` | 32; 14; 24 | Controller จัด HTTP/cookie, mapper แปลง DTO, token service ดูแล issue/rotate/revoke; ไม่เก็บ password หรือ token hash ใน response |
 | Client | `controller/ClientController.java`; `mapper/ClientMapper.java`; `common/response/ApiErrorFactory.java` | 43; 14; 28 | แยก HTTP, PUT/PATCH mapping และการสร้าง error metadata; aggregate เวลาอยู่ใน service/repository ไม่อยู่ใน mapper |
-| Project/Task | `mapper/ProjectMapper.java`; `mapper/TaskMapper.java`; `domain/state/ProjectState.java`; `domain/progress/ProjectProgressThresholds.java` | 14; 10; 5; 5 | แยก mapping, กฎสถานะ และการคำนวณเกณฑ์ออกจาก service ที่ประสาน use case |
-| Time Tracking | `controller/TimerController.java`; `mapper/TimeEntryMapper.java`; `service/impl/TimeEntryServiceImpl.java` | 35; 16; 46 | Controller จัด request/response, mapper อ่านข้อมูลที่ต้องส่ง, service ประสานการบันทึก/ล็อก/อ่านเวลา |
+| Project/Task | `mapper/ProjectMapper.java`; `mapper/TaskMapper.java`; `domain/state/ProjectState.java`; `domain/progress/ProjectProgressThresholds.java` | 12; 8; 5; 5 | แยก mapping, กฎสถานะ และการคำนวณเกณฑ์ออกจาก service ที่ประสาน use case |
+| Time Tracking | `controller/TimerController.java`; `controller/TimeEntryController.java`; `mapper/TimeEntryMapper.java`; `exception/TimeTrackingExceptionHandler.java` | 35; 47; 14; 25 | แยก HTTP contract, DTO mapping และการแปลง exception; ไม่ใช้ TimeEntryServiceImpl ที่รวม CRUD/query/analytics/locking เป็นตัวอย่างว่ามีหน้าที่เดียว |
 | Dashboard/Reports | `controller/DashboardController.java`; `service/impl/DashboardServiceImpl.java`; `service/impl/ReportServiceImpl.java` | 24; 43; 44 | แยก HTTP ออกจากการกำหนดช่วงเวลา สูตร KPI และการประกอบ read models |
 | Analytics Frontend | `Analytics/DashboardContext.tsx`; `services/report.ts`; `utils/csv.ts`; `lib/dashboard.ts` | 26; 28; 3; 15 | แยกการโหลดข้อมูล, API contract, CSV serialization และการแปลงจุดกราฟออกจาก component |
 
@@ -48,9 +48,9 @@ implementation ต้องรักษา preconditions, ผลลัพธ์�
 | Authentication | `service/AuthService.java`; `service/impl/AuthServiceImpl.java` | 7; 44 | Email normalization, password verification/hash และ session/refresh semantics |
 | Current user | `service/CurrentUserProvider.java`; `service/UserService.java` | 6; 83 | คืน UUID ของ authenticated user ไม่รับ owner ID ที่ผู้เรียกระบุเอง |
 | Client | `service/ClientService.java`; `service/impl/ClientServiceImpl.java` | 14; 169, 177 | Owner isolation, not-found สำหรับข้อมูลของผู้อื่น/ที่ลบ, PUT ล้าง optional fields แต่ PATCH คงค่าที่ไม่ส่ง |
-| Project/Task | `service/ProjectService.java`; `service/TaskService.java`; implementations | 16; 13; 356; 179 | ตรวจ owner, transition, running timer, Task completion และการล็อกเวลาเมื่อปิด Project |
-| Time Tracking | `service/TimerService.java`; `service/TimeEntryService.java`; implementations | 8; 21; 68; 193 | หนึ่ง running timer ต่อ owner, ระยะเวลาเป็นวินาที, lock/delete/update rules และ transaction ของ lockByProject |
-| Dashboard/Reports | `service/DashboardService.java`; `service/ReportService.java`; implementations | 7; 17; 68; 57 | อ่านเฉพาะ owner, ไม่นับ timer ที่ยังไม่จบ และคืน empty/zero/null ตามความหมายของ metric |
+| Project/Task | `service/ProjectService.java`; `service/TaskService.java`; `service/impl/ProjectServiceImpl.java`; `service/impl/TaskServiceImpl.java` | 16; 13; 356; 179 | ตรวจ owner, transition, running timer, Task completion และการล็อกเวลาเมื่อปิด Project |
+| Time Tracking | `service/TimerService.java`; `service/TimeEntryService.java`; `service/impl/TimerServiceImpl.java`; `service/impl/TimeEntryServiceImpl.java` | 8; 21; 68; 193 | หนึ่ง running timer ต่อ owner, ระยะเวลาเป็นวินาที, lock/delete/update rules และ transaction ของ lockByProject |
+| Dashboard/Reports | `service/DashboardService.java`; `service/ReportService.java`; `service/impl/DashboardServiceImpl.java`; `service/impl/ReportServiceImpl.java` | 7; 17; 68; 57 | อ่านเฉพาะ owner, ไม่นับ timer ที่ยังไม่จบ และคืน empty/zero/null ตามความหมายของ metric |
 
 แต่ละ service มี production implementation หลักเพียงตัวเดียว หลักฐานจึงเป็น contract และ test ของ implementation ปัจจุบัน ไม่ใช่ข้อพิสูจน์ว่า implementation ในอนาคตทดแทนได้เสมอ โดยเฉพาะ Project State แต่ละตัวตั้งใจมีสิทธิ์ต่างกันตามสถานะ ไม่ควรอ้างว่าทุก State มีผลลัพธ์เหมือนกัน
 
@@ -72,7 +72,7 @@ implementation ต้องรักษา preconditions, ผลลัพธ์�
 | Client | `controller/ClientController.java`; `service/impl/ClientServiceImpl.java` | 45; 47 | Controller รับ ClientService/CurrentUserProvider; service รับ repository interfaces ผ่าน constructor |
 | Project/Task | `controller/ProjectController.java`; `controller/TaskDetailController.java`; `service/impl/ProjectServiceImpl.java` | 43; 36; 70 | Controller พึ่ง service/current-user interfaces; service รับ repository, TimeEntryService, TimerService และ ApplicationEventPublisher |
 | Time Tracking | `service/impl/TimerServiceImpl.java`; `service/impl/TimeEntryServiceImpl.java` | 48; 65 | Inject repositories, mapper และ Clock; test เปลี่ยนเป็น Clock.fixed ได้โดยไม่แก้ business logic |
-| Dashboard/Reports | `controller/DashboardController.java`; `controller/ReportController.java`; service implementations | 26; 38; 53; 50 | Controller พึ่ง interface; service รับ query repositories, TimeEntryService และ Clock |
+| Dashboard/Reports | `controller/DashboardController.java`; `controller/ReportController.java`; `service/impl/DashboardServiceImpl.java`; `service/impl/ReportServiceImpl.java` | 26; 38; 53; 50 | Controller พึ่ง interface; Dashboard รับ repository interfaces/TimeEntryService/Clock แต่ Report รับ ReportQueryRepository ซึ่งเป็น concrete class และ Clock จึงเป็น DIP บางส่วน |
 
 ข้อจำกัด: UserService, mapper, ApiErrorFactory, RefreshTokenService และ JPA EntityManager บางจุดยังเป็น concrete dependencies; Frontend services เป็น concrete functions การแยกไฟล์หรือใช้ hook ไม่ใช่หลักฐาน DIP ของทั้งระบบโดยอัตโนมัติ
 
@@ -99,5 +99,5 @@ Test source อยู่ใน `code/Backend/src/test/java/th/ac/kku/freelance_h
 - [Kompat - Time Tracking](V1/SOLID/kompat-solid.md)
 - [Nattadol - Dashboard/Reports](V1/SOLID/nattadol-solid.md)
 
-ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้ายหลังเอกสารต้นฉบับ โดยคงต้นฉบับของสมาชิกไว้สำหรับตรวจที่มา
+ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้ายหลังเอกสารต้นฉบับ และนำข้อจำกัด SRP/LSP/ISP ของ Kompat ใน PR #125 มารวมแล้ว โดยคงต้นฉบับของสมาชิกไว้สำหรับตรวจที่มา
 

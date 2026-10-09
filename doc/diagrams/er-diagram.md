@@ -1,6 +1,6 @@
 # Freelance Hub MVP - ER Diagram
 
-ER Diagram นี้ตรวจจาก Flyway migrations V1-V20 และ JPA entities ณ `cb8002d` โดยใช้ embedded address fields และแยก archive ออกจาก soft delete
+ER Diagram นี้ตรวจจาก Flyway migrations V1-V20 และ JPA entities ณ `131305f` โดยใช้ embedded address fields และแยก archive ออกจาก soft delete
 Dashboard และ Productivity Insights คำนวณจาก `time_entries`, `projects` และ `tasks` โดยไม่สร้างตารางสรุปแยก
 ชื่อคอลัมน์ใน diagram ใช้ `deleted_at` ซึ่งเป็นชื่อมาตรฐานแทน typo `deleate_at` จาก DBML ต้นทาง
 
@@ -133,7 +133,7 @@ erDiagram
 - `clients` 1 - N `projects`; the actual FK is composite `(projects.client_id, projects.owner_id)` -> `(clients.id, clients.owner_id)`.
 - `projects` 1 - N `tasks` and `time_entries`; the TimeEntry relationship uses `(project_id, owner_id)` to prevent cross-user references.
 - `tasks` 0..1 - N `time_entries`; when selected, `(task_id, project_id)` must match the same Project.
-- `time_entries` allows at most one active running timer per owner through a partial unique index.
+- Partial unique index จำกัด running TIMER ไม่เกินหนึ่งแถวต่อ owner ด้วย entry_type='TIMER' AND ended_at IS NULL โดยไม่กรอง is_active; service ค้น running timer ที่ active และ cancel ลบแถวจริง
 - `time_entries.locked_at` marks an entry as locked and prevents further edits or deletion through the service layer.
 - Client soft delete ตั้ง deleted_at โดยคง is_active เดิม; Client archive เปลี่ยน is_active โดยไม่ตั้ง deleted_at ส่วน Project/Task/completed Time Entry soft delete ใช้ inactive พร้อม deleted_at ตาม Entity ของแต่ละ feature
 - `status` is reserved for Project and Task workflow; account and record activation use `is_active`.
