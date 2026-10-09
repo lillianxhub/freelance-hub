@@ -25,11 +25,19 @@ export function useDashboardActivity(
 
     let active = true
     loadActivity(period)
-      .then((result) => { if (active) setActivity(result) })
-      .catch((reason: unknown) => { if (active) setError(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้')) })
-      .finally(() => { if (active) setLoading(false) })
+      .then((result) => {
+        if (active) setActivity(result)
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้'))
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
 
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [loadActivity, period, requestKey])
 
   return { activity, loading, error, retry: () => setRequestKey((key) => key + 1) }

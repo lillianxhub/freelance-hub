@@ -1,6 +1,6 @@
 # Diagram Index - Freelance Hub
 
-รวม diagram ที่มีต้นฉบับในเอกสารสมาชิก และตรวจชื่อ class/method/response กับ implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026 โดยไม่เปลี่ยนไฟล์ V1
+รวม diagram ของฉบับส่งมอบและตรวจชื่อ class/method/response กับ implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 รวมการปรับเอกสาร Petpinyo ใน PR #127 ข้อความภายใน Mermaid diagrams ใช้ภาษาอังกฤษ ส่วนคำอธิบายภายนอกคงภาษาไทย
 
 ## Diagram ที่จัดไว้แล้ว
 
@@ -9,12 +9,12 @@
 | Domain Class Model | [Class Diagram](class-diagram.md) | Domain model เดิม ตรวจ Entity methods และ embedded Address แล้ว |
 | Class Diagram + Patterns | [Application/Authentication/State](class-diagram.md#application-layers) | รวมจาก diagrams ของสมาชิกและแสดง pattern placement |
 | ER / Database Schema | [ER Diagram](er-diagram.md) | Schema หลัง migrations V1-V20; Data Dictionary เป็นรายละเอียด constraints |
-| Sequence 01 | [Login และ protected request](sequence-01-auth.md) | Petpinyo |
-| Sequence 02 | [Start และ Stop Timer](sequence-02-timer.md) | Kompat |
-| Sequence 03 | [เปลี่ยนสถานะ Project](sequence-03-project-status.md) | Kantavit |
-| Sequence 04 | [Soft-delete Client](sequence-04-client.md) | Thirawat |
-| Sequence 05 | [Reports และตัวกรอง](sequence-05-reports.md) | Nattadol |
-| Sequence 06 | [Progress Events](sequence-06-progress-events.md) | Kantavit / Time Tracking events |
+| Sequence 01 | [Login และ protected request](sequence-diagram.md#scenario-01-login-and-protected-request) | Petpinyo |
+| Sequence 02 | [Start และ Stop Timer](sequence-diagram.md#scenario-02-start-and-stop-timer) | Kompat |
+| Sequence 03 | [เปลี่ยนสถานะ Project](sequence-diagram.md#scenario-03-change-project-status) | Kantavit |
+| Sequence 04 | [Soft-delete Client](sequence-diagram.md#scenario-04-soft-delete-client) | Thirawat |
+| Sequence 05 | [Reports และตัวกรอง](sequence-diagram.md#scenario-05-load-reports-and-change-filters) | Nattadol |
+| Sequence 06 | [Progress Events](sequence-diagram.md#scenario-06-progress-threshold-events) | Kantavit / Time Tracking events |
 | Activity | [Timer](activity-timer.md), [Project status](activity-project-status.md) | Kompat และ Kantavit |
 | Component view | [Dashboard/Reports](component.md) | Nattadol; ขอบเขต Frontend/API/Database ไม่ใช่ full Deployment Diagram |
 | Use Case Diagram | [Use Cases แยกตาม feature](use-case-diagram.md) | Actors/system boundary และ IDs ตรงกับฉบับรวม; ไม่สร้าง use case ของ feature ที่ยังไม่ implement |
@@ -22,7 +22,7 @@
 | Deployment Diagram | [Cloud และ Local Nodes](deployment-diagram.md) | Vercel, Render, Supabase, Compose และ deployment channels ตาม configuration |
 | State Diagram | [Project/Client/Task/Time Entry](state-diagram.md) | Transitions, guards, activation, soft delete และ locking ตาม implementation |
 
-Sequence มี 6 scenarios จากต้นฉบับที่มี ครบจำนวนขั้นต่ำ 3 scenarios ในใบงาน ตรวจ syntax ด้วย Mermaid 11.12.0 แล้วผ่านทั้ง 29 blocks ใน doc/ และ doc/diagrams/ การตรวจนี้ไม่แทนการตรวจ layout ของภาพที่ renderer ของการส่งงานแสดงจริง
+Sequence ทั้ง 6 scenarios อยู่ใน [sequence-diagram.md](sequence-diagram.md) ไฟล์เดียว แยกด้วยหัวข้อและ Mermaid block ของแต่ละ scenario ครบจำนวนขั้นต่ำ 3 scenarios ในใบงาน ตรวจ syntax ด้วย Mermaid 11.12.0 ทั้ง 29 blocks ใน doc/ และ doc/diagrams/ การตรวจนี้ไม่แทนการตรวจ layout ของภาพที่ renderer ของการส่งงานแสดงจริง
 
 ## ขอบเขตของ diagram ที่เพิ่ม
 

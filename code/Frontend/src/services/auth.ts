@@ -3,11 +3,15 @@ import { ApiError } from '../api/apiError'
 import type { AuthResponse, AuthSession, AuthUser, BackendUser, RegisterInput } from '../types/auth'
 
 function toAuthUser(user: BackendUser): AuthUser {
-  return { id: user.id, email: user.email, user_metadata: { full_name: user.displayName || user.email } }
+  return {
+    id: user.id,
+    email: user.email,
+    user_metadata: { full_name: user.displayName || user.email },
+  }
 }
 
 export async function getCurrentSession(): Promise<AuthSession | null> {
-  if (!await refreshApiToken()) return null
+  if (!(await refreshApiToken())) return null
   try {
     const response = await api.get<BackendUser>('/users/me')
     return { user: toAuthUser(response.data) }
@@ -55,7 +59,9 @@ export async function signOut(): Promise<void> {
   }
 }
 
-export function subscribeToAuthChanges(callback: (session: AuthSession | null) => void): () => void {
+export function subscribeToAuthChanges(
+  callback: (session: AuthSession | null) => void,
+): () => void {
   if (typeof BroadcastChannel === 'undefined') return () => {}
   const channel = new BroadcastChannel('freelance-hub-auth')
   channel.onmessage = (event: MessageEvent) => {
@@ -63,7 +69,9 @@ export function subscribeToAuthChanges(callback: (session: AuthSession | null) =
       setApiToken(null)
       callback(null)
     } else if (event.data === 'login') {
-      getCurrentSession().then(callback).catch(() => callback(null))
+      getCurrentSession()
+        .then(callback)
+        .catch(() => callback(null))
     }
   }
   return () => channel.close()

@@ -138,4 +138,4 @@ stateDiagram-v2
 - Time Entry ที่ locked แล้วไม่มีเส้นกลับ unlocked; PostgreSQL row lock จบเมื่อ transaction จบ แต่ lockedAt ยังอยู่
 - การสร้าง Manual Entry ใหม่หรือย้ายรายการเข้า Project ที่ COMPLETED ยังไม่ล็อกอัตโนมัติ; ไม่วาดเส้นอัตโนมัติที่โค้ดยังไม่มี
 
-ดู [Use Cases](../use-case-description.md), [Project State Class Diagram](class-diagram.md#project-state-pattern), [Project Status Sequence](sequence-03-project-status.md) และ [Timer Sequence](sequence-02-timer.md) สำหรับ preconditions/HTTP responses และ transaction boundaries
+ดู [Use Cases](../use-case-description.md), [Project State Class Diagram](class-diagram.md#project-state-pattern), [Project Status Sequence](sequence-diagram.md#scenario-03-change-project-status) และ [Timer Sequence](sequence-diagram.md#scenario-02-start-and-stop-timer) สำหรับ preconditions/HTTP responses และ transaction boundaries

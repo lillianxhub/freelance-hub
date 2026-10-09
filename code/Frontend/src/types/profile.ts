@@ -34,5 +34,15 @@ export interface ChangePasswordInput {
   confirm_password: string
 }
 
-export type ProfileFieldName = 'display_name' | 'first_name' | 'last_name' | 'phone' | 'tax_id' | 'address' | 'province' | 'district' | 'sub_district' | 'postal_code'
+export type ProfileFieldName =
+  | 'display_name'
+  | 'first_name'
+  | 'last_name'
+  | 'phone'
+  | 'tax_id'
+  | 'address'
+  | 'province'
+  | 'district'
+  | 'sub_district'
+  | 'postal_code'
 export type ProfileFieldErrors = Partial<Record<ProfileFieldName, string>>

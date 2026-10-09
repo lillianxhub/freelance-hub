@@ -1,10 +1,10 @@
 # Component View: Dashboard/Reports ในระบบ
 
-คัดลอกจาก diagram ที่มีใน [Nattadol Design](../V1/DESIGN/nattadol-design.md) และตรวจชื่อ components ณ `131305f` แสดงขอบเขต Frontend/API/Database ไม่ใช่ Deployment Diagram ของ cloud nodes และไม่อ้างว่าทุก process อยู่ host เดียวกัน
+คัดลอกจาก diagram ที่มีใน Nattadol Design และตรวจชื่อ components ณ `131305f` แสดงขอบเขต Frontend/API/Database ไม่ใช่ Deployment Diagram ของ cloud nodes และไม่อ้างว่าทุก process อยู่ host เดียวกัน
 
 ```mermaid
 flowchart LR
-    Browser[Browser: React ที่ build ด้วย Vite] --> API[Spring Boot API]
+    Browser[Browser: React SPA built with Vite] --> API[Spring Boot API]
     API --> DB[(PostgreSQL)]
     subgraph BrowserUI[Frontend Analytics]
       Dashboard[DashboardPage + DashboardProvider]
