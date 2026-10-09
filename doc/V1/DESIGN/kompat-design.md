@@ -67,12 +67,12 @@ classDiagram
 flowchart TD
     A[ผู้ใช้ส่งคำขอเริ่ม timer] --> B[Controller ดึง owner จากผู้ใช้ที่ล็อกอิน]
     B --> C[Service ตรวจ Project, optional Task และสิทธิ์เจ้าของ]
-    C --> D{Project จับเวลาได้และ Client active?}
+    C --> G[เรียก TimeEntry.startTimer ด้วย server Clock]
+    G --> D{Project จับเวลาได้และ Client active?}
     D -- ไม่ได้ --> E[คืน 409]
     D -- ได้ --> F{มี running timer อยู่แล้ว?}
     F -- มี --> E
-    F -- ไม่มี --> G[สร้าง TimeEntry ชนิด TIMER ด้วย server Clock]
-    G --> H[บันทึกและให้ unique index กัน timer ซ้อน]
+    F -- ไม่มี --> H[บันทึกและให้ unique index กัน timer ซ้อน]
     H --> T{มี Task?}
     T -- ไม่มี --> I[คืน 201 พร้อม StartedTimerResponse]
     T -- มี --> U[เรียก Task.start]

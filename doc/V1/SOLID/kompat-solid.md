@@ -8,13 +8,12 @@
 | Principle | หลักฐานในโค้ด | เหตุผลที่ใช้ |
 |---|---|---|
 | Single Responsibility | `TimerServiceImpl.startTimer/getCurrentTimer/stopTimer/cancelTimer` | ประสานวงจรชีวิตของ timer รวมถึงเรียก `Task.start()` เมื่อเริ่ม timer ที่มี Task และเผยแพร่ event เมื่อหยุด timer |
-| Single Responsibility | `TimeEntryServiceImpl` | รวมงานอ่าน สร้าง แก้ ลบ ล็อก และรวมเวลาในขอบเขต Time Entry; `createManual()` เรียก `Task.start()` เมื่อมี Task โดยกฎเปลี่ยนสถานะอยู่ใน Task; controller, mapper และ repository แยกหน้าที่กัน |
 | Single Responsibility | `TimerStoppedProgressListener.onTimerStopped` | รับ event หลัง transaction หยุด timer commit แล้ว คำนวณความคืบหน้าโปรเจกต์และเผยแพร่ `ProjectProgressThresholdEvent` เมื่อถึงเกณฑ์ |
 | Single Responsibility | `TimerController`, `TimeEntryController`, `TimeTrackingExceptionHandler` | Controller รับ request และสร้าง `ApiResult`; handler แปลง exception ของ Time Tracking เป็น HTTP error โดยไม่ใส่กฎธุรกิจใน controller |
 | Single Responsibility | `TimeEntryMapper`, `TimeEntryRepository` | Mapper แปลง entity เป็น `TimeEntryResponse` รวมสถานะปัจจุบันของ Project/Task เพื่อให้ response DTO นำไปใช้ ส่วน Repository กำหนด data-access contract |
 | Open/Closed | `TimerServiceImpl.stopTimer`, `TimerStoppedEvent`, `TimerStoppedProgressListener` | `stopTimer()` เผยแพร่ event โดยไม่ต้องฝังการคำนวณความคืบหน้าไว้ในเมธอด; listener ที่มีอยู่รับ event หลัง commit และเผยแพร่ `ProjectProgressThresholdEvent` เมื่อถึง 80% หรือ 100% |
-| Liskov Substitution | `TimerService`/`TimerServiceImpl`, `TimeEntryService`/`TimeEntryServiceImpl` | Controller รับ dependency เป็น service interface และเรียกเมธอดตาม contract โดยไม่อ้างถึง implementation โดยตรง จึงสามารถใช้ implementation ที่รักษา contract เดียวกันแทนได้ในเชิงโครงสร้าง; ยังไม่ได้พิสูจน์พฤติกรรมของ implementation หลายตัว |
-| Interface Segregation | `TimerService`,`TimeEntryService` | แยกงานของ TimeEntry และ Timer|
+| Liskov Substitution | `TimerService`/`TimerServiceImpl`, `TimeEntryService`/`TimeEntryServiceImpl` | ปัจจุบันแต่ละ interface มี production implementation เพียงตัวเดียว การเรียกผ่าน interface ยังไม่เพียงพอที่จะยืนยันว่า implementation อื่นสามารถทดแทนได้โดยไม่เปลี่ยนพฤติกรรม จึงยังไม่มีหลักฐาน LSP ที่ชัดเจนมากนัก |
+| Interface Segregation | `TimerService`, `TimeEntryService` | แยก operation ของ Timer ออกจาก Time Entry ในระดับ feature; อย่างไรก็ตาม `TimeEntryService` ยังรวม CRUD, query, analytics และ lock ซึ่งผู้เรียกแต่ละส่วนไม่ได้ใช้ทุกเมธอด จึงยังไม่แยก interface ตามความต้องการของทุก consumer |
 | Dependency Inversion | `TimerController`, `TimeEntryController` | Controller พึ่ง service interfaces แทน implementation classes |
 | Dependency Inversion | `TimerServiceImpl`, `TimeEntryServiceImpl` | Service implementations รับ repository interfaces และ dependencies ผ่าน constructor |
 | Dependency Inversion | `TimeConfiguration.clock`, `TimerServiceImpl`, `TimeEntryServiceImpl` | Service รับ `Clock` จากภายนอกสำหรับเวลาเริ่ม/หยุด timer เวลา soft delete และ `lockedAt`; production ใช้ `Clock.systemUTC()` ส่วน test ใช้ `Clock.fixed()` ได้ |
