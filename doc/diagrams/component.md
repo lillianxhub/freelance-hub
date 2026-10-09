@@ -1,6 +1,6 @@
 # Component View: Dashboard/Reports ในระบบ
 
-คัดลอกจาก diagram ที่มีใน Nattadol Design (`doc/V1/DESIGN/nattadol-design.md`; ต้นฉบับ local/ประวัติ Git) และตรวจชื่อ components ณ `131305f` แสดงขอบเขต Frontend/API/Database ไม่ใช่ Deployment Diagram ของ cloud nodes และไม่อ้างว่าทุก process อยู่ host เดียวกัน
+คัดลอกจาก diagram ที่มีใน Nattadol Design และตรวจชื่อ components ณ `131305f` แสดงขอบเขต Frontend/API/Database ไม่ใช่ Deployment Diagram ของ cloud nodes และไม่อ้างว่าทุก process อยู่ host เดียวกัน
 
 ```mermaid
 flowchart LR

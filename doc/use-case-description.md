@@ -769,17 +769,17 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 
 **หลักฐานการทดสอบ:** `code/Frontend/src/lib/dashboard.test.ts`, `dashboard.test.tsx`, `code/Frontend/src/services/report.test.ts`, `code/Backend/src/test/java/th/ac/kku/freelance_hub/integration/DashboardIntegrationTest.java` และ `ReportIntegrationTest.java`
 
-## 8. Diagram และเอกสารต้นฉบับ
+## 8. Diagram และผู้รับผิดชอบ
 
 Sequence และ Activity จากเอกสารสมาชิกถูกรวมไว้ใน [Diagram index](diagrams/README.md) และเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Domain Model](diagrams/domain-model.md), [State Diagram](diagrams/state-diagram.md) และ [Deployment Diagram](diagrams/deployment-diagram.md) จาก source ณ ca77d74 แล้ว ใช้ actors/IDs และกฎของ implementation ไม่ถือว่าการเพิ่ม diagram implement requirement ที่ยังขาด
 
-| Feature | เอกสารต้นฉบับ |
+| Feature | ผู้รับผิดชอบ |
 |---|---|
-| Authentication/Profile | Petpinyo (`doc/V1/USECASE/petpinyo-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
-| Client | Thirawat (`doc/V1/USECASE/thirawat-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
-| Project/Task | Kantavit (`doc/V1/USECASE/kantavit-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
-| Time Tracking | Kompat (`doc/V1/USECASE/kompat-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
-| Dashboard/Reports | Nattadol (`doc/V1/USECASE/nattadol-usecase.md`; ต้นฉบับ local/ประวัติ Git) |
+| Authentication/Profile | Petpinyo |
+| Client | Thirawat |
+| Project/Task | Kantavit |
+| Time Tracking | Kompat |
+| Dashboard/Reports | Nattadol |
 
 ฉบับรวมคงความหมายและ requirement boundaries ของสมาชิก ไม่ถือว่าการจัดทำเอกสารเป็นการ implement requirement ที่ยังไม่เสร็จ และไม่ใช้ผล test ในเอกสารเก่าแทน Test Report ของ release ปัจจุบัน
 

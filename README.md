@@ -43,7 +43,7 @@ React UI → REST Controller → Service → Repository → PostgreSQL
 
 Controller รับ HTTP request และส่งต่อให้ Service; Service จัดการ business rules และ transaction; Repository เข้าถึงข้อมูลผ่าน JPA โดย Controller ไม่เรียก Repository ตรง ๆ Spring Security ตรวจ access JWT ก่อนเข้า endpoint ที่ต้องล็อกอิน และ Flyway จัดการ schema เมื่อ Backend เริ่มทำงาน
 
-เอกสารสถาปัตยกรรมเพิ่มเติม: [Class Diagram](doc/diagrams/class-diagram.md), [Domain Model](doc/diagrams/domain-model.md), [Deployment Diagram](doc/diagrams/deployment-diagram.md) และ [ดัชนีเอกสารฉบับรวม](doc/README.md) ส่วนต้นฉบับรายบุคคลใน `doc/V1/` เก็บเฉพาะ local และไม่ติดตามใน Git
+เอกสารสถาปัตยกรรมเพิ่มเติม: [Class Diagram](doc/diagrams/class-diagram.md), [Domain Model](doc/diagrams/domain-model.md), [Deployment Diagram](doc/diagrams/deployment-diagram.md) และ [ดัชนีเอกสารฉบับรวม](doc/README.md)
 
 ## Database Design (ER Diagram)
 
@@ -202,7 +202,7 @@ freelance-hub/
 └── REQUIREMENTS.md
 ```
 
-เอกสารฉบับรวมและสถานะสิ่งส่งมอบดู [doc/README.md](doc/README.md) โดย `solid-analysis.md`, `design-patterns.md` และ `use-case-description.md` ปรับให้ตรงกับ implementation ที่ตรวจล่าสุดแล้ว ไม่ใช่โครงร่าง ส่วน `doc/V1/` เป็นร่าง local ที่ `.gitignore` ไว้ จึงไม่อยู่ในไฟล์ที่ clone ใหม่; ต้นฉบับที่เคย commit ยังดูได้จากประวัติ Git API contract ปัจจุบันให้อ้างฉบับรวมและ Swagger
+เอกสารฉบับรวมและสถานะสิ่งส่งมอบดู [doc/README.md](doc/README.md) โดย `solid-analysis.md`, `design-patterns.md` และ `use-case-description.md` ปรับให้ตรงกับ implementation ที่ตรวจล่าสุดแล้ว ไม่ใช่โครงร่าง API contract ปัจจุบันให้อ้างเอกสารฉบับรวมและ Swagger
 
 ## Git Workflow
 

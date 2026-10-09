@@ -1,6 +1,6 @@
 # Activity: เปลี่ยนสถานะ Project
 
-ที่มา: Kantavit (`doc/V1/DESIGN/kantavit-design.md`; ต้นฉบับ local/ประวัติ Git) ณ `131305f` ใช้กับ Project API; Client archive cascade เรียก Project.changeStatus โดยตรงจึงไม่ผ่าน running-timer guard นี้
+ที่มา: Kantavit ณ `131305f` ใช้กับ Project API; Client archive cascade เรียก Project.changeStatus โดยตรงจึงไม่ผ่าน running-timer guard นี้
 
 ```mermaid
 flowchart TD

@@ -101,13 +101,13 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 
 อ้างอิง test source ที่มีอยู่ ไม่ใช่ผลรันใหม่หรือ Test Report ของการส่งมอบ
 
-## 6. แหล่งที่มาของฉบับรวม
+## 6. ผู้รับผิดชอบและเอกสารประกอบ
 
-- Petpinyo - Authentication/Profile (`doc/V1/DESIGN/petpinyo-design.md`; ต้นฉบับ local/ประวัติ Git)
-- Thirawat - Client (`doc/V1/DESIGN/thirawat-design.md`; ต้นฉบับ local/ประวัติ Git)
-- Kantavit - Project/Task และ Progress (`doc/V1/DESIGN/kantavit-design.md`; ต้นฉบับ local/ประวัติ Git)
-- Kompat - Time Tracking (`doc/V1/DESIGN/kompat-design.md`; ต้นฉบับ local/ประวัติ Git)
-- Nattadol - Dashboard/Reports (`doc/V1/DESIGN/nattadol-design.md`; ต้นฉบับ local/ประวัติ Git)
+- Petpinyo - Authentication/Profile
+- Thirawat - Client
+- Kantavit - Project/Task และ Progress
+- Kompat - Time Tracking
+- Nattadol - Dashboard/Reports
 
-Diagram จากต้นฉบับถูกตรวจชื่อ method/path ใน [diagrams/](diagrams/README.md) โดยคงเอกสารสมาชิกเดิมไว้เฉพาะ local และประวัติ Git และเพิ่ม Conceptual Domain/Use Case/Deployment/State diagrams จาก implementation แล้ว สไลด์ยังไม่สร้างตามขอบเขตงาน ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
+Diagram ใน [diagrams/](diagrams/README.md) ตรวจชื่อ method/path จาก implementation แล้ว รวมถึง Conceptual Domain/Use Case/Deployment/State diagrams สไลด์ยังไม่สร้างตามขอบเขตงาน ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
 

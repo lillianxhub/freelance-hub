@@ -6,7 +6,7 @@
 
 ## Scenario 01: Login and Protected Request
 
-ที่มา: Petpinyo (`doc/V1/USECASE/petpinyo-usecase.md`; ต้นฉบับ local/ประวัติ Git) เพิ่มขั้น issue refresh token และสร้าง Set-Cookie ให้ตรงกับโค้ด Login ใช้ transaction; JWT filter ของ protected request ตรวจ token/JTI และโหลด user ที่ enabled ภาพแสดง happy path ไม่รวม rate-limit/invalid-credentials branches
+ที่มา: Petpinyo เพิ่มขั้น issue refresh token และสร้าง Set-Cookie ให้ตรงกับโค้ด Login ใช้ transaction; JWT filter ของ protected request ตรวจ token/JTI และโหลด user ที่ enabled ภาพแสดง happy path ไม่รวม rate-limit/invalid-credentials branches
 
 ```mermaid
 sequenceDiagram
@@ -58,7 +58,7 @@ Refresh token เก็บเฉพาะ hash ในฐานข้อมูล
 
 ## Scenario 02: Start and Stop Timer
 
-ที่มา: Kompat (`doc/V1/USECASE/kompat-usecase.md`; ต้นฉบับ local/ประวัติ Git) current-user abstraction ตรง TimerController ขั้น start/stop อยู่ใน transaction การ start Task ทำหลัง insert timer สำเร็จและ rollback ร่วมกันหาก Task ปฏิเสธ ดูการรับ event หลัง commit ใน [Scenario 06](#scenario-06-progress-threshold-events)
+ที่มา: Kompat current-user abstraction ตรง TimerController ขั้น start/stop อยู่ใน transaction การ start Task ทำหลัง insert timer สำเร็จและ rollback ร่วมกันหาก Task ปฏิเสธ ดูการรับ event หลัง commit ใน [Scenario 06](#scenario-06-progress-threshold-events)
 
 ```mermaid
 sequenceDiagram
@@ -113,7 +113,7 @@ Partial unique index ของ PostgreSQL กัน timer ซ้อนของ 
 
 ## Scenario 03: Change Project Status
 
-ที่มา: Kantavit (`doc/V1/USECASE/kantavit-usecase.md`; ต้นฉบับ local/ประวัติ Git) การค้นหา owner, ตรวจ running timer, ตรวจ Task และ lockByProject อยู่ใน Service transaction เดียวกัน ภาพแสดง exception ย้อนกลับผ่าน Controller/MVC ก่อน dispatch ไป GlobalExceptionHandler ไม่ใช่ Service เรียก handler เอง
+ที่มา: Kantavit การค้นหา owner, ตรวจ running timer, ตรวจ Task และ lockByProject อยู่ใน Service transaction เดียวกัน ภาพแสดง exception ย้อนกลับผ่าน Controller/MVC ก่อน dispatch ไป GlobalExceptionHandler ไม่ใช่ Service เรียก handler เอง
 
 ```mermaid
 sequenceDiagram
@@ -188,7 +188,7 @@ sequenceDiagram
 
 ## Scenario 04: Soft-delete Client
 
-ที่มา: Thirawat (`doc/V1/USECASE/thirawat-usecase.md`; ต้นฉบับ local/ประวัติ Git) เริ่มหลังผ่าน JWT; RequestTraceFilter ทำงานก่อน security/MVC สำเร็จคืน 204 ไม่มี body โดยไม่เปลี่ยน Client.isActive หรือสถานะ Project
+ที่มา: Thirawat เริ่มหลังผ่าน JWT; RequestTraceFilter ทำงานก่อน security/MVC สำเร็จคืน 204 ไม่มี body โดยไม่เปลี่ยน Client.isActive หรือสถานะ Project
 
 ```mermaid
 sequenceDiagram
@@ -228,7 +228,7 @@ sequenceDiagram
 
 ## Scenario 05: Load Reports and Change Filters
 
-ที่มา: Nattadol (`doc/V1/USECASE/nattadol-usecase.md`; ต้นฉบับ local/ประวัติ Git) การเรียกสาม endpoint เป็นอิสระ ไม่ได้บังคับให้รอทีละ request ภาพใช้ par เพื่อสื่อการโหลดพร้อมกัน; pagination/CSV ใช้ Project ของหน้าปัจจุบัน
+ที่มา: Nattadol การเรียกสาม endpoint เป็นอิสระ ไม่ได้บังคับให้รอทีละ request ภาพใช้ par เพื่อสื่อการโหลดพร้อมกัน; pagination/CSV ใช้ Project ของหน้าปัจจุบัน
 
 ```mermaid
 sequenceDiagram
@@ -266,7 +266,7 @@ sequenceDiagram
 
 ## Scenario 06: Progress Threshold Events
 
-ที่มา: Kantavit (`doc/V1/DESIGN/kantavit-design.md`; ต้นฉบับ local/ประวัติ Git) Observer ผ่าน Spring events; listener เปิด read-only transaction ใหม่หลัง commit หากไม่มี Project/targetMinutes จะไม่มี threshold event ปลายทางเขียน log ไม่ได้ส่ง notification ให้ผู้ใช้
+ที่มา: Kantavit Observer ผ่าน Spring events; listener เปิด read-only transaction ใหม่หลัง commit หากไม่มี Project/targetMinutes จะไม่มี threshold event ปลายทางเขียน log ไม่ได้ส่ง notification ให้ผู้ใช้
 
 ```mermaid
 sequenceDiagram
