@@ -26,8 +26,11 @@ public class TimeEntryMapper {
                 .clientName(client.getName())
                 .projectId(project.getId())
                 .projectName(project.getName())
+                .projectStatus(project.getStatus())
                 .taskId(task == null ? null : task.getId())
                 .taskName(task == null ? null : task.getName())
+                .task(task == null ? null : new TimeEntryResponse.TaskSummary(
+                        task.getId(), task.getStatus()))
                 .description(entry.getDescription())
                 .entryType(entry.getEntryType())
                 .startedAt(entry.getStartedAt())

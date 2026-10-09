@@ -86,7 +86,7 @@ function TimeTrackerPage() {
   const manualTasksLoaded = Boolean(manualOpen && manualForm.project_id && manualTaskResult?.projectId === manualForm.project_id);
   const manualTasks = manualTasksLoaded ? manualTaskResult?.tasks ?? [] : [];
   const filterTasks = filters.project === 'ALL' || filterTaskResult?.projectId !== filters.project ? [] : filterTaskResult.tasks;
-  const timeEntryQueryKey = JSON.stringify([filters, timeEntryPage, timeEntriesRequestKey, loading]);
+  const timeEntryQueryKey = JSON.stringify([filters, timeEntryPage, timeEntriesRequestKey]);
   const currentTimeEntryResult = timeEntryResult?.key === timeEntryQueryKey ? timeEntryResult : null;
   const serverEntries = currentTimeEntryResult?.entries ?? [];
   const timeEntryMeta = currentTimeEntryResult?.meta ?? { page: 1, limit: TIME_ENTRY_PAGE_LIMIT, total: 0, totalPages: 0 };
@@ -165,7 +165,7 @@ function TimeTrackerPage() {
     return () => {
       active = false;
     };
-  }, [data.time_entries, filters, loading, timeEntriesRequestKey, timeEntryPage, timeEntryQueryKey]);
+  }, [filters, loading, timeEntryPage, timeEntryQueryKey]);
 
   if (loading) return <LoadingState label="กำลังโหลดรายการเวลา..." />;
   if (error) return <ErrorState message={error} onRetry={refresh} />;
@@ -264,7 +264,6 @@ function TimeTrackerPage() {
             : { durationSeconds: duration * 60 }),
         });
       }
-      await refresh();
       reloadTimeEntryData();
       setManualOpen(false);
     } catch (saveError: unknown) {

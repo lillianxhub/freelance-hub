@@ -37,6 +37,7 @@ import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 import th.ac.kku.freelance_hub.domain.entity.User;
 import th.ac.kku.freelance_hub.domain.enums.EntryType;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.dto.request.timeentry.ManualTimeEntryRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.TimeEntryFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.timeentry.UpdateTimeEntryRequest;
@@ -123,10 +124,62 @@ class TimeEntryServiceImplTest {
         assertThat(response.getEndedAt()).isEqualTo(NOW);
         assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.getTaskId()).isEqualTo(TASK_ID);
+        assertThat(response.getTask().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
         assertThat(response.isRunning()).isFalse();
         verify(timeEntryRepository).save(any(TimeEntry.class));
         verify(timeEntryRepository, never())
                 .saveAndFlush(any(TimeEntry.class));
+        verify(taskRepository).saveAndFlush(task);
+    }
+
+    @Test
+    void leavesInProgressTaskUnchangedWhenCreatingManualEntry() {
+        task.start();
+        stubOwnedUserAndProject();
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
+        when(timeEntryRepository.save(any(TimeEntry.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.createManual(
+                OWNER_ID,
+                ManualTimeEntryRequest.builder()
+                        .projectId(PROJECT_ID)
+                        .taskId(TASK_ID)
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
+                        .build()
+        );
+
+        assertThat(response.getTask().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        verify(timeEntryRepository).save(any(TimeEntry.class));
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
+    }
+
+    @Test
+    void rejectsCompletedTaskBeforeSavingManualEntry() {
+        task.complete(NOW.minusSeconds(60));
+        stubOwnedUserAndProject();
+        when(taskRepository.findByIdAndProjectIdAndProjectOwnerId(
+                TASK_ID, PROJECT_ID, OWNER_ID
+        )).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> service.createManual(
+                OWNER_ID,
+                ManualTimeEntryRequest.builder()
+                        .projectId(PROJECT_ID)
+                        .taskId(TASK_ID)
+                        .startedAt(NOW)
+                        .durationSeconds(90L)
+                        .build()
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("completed task cannot be started");
+
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        verify(timeEntryRepository, never()).save(any(TimeEntry.class));
+        verify(taskRepository, never()).saveAndFlush(any(Task.class));
     }
 
     @Test
@@ -158,6 +211,7 @@ class TimeEntryServiceImplTest {
                 .isEqualTo(NOW.plusSeconds(90));
         assertThat(response.getDurationSeconds()).isEqualTo(90L);
         assertThat(response.isRunning()).isFalse();
+        verifyNoInteractions(taskRepository);
     }
 
     @Test

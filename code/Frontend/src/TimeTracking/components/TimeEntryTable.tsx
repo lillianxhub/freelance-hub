@@ -1,4 +1,6 @@
 import { Button } from '../../components/ui/button'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog'
+import { useState } from 'react'
 import { TablePagination } from '../../components/ui/table'
 import type { TimeEntryTableProps } from '../../types/timeTrackerPage'
 import { formatDate } from '../../utils/date'
@@ -34,6 +36,7 @@ interface EntryGroup {
 }
 
 export default function TimeEntryTable({ entries, projects, tasks = [], pagination, onEdit, onDelete }: TimeEntryTableProps) {
+  const [deleteEntry, setDeleteEntry] = useState<TimeEntryTableProps['entries'][number] | null>(null)
   const groups = Array.from(
     entries.reduce((result, entry) => {
       const key = dateKey(entry.started_at)
@@ -110,7 +113,7 @@ export default function TimeEntryTable({ entries, projects, tasks = [], paginati
                         size="sm"
                         className="text-muted-foreground hover:bg-red-soft hover:text-destructive"
                         type="button"
-                        onClick={() => onDelete(entry)}
+                        onClick={() => setDeleteEntry(entry)}
                         aria-label="ลบรายการเวลา"
                         title="ลบ"
                       >
@@ -127,6 +130,18 @@ export default function TimeEntryTable({ entries, projects, tasks = [], paginati
       })}
 
       {pagination && <TablePagination {...pagination} />}
+      <AlertDialog open={deleteEntry !== null} onOpenChange={(open) => { if (!open) setDeleteEntry(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบรายการเวลานี้หรือไม่</AlertDialogTitle>
+            <AlertDialogDescription>รายการเวลานี้จะถูกลบออกจากรายงานและสรุปเวลา</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteEntry) onDelete(deleteEntry); setDeleteEntry(null) }}>ลบรายการ</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

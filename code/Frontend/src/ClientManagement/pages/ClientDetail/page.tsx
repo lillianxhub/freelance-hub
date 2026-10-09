@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { Progress } from '../../../components/ui/progress'
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../../components/ui/pagination'
+import PaginationControls from '../../../components/PaginationControls'
 import { Link, useParams } from 'react-router-dom'
 import { FiArrowLeft, FiArrowRight, FiBriefcase, FiClock, FiList } from 'react-icons/fi'
 import { useCallback, useState } from 'react'
@@ -25,17 +25,6 @@ interface ClientDetailData {
 
 const emptyData: ClientDetailData = { client: null, projects: [], totalSeconds: 0, entryCount: 0 }
 
-function getPaginationItems(currentPage: number, totalPages: number): Array<number | 'ellipsis'> {
-  if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1)
-
-  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
-  return [...pages]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((first, second) => first - second)
-    .flatMap((page, index, items) =>
-      index > 0 && page - items[index - 1] > 1 ? ['ellipsis' as const, page] : [page],
-    )
-}
 
 function ClientDetailPage() {
   const { clientId } = useParams()
@@ -65,7 +54,6 @@ function ClientDetailPage() {
     (safeProjectPage - 1) * projectPageSize,
     safeProjectPage * projectPageSize,
   )
-  const projectPaginationItems = getPaginationItems(safeProjectPage, projectTotalPages)
   const displayName = client.company_name || client.name
 
   return (
@@ -135,52 +123,7 @@ function ClientDetailPage() {
                 })}
                 {projects.length === 0 && <p className="m-0 py-8 text-center text-sm text-text-secondary">ยังไม่มีโปรเจกต์</p>}
               </div>
-              <Pagination className="mt-4">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href={`?projectPage=${Math.max(1, safeProjectPage - 1)}`}
-                      text="ก่อนหน้า"
-                      aria-disabled={safeProjectPage === 1}
-                      className={safeProjectPage === 1 ? 'pointer-events-none opacity-50' : undefined}
-                      onClick={(event) => {
-                        event.preventDefault()
-                        if (safeProjectPage > 1) setProjectPage(safeProjectPage - 1)
-                      }}
-                    />
-                  </PaginationItem>
-                  {projectPaginationItems.map((pageNumber, index) => (
-                    <PaginationItem key={`${pageNumber}-${index}`}>
-                      {pageNumber === 'ellipsis' ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href={`?projectPage=${pageNumber}`}
-                          isActive={pageNumber === safeProjectPage}
-                          onClick={(event) => {
-                            event.preventDefault()
-                            setProjectPage(pageNumber)
-                          }}
-                        >
-                          {pageNumber}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      href={`?projectPage=${Math.min(projectTotalPages, safeProjectPage + 1)}`}
-                      text="ถัดไป"
-                      aria-disabled={safeProjectPage === projectTotalPages}
-                      className={safeProjectPage === projectTotalPages ? 'pointer-events-none opacity-50' : undefined}
-                      onClick={(event) => {
-                        event.preventDefault()
-                        if (safeProjectPage < projectTotalPages) setProjectPage(safeProjectPage + 1)
-                      }}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+              <PaginationControls page={safeProjectPage} totalPages={projectTotalPages} onPageChange={setProjectPage} queryParam="projectPage" className="mt-4" />
             </CardContent>
           </section></Card>
 

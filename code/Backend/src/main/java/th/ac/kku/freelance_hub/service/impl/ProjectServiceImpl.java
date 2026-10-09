@@ -363,6 +363,18 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findOwnedProject(ownerId, projectId);
         ProjectStatus previousStatus = project.getStatus();
         requireNoRunningTimer(ownerId, projectId);
+        if (previousStatus == ProjectStatus.ACTIVE
+                && request.getStatus() == ProjectStatus.COMPLETED) {
+            List<TaskRepository.TaskProgressSummary> summaries =
+                    taskRepository.summarizeProgressByProjectIds(
+                            ownerId, List.of(projectId), TaskStatus.COMPLETED);
+            if (!summaries.isEmpty()
+                    && summaries.get(0).getTotalTasks()
+                            > summaries.get(0).getCompletedTasks()) {
+                throw new IllegalStateException(
+                        "ไม่สามารถเปลี่ยนโปรเจกต์เป็นเสร็จสิ้นได้ เพราะยังมีงานย่อยที่ไม่เสร็จ");
+            }
+        }
         project.changeStatus(request.getStatus());
         if (previousStatus != ProjectStatus.COMPLETED
                 && project.getStatus() == ProjectStatus.COMPLETED) {

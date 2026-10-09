@@ -46,7 +46,7 @@ public class ClientController {
     private final CurrentUserProvider userService;
 
     @Operation(summary = "Create a client", description = "Create a client for the authenticated user")
-    @ApiResponse(responseCode = "201", description = "Client created", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "201", description = "Client created", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @PostMapping
@@ -60,7 +60,7 @@ public class ClientController {
     }
 
     @Operation(summary = "List clients", description = "List the authenticated user's clients with optional filters, sorting, and pagination")
-    @ApiResponse(responseCode = "200", description = "Page of clients returned", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "200", description = "Page of clients returned", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "Invalid filter, sorting, or pagination options", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @GetMapping
@@ -81,7 +81,7 @@ public class ClientController {
     }
 
     @Operation(summary = "Get a client", description = "Get one owned client; include=projects or include=projects.tasks adds selected related fields")
-    @ApiResponse(responseCode = "200", description = "Client returned", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "200", description = "Client returned", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "Unsupported include path", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
@@ -112,7 +112,7 @@ public class ClientController {
     }
 
     @Operation(summary = "Replace a client", description = "Replace editable details of a client belonging to the authenticated user")
-    @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "200", description = "Client updated", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
@@ -126,7 +126,7 @@ public class ClientController {
     }
 
     @Operation(summary = "Update a client", description = "Update fields of a client belonging to the authenticated user")
-    @ApiResponse(responseCode = "200", description = "Client updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "200", description = "Client updated", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "Invalid client data", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
@@ -141,7 +141,7 @@ public class ClientController {
     }
 
     @Operation(summary = "Change client status", description = "Deactivate a client and archive its non-deleted projects without soft deletion; reactivating the client does not restore project statuses")
-    @ApiResponse(responseCode = "200", description = "Client status updated", content = @Content(schema = @Schema(implementation = ApiResult.class)))
+    @ApiResponse(responseCode = "200", description = "Client status updated", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "400", description = "isActive is required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content(schema = @Schema(implementation = ApiResult.class)))
     @ApiResponse(responseCode = "404", description = "Client not found", content = @Content(schema = @Schema(implementation = ApiResult.class)))
