@@ -1,0 +1,113 @@
+{
+  "commit": "ca77d74",
+  "date": "2026-10-09",
+  "node": "24.12.0",
+  "npm": "11.11.0",
+  "unitTests": {
+    "command": "npm.cmd test",
+    "exitCode": 0,
+    "tests": 30,
+    "passed": 30,
+    "failed": 0,
+    "skipped": 0
+  },
+  "typecheck": {
+    "command": "npm.cmd run typecheck",
+    "exitCode": 0
+  },
+  "build": {
+    "command": "npm.cmd run build",
+    "exitCode": 0,
+    "modulesTransformed": 3489,
+    "durationSeconds": 10.62,
+    "warnings": [
+      "Vite PLUGIN_TIMINGS performance diagnostic"
+    ]
+  },
+  "lint": {
+    "command": "npm.cmd run lint",
+    "exitCode": 1,
+    "status": "Blocked by missing local dependency",
+    "error": "ERR_MODULE_NOT_FOUND: Cannot find package '@eslint/js' imported from eslint.config.js",
+    "dependencyRestoreAttempt": "npm ci --ignore-scripts --no-audit --no-fund was not started: approval review timed out"
+  },
+  "coverage": {
+    "command": "node --experimental-test-coverage \"--test-coverage-include=src/**/*.ts\" \"--test-coverage-exclude=**/*.test.ts\" --import tsx --test src/api/*.test.ts src/services/*.test.ts src/utils/*.test.ts src/lib/*.test.ts",
+    "exitCode": 0,
+    "tests": 30,
+    "scope": "Only 11 imported production TypeScript files; excludes test files; not whole-project or React .tsx coverage",
+    "totals": {
+      "linePercent": 86.55,
+      "branchPercent": 80.47,
+      "functionPercent": 80.43
+    },
+    "files": [
+      {
+        "file": "api/apiClient.ts",
+        "linePercent": 97.32,
+        "branchPercent": 86.11,
+        "functionPercent": 92
+      },
+      {
+        "file": "api/apiError.ts",
+        "linePercent": 90,
+        "branchPercent": 100,
+        "functionPercent": 80
+      },
+      {
+        "file": "lib/analytics.ts",
+        "linePercent": 100,
+        "branchPercent": 68.75,
+        "functionPercent": 100
+      },
+      {
+        "file": "lib/dashboard.ts",
+        "linePercent": 97.06,
+        "branchPercent": 83.33,
+        "functionPercent": 100
+      },
+      {
+        "file": "lib/timeTracking.ts",
+        "linePercent": 100,
+        "branchPercent": 75,
+        "functionPercent": 100
+      },
+      {
+        "file": "services/report.ts",
+        "linePercent": 91.53,
+        "branchPercent": 75,
+        "functionPercent": 75
+      },
+      {
+        "file": "services/task.ts",
+        "linePercent": 65.38,
+        "branchPercent": 100,
+        "functionPercent": 75
+      },
+      {
+        "file": "services/timeTracking.ts",
+        "linePercent": 65.49,
+        "branchPercent": 46.15,
+        "functionPercent": 40
+      },
+      {
+        "file": "utils/csv.ts",
+        "linePercent": 70.59,
+        "branchPercent": 83.33,
+        "functionPercent": 80
+      },
+      {
+        "file": "utils/date.ts",
+        "linePercent": 58.82,
+        "branchPercent": 75,
+        "functionPercent": 66.67
+      },
+      {
+        "file": "utils/duration.ts",
+        "linePercent": 100,
+        "branchPercent": 90,
+        "functionPercent": 100
+      }
+    ]
+  }
+}

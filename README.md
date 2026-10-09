@@ -43,7 +43,7 @@ React UI → REST Controller → Service → Repository → PostgreSQL
 
 Controller รับ HTTP request และส่งต่อให้ Service; Service จัดการ business rules และ transaction; Repository เข้าถึงข้อมูลผ่าน JPA โดย Controller ไม่เรียก Repository ตรง ๆ Spring Security ตรวจ access JWT ก่อนเข้า endpoint ที่ต้องล็อกอิน และ Flyway จัดการ schema เมื่อ Backend เริ่มทำงาน
 
-เอกสารสถาปัตยกรรมเพิ่มเติม: [Class Diagram](doc/diagrams/class-diagram.md) ส่วน SOLID และ Design Patterns ฉบับรายบุคคลอยู่ใน `doc/V1/` และจะนำมารวมเป็นเอกสารกลางก่อนส่งงาน
+เอกสารสถาปัตยกรรมเพิ่มเติม: [Class Diagram](doc/diagrams/class-diagram.md), [Domain Model](doc/diagrams/domain-model.md), [Deployment Diagram](doc/diagrams/deployment-diagram.md) และ [ดัชนีเอกสารฉบับรวม](doc/README.md) ส่วนต้นฉบับรายบุคคลยังคงไว้ใน `doc/V1/`
 
 ## Database Design (ER Diagram)
 
@@ -51,7 +51,7 @@ Schema ปัจจุบันหลัง Flyway migration มี 7 ตาร�
 
 | ความสัมพันธ์ | การใช้งาน |
 | --- | --- |
-| `users` 1:1 `user_profiles` | โปรไฟล์ของผู้ใช้แต่ละบัญชี |
+| `users` 1:0..1 `user_profiles` | Schema อนุญาตไม่เกินหนึ่งโปรไฟล์; registration สร้างโปรไฟล์ให้ผู้ใช้ |
 | `users` 1:N `refresh_tokens` และ `clients` | session และลูกค้าที่ผู้ใช้เป็นเจ้าของ |
 | `clients` 1:N `projects` | โปรเจกต์ของลูกค้า |
 | `projects` 1:N `tasks` และ `time_entries` | งานย่อยและเวลาที่บันทึก |

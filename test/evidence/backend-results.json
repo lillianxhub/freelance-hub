@@ -1,0 +1,633 @@
+{
+  "commit": "ca77d74",
+  "date": "2026-10-09",
+  "command": ".\\mvnw.cmd --offline --batch-mode --no-transfer-progress -Dmaven.compiler.proc=full verify",
+  "java": "23.0.2",
+  "javaReleaseTarget": 17,
+  "maven": "3.9.16",
+  "exitCode": 0,
+  "result": "BUILD SUCCESS",
+  "countingRule": "Count actual testcase elements; do not rely only on testsuite.tests for nested JUnit tests",
+  "totals": {
+    "tests": 446,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suiteCount": 49,
+  "groups": {
+    "common": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "controller": {
+      "tests": 114,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "domain": {
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "dto": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "event": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "FreelanceHubApplicationTests": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "integration": {
+      "tests": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "mapper": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "repository": {
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "security": {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "seed": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "service": {
+      "tests": 182,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "suites": [
+    {
+      "suite": "th.ac.kku.freelance_hub.common.response.ApiErrorContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 1.339,
+      "reportUpdatedAt": "2026-10-09T10:38:29.255303+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.common.response.ApiErrorContractTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.common.response.ApiResultTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 3,
+      "durationSeconds": 0.035,
+      "reportUpdatedAt": "2026-10-09T10:38:29.276365+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.common.response.ApiResultTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.AuthControllerTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 24,
+      "durationSeconds": 13.822,
+      "reportUpdatedAt": "2026-10-09T10:38:43.132942+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.AuthControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.ClientControllerTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 26,
+      "durationSeconds": 0.812,
+      "reportUpdatedAt": "2026-10-09T10:38:43.960805+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.ClientControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.ProjectControllerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 12,
+      "durationSeconds": 0.688,
+      "reportUpdatedAt": "2026-10-09T10:38:44.621789+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.ProjectControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.ReportControllerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 5,
+      "durationSeconds": 0.237,
+      "reportUpdatedAt": "2026-10-09T10:38:44.855185+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.ReportControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.TaskControllerTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 17,
+      "durationSeconds": 0.682,
+      "reportUpdatedAt": "2026-10-09T10:38:45.556588+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.TaskControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.TaskDetailControllerTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 13,
+      "durationSeconds": 0.389,
+      "reportUpdatedAt": "2026-10-09T10:38:45.949883+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.TaskDetailControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.TimeEntryControllerTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 9,
+      "durationSeconds": 0.333,
+      "reportUpdatedAt": "2026-10-09T10:38:46.269093+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.TimeEntryControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.controller.TimerControllerTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 8,
+      "durationSeconds": 0.317,
+      "reportUpdatedAt": "2026-10-09T10:38:46.601048+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.controller.TimerControllerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.domain.entity.ProjectStateTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 5,
+      "durationSeconds": 0.046,
+      "reportUpdatedAt": "2026-10-09T10:38:46.631129+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.domain.entity.ProjectStateTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.domain.entity.TimeEntryTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 17,
+      "durationSeconds": 0.039,
+      "reportUpdatedAt": "2026-10-09T10:38:46.666269+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.domain.entity.TimeEntryTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.domain.progress.ProjectProgressThresholdsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 5,
+      "durationSeconds": 0.014,
+      "reportUpdatedAt": "2026-10-09T10:38:46.682089+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.domain.progress.ProjectProgressThresholdsTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequestTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 4,
+      "durationSeconds": 0.03,
+      "reportUpdatedAt": "2026-10-09T10:38:46.711543+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.dto.request.UpdateTimeEntryRequestTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.event.ProjectProgressThresholdListenerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 0.035,
+      "reportUpdatedAt": "2026-10-09T10:38:46.750103+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.event.ProjectProgressThresholdListenerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.event.TimerStoppedProgressListenerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 2,
+      "durationSeconds": 0.352,
+      "reportUpdatedAt": "2026-10-09T10:38:47.107974+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.event.TimerStoppedProgressListenerTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.FreelanceHubApplicationTests",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 0.052,
+      "reportUpdatedAt": "2026-10-09T10:38:47.159536+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.FreelanceHubApplicationTests.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.ClientIntegrationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 13,
+      "durationSeconds": 3.89,
+      "reportUpdatedAt": "2026-10-09T10:38:51.072275+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.ClientIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.CorsSecurityIntegrationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 5,
+      "durationSeconds": 2.29,
+      "reportUpdatedAt": "2026-10-09T10:38:53.346757+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.CorsSecurityIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.DashboardIntegrationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 3,
+      "durationSeconds": 1.462,
+      "reportUpdatedAt": "2026-10-09T10:38:54.816240+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.DashboardIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.HttpStatusContractIntegrationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 3,
+      "durationSeconds": 0.133,
+      "reportUpdatedAt": "2026-10-09T10:38:54.941243+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.HttpStatusContractIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.JwtAuthenticationFailureIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 2,
+      "durationSeconds": 1.194,
+      "reportUpdatedAt": "2026-10-09T10:38:56.144164+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.JwtAuthenticationFailureIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.OpenApiContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 4,
+      "durationSeconds": 0.103,
+      "reportUpdatedAt": "2026-10-09T10:38:56.249253+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.OpenApiContractTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.OpenApiProductionSecurityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 2,
+      "durationSeconds": 1.038,
+      "reportUpdatedAt": "2026-10-09T10:38:57.286595+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.OpenApiProductionSecurityTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.ReportIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 4,
+      "durationSeconds": 0.265,
+      "reportUpdatedAt": "2026-10-09T10:38:57.552095+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.ReportIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.TimeEntryIntegrationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 7,
+      "durationSeconds": 2.431,
+      "reportUpdatedAt": "2026-10-09T10:38:59.991375+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.TimeEntryIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.integration.UserAuthIntegrationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 8,
+      "durationSeconds": 1.663,
+      "reportUpdatedAt": "2026-10-09T10:39:01.651561+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.integration.UserAuthIntegrationTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.mapper.ClientMapperTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 7,
+      "durationSeconds": 0.005,
+      "reportUpdatedAt": "2026-10-09T10:39:01.655561+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.mapper.ClientMapperTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.mapper.ProjectMapperTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 0.001,
+      "reportUpdatedAt": "2026-10-09T10:39:01.660084+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.mapper.ProjectMapperTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.mapper.TaskMapperTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 0,
+      "reportUpdatedAt": "2026-10-09T10:39:01.664089+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.mapper.TaskMapperTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.mapper.TimeEntryMapperTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 4,
+      "durationSeconds": 0.003,
+      "reportUpdatedAt": "2026-10-09T10:39:01.668128+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.mapper.TimeEntryMapperTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.mapper.UserMapperTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 2,
+      "durationSeconds": 0.001,
+      "reportUpdatedAt": "2026-10-09T10:39:01.673136+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.mapper.UserMapperTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.repository.ClientRepositoryTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 7,
+      "durationSeconds": 0.179,
+      "reportUpdatedAt": "2026-10-09T10:39:01.851367+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.repository.ClientRepositoryTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.repository.ProjectRepositoryTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 7,
+      "durationSeconds": 0.177,
+      "reportUpdatedAt": "2026-10-09T10:39:02.022911+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.repository.ProjectRepositoryTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.repository.TaskRepositoryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 2,
+      "durationSeconds": 0.032,
+      "reportUpdatedAt": "2026-10-09T10:39:02.050572+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.repository.TaskRepositoryTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.repository.TimeEntryRepositoryTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 11,
+      "durationSeconds": 0.139,
+      "reportUpdatedAt": "2026-10-09T10:39:02.211298+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.repository.TimeEntryRepositoryTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.security.JwtAuthenticationFilterTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 0.179,
+      "reportUpdatedAt": "2026-10-09T10:39:02.375489+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.security.JwtAuthenticationFilterTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.security.JwtTokenProviderTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 13,
+      "durationSeconds": 0.03,
+      "reportUpdatedAt": "2026-10-09T10:39:02.405488+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.security.JwtTokenProviderTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.security.LoginAttemptLimiterTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 3,
+      "durationSeconds": 0.011,
+      "reportUpdatedAt": "2026-10-09T10:39:02.417103+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.security.LoginAttemptLimiterTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.seed.LocalSeedServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 1,
+      "durationSeconds": 1.198,
+      "reportUpdatedAt": "2026-10-09T10:39:03.624517+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.seed.LocalSeedServiceTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.AuthServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 9,
+      "durationSeconds": 0.677,
+      "reportUpdatedAt": "2026-10-09T10:39:04.296482+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.AuthServiceTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.ClientServiceImplTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 16,
+      "durationSeconds": 0.157,
+      "reportUpdatedAt": "2026-10-09T10:39:04.454424+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.ClientServiceImplTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.ProjectServiceImplTest",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 32,
+      "durationSeconds": 0.266,
+      "reportUpdatedAt": "2026-10-09T10:39:04.722336+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.ProjectServiceImplTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.RefreshTokenServiceTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 8,
+      "durationSeconds": 0.106,
+      "reportUpdatedAt": "2026-10-09T10:39:04.827702+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.RefreshTokenServiceTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.ReportServiceImplTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 4,
+      "durationSeconds": 0.097,
+      "reportUpdatedAt": "2026-10-09T10:39:04.924520+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.ReportServiceImplTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.TaskServiceImplTest",
+      "tests": 48,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 48,
+      "durationSeconds": 0.809,
+      "reportUpdatedAt": "2026-10-09T10:39:05.766690+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.TaskServiceImplTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.TimeEntryServiceImplTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 0,
+      "durationSeconds": 0.18,
+      "reportUpdatedAt": "2026-10-09T10:39:05.921977+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.TimeEntryServiceImplTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.TimerServiceImplTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 19,
+      "durationSeconds": 0.033,
+      "reportUpdatedAt": "2026-10-09T10:39:05.950609+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.TimerServiceImplTest.xml"
+    },
+    {
+      "suite": "th.ac.kku.freelance_hub.service.UserServiceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "declaredTests": 6,
+      "durationSeconds": 0.011,
+      "reportUpdatedAt": "2026-10-09T10:39:05.962907+00:00",
+      "sourceReport": "TEST-th.ac.kku.freelance_hub.service.UserServiceTest.xml"
+    }
+  ]
+}
