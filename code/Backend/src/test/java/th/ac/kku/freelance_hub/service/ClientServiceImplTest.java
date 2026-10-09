@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +33,7 @@ import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
+import th.ac.kku.freelance_hub.service.TimerService;
 import th.ac.kku.freelance_hub.service.impl.ClientServiceImpl;
 import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
@@ -44,6 +46,7 @@ class ClientServiceImplTest {
 
     @Mock ClientRepository clientRepository;
     @Mock UserRepository userRepository;
+    @Mock TimerService timerService;
 
     private ClientServiceImpl service;
     private User owner;
@@ -52,7 +55,8 @@ class ClientServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new ClientServiceImpl(clientRepository, userRepository, new ClientMapper());
+        service = new ClientServiceImpl(
+                clientRepository, userRepository, new ClientMapper(), timerService);
         owner = User.builder().id(OWNER_ID).build();
         client = new Client(owner, "Existing Client");
         clientId = UUID.randomUUID();
@@ -248,7 +252,7 @@ class ClientServiceImplTest {
     void invalidSortFieldIsRejected() {
         assertThatThrownBy(() -> service.list(OWNER_ID,
             ClientFilterRequest.builder().sortBy("owner.id").build()))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(InvalidArgumentException.class);
         verify(clientRepository, never()).findAll(any(Specification.class), any(Pageable.class));
     }
 }

@@ -17,13 +17,14 @@
 
 ## 2. GoF Patterns: กลุ่ม Behavioral
 
-ระบบใช้ Behavioral group โดยมี Strategy, Template Method และ Chain of Responsibility ผ่าน abstractions ของ Spring Security และมี State กับ Observer ใน domain/workflow ของ Project/Time Tracking แยกหลักฐาน framework reuse ออกจาก pattern ที่ทีมเขียนเองดังนี้
+ระบบใช้ Behavioral group โดยมี Strategy, Template Method และ Chain of Responsibility ผ่าน abstractions ของ Spring Security และมี Chain สำหรับแปลง error ที่ทีมเขียนเอง รวมถึง State กับ Observer ใน domain/workflow ของ Project/Time Tracking แยกหลักฐาน framework reuse ออกจาก pattern ที่ทีมเขียนเองดังนี้
 
 | Pattern | ปัญหาที่แก้ | Implementation และที่มา | Class Diagram / Flow |
 |---|---|---|---|
 | Strategy | Auth/Profile เปลี่ยน password encoding โดยไม่เปลี่ยน use case | AuthServiceImpl และ UserService พึ่ง PasswordEncoder; SecurityConfig กำหนด BCryptPasswordEncoder เป็น implementation ปัจจุบัน **เป็นการใช้ strategy ของ framework ไม่ใช่ระบบ metric strategies ที่ทีมสร้าง** | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | Template Method | ใช้ filter lifecycle ที่ framework จัดไว้และกำหนดเฉพาะขั้นตรวจ JWT | JwtAuthenticationFilter สืบทอด OncePerRequestFilter และ override doFilterInternal | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | Chain of Responsibility | ส่ง HTTP request ผ่าน security filters ก่อน Controller | SecurityConfig สร้าง SecurityFilterChain และวาง JwtAuthenticationFilter ด้วย addFilterBefore โดยอ้างตำแหน่ง UsernamePasswordAuthenticationFilter; ไม่ได้เปิด form login จึงไม่ถือว่า filter อ้างอิงนี้ต้องมี instance ใน chain; JWT filter ส่งต่อผ่าน FilterChain หรือคืน error ตามหน้าที่ | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
+| Chain of Responsibility (Error) | รวมการแปลง exception ของ MVC และ Security | ErrorHandlerChain เรียง ErrorHandler ตาม order และหยุดที่ตัวแรกที่คืน descriptor; fallback ตัวเดียวท้ายสุด; ApiErrorFactory ประกอบ response | [Error flow และ source](error-contract.md#flow) |
 | State | แยกกฎ transition และสิทธิ์ของ Project แต่ละสถานะ | ProjectState, PlannedState, ActiveState, OnHoldState, CompletedState, ArchivedState; ProjectStates.from เลือก state ตาม ProjectStatus ที่เก็บใน DB | [Project State](diagrams/class-diagram.md#project-state-pattern) |
 | Observer | เมื่อ timer หยุด ให้ workflow ความคืบหน้าตอบสนองโดยไม่ฝัง logic ใน TimerService | TimerServiceImpl เผยแพร่ TimerStoppedEvent; TimerStoppedProgressListener รับหลัง commit และเผยแพร่ ProjectProgressThresholdEvent; ProjectProgressThresholdListener เขียน log | [Observer sequence](diagrams/sequence-diagram.md#scenario-06-progress-threshold-events) |
 
@@ -85,7 +86,7 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 ## 4. รูปแบบที่ไม่ควรนับเป็น GoF เพิ่ม
 
 - Static factories เช่น TimeEntry.startTimer/createManual ไม่ใช่ GoF Factory Method ที่มี creator hierarchy
-- ApiErrorFactory เป็น shared error-construction component ไม่ใช่หลักฐาน GoF Factory Method
+- ApiErrorFactory เป็น Factory สำหรับสร้าง error envelope จาก ErrorDescriptor โดยไม่ตัดสิน mapping; ไม่ใช่ GoF Factory Method ที่ใช้ subclass override การสร้าง object ดู [Error Contract](error-contract.md)
 - JPA Specification, row locks, optimistic locking, DTO projections และ soft delete เป็น API/กลไกออกแบบ ไม่ใช่ GoF Strategy/State โดยอัตโนมัติ
 - Refresh-token rotation, rate limiter และ ClientStatus ไม่ถูกนับเป็น State/Strategy เพิ่มเพื่อให้ครบจำนวน
 - ยังไม่มี ProductivityMetricStrategy หลาย implementations ตามแผนใน REQUIREMENTS จึงไม่อ้างว่า feature นี้เสร็จแล้ว

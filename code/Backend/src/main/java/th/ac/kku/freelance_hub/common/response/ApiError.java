@@ -13,7 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class ApiError {
     private String code;
-    private Object details;
+    private Map<String, Object> details;
     private Integer status;
     @JsonFormat(shape = JsonFormat.Shape.STRING, timezone = "UTC")
     private Instant timestamp;

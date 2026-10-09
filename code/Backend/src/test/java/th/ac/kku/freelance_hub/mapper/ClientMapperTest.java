@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.mapper;
 
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -119,8 +120,8 @@ class ClientMapperTest {
 
         assertThatThrownBy(() -> mapper.updateEntity(
             UpdateClientRequest.builder().name("   ").build(), client
-        )).isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("name is required");
+        )).isInstanceOf(InvalidArgumentException.class)
+          .hasMessageContaining("กรุณาระบุชื่อ");
     }
 
     @Test

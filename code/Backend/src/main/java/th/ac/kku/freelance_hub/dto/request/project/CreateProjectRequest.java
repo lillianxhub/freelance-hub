@@ -19,13 +19,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateProjectRequest {
 
-    @NotNull(message = "Client ID is required")
+    @NotNull(message = "กรุณาระบุลูกค้า")
     private UUID clientId;
 
-    @NotBlank(message = "Project name is required")
+    @NotBlank(message = "กรุณาระบุชื่อโปรเจกต์")
     @Size(
             max = 180,
-            message = "Project name must not exceed 180 characters"
+            message = "ชื่อโปรเจกต์ต้องไม่เกิน 180 ตัวอักษร"
     )
     private String name;
 
@@ -37,10 +37,10 @@ public class CreateProjectRequest {
 
     @Pattern(
             regexp = "^#[0-9A-Fa-f]{6}$",
-            message = "Color must use #RRGGBB format"
+            message = "กรุณาระบุสีในรูปแบบ #RRGGBB"
     )
     private String color;
 
-    @Positive(message = "Target minutes must be greater than zero")
+    @Positive(message = "เวลาเป้าหมายต้องมากกว่าศูนย์")
     private Integer targetMinutes;
 }

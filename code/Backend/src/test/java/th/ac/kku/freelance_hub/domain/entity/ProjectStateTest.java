@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.domain.entity;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -43,12 +44,12 @@ class ProjectStateTest {
         Project project = newProject();
 
         assertThatThrownBy(() -> project.changeStatus(ProjectStatus.COMPLETED))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.PLANNED);
 
         project.archive();
         assertThatThrownBy(() -> project.changeStatus(ProjectStatus.ON_HOLD))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
     }
 
@@ -83,7 +84,7 @@ class ProjectStateTest {
                 }
 
                 assertThatThrownBy(() -> project.changeStatus(nextStatus))
-                        .isInstanceOf(IllegalStateException.class)
+                        .isInstanceOf(InvalidStateException.class)
                         .hasMessageContaining("ลูกค้าถูกจัดเก็บ");
                 assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
                 assertThat(project.getIsActive()).isFalse();

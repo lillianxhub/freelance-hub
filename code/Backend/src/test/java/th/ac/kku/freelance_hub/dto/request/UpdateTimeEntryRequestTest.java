@@ -74,7 +74,7 @@ class UpdateTimeEntryRequestTest {
 
         assertThat(violations)
                 .extracting(ConstraintViolation::getMessage)
-                .contains("Provide either end time or duration seconds, but not both");
+                .contains("กรุณาระบุเวลาสิ้นสุดหรือระยะเวลาอย่างใดอย่างหนึ่ง");
     }
 
     @Test
@@ -88,9 +88,9 @@ class UpdateTimeEntryRequestTest {
         assertThat(violations)
                 .extracting(ConstraintViolation::getMessage)
                 .containsExactlyInAnyOrder(
-                        "Project ID is required",
-                        "Start time is required",
-                        "Provide either end time or duration seconds, but not both"
+                        "กรุณาระบุโปรเจกต์",
+                        "กรุณาระบุเวลาเริ่มต้น",
+                        "กรุณาระบุเวลาสิ้นสุดหรือระยะเวลาอย่างใดอย่างหนึ่ง"
                 );
     }
 }

@@ -199,7 +199,8 @@ sequenceDiagram
     participant S as ClientServiceImpl
     participant R as ClientRepository
     participant E as Client
-    participant H as ClientExceptionHandler
+    participant H as GlobalExceptionHandler
+    participant Chain as ErrorHandlerChain
     participant A as ApiErrorFactory
 
     F->>M: DELETE /api/clients/{id} with Bearer JWT
@@ -219,7 +220,9 @@ sequenceDiagram
         S-->>C: ClientNotFoundException
         C-->>M: Propagate exception
         M->>H: Resolve ClientNotFoundException
-        H->>A: response(404, message, CLIENT_NOT_FOUND, null)
+        H->>Chain: resolve(exception, MVC context)
+        Chain-->>H: ErrorDescriptor(404, CLIENT_NOT_FOUND, details.id)
+        H->>A: response(descriptor)
         A-->>H: ApiResult with error metadata
         H-->>M: 404 ApiResult
         M-->>F: 404 ApiResult and X-Request-ID

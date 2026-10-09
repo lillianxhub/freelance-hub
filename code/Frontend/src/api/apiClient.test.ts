@@ -282,3 +282,60 @@ test('legacy direct objects are normalized during API response migration', async
     globalThis.fetch = originalFetch
   }
 })
+
+for (const status of [400, 200]) {
+  test(`error metadata survives ${status === 200 ? 'success=false' : 'HTTP failure'}`, async () => {
+    const originalFetch = globalThis.fetch
+    const metadata = {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      details: { field: 'name' },
+      fieldErrors: { name: 'กรุณาระบุชื่อ' },
+      timestamp: '2026-10-09T10:00:00Z',
+      traceId: 'test-trace',
+    }
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          message: 'ข้อมูลที่ส่งมาไม่ถูกต้อง',
+          data: null,
+          meta: null,
+          error: metadata,
+        }),
+        { status },
+      )
+    try {
+      await assert.rejects(fetchClient('/test'), (error: unknown) => {
+        assert.ok(error instanceof ApiError)
+        assert.equal(error.status, status)
+        assert.equal(error.message, 'ข้อมูลที่ส่งมาไม่ถูกต้อง')
+        assert.equal(error.code, metadata.code)
+        assert.deepEqual(error.details, metadata.details)
+        assert.deepEqual(error.fieldErrors, metadata.fieldErrors)
+        assert.equal(error.timestamp, metadata.timestamp)
+        assert.equal(error.traceId, metadata.traceId)
+        return true
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+}
+
+test('non-JSON error keeps HTTP status and a usable fallback', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response('<html>gateway failure</html>', { status: 502 })
+  try {
+    await assert.rejects(fetchClient('/test'), (error: unknown) => {
+      assert.ok(error instanceof ApiError)
+      assert.equal(error.status, 502)
+      assert.equal(error.message, 'API error (502)')
+      assert.equal(error.details, null)
+      assert.equal(error.code, undefined)
+      return true
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
