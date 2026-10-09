@@ -75,6 +75,7 @@ public class AuthController {
         @Operation(summary = "Rotate refresh token", description = "Issue a new access token and rotate the HttpOnly refresh cookie")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Token refreshed", useReturnTypeSchema = true),
+                        @ApiResponse(responseCode = "401", description = "Refresh token is missing, invalid, expired, or revoked", content = @Content(schema = @Schema(implementation = ApiResult.class))),
                         @ApiResponse(responseCode = "403", description = "Origin not allowed")
         })
         @SecurityRequirements
@@ -97,6 +98,7 @@ public class AuthController {
                         @ApiResponse(responseCode = "204", description = "Logout successful"),
                         @ApiResponse(responseCode = "403", description = "Origin not allowed")
         })
+        @SecurityRequirements
         @PostMapping("/logout")
         public ResponseEntity<Void> logout(
                         @CookieValue(name = RefreshTokenCookie.NAME, required = false) String refreshToken,

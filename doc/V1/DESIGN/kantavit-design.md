@@ -9,7 +9,7 @@
 |---|---|---|
 | State (GoF) | ให้สถานะปัจจุบันกำหนดว่า Project เปลี่ยนสถานะ เริ่มจับเวลา หรือแก้ Task ได้หรือไม่ | `domain/state/ProjectState.java`, `PlannedState.java`, `ActiveState.java`, `OnHoldState.java`, `CompletedState.java`, `ArchivedState.java`, `ProjectStates.java`, `domain/entity/Project.java` |
 | Observer (GoF ในรูปแบบ Spring Application Event) | ให้การหยุด timer ส่งเหตุการณ์ไปตรวจเกณฑ์เวลา 80%/100% โดยไม่ผูก Timer Service กับการคำนวณความคืบหน้าของ Project | `event/TimerStoppedEvent.java`, `TimerStoppedProgressListener.java`, `ProjectProgressThresholdEvent.java`, `ProjectProgressThresholdListener.java` |
-| Service Layer | รวมการตรวจ owner, timer ที่ยังทำงาน และการล็อก Time Entry เมื่อ Project เสร็จใน use case เดียว | `service/ProjectService.java`, `service/impl/ProjectServiceImpl.java`, `service/TaskService.java`, `service/impl/TaskServiceImpl.java` |
+| Service Layer | ตรวจ owner และ timer, ตรวจ Task ก่อนปิด Project, ล็อก Time Entry เมื่อ Project เสร็จ และห้ามปิด Task ที่ยังเป็น `OPEN` | `service/ProjectService.java`, `service/impl/ProjectServiceImpl.java`, `service/TaskService.java`, `service/impl/TaskServiceImpl.java` |
 | Repository | แยกการอ่านและบันทึก Project/Task ออกจาก service | `repository/ProjectRepository.java`, `repository/TaskRepository.java` |
 | DTO + Mapper | กำหนดข้อมูล request/response โดยไม่ส่ง JPA entity ออก API ตรง ๆ | `dto/request/project/`, `dto/request/task/`, `dto/response/project/`, `dto/response/task/`, `mapper/ProjectMapper.java`, `mapper/TaskMapper.java` |
 
@@ -50,6 +50,9 @@ classDiagram
         <<interface>>
         +lockByProject(ownerId, projectId) void
     }
+    class TaskRepository {
+        +summarizeProgressByProjectIds(ownerId, projectIds, completedStatus)
+    }
     Project ..> ProjectStates : เลือกจากสถานะปัจจุบัน
     ProjectStates ..> ProjectState : คืน State
     ProjectState <|.. PlannedState
@@ -58,6 +61,7 @@ classDiagram
     ProjectState <|.. CompletedState
     ProjectState <|.. ArchivedState
     ProjectServiceImpl --> Project : changeStatus
+    ProjectServiceImpl --> TaskRepository : ตรวจ Task ก่อน COMPLETED
     ProjectServiceImpl --> TimeEntryService : lockByProject เมื่อ COMPLETED
     TaskServiceImpl --> Project : canEditTasks
     TaskServiceImpl --> Task : changeStatus
@@ -70,8 +74,13 @@ flowchart TD
     A[ผู้ใช้ส่งคำขอเปลี่ยนสถานะ Project] --> B[ProjectServiceImpl โหลด Project ของ owner ที่ยังไม่ถูก soft delete]
     B --> C{Project นี้มี timer กำลังทำงาน?}
     C -- มี --> D[คืน 409 และให้หยุด timer ก่อน]
-    C -- ไม่มี --> E[ProjectStates เลือก State ปัจจุบัน]
-    E --> F{State อนุญาตสถานะใหม่?}
+    C -- ไม่มี --> E{ACTIVE → COMPLETED?}
+    E -- ใช่ --> N[TaskRepository นับ Task ที่ยังใช้งานและ Task ที่เสร็จ]
+    N --> O{ไม่มี Task ที่ยังไม่เสร็จ?}
+    O -- ไม่ --> G[คืน 409]
+    O -- ใช่ --> P[ProjectStates เลือก State ปัจจุบัน]
+    E -- ไม่ --> P
+    P --> F{State อนุญาตสถานะใหม่?}
     F -- ไม่ --> G[คืน 409]
     F -- ใช่ --> H{กำลังคืนจาก ARCHIVED?}
     H -- ใช่ --> I{Client ยัง active และไม่ถูก soft delete?}
@@ -94,13 +103,13 @@ flowchart TD
 | `COMPLETED` | `ARCHIVED` | ไม่ได้ | ไม่ได้ |
 | `ARCHIVED` | `ACTIVE`, `PLANNED` เมื่อ Client ยังใช้งาน และ Project/Client ยังไม่ถูก soft delete | ไม่ได้ | ไม่ได้ |
 
-State ทุกตัวอนุญาตสถานะเดิมซ้ำ แต่ `ProjectServiceImpl.changeStatus()` และ `archive()` ปฏิเสธคำขอหาก timer ของ Project นั้นกำลังทำงาน การเปลี่ยนเป็น `ARCHIVED` ผ่าน `PATCH /api/projects/{id}/status` ตั้ง `isActive=false` แต่ **ไม่** ตั้ง `deletedAt`; เปลี่ยนกลับเป็น `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` เฉพาะเมื่อ Client มี `isActive=true` และ `deletedAt=null` เท่านั้น `PUT /api/projects/{id}` ปฏิเสธการแก้รายละเอียดของ Project ที่ `ARCHIVED`; ส่วน `DELETE /api/projects/{id}` เรียก `Project.archive()` และตั้ง `deletedAt` จึงเป็น soft delete ทำให้ค้น Project นี้ผ่าน API เพื่อคืนสถานะไม่ได้ (`domain/entity/Project.java:185-219`, `service/impl/ProjectServiceImpl.java:328-381`, `repository/ProjectRepository.java:30-39`)
+State ทุกตัวอนุญาตสถานะเดิมซ้ำ แต่ `ProjectServiceImpl.changeStatus()` และ `archive()` ปฏิเสธคำขอหาก timer ของ Project นั้นกำลังทำงาน ก่อน `ACTIVE → COMPLETED`, Service นับ Task ที่ยังใช้งานผ่าน `TaskRepository.summarizeProgressByProjectIds()` และคืน `409` หากยังมี Task ไม่เสร็จ; Project ที่ไม่มี Task ที่ยังใช้งานผ่านเงื่อนไขนี้ ส่วน `ACTIVE → ARCHIVED` ไม่ต้องรอ Task เสร็จ กฎนี้อยู่ใน Service ก่อนเรียก State การเปลี่ยนเป็น `ARCHIVED` ผ่าน `PATCH /api/projects/{id}/status` ตั้ง `isActive=false` แต่ **ไม่** ตั้ง `deletedAt`; เปลี่ยนกลับเป็น `ACTIVE` หรือ `PLANNED` จะตั้ง `isActive=true` เฉพาะเมื่อ Client มี `isActive=true` และ `deletedAt=null` เท่านั้น `PUT /api/projects/{id}` ปฏิเสธการแก้รายละเอียดของ Project ที่ `ARCHIVED`; ส่วน `DELETE /api/projects/{id}` เรียก `Project.archive()` และตั้ง `deletedAt` จึงเป็น soft delete ทำให้ค้น Project นี้ผ่าน API เพื่อคืนสถานะไม่ได้ (`domain/entity/Project.java:185-219`, `service/impl/ProjectServiceImpl.java:328-384`, `repository/TaskRepository.java:79-95`, `repository/ProjectRepository.java:30-39`)
 
 เมื่อเปลี่ยน Client เป็น inactive, `ClientServiceImpl.changeStatus()` จะเรียก `Project.changeStatus(ARCHIVED)` กับ Project ของ Client ที่ยังไม่ถูก soft delete ภายใน transaction เดียวกัน เส้นทางนี้ไม่ได้เรียก `ProjectServiceImpl.requireNoRunningTimer()` จึงไม่อยู่ภายใต้เงื่อนไขห้ามเปลี่ยนสถานะขณะ timer วิ่งของ Project API; ส่วน `ClientServiceImpl.softDelete()` ตั้ง `deletedAt` ของ Client โดยไม่เปลี่ยนสถานะ Project (`service/impl/ClientServiceImpl.java:185-202`)
 
-`TaskServiceImpl` ตรวจ `project.canEditTasks()` ก่อนสร้าง แก้ เปลี่ยนสถานะ ย้าย และลบ Task; ฝั่ง Time Entry ตรวจ `project.canTrackTime()` ก่อนเริ่ม timer ขณะที่ `TaskStatus` (`OPEN`, `IN_PROGRESS`, `COMPLETED`) เป็น enum และกฎใน `Task.changeStatus()` ไม่ใช่ State pattern อีกชุด Task ที่ `COMPLETED` ย้อนเป็น `IN_PROGRESS` ได้โดยล้าง `completedAt` แต่ย้อนเป็น `OPEN` ไม่ได้ และถ้า Project เป็น `ARCHIVED` จะย้อน Task ไม่ได้ (`service/impl/TaskServiceImpl.java:178-197,297-311`, `domain/entity/Task.java:179-199`)
+`TaskServiceImpl` ตรวจ `project.canEditTasks()` ก่อนสร้าง แก้ เปลี่ยนสถานะ ย้าย และลบ Task; ฝั่ง Time Entry ตรวจ `project.canTrackTime()` ก่อนเริ่ม timer ขณะที่ `TaskStatus` (`OPEN`, `IN_PROGRESS`, `COMPLETED`) เป็น enum และกฎใน `Task.changeStatus()` ไม่ใช่ State pattern อีกชุด ทั้ง API เปลี่ยนสถานะและเส้น `/complete` เรียก `requireStartedBeforeCompletion()` เพื่อปฏิเสธ `OPEN → COMPLETED` ก่อนเรียก Entity; `Task.changeStatus()` โดยตรงยังไม่ได้ห้ามกรณีนี้ Task ที่ `COMPLETED` ย้อนเป็น `IN_PROGRESS` ได้โดยล้าง `completedAt` แต่ย้อนเป็น `OPEN` ไม่ได้ และถ้า Project เป็น `ARCHIVED` จะย้อน Task ไม่ได้ (`service/impl/TaskServiceImpl.java:179-227,300-304`, `domain/entity/Task.java:179-199`)
 
-เมื่อ Project เพิ่งเปลี่ยนเข้าสู่ `COMPLETED`, `ProjectServiceImpl.changeStatus()` เรียก `TimeEntryService.lockByProject()` หลัง State ตรวจ transition และก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่ถูกล็อกจะแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ การประสานงานนี้อยู่ใน Service ไม่ใช่ใน `CompletedState` (`service/impl/ProjectServiceImpl.java:355-375`, `service/TimeEntryService.java:39-52`)
+เมื่อ Project เพิ่งเปลี่ยนเข้าสู่ `COMPLETED`, `ProjectServiceImpl.changeStatus()` ตรวจ Task ที่ยังใช้งานก่อน แล้วเรียก `TimeEntryService.lockByProject()` หลัง State ตรวจ transition และก่อนบันทึก Project ภายใน transaction เดียวกัน รายการเวลาที่ถูกล็อกจะแก้หรือลบไม่ได้; การส่ง `COMPLETED` ซ้ำไม่ล็อกซ้ำ การประสานงานนี้อยู่ใน Service ไม่ใช่ใน `CompletedState` (`service/impl/ProjectServiceImpl.java:356-384`, `service/TimeEntryService.java:39-52`)
 
 - การเปลี่ยนกฎของสถานะเดิมแก้ได้ใน State ของสถานะนั้น แต่การเพิ่มสถานะใหม่ยังต้องเพิ่มค่าใน `ProjectStatus` enum และเพิ่มการเลือกใน `ProjectStates.from()`; ฐานข้อมูลเก็บ enum ไม่ได้เก็บ State object (`domain/state/ProjectStates.java:13-24`)
 - `TaskStatus` และกฎใน `Task.changeStatus()` ไม่ใช่ State pattern อีกชุด ส่วน `ProjectProgressThresholds` เป็นตัวช่วยคำนวณ ไม่ใช่ GoF Strategy
@@ -136,4 +145,4 @@ sequenceDiagram
 
 ผลลัพธ์ที่มีจริงตอนนี้คือ `ProjectProgressThresholdListener` เขียน log เมื่อได้ event (`event/ProjectProgressThresholdListener.java:14-22`) จึงยังไม่ครอบคลุมการแจ้งเตือนบน UI ตาม FR-PRJ-07
 
-**หลักฐานการทดสอบ:** `ProjectStateTest` และ `ProjectServiceImplTest` ตรวจ transition, สิทธิ์ timer/Task, การคืนสถานะจาก `ARCHIVED` และการล็อก Time Entry เมื่อเข้า `COMPLETED`; `TaskServiceImplTest` ตรวจ `COMPLETED → IN_PROGRESS → COMPLETED` และการห้ามย้อน Task ของ Project ที่จัดเก็บ; `ProjectProgressThresholdsTest`, `TimerStoppedProgressListenerTest` และ `ProjectProgressThresholdListenerTest` ตรวจเกณฑ์ 80%/100%, กรณีไม่มีเป้าหมาย การเผยแพร่ event และการรับเพื่อเขียน log ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
+**หลักฐานการทดสอบ:** `ProjectStateTest` และ `ProjectServiceImplTest` ตรวจ transition, สิทธิ์ timer/Task, การคืนสถานะจาก `ARCHIVED`, การห้ามปิด Project ที่ยังมี Task ที่ใช้งานและไม่เสร็จ และการล็อก Time Entry เมื่อเข้า `COMPLETED`; `TaskServiceImplTest` ตรวจ `COMPLETED → IN_PROGRESS → COMPLETED`, การปฏิเสธ `OPEN → COMPLETED` ผ่าน API ทั้งสองเส้น และการห้ามย้อน Task ของ Project ที่จัดเก็บ; `ProjectProgressThresholdsTest`, `TimerStoppedProgressListenerTest` และ `ProjectProgressThresholdListenerTest` ตรวจเกณฑ์ 80%/100%, กรณีไม่มีเป้าหมาย การเผยแพร่ event และการรับเพื่อเขียน log ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`

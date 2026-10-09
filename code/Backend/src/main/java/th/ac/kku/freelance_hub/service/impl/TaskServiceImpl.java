@@ -19,6 +19,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
 import th.ac.kku.freelance_hub.exception.TaskNotFoundException;
 import th.ac.kku.freelance_hub.mapper.TaskMapper;
@@ -191,6 +192,7 @@ public class TaskServiceImpl implements TaskService {
 
         findEditableProjectForUpdate(ownerId, task.getProject().getId());
         entityManager.refresh(task);
+        requireStartedBeforeCompletion(task, request.getStatus());
         task.changeStatus(request.getStatus(), Instant.now());
 
         return taskMapper.toResponse(taskRepository.saveAndFlush(task));
@@ -221,6 +223,7 @@ public class TaskServiceImpl implements TaskService {
         findEditableProjectForUpdate(ownerId, projectId);
 
         Task task = findOwnedTask(ownerId, projectId, taskId);
+        requireStartedBeforeCompletion(task, TaskStatus.COMPLETED);
         task.complete(Instant.now());
 
         return taskMapper.toResponse(taskRepository.saveAndFlush(task));
@@ -292,6 +295,12 @@ public class TaskServiceImpl implements TaskService {
 
         return projectRepository.findByIdAndOwnerId(projectId, ownerId)
                 .orElseThrow(() -> new ProjectNotFoundException(projectId));
+    }
+
+    private static void requireStartedBeforeCompletion(Task task, TaskStatus nextStatus) {
+        if (nextStatus == TaskStatus.COMPLETED && task.getStatus() == TaskStatus.OPEN) {
+            throw new IllegalStateException("task must be in progress before completion");
+        }
     }
 
     private Project findEditableProjectForUpdate(

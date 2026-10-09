@@ -3,6 +3,7 @@ import { NativeSelect } from '../../components/ui/native-select'
 import { Textarea } from '../../components/ui/textarea'
 import { Button } from '../../components/ui/button'
 import { DatePicker } from '../../components/ui/date-picker'
+import { ColorPicker } from '../../components/ui/color-picker'
 import type { ChangeEvent } from 'react'
 import type { ProjectFormProps } from "../../types/projectsPage";
 import FormLabel from "../../components/FormLabel";
@@ -138,13 +139,10 @@ export default function ProjectForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <FormLabel htmlFor="project-color" required>สีโปรเจกต์</FormLabel>
-          <Input
+          <ColorPicker
             id="project-color"
-            name="color"
-            type="color"
             value={value.color}
-            onChange={onChange}
-            required
+            onChange={(color) => onChange({ target: { name: 'color', value: color }, currentTarget: { name: 'color', value: color } } as ChangeEvent<HTMLInputElement>)}
           />
         </div>
         {/* <div className="flex flex-col gap-1.5">

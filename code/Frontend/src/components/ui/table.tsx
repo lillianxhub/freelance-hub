@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "./pagination"
+import { getPaginationItems } from '../../utils/pagination'
 
 export interface TablePaginationProps {
   page: number
@@ -75,20 +76,6 @@ function TablePagination({ page, totalPages, onPageChange, className }: TablePag
       </PaginationContent>
     </Pagination>
   )
-}
-
-function getPaginationItems(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
-  if (totalPages <= 5) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1)
-  }
-
-  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
-  return [...pages]
-    .filter((item) => item >= 1 && item <= totalPages)
-    .sort((a, b) => a - b)
-    .flatMap((item, index, items) =>
-      index > 0 && item - items[index - 1] > 1 ? ["ellipsis" as const, item] : [item],
-    )
 }
 
 function Table({ className, pagination, ...props }: TableProps) {

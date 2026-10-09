@@ -3,7 +3,7 @@ import { TimeEntriesContext } from './time-entries-context'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { listClientOptions } from '../services/client'
 import { listTimerProjects } from '../services/timerOptions'
-import { deleteTimeEntry as deleteTimeEntryRequest, listTimeEntries, saveTimeEntry as saveTimeEntryRequest } from '../services/timeTracking'
+import { deleteTimeEntry as deleteTimeEntryRequest, saveTimeEntry as saveTimeEntryRequest } from '../services/timeTracking'
 import type { AsyncDataState } from '../types/asyncData'
 import type { Client } from '../types/client'
 import type { Project } from '../types/project'
@@ -19,13 +19,13 @@ const emptyData: TimeEntriesData = { clients: [], projects: [], tasks: [], time_
 
 export function TimeEntriesProvider({ children }: PropsWithChildren) {
   const load = useCallback(async () => {
-    const [clients, projects, time_entries] = await Promise.all([listClientOptions(), listTimerProjects(), listTimeEntries()])
-    return { clients, projects, tasks: [], time_entries }
+    const [clients, projects] = await Promise.all([listClientOptions(), listTimerProjects()])
+    return { clients, projects, tasks: [], time_entries: [] }
   }, [])
   const state = useAsyncData(load, emptyData)
   const value: TimeEntriesContextValue = { ...state,
-    async saveTimeEntry(input) { const result = await saveTimeEntryRequest(input); await state.refresh(); return result },
-    async deleteTimeEntry(id) { await deleteTimeEntryRequest(id); await state.refresh() },
+    async saveTimeEntry(input) { return saveTimeEntryRequest(input) },
+    async deleteTimeEntry(id) { await deleteTimeEntryRequest(id) },
   }
   return <TimeEntriesContext.Provider value={value}>{children}</TimeEntriesContext.Provider>
 }

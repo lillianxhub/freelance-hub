@@ -11,8 +11,14 @@ export function toTask(source: ApiTask): Task {
 }
 
 export async function listTasks(projectId: string): Promise<Task[]> {
-  const response = await api.get<ApiTask[]>(`/projects/${encodeURIComponent(projectId)}/tasks?page=1&limit=10&sort=sortOrder,asc`)
-  return response.data.map(toTask)
+  const path = `/projects/${encodeURIComponent(projectId)}/tasks`
+  const firstPage = await api.get<ApiTask[]>(`${path}?page=1&limit=100&sort=sortOrder,asc`)
+  const remainingPages = await Promise.all(
+    Array.from({ length: Math.max(0, (firstPage.meta?.totalPages ?? 1) - 1) }, (_, index) =>
+      api.get<ApiTask[]>(`${path}?page=${index + 2}&limit=100&sort=sortOrder,asc`),
+    ),
+  )
+  return [...firstPage.data, ...remainingPages.flatMap((page) => page.data)].map(toTask)
 }
 
 export async function saveTask(input: TaskInput): Promise<Task> {
@@ -30,6 +36,14 @@ export async function changeTaskStatus(id: string, status: Task['status']): Prom
   const response = await api.patch<ApiTask>(`/tasks/${encodeURIComponent(id)}/status`, {
     status,
   })
+  return toTask(response.data)
+}
+
+export async function reorderTask(projectId: string, taskId: string, sortOrder: number): Promise<Task> {
+  const response = await api.patch<ApiTask>(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}/reorder`,
+    { sortOrder },
+  )
   return toTask(response.data)
 }
 

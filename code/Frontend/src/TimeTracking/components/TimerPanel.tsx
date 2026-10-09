@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FiLoader, FiPlay, FiSquare, FiTrash2 } from 'react-icons/fi'
 import { toast } from 'sonner'
 import { getErrorMessage } from '../../api/apiError'
@@ -21,7 +22,12 @@ interface TimerPanelProps {
 type TimerAction = 'starting' | 'stopping' | 'cancelling'
 
 export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerChanged }: TimerPanelProps) {
-  const timer = useTimer(workspace, { loadTaskOptions: true })
+  const [searchParams] = useSearchParams()
+  const timer = useTimer(workspace, {
+    loadTaskOptions: true,
+    initialProjectId: searchParams.get('projectId') ?? '',
+    initialTaskId: searchParams.get('taskId') ?? '',
+  })
   const formattedTimer = formatTimer(timer.elapsedSeconds)
   const [timerLeading, timerSeconds] = formattedTimer.split(/:(?=[^:]+$)/)
   const [pendingAction, setPendingAction] = useState<TimerAction | null>(null)
@@ -160,7 +166,7 @@ export default function TimerPanel({ workspace, onProjectOptionsOpen, onTimerCha
                 variant="default"
                 className="h-[41px] w-full min-w-0 gap-2 whitespace-nowrap @min-[900px]:min-w-[165px]"
                 type="button"
-                disabled={!timer.timerProjectId || pendingAction !== null}
+                disabled={!timer.timerProjectId || !timer.selectedTaskReady || pendingAction !== null}
                 onClick={() => void runTimerAction(timer.startTimer, 'starting')}
               >
                 <FiPlay aria-hidden="true" /> เริ่มจับเวลา
