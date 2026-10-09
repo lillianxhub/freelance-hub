@@ -7,17 +7,17 @@
 
 | เกณฑ์ | Implementation | หลักฐาน |
 |---|---|---|
-| GitHub Actions | ตรวจ PR และ push ที่เข้า `dev`/`main` | `.github/workflows/backend.yml:6–14`, `frontend-ci.yml:4–12` |
-| Build และ Test อัตโนมัติ | Backend ใช้ Maven `verify`; Frontend lint, typecheck, unit test และ build | `backend.yml:70–94`, `frontend-ci.yml:49–84` |
-| Migration Script | รัน Flyway `migrate` และ `validate` กับ PostgreSQL ว่าง | `backend.yml:96–144` |
-| Dockerfile | build image จริงและเปิด application container | `backend.yml:146–210`, `code/Backend/Dockerfile` |
-| Database smoke check | ตรวจ 7 ตารางหลักและ migration history | `backend.yml:212–221` |
-| Auth smoke test | สมัครผู้ใช้ผ่าน `POST /api/auth/register` และตรวจว่ามี token | `backend.yml:223–229` |
-| Quality gate | รวมผล test, migration และ Docker เป็น status `Backend gate` | `backend.yml:241–274` |
-| Staging deployment | push เข้า `dev` และ Backend gate ผ่านจึงเรียก Render staging deploy hook; job ไม่ตรวจ readiness หลัง deploy | `backend.yml:276–289` |
-| Production deployment | push เข้า `main` และ Backend gate ผ่านจึงเรียก Render production deploy hook; job ไม่ตรวจ readiness หลัง deploy | `backend.yml:291–304` |
-| Branch workflow | มี job แยกตรวจว่า PR เข้า `main` มาจาก `dev`; ไม่ได้เป็น dependency ของ `Backend gate` | `backend.yml:54–68` |
-| Secret handling | deploy URL อ่านจาก GitHub Environment secrets ไม่เขียนลง repository | `backend.yml:281–289,296–304` |
+| GitHub Actions | ตรวจ PR และ push ที่เข้า `dev`/`main` | [backend.yml](../../../.github/workflows/backend.yml#L6), [frontend-ci.yml](../../../.github/workflows/frontend-ci.yml#L4) |
+| Build และ Test อัตโนมัติ | Backend ใช้ Maven `verify`; Frontend lint, typecheck, unit test และ build | [Backend test job](../../../.github/workflows/backend.yml#L70), [Frontend test job](../../../.github/workflows/frontend-ci.yml#L49) |
+| Migration Script | รัน Flyway `migrate` และ `validate` กับ PostgreSQL ว่าง | [backend.yml: migration job](../../../.github/workflows/backend.yml#L96) |
+| Dockerfile | build image จริงและเปิด application container | [backend.yml: Docker job](../../../.github/workflows/backend.yml#L146), [Dockerfile](../../../code/Backend/Dockerfile) |
+| Database smoke check | ตรวจ 7 ตารางหลักและ migration history | [backend.yml: database check](../../../.github/workflows/backend.yml#L212) |
+| Auth smoke test | สมัครผู้ใช้ผ่าน `POST /api/auth/register` และตรวจว่ามี token | [backend.yml: registration smoke test](../../../.github/workflows/backend.yml#L223) |
+| Quality gate | รวมผล test, migration และ Docker เป็น status `Backend gate` | [backend.yml: Backend gate](../../../.github/workflows/backend.yml#L241) |
+| Staging deployment | push เข้า `dev` และ Backend gate ผ่านจึงเรียก Render staging deploy hook | [backend.yml: staging deploy](../../../.github/workflows/backend.yml#L276) |
+| Production deployment | push เข้า `main` และ Backend gate ผ่านจึงเรียก Render production deploy hook | [backend.yml: production deploy](../../../.github/workflows/backend.yml#L291) |
+| Branch workflow | มี job แยกตรวจว่า PR เข้า `main` มาจาก `dev`; ไม่ได้เป็น dependency ของ `Backend gate` | [backend.yml: main PR source check](../../../.github/workflows/backend.yml#L54) |
+| Secret handling | deploy URL อ่านจาก GitHub Environment secrets ไม่เขียนลง repository | [backend.yml: deploy secrets](../../../.github/workflows/backend.yml#L281) |
 
 ## Pipeline
 
@@ -38,7 +38,7 @@ flowchart LR
     I -->|pull request| L[Checks only; no deploy]
 ```
 
-Backend test and Flyway validation are separate jobs and run in parallel after change detection. Docker waits for both. `Main PR must come from dev` is another job; the workflow does not make `Backend gate` depend on it.
+Backend [test](../../../.github/workflows/backend.yml#L70) and [Flyway validation](../../../.github/workflows/backend.yml#L96) are separate jobs and run in parallel after change detection. [Docker](../../../.github/workflows/backend.yml#L146) waits for both. `Main PR must come from dev` is another job; the workflow does not make `Backend gate` depend on it.
 
 Frontend ใช้ pipeline แยกเพื่อลดเวลารันงานที่ไม่เกี่ยวข้อง:
 
@@ -53,7 +53,7 @@ flowchart LR
     G --> H[Frontend gate]
 ```
 
-Vercel deployment is handled through its Git integration outside this workflow; the workflow has no Vercel deploy job or dependency from `Frontend gate` to a Vercel deployment.
+Vercel deployment is handled through its Git integration outside [frontend-ci.yml](../../../.github/workflows/frontend-ci.yml); the workflow has no Vercel deploy job or dependency from `Frontend gate` to a Vercel deployment.
 
 ## Environment และความปลอดภัย
 

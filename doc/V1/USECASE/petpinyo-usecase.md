@@ -2,6 +2,14 @@
 
 **เจ้าของ feature:** `petpinyo_673380073-7_02`
 
+| ส่วนงาน | โค้ดที่ใช้อ้างอิง |
+|---|---|
+| Auth endpoints และ HTTP response/cookie | [AuthController.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java#L38) |
+| Auth business flow, JWT issuance และ token rotation | [AuthServiceImpl.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java#L42), [RefreshTokenService.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/RefreshTokenService.java#L35) |
+| User profile และ password | [UserController.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/UserController.java#L25), [UserService.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java#L32), [UserMapper.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/mapper/UserMapper.java#L19) |
+| Security filter, cookie และ trusted origin | [SecurityConfig.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/config/SecurityConfig.java#L37), [JwtAuthenticationFilter.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/JwtAuthenticationFilter.java#L34), [RefreshTokenCookie.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/RefreshTokenCookie.java#L17), [TrustedOriginValidator.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/TrustedOriginValidator.java#L20) |
+| Integration test ของ Auth/User | [UserAuthIntegrationTest.java](../../../code/Backend/src/test/java/th/ac/kku/freelance_hub/integration/UserAuthIntegrationTest.java#L64) |
+
 ## Actors
 
 | Actor | หน้าที่ |

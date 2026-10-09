@@ -2,6 +2,13 @@
 
 **ผู้รับผิดชอบ:** เพชรภิญโญ ธนศิรินรากร (`petpinyo_673380073-7_02`)
 
+| ส่วนประกอบในแบบ | โค้ดจริง |
+|---|---|
+| HTTP controllers | [AuthController.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java), [UserController.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/UserController.java) |
+| Services และ interfaces | [AuthService.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/AuthService.java), [AuthServiceImpl.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java), [UserService.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java), [CurrentUserProvider.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/CurrentUserProvider.java), [RefreshTokenService.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/RefreshTokenService.java) |
+| Security and cookies | [SecurityConfig.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/config/SecurityConfig.java), [JwtAuthenticationFilter.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/JwtAuthenticationFilter.java), [RefreshTokenCookie.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/RefreshTokenCookie.java), [TrustedOriginValidator.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/TrustedOriginValidator.java) |
+| Persistence, mapping and entities | [UserRepository.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/repository/UserRepository.java), [RefreshTokenRepository.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/repository/RefreshTokenRepository.java), [UserMapper.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/mapper/UserMapper.java), [User.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/domain/entity/User.java), [UserProfile.java](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/domain/entity/UserProfile.java) |
+
 ## Enterprise / Architectural Patterns
 
 | Pattern | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ |
@@ -19,9 +26,9 @@
 
 | Pattern | ปัญหาที่แก้ | ไฟล์/คลาสที่ใช้ |
 |---|---|---|
-| Strategy | สลับวิธีเข้ารหัสรหัสผ่านได้โดย auth/user service ไม่รู้ concrete algorithm | `PasswordEncoder`, `BCryptPasswordEncoder`, `SecurityConfig.passwordEncoder()`, `AuthServiceImpl`, `UserService` |
-| Template Method | ใช้ lifecycle ของ filter มาตรฐานและ override เฉพาะขั้นตรวจ JWT | `JwtAuthenticationFilter extends OncePerRequestFilter`, method `doFilterInternal(...)` |
-| Chain of Responsibility | ประมวลผล request ผ่าน security handlers ตามลำดับก่อนถึง controller | `SecurityFilterChain`, `JwtAuthenticationFilter`, `UsernamePasswordAuthenticationFilter`, `JwtAuthenticationEntryPoint` |
+| Strategy | สลับวิธีเข้ารหัสรหัสผ่านได้โดย auth/user service ไม่รู้ concrete algorithm | `PasswordEncoder`, `BCryptPasswordEncoder`, [SecurityConfig.passwordEncoder()](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/config/SecurityConfig.java#L75), `AuthServiceImpl`, `UserService` |
+| Template Method | ใช้ lifecycle ของ filter มาตรฐานและ override เฉพาะขั้นตรวจ JWT | [JwtAuthenticationFilter.doFilterInternal()](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/JwtAuthenticationFilter.java#L34), `OncePerRequestFilter` |
+| Chain of Responsibility | ประมวลผล request ผ่าน security handlers ตามลำดับก่อนถึง controller | [SecurityConfig.securityFilterChain()](../../../code/Backend/src/main/java/th/ac/kku/freelance_hub/config/SecurityConfig.java#L38), `SecurityFilterChain`, `JwtAuthenticationFilter`, `UsernamePasswordAuthenticationFilter`, `JwtAuthenticationEntryPoint` |
 
 ## Class Diagram
 
