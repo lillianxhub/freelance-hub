@@ -33,7 +33,7 @@
 
 ## Diagram และผลทดสอบที่เพิ่มหลังฉบับรวม
 
-ตรวจ source ณ `ca77d74` แล้วเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Conceptual Domain Model](diagrams/domain-model.md), [Deployment Diagram](diagrams/deployment-diagram.md) และ [State Diagrams](diagrams/state-diagram.md) โดยไม่เพิ่ม feature หรือ production code ปัจจุบันรวม Sequence ทั้ง 6 scenarios ใน [ไฟล์เดียว](diagrams/sequence-diagram.md) และข้อความภายใน Mermaid diagrams ของฉบับส่งมอบใช้ภาษาอังกฤษ โดยคงคำอธิบายภาษาไทยและต้นฉบับ V1 ไว้
+ตรวจ source ณ `ca77d74` แล้วเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Conceptual Domain Model](diagrams/domain-model.md), [Deployment Diagram](diagrams/deployment-diagram.md) และ [State Diagrams](diagrams/state-diagram.md) โดยไม่เพิ่ม feature หรือ production code ปัจจุบันรวม Sequence ทั้ง 6 scenarios ใน [ไฟล์เดียว](diagrams/sequence-diagram.md) และข้อความภายใน Mermaid diagrams ของฉบับส่งมอบใช้ภาษาอังกฤษ โดยคงคำอธิบายภาษาไทยไว้
 
 ## ขอบเขตการส่งมอบที่ยังต้องตรวจจากทีม
 
