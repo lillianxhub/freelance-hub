@@ -198,7 +198,7 @@ class AuthControllerTest {
                                 .andExpect(status().isConflict())
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.error.code").value("EMAIL_ALREADY_EXISTS"))
-                                .andExpect(jsonPath("$.message").value("อีเมลนี้ถูกใช้งานแล้ว: test@example.com"));
+                                .andExpect(jsonPath("$.message").value("อีเมลนี้ถูกใช้งานแล้ว"));
         }
 
         @Test
@@ -279,7 +279,7 @@ class AuthControllerTest {
                                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
                 mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173").cookie(cookie))
                                 .andExpect(status().isUnauthorized())
-                                .andExpect(jsonPath("$.message").value("Invalid refresh token"));
+                                .andExpect(jsonPath("$.message").value("เซสชันหมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"));
                 // Without an access-token denylist, the existing JWT lives until its 15-minute expiry.
                 mockMvc.perform(get("/api/users/me").header("Authorization", bearer(accessToken)))
                                 .andExpect(status().isOk());
@@ -370,7 +370,7 @@ class AuthControllerTest {
         void shouldRejectMissingAndMalformedRefreshTokens() throws Exception {
                 mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173"))
                                 .andExpect(status().isUnauthorized())
-                                .andExpect(jsonPath("$.message").value("Invalid refresh token"));
+                                .andExpect(jsonPath("$.message").value("เซสชันหมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"));
                 mockMvc.perform(post("/api/auth/refresh").header("Origin", "http://localhost:5173")
                                 .cookie(new Cookie("fh_refresh", "malformed-token")))
                                 .andExpect(status().isUnauthorized());

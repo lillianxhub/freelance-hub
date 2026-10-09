@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -39,7 +40,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 import th.ac.kku.freelance_hub.common.response.RequestTraceFilter;
 import th.ac.kku.freelance_hub.domain.enums.ClientStatus;
-import th.ac.kku.freelance_hub.exception.ClientExceptionHandler;
+import th.ac.kku.freelance_hub.exception.GlobalExceptionHandler;
 import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
 import th.ac.kku.freelance_hub.service.ClientService;
 import th.ac.kku.freelance_hub.service.CurrentUserProvider;
@@ -64,7 +65,7 @@ class ClientControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(new ClientController(clientService, userService))
-            .setControllerAdvice(new ClientExceptionHandler(new ApiErrorFactory()))
+            .setControllerAdvice(th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.advice())
             .addFilters(new RequestTraceFilter())
             .setValidator(validator)
             .build();
@@ -224,13 +225,13 @@ class ClientControllerTest {
         mockMvc.perform(get("/api/clients/{id}", clientId))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.message").value("Client not found with id: " + clientId))
+            .andExpect(jsonPath("$.message").value("ไม่พบลูกค้า"))
             .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()))
             .andExpect(jsonPath("$.meta").value(org.hamcrest.Matchers.nullValue()))
             .andExpect(jsonPath("$.error.code").value("CLIENT_NOT_FOUND"))
             .andExpect(traceableError(404, "CLIENT_NOT_FOUND"))
             .andExpect(jsonPath("$.error.fieldErrors").value(org.hamcrest.Matchers.nullValue()))
-            .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()));
+            .andExpect(jsonPath("$.error.details.id").value(clientId.toString()));
 
         verify(clientService).getById(OWNER_ID, clientId);
     }
@@ -416,7 +417,7 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/{id}", clientId).param("include", "tasks"))
             .andExpect(traceableError(400, "INVALID_ARGUMENT"))
-            .andExpect(jsonPath("$.error.details").value(org.hamcrest.Matchers.nullValue()));
+            .andExpect(jsonPath("$.error.details.field").value("include"));
 
         verify(clientService, never()).getById(any(), any());
         verify(clientService, never()).getById(any(), any(), anyBoolean(), anyBoolean());
@@ -440,7 +441,7 @@ class ClientControllerTest {
     void statusConflictUsesTraceableConflictResponse() throws Exception {
         when(userService.currentUserId()).thenReturn(OWNER_ID);
         when(clientService.changeStatus(OWNER_ID, clientId, false))
-            .thenThrow(new IllegalStateException("Project status conflict"));
+            .thenThrow(new InvalidStateException("Project status conflict"));
 
         mockMvc.perform(patch("/api/clients/{id}/status", clientId)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"isActive\":false}"))

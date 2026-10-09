@@ -2,11 +2,10 @@ package th.ac.kku.freelance_hub.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.server.ResponseStatusException;
+import th.ac.kku.freelance_hub.exception.OriginNotAllowedException;
 
 /** Checks cookie-backed actions against the same origin allowlist used by CORS. */
 @Component
@@ -22,7 +21,7 @@ public class TrustedOriginValidator {
         if (source == null) source = originFromReferer(request.getHeader("Referer"));
         CorsConfiguration config = corsConfigurationSource.getCorsConfiguration(request);
         if (source == null || config == null || config.checkOrigin(source) == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Origin not allowed");
+            throw new OriginNotAllowedException();
         }
     }
 

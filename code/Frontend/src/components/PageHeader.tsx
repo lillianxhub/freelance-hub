@@ -22,7 +22,9 @@ function PageHeader({
           {title}
         </h1>
         {description && (
-          <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
+          <p className="mt-2 break-words text-sm leading-relaxed text-text-secondary [overflow-wrap:anywhere]">
+            {description}
+          </p>
         )}
       </div>
       {actions && (

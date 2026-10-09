@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -255,7 +256,7 @@ class ProjectServiceImplTest {
                 OWNER_ID,
                 PROJECT_ID,
                 ChangeProjectStatusRequest.builder().status(nextStatus).build()
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(InvalidStateException.class)
                 .hasMessage("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
@@ -309,7 +310,7 @@ class ProjectServiceImplTest {
                 ChangeProjectStatusRequest.builder()
                         .status(ProjectStatus.COMPLETED)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("ยังมีงานย่อยที่ไม่เสร็จ");
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
@@ -403,7 +404,7 @@ class ProjectServiceImplTest {
                         .build()));
 
         assertThatThrownBy(() -> service.archive(OWNER_ID, PROJECT_ID))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InvalidStateException.class)
                 .hasMessage("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
@@ -424,7 +425,7 @@ class ProjectServiceImplTest {
 
         assertThatThrownBy(() ->
                 service.changeStatus(OWNER_ID, PROJECT_ID, request)
-        ).isInstanceOf(IllegalStateException.class);
+        ).isInstanceOf(InvalidStateException.class);
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.PLANNED);
         verify(projectRepository, never()).save(any(Project.class));
@@ -654,7 +655,7 @@ class ProjectServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> service.update(OWNER_ID, PROJECT_ID, request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("โปรเจกต์ที่จัดเก็บแล้ว");
         assertThat(project.getName()).isEqualTo("Website");
         verifyNoInteractions(clientRepository);
@@ -675,7 +676,7 @@ class ProjectServiceImplTest {
                 ChangeProjectStatusRequest.builder()
                         .status(ProjectStatus.ACTIVE)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("ลูกค้าถูกจัดเก็บ");
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
         verify(projectRepository, never()).save(any(Project.class));

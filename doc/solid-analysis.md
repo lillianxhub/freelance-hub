@@ -21,7 +21,7 @@
 | Authentication/Profile | `controller/AuthController.java`; `mapper/UserMapper.java`; `service/RefreshTokenService.java` | 32; 14; 24 | Controller จัด HTTP/cookie, mapper แปลง DTO, token service ดูแล issue/rotate/revoke; ไม่เก็บ password หรือ token hash ใน response |
 | Client | `controller/ClientController.java`; `mapper/ClientMapper.java`; `common/response/ApiErrorFactory.java` | 43; 14; 28 | แยก HTTP, PUT/PATCH mapping และการสร้าง error metadata; aggregate เวลาอยู่ใน service/repository ไม่อยู่ใน mapper |
 | Project/Task | `mapper/ProjectMapper.java`; `mapper/TaskMapper.java`; `domain/state/ProjectState.java`; `domain/progress/ProjectProgressThresholds.java` | 12; 8; 5; 5 | แยก mapping, กฎสถานะ และการคำนวณเกณฑ์ออกจาก service ที่ประสาน use case |
-| Time Tracking | `controller/TimerController.java`; `controller/TimeEntryController.java`; `mapper/TimeEntryMapper.java`; `exception/TimeTrackingExceptionHandler.java` | 35; 47; 14; 25 | แยก HTTP contract, DTO mapping และการแปลง exception; ไม่ใช้ TimeEntryServiceImpl ที่รวม CRUD/query/analytics/locking เป็นตัวอย่างว่ามีหน้าที่เดียว |
+| Time Tracking | `controller/TimerController.java`; `controller/TimeEntryController.java`; `mapper/TimeEntryMapper.java`; `exception/handling/ApiExceptionHandler.java` | 35; 47; 14; 11 | แยก HTTP contract, DTO mapping และการแปลง exception; ไม่ใช้ TimeEntryServiceImpl ที่รวม CRUD/query/analytics/locking เป็นตัวอย่างว่ามีหน้าที่เดียว |
 | Dashboard/Reports | `controller/DashboardController.java`; `service/impl/DashboardServiceImpl.java`; `service/impl/ReportServiceImpl.java` | 24; 43; 44 | แยก HTTP ออกจากการกำหนดช่วงเวลา สูตร KPI และการประกอบ read models |
 | Analytics Frontend | `Analytics/DashboardContext.tsx`; `services/report.ts`; `utils/csv.ts`; `lib/dashboard.ts` | 26; 28; 3; 15 | แยกการโหลดข้อมูล, API contract, CSV serialization และการแปลงจุดกราฟออกจาก component |
 
@@ -82,7 +82,7 @@ implementation ต้องรักษา preconditions, ผลลัพธ์�
 - OCP/ISP: [AuthService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/AuthService.java) เป็น auth contract และ [CurrentUserProvider](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/CurrentUserProvider.java) มี currentUserId เพียง method เดียว; ไม่ถือว่าการมี interface อย่างเดียวพิสูจน์ LSP/OCP สมบูรณ์
 - DIP: [AuthServiceImpl](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java) inject UserRepository, PasswordEncoder, AuthenticationManager และ PlatformTransactionManager; JwtTokenProvider, UserMapper, RefreshTokenService และ LoginAttemptLimiter ยังเป็น concrete dependencies จึงไม่อ้างว่าทั้งหมดเป็น interface
 - [UserService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java) พึ่ง UserRepository ไม่ใช่ UserProfileRepository สำหรับ profile/password; UserMapper และ RefreshTokenService เป็น concrete dependencies แม้รับผ่าน constructor
-- ข้อจำกัด: AuthServiceImpl.login ยังใช้ RuntimeException เมื่อ authentication ผ่านแต่ค้น user ไม่พบ และ UserService.getCurrentUserEmail ใช้ RuntimeException เมื่อไม่มี authentication การบันทึกข้อสังเกตนี้ไม่ใช่การแก้ production code
+- ข้อจำกัด: AuthServiceImpl.login ยังใช้ RuntimeException เมื่อ authentication ผ่านแต่ค้น user ไม่พบ ส่วน UserService.getCurrentUserEmail ใช้ AuthenticationRequiredException เมื่อไม่มี authentication invariant failure ดังกล่าวใช้ fallback 500 ไม่ถูกแปลงเป็น input error
 
 ## 7. หลักฐานการทดสอบและขอบเขต
 
@@ -109,3 +109,12 @@ Test source อยู่ใน `code/Backend/src/test/java/th/ac/kku/freelance_h
 
 ฉบับรวมตรวจชื่อไฟล์และบรรทัดจาก implementation ปัจจุบัน รวมถึงแก้เส้นทาง utility Frontend ที่ถูกย้าย นำข้อจำกัด SRP/LSP/ISP ของ Kompat ใน PR #125 และหลักฐาน Auth/Profile ที่ Petpinyo ปรับใน PR #127 มารวมแล้ว
 
+
+## Error handling หลังย้าย Chain + Factory
+
+- SRP: ApiException เก็บ public error contract, handlers แปลง exception, Chain เลือก handler, Factory สร้าง envelope/metadata และ entry points จัดการ transport
+- OCP: เพิ่ม subclass ของ ApiException โดยไม่เพิ่ม mapping; เพิ่ม handler สำหรับ exception ภายนอกผ่าน ErrorHandler interface
+- DIP: Chain พึ่ง ErrorHandler interface; MVC/Security ยังพึ่ง concrete chain/factory ตาม constructor injection ไม่อ้างว่าทั้งระบบใช้ abstraction ทุกชั้น
+- ตรวจ order ไม่ซ้ำและ fallback ท้ายสุดตอนเริ่มแอป พร้อม tests ของ first-match/unknown failure
+
+ดู [Error Contract พร้อม source references](error-contract.md) สำหรับ schema, flow และการเพิ่ม exception

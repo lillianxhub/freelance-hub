@@ -1,11 +1,10 @@
 package th.ac.kku.freelance_hub.exception;
 
-/**
- * Exception thrown when email already exists during registration
- */
-public class EmailAlreadyExistsException extends RuntimeException {
+import java.util.Map;
+import org.springframework.http.HttpStatus;
 
+public class EmailAlreadyExistsException extends ApiException {
     public EmailAlreadyExistsException(String email) {
-        super("อีเมลนี้ถูกใช้งานแล้ว: " + email);
+        super(HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS", "อีเมลนี้ถูกใช้งานแล้ว", Map.of("field", "email"));
     }
 }

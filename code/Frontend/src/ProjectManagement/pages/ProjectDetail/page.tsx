@@ -421,13 +421,13 @@ function ProjectDetailPage() {
                 <div className="grid gap-1.5 [&>span:first-child]:text-xs [&>span:first-child]:text-text-secondary [&>strong]:text-sm [&>strong]:leading-relaxed">
                   <span>ลูกค้า</span>
                   <Link
-                    className="min-w-0 truncate font-semibold text-primary hover:underline"
+                    className="min-w-0 break-words font-semibold text-primary hover:underline [overflow-wrap:anywhere]"
                     title={
                       client?.company_name || client?.name || project.client_name || 'ไม่พบลูกค้า'
                     }
                     to={`/clients/${client?.id}`}
                   >
-                    <strong>
+                    <strong className="break-words [overflow-wrap:anywhere]">
                       {client?.company_name || client?.name || project.client_name || 'ไม่พบลูกค้า'}
                     </strong>
                   </Link>

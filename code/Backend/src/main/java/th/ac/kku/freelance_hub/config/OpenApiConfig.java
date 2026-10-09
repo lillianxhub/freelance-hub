@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.config;
 
+import java.util.List;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.BooleanSchema;
@@ -70,7 +71,7 @@ public class OpenApiConfig {
                     }
                     response.getValue().getContent().values().forEach(mediaType -> {
                         BooleanSchema failure = new BooleanSchema();
-                        failure.setEnum(java.util.List.of(false));
+                        failure.setEnum(List.of(false));
                         failure.setExample(false);
                         // Error handlers always return ApiResult<Void>, never the method's success payload.
                         mediaType.setSchema(new ComposedSchema()

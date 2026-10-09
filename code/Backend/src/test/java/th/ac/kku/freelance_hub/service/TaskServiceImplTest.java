@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -92,6 +94,9 @@ class TaskServiceImplTest {
                 owner.getId(), project.getId(), request("Review", 1)
         ).getId()).orElseThrow();
 
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
+
         timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 owner, project, firstTask, "Earlier work",
                 Instant.parse("2026-01-01T09:00:00Z"), 600
@@ -110,6 +115,8 @@ class TaskServiceImplTest {
                 clientRepository.saveAndFlush(new Client(otherOwner, "Other client")),
                 "Other project"
         ));
+        otherProject.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(otherProject);
         Task otherTask = taskRepository.saveAndFlush(new Task(otherProject, "Other task", 0));
         timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 otherOwner, otherProject, otherTask, "Other user's latest work",
@@ -127,6 +134,8 @@ class TaskServiceImplTest {
         Task task = taskRepository.findById(taskService.create(
                 owner.getId(), project.getId(), request("Design", 0)
         ).getId()).orElseThrow();
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
         timeEntryRepository.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
                 owner, project, task, "Earlier work",
                 Instant.parse("2026-01-01T09:00:00Z"), 600
@@ -185,6 +194,8 @@ class TaskServiceImplTest {
                 owner.getId(), project.getId(), request("A", 0)
         );
         Task task = taskRepository.findById(response.getId()).orElseThrow();
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projectRepository.saveAndFlush(project);
         TimeEntry entry = timeEntryRepository.saveAndFlush(
                 TimeEntry.createManualWithDurationSeconds(
                         owner,
@@ -243,7 +254,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.create(
                 owner.getId(), project.getId(), request("A", 0)
-        )).isInstanceOf(IllegalStateException.class);
+        )).isInstanceOf(InvalidStateException.class);
     }
 
     @Test
@@ -253,7 +264,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.create(
                 owner.getId(), project.getId(), request("A", 0)
-        )).isInstanceOf(IllegalStateException.class);
+        )).isInstanceOf(InvalidStateException.class);
     }
     
 
@@ -406,7 +417,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.update(owner.getId(), task.getId(),
                 UpdateTaskRequest.builder().name("Renamed").build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(task.getName()).isEqualTo("Original");
     }
 
@@ -418,7 +429,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.update(owner.getId(), task.getId(),
                 UpdateTaskRequest.builder().name("Renamed").build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(task.getName()).isEqualTo("Original");
     }
 
@@ -462,7 +473,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.changeStatus(owner.getId(), task.getId(),
                 ChangeTaskStatusRequest.builder().status(TaskStatus.COMPLETED).build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(taskRepository.findById(task.getId()).orElseThrow().getStatus())
                 .isEqualTo(TaskStatus.OPEN);
     }
@@ -472,7 +483,7 @@ class TaskServiceImplTest {
         Task task = taskRepository.saveAndFlush(new Task(project, "Task", 0));
 
         assertThatThrownBy(() -> taskService.complete(owner.getId(), project.getId(), task.getId()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(taskRepository.findById(task.getId()).orElseThrow().getStatus())
                 .isEqualTo(TaskStatus.OPEN);
     }
@@ -492,7 +503,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.changeStatus(owner.getId(), taskId,
                 ChangeTaskStatusRequest.builder().status(after).build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         Task stored = taskRepository.findById(taskId).orElseThrow();
         assertThat(stored.getStatus()).isEqualTo(before);
         assertThat(stored.getCompletedAt()).isEqualTo(originalCompletedAt);
@@ -532,7 +543,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.changeStatus(owner.getId(), taskId,
                 ChangeTaskStatusRequest.builder().status(TaskStatus.IN_PROGRESS).build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
 
         entityManager.clear();
         Task stored = taskRepository.findById(taskId).orElseThrow();
@@ -570,7 +581,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.changeStatus(owner.getId(), task.getId(),
                 ChangeTaskStatusRequest.builder().status(TaskStatus.IN_PROGRESS).build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
     }
 
@@ -664,7 +675,7 @@ class TaskServiceImplTest {
         projectRepository.saveAndFlush(project);
 
         assertThatThrownBy(() -> taskService.delete(owner.getId(), task.getId()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         Task stored = taskRepository.findById(task.getId()).orElseThrow();
         assertThat(stored.getIsActive()).isTrue();
         assertThat(stored.getDeletedAt()).isNull();
@@ -736,7 +747,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.reorder(owner.getId(), project.getId(),
                 task.getId(), ReorderTaskRequest.builder().sortOrder(position).build()))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(InvalidArgumentException.class);
         assertThat(orderedTasks()).extracting(Task::getName).containsExactly("A", "B");
         assertThat(orderedTasks()).extracting(Task::getSortOrder).containsExactly(0, 1);
     }
@@ -751,7 +762,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.reorder(owner.getId(), project.getId(),
                 task.getId(), ReorderTaskRequest.builder().sortOrder(0).build()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(InvalidStateException.class);
         assertThat(orderedTasks()).extracting(Task::getSortOrder).containsExactly(0);
     }
     private void assertActiveTaskOrder(String... names) {

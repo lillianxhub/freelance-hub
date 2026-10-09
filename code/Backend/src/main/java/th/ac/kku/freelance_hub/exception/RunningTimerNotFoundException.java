@@ -1,9 +1,9 @@
 package th.ac.kku.freelance_hub.exception;
 
-/** Thrown when the current user has no running timer to stop or cancel. */
-public class RunningTimerNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
+public class RunningTimerNotFoundException extends ApiException {
     public RunningTimerNotFoundException() {
-        super("No running timer found");
+        super(HttpStatus.NOT_FOUND, "RUNNING_TIMER_NOT_FOUND", "ไม่พบตัวจับเวลาที่กำลังทำงาน", null);
     }
 }

@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StartTimerRequest {
 
-    @NotNull(message = "Project ID is required")
+    @NotNull(message = "กรุณาระบุโปรเจกต์")
     private UUID projectId;
 
     private UUID taskId;
