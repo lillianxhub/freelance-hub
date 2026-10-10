@@ -210,7 +210,7 @@ function ReportsPage() {
   const trendPercent = summary.trackedTimeTrendPercent
   const trend =
     trendPercent == null ? (
-      'ทุกช่วงเวลา'
+      hasDateRange ? 'ไม่มีเวลาบันทึกในช่วงเปรียบเทียบ' : 'ทุกช่วงเวลา'
     ) : (
       <span
         className={`inline-flex flex-wrap items-center gap-1 font-semibold ${trendPercent >= 0 ? 'text-green' : 'text-destructive'}`}

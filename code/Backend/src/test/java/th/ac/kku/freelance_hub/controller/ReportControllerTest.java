@@ -54,8 +54,7 @@ class ReportControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new ReportController(reportService, currentUserProvider)
                 )
-                .setControllerAdvice(new th.ac.kku.freelance_hub.exception.GlobalExceptionHandler(
-                        new th.ac.kku.freelance_hub.common.response.ApiErrorFactory()))
+                .setControllerAdvice(th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.advice())
                 .setValidator(validator)
                 .build();
     }

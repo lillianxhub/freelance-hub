@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.http.HttpStatus;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.User;
@@ -31,6 +32,7 @@ import th.ac.kku.freelance_hub.dto.request.report.ReportGranularity;
 import th.ac.kku.freelance_hub.dto.request.report.ReportGroupBy;
 import th.ac.kku.freelance_hub.dto.request.report.ReportProjectsRequest;
 import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
+import th.ac.kku.freelance_hub.exception.ReportRequestException;
 import th.ac.kku.freelance_hub.mapper.ReportMapper;
 import th.ac.kku.freelance_hub.repository.ReportQueryRepository;
 import th.ac.kku.freelance_hub.domain.entity.Task;
@@ -107,14 +109,20 @@ class ReportServiceImplTest {
     @Test
     void invalidDateRangeFailsBeforeReadingDatabase() {
         assertThatThrownBy(() -> service.getSummary(OWNER_ID, filter("2026-10-05", "2026-10-01")))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(ReportRequestException.class, error -> {
+                    assertThat(error.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(error.getCode()).isEqualTo("BAD_REQUEST");
+                });
         verifyNoInteractions(repository);
     }
 
     @Test
     void trendWithoutDatesIsRejected() {
         assertThatThrownBy(() -> service.getWorkTrend(OWNER_ID, new ReportFilterRequest(), ReportGranularity.DAY))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(ReportRequestException.class, error -> {
+                    assertThat(error.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(error.getCode()).isEqualTo("BAD_REQUEST");
+                });
         verifyNoInteractions(repository);
     }
 
@@ -143,7 +151,42 @@ class ReportServiceImplTest {
     @Test
     void rejectsExcessiveDailyPointsBeforeAggregation() {
         assertThatThrownBy(() -> service.getWorkTrend(OWNER_ID, filter("2020-01-01", "2026-01-01"), ReportGranularity.DAY))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(ReportRequestException.class, error -> {
+                    assertThat(error.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(error.getCode()).isEqualTo("BAD_REQUEST");
+                });
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void invalidPaginationUsesReportBadRequestBeforeReadingDatabase() {
+        for (int[] pagination : List.of(new int[]{0, 10}, new int[]{1, 0}, new int[]{1, 101})) {
+            var request = new ReportProjectsRequest();
+            request.setPage(pagination[0]);
+            request.setLimit(pagination[1]);
+            assertThatThrownBy(() -> service.getProjects(OWNER_ID, new ReportFilterRequest(), request))
+                    .isInstanceOfSatisfying(ReportRequestException.class, error -> {
+                        assertThat(error.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                        assertThat(error.getCode()).isEqualTo("BAD_REQUEST");
+                    });
+        }
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void unsupportedSortUsesReportBadRequestBeforeReadingDatabase() {
+        var unknownField = new ReportProjectsRequest();
+        unknownField.setSortBy("unknown");
+        var unknownDirection = new ReportProjectsRequest();
+        unknownDirection.setDirection("sideways");
+
+        for (ReportProjectsRequest request : List.of(unknownField, unknownDirection)) {
+            assertThatThrownBy(() -> service.getProjects(OWNER_ID, new ReportFilterRequest(), request))
+                    .isInstanceOfSatisfying(ReportRequestException.class, error -> {
+                        assertThat(error.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                        assertThat(error.getCode()).isEqualTo("BAD_REQUEST");
+                    });
+        }
         verifyNoInteractions(repository);
     }
 

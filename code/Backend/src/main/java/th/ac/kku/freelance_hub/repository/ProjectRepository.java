@@ -73,6 +73,9 @@ public interface ProjectRepository
             FROM Project p
             WHERE p.owner.id = :ownerId
             AND p.deletedAt IS NULL
+            AND p.client.deletedAt IS NULL
+            AND p.client.isActive = true
+            AND p.status <> th.ac.kku.freelance_hub.domain.enums.ProjectStatus.ARCHIVED
             ORDER BY p.name, p.id
             """)
     List<Project> findVisibleByOwnerId(@Param("ownerId") UUID ownerId);

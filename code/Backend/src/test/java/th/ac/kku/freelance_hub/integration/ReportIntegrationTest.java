@@ -283,6 +283,28 @@ class ReportIntegrationTest {
     }
 
     @Test
+    void trendInputErrorsReturnBadRequestThroughSharedErrorChain() throws Exception {
+        User owner = user("report-http-invalid-trend@example.com");
+        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                .webAppContextSetup(webContext)
+                .addFilters(webContext.getBean(th.ac.kku.freelance_hub.common.response.RequestTraceFilter.class))
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                .build();
+
+        for (String uri : List.of(
+                "/api/reports/work-trend",
+                "/api/reports/work-trend?from=2020-01-01&to=2026-01-01&granularity=DAY")) {
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(uri)
+                    .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(owner.getEmail())))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.success").value(false))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error.status").value(400))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error.code").value("BAD_REQUEST"))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error.traceId").isNotEmpty());
+        }
+    }
+
+    @Test
     void workPatternAttributesWholeEntryToItsBangkokStartHour() {
         User owner = user("report-start-hour@example.com");
         Project project = project(owner, "Across midnight", 120);
@@ -341,22 +363,21 @@ class ReportIntegrationTest {
     }
 
     @Test
-    void archivedProjectsAndClientsKeepHistoricalTimeWithoutTasks() {
+    void archivedProjectsAndClientsAreExcludedFromReports() {
         User owner = user("report-archived-history@example.com");
-        Project project = project(owner, "Archived history", 120);
-        entry(owner, project, "2026-10-01T03:00:00Z", 1800);
-        project.changeStatus(ProjectStatus.ARCHIVED);
-        projects.saveAndFlush(project);
-        project.getClient().setActive(false);
-        clients.saveAndFlush(project.getClient());
+        Project archivedProject = project(owner, "Archived project", 120);
+        entry(owner, archivedProject, "2026-10-01T03:00:00Z", 1800);
+        archivedProject.changeStatus(ProjectStatus.ARCHIVED);
+        projects.saveAndFlush(archivedProject);
+        Project archivedClientProject = project(owner, "Archived client", 120);
+        entry(owner, archivedClientProject, "2026-10-01T04:00:00Z", 3600);
+        archivedClientProject.getClient().setActive(false);
+        clients.saveAndFlush(archivedClientProject.getClient());
 
-        assertRecordedSeconds(owner, 1800, 1);
+        assertRecordedSeconds(owner, 0, 0);
         var filter = new ReportFilterRequest();
         filter.setStatus(ProjectStatus.ARCHIVED);
-        var row = reports.getProjects(owner.getId(), filter, new ReportProjectsRequest()).getContent().get(0);
-        assertThat(row.status()).isEqualTo(ProjectStatus.ARCHIVED);
-        assertThat(row.trackedSeconds()).isEqualTo(1800);
-        assertThat(row.taskProgressPercent()).isZero();
+        assertThat(reports.getProjects(owner.getId(), filter, new ReportProjectsRequest()).getContent()).isEmpty();
     }
 
     @Test
