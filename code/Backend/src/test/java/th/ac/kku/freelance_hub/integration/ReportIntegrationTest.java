@@ -293,6 +293,123 @@ class ReportIntegrationTest {
         assertThat(result.timeByHour().get(0).trackedSeconds()).isZero();
     }
 
+    @Test
+    void deletedEntriesAndRunningTimersDoNotContributeToReports() {
+        User owner = user("report-deleted-entry@example.com");
+        Project project = project(owner, "Visible", 120);
+        project.changeStatus(ProjectStatus.ACTIVE);
+        projects.saveAndFlush(project);
+        entry(owner, project, "2026-10-01T03:00:00Z", 1800);
+        TimeEntry deleted = entries.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, null, "Deleted", Instant.parse("2026-10-01T04:00:00Z"), 7200));
+        deleted.softDelete(Instant.parse("2026-10-02T00:00:00Z"));
+        entries.saveAndFlush(deleted);
+        entries.saveAndFlush(TimeEntry.startTimer(
+                owner, project, null, "Running", Instant.parse("2026-10-01T05:00:00Z")));
+
+        assertRecordedSeconds(owner, 1800, 1);
+    }
+
+    @Test
+    void deletedProjectsAndClientsAreExcludedFromReportsAndFilterOptions() {
+        User owner = user("report-deleted-sources@example.com");
+        Project visible = project(owner, "Visible", 120);
+        Project deletedProject = project(owner, "Deleted project", 120);
+        Project deletedClientProject = project(owner, "Deleted client", 120);
+        entry(owner, visible, "2026-10-01T03:00:00Z", 1800);
+        entry(owner, deletedProject, "2026-10-01T04:00:00Z", 3600);
+        entry(owner, deletedClientProject, "2026-10-01T05:00:00Z", 7200);
+        deletedProject.archive();
+        projects.saveAndFlush(deletedProject);
+        deletedClientProject.getClient().softDelete();
+        clients.saveAndFlush(deletedClientProject.getClient());
+
+        assertRecordedSeconds(owner, 1800, 1);
+        var result = reports.getSummary(owner.getId(), new ReportFilterRequest());
+        assertThat(result.filters().projects()).extracting(option -> option.id())
+                .containsExactly(visible.getId());
+        assertThat(result.filters().clients()).extracting(option -> option.id())
+                .doesNotContain(deletedClientProject.getClient().getId());
+        var filter = new ReportFilterRequest();
+        filter.setProjectId(deletedProject.getId());
+        assertThatThrownBy(() -> reports.getSummary(owner.getId(), filter))
+                .isInstanceOf(ProjectNotFoundException.class);
+        filter.setProjectId(null);
+        filter.setClientId(deletedClientProject.getClient().getId());
+        assertThatThrownBy(() -> reports.getSummary(owner.getId(), filter))
+                .isInstanceOf(th.ac.kku.freelance_hub.exception.ClientNotFoundException.class);
+    }
+
+    @Test
+    void archivedProjectsAndClientsKeepHistoricalTimeWithoutTasks() {
+        User owner = user("report-archived-history@example.com");
+        Project project = project(owner, "Archived history", 120);
+        entry(owner, project, "2026-10-01T03:00:00Z", 1800);
+        project.changeStatus(ProjectStatus.ARCHIVED);
+        projects.saveAndFlush(project);
+        project.getClient().setActive(false);
+        clients.saveAndFlush(project.getClient());
+
+        assertRecordedSeconds(owner, 1800, 1);
+        var filter = new ReportFilterRequest();
+        filter.setStatus(ProjectStatus.ARCHIVED);
+        var row = reports.getProjects(owner.getId(), filter, new ReportProjectsRequest()).getContent().get(0);
+        assertThat(row.status()).isEqualTo(ProjectStatus.ARCHIVED);
+        assertThat(row.trackedSeconds()).isEqualTo(1800);
+        assertThat(row.taskProgressPercent()).isZero();
+    }
+
+    @Test
+    void deletedTaskIsExcludedFromProgressButItsRecordedTimeIsRetained() {
+        User owner = user("report-deleted-task@example.com");
+        Project project = project(owner, "Task history", 120);
+        Task deleted = tasks.saveAndFlush(new Task(project, "Deleted", 0));
+        Task completed = new Task(project, "Completed", 1);
+        completed.complete(Instant.parse("2026-10-01T06:00:00Z"));
+        tasks.saveAndFlush(completed);
+        entries.saveAndFlush(TimeEntry.createManualWithDurationSeconds(
+                owner, project, deleted, "Task history", Instant.parse("2026-10-01T03:00:00Z"), 1800));
+        deleted.softDelete();
+        tasks.saveAndFlush(deleted);
+
+        assertRecordedSeconds(owner, 1800, 1);
+        var row = reports.getProjects(owner.getId(), new ReportFilterRequest(), new ReportProjectsRequest())
+                .getContent().get(0);
+        assertThat(row.taskProgressPercent()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void projectWithoutTargetOrTasksHasNoUsageBaselineAndZeroProgress() {
+        User owner = user("report-no-target@example.com");
+        Project project = project(owner, "No target", 120);
+        project.updateDetails("No target", null, null, null, null, null);
+        projects.saveAndFlush(project);
+        entry(owner, project, "2026-10-01T03:00:00Z", 1800);
+        var row = reports.getProjects(owner.getId(), new ReportFilterRequest(), new ReportProjectsRequest())
+                .getContent().get(0);
+        assertThat(row.targetSeconds()).isNull();
+        assertThat(row.usagePercent()).isNull();
+        assertThat(row.taskProgressPercent()).isZero();
+        assertThat(row.trackedSeconds()).isEqualTo(1800);
+    }
+
+    private void assertRecordedSeconds(User owner, long expectedSeconds, long expectedCount) {
+        var filter = filter("2026-10-01", "2026-10-01");
+        var summary = reports.getSummary(owner.getId(), filter).summary();
+        assertThat(summary.totalTrackedSeconds()).isEqualTo(expectedSeconds);
+        assertThat(summary.timeEntryCount()).isEqualTo(expectedCount);
+        assertThat(reports.getSummary(owner.getId(), new ReportFilterRequest()).summary().totalTrackedSeconds())
+                .isEqualTo(expectedSeconds);
+        assertThat(reports.getDistribution(owner.getId(), filter, ReportGroupBy.CLIENT).items()
+                .stream().mapToLong(item -> item.trackedSeconds()).sum()).isEqualTo(expectedSeconds);
+        assertThat(reports.getProjects(owner.getId(), filter, new ReportProjectsRequest()).getContent()
+                .stream().mapToLong(row -> row.trackedSeconds()).sum()).isEqualTo(expectedSeconds);
+        assertThat(reports.getWorkTrend(owner.getId(), filter, ReportGranularity.DAY).points())
+                .extracting(point -> point.trackedSeconds()).containsExactly(expectedSeconds);
+        assertThat(reports.getWorkPattern(owner.getId(), filter).timeByHour()
+                .stream().mapToLong(hour -> hour.trackedSeconds()).sum()).isEqualTo(expectedSeconds);
+    }
+
     private ReportFilterRequest datedStatus(ReportFilterRequest filter) {
         filter.setFrom(LocalDate.of(2026, 10, 1));
         filter.setTo(LocalDate.of(2026, 10, 1));

@@ -315,10 +315,16 @@ public class ReportServiceImpl implements ReportService {
         }
         List<ReportProjectResponse> rows = projects.stream().map(project -> {
             long[] counts = taskCounts.getOrDefault(project.id(), new long[2]);
+            Long targetSeconds = project.targetMinutes() == null
+                    ? null : project.targetMinutes().longValue() * 60;
+            long trackedSeconds = seconds.getOrDefault(project.id(), 0L);
+            BigDecimal usagePercent = targetSeconds == null || targetSeconds == 0
+                    ? null : percentage(trackedSeconds, targetSeconds);
+            BigDecimal taskProgressPercent = percentage(counts[1], counts[0]);
             return mapper.toProjectResponse(new ReportMapper.ProjectMetrics(
                     project.id(), project.name(), project.clientId(), project.clientName(),
-                    project.color(), project.targetMinutes(), seconds.getOrDefault(project.id(), 0L),
-                    counts[0], counts[1], project.status()));
+                    project.color(), targetSeconds, trackedSeconds,
+                    usagePercent, taskProgressPercent, project.status()));
         }).sorted(order).toList();
         var pageable = PageRequest.of(request.getPage() - 1, request.getLimit());
         long offset = pageable.getOffset();
