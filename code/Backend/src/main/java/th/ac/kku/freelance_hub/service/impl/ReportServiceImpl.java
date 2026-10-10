@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -137,7 +136,7 @@ public class ReportServiceImpl implements ReportService {
         validateSelection(ownerId, filter);
         Objects.requireNonNull(granularity, "granularity is required");
         if (filter.getFrom() == null) {
-            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "กรุณาระบุช่วงวันที่สำหรับกราฟแนวโน้ม"
+            throw new ReportRequestException("กรุณาระบุช่วงวันที่สำหรับกราฟแนวโน้ม"
             );
         }
 
@@ -146,7 +145,7 @@ public class ReportServiceImpl implements ReportService {
             case WEEK -> ChronoUnit.WEEKS.between(periodStart(filter.getFrom(), granularity), periodStart(filter.getTo(), granularity)) + 1;
             case MONTH -> ChronoUnit.MONTHS.between(periodStart(filter.getFrom(), granularity), periodStart(filter.getTo(), granularity)) + 1;
         };
-        if (buckets > 366) throw new ReportRequestException(HttpStatus.BAD_REQUEST, "กรุณาลดช่วงวันที่หรือเลือกกลุ่มสัปดาห์/เดือน (สูงสุด 366 จุด)");
+        if (buckets > 366) throw new ReportRequestException("กรุณาลดช่วงวันที่หรือเลือกกลุ่มสัปดาห์/เดือน (สูงสุด 366 จุด)");
 
         Map<LocalDate, Long> totals = new HashMap<>();
         List<ProjectInfo> selected = selectProjects(visibleProjects(ownerId), filter);
@@ -302,7 +301,7 @@ public class ReportServiceImpl implements ReportService {
 
         Objects.requireNonNull(request, "request is required");
         if (request.getPage() < 1 || request.getLimit() < 1 || request.getLimit() > 100) {
-            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "page ต้องไม่น้อยกว่า 1 และ limit ต้องอยู่ระหว่าง 1 ถึง 100");
+            throw new ReportRequestException("page ต้องไม่น้อยกว่า 1 และ limit ต้องอยู่ระหว่าง 1 ถึง 100");
         }
         Comparator<ReportProjectResponse> order = projectOrder(request);
         List<ProjectInfo> projects = selectProjects(visibleProjects(ownerId), filter);
@@ -341,14 +340,14 @@ public class ReportServiceImpl implements ReportService {
         boolean descending;
         if ("asc".equalsIgnoreCase(request.getDirection())) descending = false;
         else if ("desc".equalsIgnoreCase(request.getDirection())) descending = true;
-        else throw new ReportRequestException(HttpStatus.BAD_REQUEST, "direction ต้องเป็น asc หรือ desc");
+        else throw new ReportRequestException("direction ต้องเป็น asc หรือ desc");
         Comparator<ReportProjectResponse> order = switch (request.getSortBy()) {
             case "projectName" -> Comparator.comparing(row -> row.projectName().toLowerCase(java.util.Locale.ROOT));
             case "clientName" -> Comparator.comparing(row -> row.clientName().toLowerCase(java.util.Locale.ROOT));
             case "trackedSeconds" -> Comparator.comparingLong(ReportProjectResponse::trackedSeconds);
             case "usagePercent" -> Comparator.comparing(ReportProjectResponse::usagePercent,
                     Comparator.nullsLast(descending ? Comparator.<BigDecimal>reverseOrder() : Comparator.<BigDecimal>naturalOrder()));
-            default -> throw new ReportRequestException(HttpStatus.BAD_REQUEST, "sortBy ไม่ถูกต้อง");
+            default -> throw new ReportRequestException("sortBy ไม่ถูกต้อง");
         };
         if (descending && !"usagePercent".equals(request.getSortBy())) order = order.reversed();
         return order.thenComparing(ReportProjectResponse::projectId);
@@ -362,7 +361,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate to = filter.getTo();
 
         if ((from == null) != (to == null)) {
-            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "กรุณาระบุวันที่เริ่มและวันที่สิ้นสุดให้ครบ"
+            throw new ReportRequestException("กรุณาระบุวันที่เริ่มและวันที่สิ้นสุดให้ครบ"
             );
         }
 
@@ -371,7 +370,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if (from.isAfter(to)) {
-            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด"
+            throw new ReportRequestException("วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด"
             );
         }
 
