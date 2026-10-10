@@ -79,7 +79,7 @@ stateDiagram-v2
 
 สอง deleted states แสดงว่า soft delete ไม่เปลี่ยน activation เดิม ไม่ใช่เพิ่ม ClientStatus enum ค่าใหม่ การส่ง activation เดิมซ้ำทำได้; isActive=false ซ้ำยังทำ Project archive cascade
 
-Client DELETE ไม่ archive Project/Task/TimeEntry และไม่ตรวจว่ามี Project/Time Entry ผูกอยู่ก่อนลบ แต่ method ทำงานใน transaction ส่วน Timer guard ตรวจ Client.isActive แต่ไม่ตรวจ Client.deletedAt โดยตรง ข้อจำกัดนี้ยังมีในโค้ด ไม่ถือว่า diagram implement การป้องกันให้แล้ว
+Client DELETE ไม่ archive Project/Task/TimeEntry และไม่ตรวจว่ามี Project/Time Entry ผูกอยู่ก่อนลบ แต่ method ทำงานใน transaction ส่วน Timer guard ใน TimeEntry.requireTrackableProject ตรวจทั้ง Client.isActive และ Client.deletedAt โดยตรง จึงปฏิเสธการเริ่ม timer เมื่อ Client ถูก archive หรือ soft delete แม้การ soft delete จะคง isActive เดิมไว้ การ DELETE Client ไม่หยุด running timer ที่มีอยู่ให้อัตโนมัติ
 
 ## Task workflow ผ่าน API
 
