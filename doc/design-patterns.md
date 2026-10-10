@@ -109,5 +109,5 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 - Kompat - Time Tracking
 - Nattadol - Dashboard/Reports
 
-Diagram ใน [diagrams/](diagrams/README.md) ตรวจชื่อ method/path จาก implementation แล้ว รวมถึง Conceptual Domain/Use Case/Deployment/State diagrams สไลด์ยังไม่สร้างตามขอบเขตงาน ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
+Diagram ใน [diagrams/](diagrams/README.md) ตรวจชื่อ method/path จาก implementation แล้ว รวมถึง Conceptual Domain/Use Case/Deployment/State diagrams มี [สไลด์นำเสนอ PDF](slide/slide-freelance-hub.pdf) ใน slide/ แล้ว ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
 

@@ -36,7 +36,7 @@
 
 ## ขอบเขตการส่งมอบที่ยังต้องตรวจจากทีม
 
-- สไลด์นำเสนอใน slide/ ยังมีเพียง README ไม่สร้างสไลด์ตามขอบเขตที่ผู้ใช้กำหนด
+- มี [สไลด์นำเสนอ PDF](slide/slide-freelance-hub.pdf) จำนวน 13 หน้าใน slide/ แล้ว; ทีมควรตรวจเนื้อหา ลิงก์ และซ้อม Demo ก่อนนำเสนอ
 - ผล local ล่าสุด: Backend 471 และ Frontend 33 tests ผ่าน รวมถึง lint, typecheck และ build; ดู [Test Report](../test/test-report.md)
 - Coverage มีเฉพาะ 11 Frontend TypeScript files ที่ชุดทดสอบโหลด; Backend/React UI coverage ยังไม่ได้เก็บ และยังไม่ได้แนบผล CI/PostgreSQL/cloud verification ใหม่
 - Deployment Diagram อธิบาย configuration ไม่ใช่หลักฐานว่า public URL ใช้งานได้จริง; ทีมต้องตรวจ environment/settings/health ของ release ก่อนส่ง
