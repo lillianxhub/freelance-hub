@@ -1,8 +1,8 @@
 # Reports API Contract
 
-เอกสารนี้อธิบาย API ที่หน้า **รายงาน** ใช้ในโค้ดปัจจุบัน สำหรับผู้พัฒนา Frontend, Backend และ AI ที่แก้งานต่อ
+เอกสารนี้อธิบาย API ที่หน้า **รายงาน** ใช้ในโค้ดปัจจุบัน
 
-ตรวจเทียบ ReportController, ReportServiceImpl, ReportQueryRepository และ ReportsPage ณ commit `131305f` วันที่ 9 ตุลาคม 2026; เป็น contract ที่ตรวจจาก source ไม่ใช่หลักฐานผลรันของ deployment
+ตรวจเทียบ ReportController, ReportServiceImpl, ReportQueryRepository และ ReportsPage ณ commit `dbcc4b9` วันที่ 10 ตุลาคม 2026; เป็น contract ที่ตรวจจาก source ไม่ใช่หลักฐานผลรันของ deployment
 
 ## API ที่หน้า Reports เรียก
 
@@ -20,13 +20,14 @@ Backend ยังมี `GET /api/reports/work-trend` และ `GET /api/report
 
 ## ตัวกรอง
 
-ทั้งสาม endpoint รับ `from`, `to`, `clientId` และ `projectId` แบบ optional:
+ทั้งห้า Reports endpoints รับตัวกรองต่อไปนี้ โดย `/work-trend` บังคับส่งวันที่ทั้งคู่:
 
 | Parameter | รูปแบบ | ความหมาย |
 |---|---|---|
 | `from` และ `to` | `YYYY-MM-DD` | ส่งทั้งคู่เพื่อดูช่วงวันที่ โดยรวมวันเริ่มและวันสิ้นสุดตามเขตเวลา Asia/Bangkok; เว้นทั้งคู่เพื่อดูทุกช่วงเวลา |
 | `clientId` | UUID | จำกัดข้อมูลเฉพาะลูกค้า |
 | `projectId` | UUID | จำกัดข้อมูลเฉพาะโปรเจกต์ |
+| `status` | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` | กรองตามสถานะปัจจุบันของ Project; ไม่ส่งหมายถึงทุกสถานะ |
 
 หากส่งวันที่เพียงข้างเดียว หรือ `from` หลัง `to` Backend ตอบ 400 ส่วน Frontend ไม่ส่ง request ระหว่างที่ตัวกรองวันที่ยังไม่ครบหรือไม่ถูกต้อง ค่า `ALL` เป็นค่าใน UI เท่านั้น ไม่ส่งไป API
 
@@ -61,19 +62,21 @@ Backend ยังมี `GET /api/reports/work-trend` และ `GET /api/report
 }
 ```
 
-`/summary` คืน `data.generatedAt`, `data.filters.clients`, `data.filters.projects` และ `data.summary` ซึ่งมี `totalTrackedSeconds`, `trackedTimeTrendPercent`, `timeEntryCount`, `projectsWithTime`, `totalProjects`, `clientsWithTime`, `totalClients` ส่วน `/distribution` คืน `data.groupBy` และ `data.items` ที่มี `id`, `name`, `trackedSeconds`, `percent`
+`/summary` คืน `data.filters.projects[]` ที่มี `id`, `name`, `clientId`, `status` และคืน `data.generatedAt`, `data.filters.clients`, `data.filters.projects` และ `data.summary` ซึ่งมี `totalTrackedSeconds`, `trackedTimeTrendPercent`, `timeEntryCount`, `projectsWithTime`, `totalProjects`, `clientsWithTime`, `totalClients` ส่วน `/distribution` คืน `data.groupBy` และ `data.items` ที่มี `id`, `name`, `trackedSeconds`, `percent`
 
 `trackedTimeTrendPercent` เป็น `null` เมื่อดูทุกช่วงเวลา เพราะไม่มีช่วงก่อนหน้าให้เทียบ `targetSeconds` และ `usagePercent` เป็น `null` เมื่อโปรเจกต์ไม่มีเป้าหมาย ชั่วโมงที่ใช้คิดจากวินาทีที่ Backend ส่งมา และความคืบหน้างานคิดจากจำนวน task ที่เสร็จต่อ task ทั้งหมด
 
-เมื่อระบุวันที่ trend เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่ากัน ใช้ `(current-previous)/previous*100`; หากยอดช่วงก่อนเป็น 0 ให้ trend เป็น null เช่นกัน taskProgressPercent นับเฉพาะ Task ที่ active และไม่ถูก soft delete; ไม่มี Task ให้เปอร์เซ็นต์เป็น 0
+เมื่อระบุวันที่ trend เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่ากัน ใช้ `(current-previous)/previous*100`; หากยอดช่วงก่อนเป็น 0 ให้ trend เป็น 0 เมื่อยอดปัจจุบันเป็น 0 หรือ 100 เมื่อยอดปัจจุบันมากกว่า 0 ต่างจาก Dashboard ซึ่งคืน null ในกรณี previous=0 taskProgressPercent นับเฉพาะ Task ที่ active และไม่ถูก soft delete; ไม่มี Task ให้เปอร์เซ็นต์เป็น 0
 
 ## จุดที่ต้องระวัง
 
 - ข้อมูลทุก query ถูกจำกัดด้วย owner จาก access token; ยอดเวลาไม่รวม Time Entry ที่ยังไม่จบ/inactive/ถูก soft delete หรือ Project/Client ที่ถูก soft delete แต่ยังรวม Client/Project ที่ archive และเวลาเดิมบน Task ที่ถูก soft delete เพราะ time query ไม่กรอง Task
-- ตัวเลือก Client/Project และจำนวนทั้งหมดไม่กรองตามช่วงวันที่; วันที่จำกัดยอดเวลาและจำนวนรายการที่มีเวลา ไม่ได้ซ่อน Project ที่ไม่มีเวลาในช่วงนั้น
+- Dropdown options จาก summary เป็น Client/Project ทั้งหมดที่มองเห็น ไม่กรองวันที่/status ฝั่ง Backend; Frontend กรอง Project options ด้วย clientId และ status เมื่อเปลี่ยน Client หรือ status จะล้าง Project ที่เลือกและกลับหน้า 1
+- จำนวน totalProjects จำกัดด้วย clientId/projectId/status; totalClients เมื่อระบุ status นับ Client ที่มี Project เข้าเงื่อนไข แม้ไม่มีเวลาในช่วงนั้น วันที่จำกัดยอดเวลาและจำนวนรายการที่มีเวลา แต่ไม่ซ่อน Project ที่ไม่มีเวลา
+- status ใช้สถานะปัจจุบันของ Project ไม่ใช่สถานะ ณ วันที่บันทึกเวลา และใช้กับทั้งช่วงปัจจุบัน/ช่วงก่อนหน้าของ trend; status ผิด enum ได้ 400 ส่วน Project ที่มีสิทธิ์อ่านแต่ไม่ตรง status ให้ผลว่าง ไม่ใช่ 404
 - ยอด Reports ไม่จำเป็นต้องเท่ากับ Dashboard/Client GET: ดู [ตารางขอบเขตยอดเวลา](use-case-description.md#ตารางขอบเขตยอดเวลา) ก่อนเทียบตัวเลข
 - Backend รวมยอดด้วย query แบบ aggregate ไม่ดึง time entry หรือ task ทีละโปรเจกต์
-- ตารางและกราฟเปรียบเทียบโปรเจกต์แสดงเฉพาะหน้า pagination ปัจจุบัน ปุ่ม CSV จึงส่งออกเฉพาะหน้านั้น
+- ตารางและ CSV ใช้ Project ของหน้า pagination ปัจจุบัน กราฟเปรียบเทียบใช้เฉพาะแถวในหน้านั้นที่ trackedSeconds > 0 หรือ taskProgressPercent > 0
 - `getProjects` ใน Backend ยังโหลดโปรเจกต์ที่มองเห็นทั้งหมดเพื่อเรียงและตัดหน้าในหน่วยความจำ หากจำนวนโปรเจกต์มากควรย้าย pagination ไปที่ฐานข้อมูล
 - ReportQueryRepository ใช้ JPQL ผ่าน EntityManager สำหรับยอดรวม และ native SQL ของ PostgreSQL สำหรับแบ่งวัน/ชั่วโมง ไม่ใช่ Spring Data derived query ทั้งหมด
 

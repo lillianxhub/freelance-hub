@@ -1,6 +1,6 @@
 # Use Case Description - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026
+ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `dbcc4b9` วันที่ 10 ตุลาคม 2026
 
 ## 1. ขอบเขตระบบและ Actor
 
@@ -263,11 +263,11 @@ method นี้ยังใช้กติกาเดิมสำหรับ 
 ### UC-CLI-06 Change Client Status
 
 1. Freelancer ส่ง `{"isActive": true}` หรือ `{"isActive": false}` ไปที่ `PATCH /api/clients/{id}/status`
-2. Service ตรวจ owner; ถ้า `isActive=false` ให้ repository โหลด Project ของลูกค้าและ owner นั้นที่ `deletedAt IS NULL` แล้วเรียก `Project.changeStatus(ARCHIVED)` ให้แต่ละรายการมี `status=ARCHIVED` และ `isActive=false` โดยไม่ตั้ง `deletedAt` และไม่เปลี่ยน Task/Time Entry
+2. Service ตรวจ owner; ถ้า `isActive=false` ให้ repository โหลด Project ของลูกค้าและ owner นั้นที่ `deletedAt IS NULL` ตรวจว่าไม่มี timer ของผู้ใช้กำลังทำงานใน Project เหล่านั้นก่อน หากมีให้ตอบ `409`; จากนั้นเรียก `Project.changeStatus(ARCHIVED)` ให้แต่ละรายการมี `status=ARCHIVED` และ `isActive=false` โดยไม่ตั้ง `deletedAt` และไม่เปลี่ยน Task/Time Entry
 3. Service เรียก `Client.setActive(isActive)` และบันทึก Client พร้อม Project ใน transaction เดียวกัน; เมื่อ `isActive=true` จะไม่คืนสถานะ Project อัตโนมัติ
 4. Controller คืน `200 ApiResult<ClientResponse>`; `status` ใน response คำนวณเป็น `ACTIVE` หรือ `ARCHIVED` จาก `isActive`
 
-**Alternative flow:** ไม่ส่ง `isActive` = `400`; ไม่พบ/ไม่ใช่เจ้าของ/ถูก soft delete แล้ว = `404`; ไม่มี JWT = `401`
+**Alternative flow:** มี timer ทำงานใน Project ของลูกค้านี้ขณะจัดเก็บ = `409`; ไม่ส่ง `isActive` = `400`; ไม่พบ/ไม่ใช่เจ้าของ/ถูก soft delete แล้ว = `404`; ไม่มี JWT = `401`
 **Postcondition:** เมื่อจัดเก็บ Client ให้ Project ที่ผูกอยู่และยังไม่ถูก soft delete เป็น `ARCHIVED` ด้วย รวมรายการที่เคย `COMPLETED`; เรียกจัดเก็บซ้ำได้ โดยไม่ลบประวัติและไม่กระทบลูกค้าหรือผู้ใช้อื่น
 
 ใช้ `Project.changeStatus(ARCHIVED)` สำหรับการเปลี่ยนสถานะนี้ ไม่ใช้ `Project.archive()` ซึ่งตั้ง `deletedAt` ด้วย
@@ -595,11 +595,11 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 1. `ProjectServiceImpl.changeStatus()` ตรวจสิทธิ์เจ้าของและไม่ให้มี running timer ใน Project ก่อนเปลี่ยนสถานะ; เมื่อเปลี่ยนเป็น `COMPLETED` จะเรียก `TimeEntryService.lockByProject(ownerId, projectId)` ใน transaction เดียวกัน โดยไม่มีคำสั่ง lock จากหน้าบ้าน
 2. `TimeEntryServiceImpl` ใช้ `@Transactional(propagation = Propagation.MANDATORY)` เพื่อบังคับว่าผู้เรียกต้องเปิด transaction ไว้แล้ว
 3. Repository ใช้ `findLockedByOwnerIdAndProjectIdAndLockedAtIsNull` พร้อม `PESSIMISTIC_WRITE` เพื่อดึงเฉพาะรายการที่ยังไม่ล็อกของ owner/Project ที่ระบุ รวมรายการที่ soft delete และ timer ที่ยังวิ่งอยู่
-4. Service ตรวจทุกรายการก่อนแก้ข้อมูล; หากพบ running timer จะโยน `IllegalStateException` โดยไม่หยุด timer อัตโนมัติและไม่ตั้ง `lockedAt` ให้รายการใด
+4. Service ตรวจทุกรายการก่อนแก้ข้อมูล; หากพบ running timer จะโยน `InvalidStateException` โดยไม่หยุด timer อัตโนมัติและไม่ตั้ง `lockedAt` ให้รายการใด
 5. หากไม่มี running timer ระบบอ่านเวลาจาก `Clock` ครั้งเดียว แล้วเรียก `TimeEntry.lock(lockedAt)` กับทุกรายการที่พบและ flush ภายใน transaction ของผู้เรียก
 6. รายการที่ล็อกอยู่แล้วไม่ถูกแก้และรักษา `lockedAt` เดิม; ไม่มีรายการที่ต้องล็อกสามารถจบการทำงานได้
 
-**Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `IllegalStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
+**Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `InvalidStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
 **Postcondition:** เมื่อ transaction commit รายการที่ถูกเลือกมี `lockedAt` ถาวรและไม่สามารถแก้ไขหรือ soft delete ผ่าน Entity/service ปกติได้; การล็อกแถวฐานข้อมูลสิ้นสุดเมื่อ transaction จบ แต่ค่า `lockedAt` ยังอยู่
 
 **สถานะการเชื่อมต่อ:** `ProjectServiceImpl.changeStatus()` เรียกเมธอดล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` แล้ว; integration test ตรวจว่าการเปลี่ยนสถานะผ่าน API ตั้ง `lockedAt` ในฐานข้อมูล และการแก้ไข/ลบ Time Entry หลังจากนั้นได้ `409 TIME_ENTRY_LOCKED` การสร้าง manual entry หรือ PUT ย้ายรายการเข้า Project ที่ไม่เป็น `ACTIVE` ถูกปฏิเสธ
@@ -611,11 +611,11 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 ### ขอบเขตที่ยังไม่เสร็จ
 
 - `FR-TIME-09` การคัดลอกรายการเดิมเพื่อบันทึกซ้ำยังไม่มี endpoint หรือ service operation
-- ตาราง API ใน REQUIREMENTS ยังระบุ PATCH สำหรับแก้ Time Entry และไม่ได้ลงเส้น `/summary` แต่ implementation ปัจจุบันใช้ PUT และมี `/summary` ซึ่ง Client/Project ใช้เทียบยอดด้วย; ทีมต้องปรับ requirement contract ให้ตรง ไม่ใช่อ้างว่าเอกสารนี้เพิ่ม/ลบ endpoint ให้แล้ว
+- Backend รับ optional Task แต่ฟอร์ม manual ใน Frontend บังคับเลือก Task และยังแสดง PLANNED/ON_HOLD ใน Project options; Backend ปฏิเสธการบันทึกบน Project เหล่านี้ด้วย 409 ฟอร์มจึงยังไม่ตรงกับ API ทุกกรณี
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
 - มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันแล้ว แต่ยังต้องจัดการ concurrent creation/reassignment
-- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; การสร้าง manual entry และ PUT ไปยัง Project ที่ไม่เป็น `ACTIVE` จะถูกปฏิเสธ 
+- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; การสร้าง manual entry และ PUT ไปยัง Project ที่ไม่เป็น `ACTIVE` จะถูกปฏิเสธ
 - Audit event สำหรับการแก้ไข Time Entry ตาม non-functional requirement ยังไม่ได้แสดงใน implementation นี้
 
 **หลักฐานการทดสอบ:** `TimerControllerTest`, `TimeEntryControllerTest`, `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest`, `ProjectServiceImplTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
@@ -640,7 +640,7 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 | UC-ANA-02 | เปลี่ยนช่วงกราฟ Dashboard | `GET /api/dashboard/activity?period=MONTH\|YEAR` | กราฟเดือนหรือปีจากช่วงที่เลือก; `WEEK` ใช้ข้อมูลจาก Dashboard response |
 | UC-ANA-03 | หยุด timer จาก Dashboard | `POST /api/timer/stop` แล้ว refresh current timer และ dashboard | เปลี่ยนจาก timer ที่กำลังทำงานเป็นรายการเวลาล่าสุด |
 | UC-ANA-04 | เปิด Reports | `GET /api/reports/summary`, `/distribution`, `/projects` | KPI, กราฟเวลาตามลูกค้า, กราฟเทียบเป้าหมาย และตารางโปรเจกต์ |
-| UC-ANA-05 | กรอง Reports และเลือกการจัดกลุ่มกราฟเวลา | สามเส้นเดียวกับ UC-ANA-04 พร้อม `from`, `to`, `clientId`, `projectId`; `/distribution` รับ `groupBy=CLIENT\|PROJECT` | แสดงข้อมูลตามตัวกรองและสลับกราฟเวลาตามลูกค้าหรือโปรเจกต์ได้ |
+| UC-ANA-05 | กรอง Reports และเลือกการจัดกลุ่มกราฟเวลา | สามเส้นเดียวกับ UC-ANA-04 พร้อม `from`, `to`, `clientId`, `projectId`, `status`; `/distribution` รับ `groupBy=CLIENT\|PROJECT` | แสดงข้อมูลตามตัวกรองและสลับกราฟเวลาตามลูกค้าหรือโปรเจกต์ได้ |
 | UC-ANA-06 | เปลี่ยนหน้าตาราง Reports | `GET /api/reports/projects?page=N&limit=10` | ใช้ `meta` เพื่อแสดงรายการและกราฟโปรเจกต์ของหน้านั้น |
 | UC-ANA-07 | ส่งออก CSV จาก Reports | ไม่มี request เพิ่ม | ดาวน์โหลดรายการโปรเจกต์ของหน้าตารางปัจจุบัน |
 | UC-ANA-08 | อ่านแนวโน้มเวลารายงานผ่าน API | `GET /api/reports/work-trend` | คืนจุดเวลาแบบ DAY/WEEK/MONTH; ยังไม่มีส่วนแสดงผลบนหน้า Reports |
@@ -701,12 +701,12 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 
 ### UC-ANA-05 กรอง Reports
 
-1. ผู้ใช้เลือกวันที่ทั้งคู่ หรือเว้นว่างทั้งคู่; อาจเลือกลูกค้าและโปรเจกต์
-2. หน้าไม่ส่งค่า `ALL` ไป Backend; เมื่อเปลี่ยนลูกค้าจะล้างโปรเจกต์ที่เคยเลือกและกลับไปหน้า 1
+1. ผู้ใช้เลือกวันที่ทั้งคู่ หรือเว้นว่างทั้งคู่; อาจเลือกลูกค้า โปรเจกต์ และสถานะ Project
+2. หน้าไม่ส่งค่า `ALL` ไป Backend; เมื่อเปลี่ยนลูกค้าหรือสถานะ Project จะล้างโปรเจกต์ที่เคยเลือกและกลับไปหน้า 1; dropdown Project กรองด้วยทั้ง Client และสถานะ
 3. เมื่อเปลี่ยน filter หน้าเรียก summary, distribution และ projects ด้วย filter เดียวกัน; เมื่อกดสลับกราฟตามลูกค้าหรือโปรเจกต์ หน้าเรียกเฉพาะ distribution ด้วย `groupBy=CLIENT` หรือ `PROJECT` ตามที่เลือก
 4. การเปลี่ยนวันที่หรือโปรเจกต์กลับไปหน้า 1 ของตาราง
 
-**Alternative flow:** กรอกวันที่ข้างเดียวหรือวันที่เริ่มหลังสิ้นสุด แสดงข้อความ error และไม่เรียก API ด้วยช่วงที่ผิด; filter UUID ไม่ใช่ของผู้ใช้/ไม่ตรงกัน Backend ตอบ 404
+**Alternative flow:** กรอกวันที่ข้างเดียวหรือวันที่เริ่มหลังสิ้นสุด แสดงข้อความ error และไม่เรียก API ด้วยช่วงที่ผิด; filter UUID ไม่ใช่ของผู้ใช้หรือ Client/Project ไม่ตรงกัน Backend ตอบ 404; status ผิด enum ตอบ 400; Project ที่มีสิทธิ์อ่านแต่ไม่ตรง status ให้ผลว่าง
 
 **Postcondition:** ผลรายงานถูกจำกัดตาม filter ที่เลือกโดยไม่เปลี่ยนข้อมูลต้นทาง
 
@@ -747,13 +747,13 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 | ClientService.summarizeTimeByClient | Time Entry/Project ต้อง active และ deletedAt=null; Task ไม่มีหรือ active และ deletedAt=null; ไม่กรอง Client activation/deletion | ไม่รวมเวลา Project ที่ archive หรือ Task ที่ soft delete แต่ยังอาจคืนกลุ่ม Client ที่ soft delete |
 | Dashboard KPI เวลาและ daily/activity | Time Entry active; Project active; Task ไม่มีหรือ active; projection ไม่อ่าน deletedAt/Client | ไม่รวมเวลา Project ที่ archive/Task ที่ soft delete ตาม flow ปกติ แต่ไม่ใช่ query ตรวจ deletedAt ทุกความสัมพันธ์โดยตรง |
 | Dashboard ยอดเวลาเทียบเป้าหมายและ recent entries | Time Entry active; Project active และ deletedAt=null; Task ไม่มีหรือ active; ไม่กรอง Client.deletedAt | ไม่รวมเวลา Project ที่ archive; ประวัติ Task ที่ soft delete ปกติไม่รวม; recent คืนไม่เกิน 2 รายการ |
-| Reports summary/distribution/projects/work-trend/work-pattern | Time Entry active และ deletedAt=null; Project/Client deletedAt=null; ไม่กรอง Project/Client.isActive หรือ Task | รวม Client/Project ที่ archive และประวัติ Task ที่ soft delete แต่ไม่รวม Project/Client ที่ soft delete |
+| Reports summary/distribution/projects/work-trend/work-pattern | Time Entry active และ deletedAt=null; Project/Client deletedAt=null; ไม่กรอง Project/Client.isActive หรือ Task; กรอง p.status เมื่อระบุ status | รวม Client/Project ที่ archive และประวัติ Task ที่ soft delete แต่ไม่รวม Project/Client ที่ soft delete |
 
 หลักฐาน: `repository/ClientRepository.java`, `repository/TimeEntryRepository.java`, `repository/ReportQueryRepository.java`, `service/impl/TimeEntryServiceImpl.java` และ `service/impl/DashboardServiceImpl.java` หากเทียบตัวเลขข้ามหน้าต้องใช้ชุดเงื่อนไขเดียวกันก่อน ไม่ถือว่ายอดต่างกันเป็นความผิดของ Frontend เสมอ
 
 **ช่วงเวลาและการจัดกลุ่ม:** Time Entry API/Client internal summary ใช้ Instant แบบ `[from,to)` ส่วน Dashboard/Reports แปลงวันด้วย Asia/Bangkok แล้วกรอง startedAt แบบขอบบนไม่รวม เวลาทั้งรายการถูกลงในวัน/ชั่วโมงที่เริ่ม ไม่ได้แบ่ง duration ข้ามเที่ยงคืนหรือหลายชั่วโมง และไม่ตัด duration ให้เหลือเฉพาะส่วนที่ทับซ้อนช่วงที่เลือก
 
-**การเทียบช่วงก่อน:** Dashboard weekTrackedSeconds ใช้วันจันทร์ถึงสิ้นวันนี้ (toExclusive=พรุ่งนี้) เทียบกับสัปดาห์ก่อนครบจันทร์–อาทิตย์ ไม่ใช่เทียบจำนวนวันที่ผ่านไปเท่ากัน; Reports เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่าช่วงวันที่เลือก สูตร `(current-previous)/previous*100` และคืน null หาก previous=0; เมื่อไม่ส่งวันที่ Reports trend เป็น null
+**การเทียบช่วงก่อน:** Dashboard weekTrackedSeconds ใช้วันจันทร์ถึงสิ้นวันนี้ (toExclusive=พรุ่งนี้) เทียบกับสัปดาห์ก่อนครบจันทร์–อาทิตย์ ไม่ใช่เทียบจำนวนวันที่ผ่านไปเท่ากัน; Reports เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่าช่วงวันที่เลือก สูตร `(current-previous)/previous*100`; Dashboard คืน null หาก previous=0 ส่วน Reports คืน 0 เมื่อทั้งสองช่วงเป็น 0 หรือ 100 เมื่อ current>0 และ previous=0; เมื่อไม่ส่งวันที่ Reports trend เป็น null
 
 ### Sequence: โหลด Reports และเปลี่ยน filter
 
@@ -782,4 +782,3 @@ Sequence และ Activity จากเอกสารสมาชิกถู�
 | Dashboard/Reports | Nattadol |
 
 ฉบับรวมคงความหมายและ requirement boundaries ของสมาชิก ไม่ถือว่าการจัดทำเอกสารเป็นการ implement requirement ที่ยังไม่เสร็จ และไม่ใช้ผล test ในเอกสารเก่าแทน Test Report ของ release ปัจจุบัน
-
