@@ -677,7 +677,7 @@ class ProjectServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> service.update(OWNER_ID, PROJECT_ID, request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InvalidStateException.class)
                 .hasMessage("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
         assertThat(project.getName()).isEqualTo("Website");
         assertThat(project.getTargetMinutes()).isNull();

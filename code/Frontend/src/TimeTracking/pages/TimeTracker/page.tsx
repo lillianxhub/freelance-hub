@@ -10,7 +10,7 @@ import type { RangePreset, TimeFilters } from '../../../types/timeTrackerPage'
 import TimerPanel from '../../components/TimerPanel'
 import TimeEntriesCard from '../../components/TimeEntriesCard'
 import TimeEntryForm from '../../components/TimeEntryForm'
-import { createEmptyManualForm, localDateValue } from '../../timeTracking.utils'
+import { canTrackProject, createEmptyManualForm, localDateValue } from '../../timeTracking.utils'
 import { listTimerTasks } from '../../../services/timerOptions'
 import {
   createManualTimeEntry,
@@ -68,10 +68,7 @@ function TimeTrackerPage() {
   }, [])
 
   const activeProjects = useMemo(
-    () =>
-      (data?.projects || []).filter(
-        (project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED',
-      ),
+    () => (data?.projects || []).filter(canTrackProject),
     [data.projects],
   )
   const manualTasksLoaded = Boolean(

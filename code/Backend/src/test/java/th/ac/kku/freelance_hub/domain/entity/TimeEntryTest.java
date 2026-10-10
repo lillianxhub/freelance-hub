@@ -64,6 +64,30 @@ class TimeEntryTest {
     }
 
     @Test
+    void rejectsTimerAndManualEntriesForDeletedClient() {
+        client.softDelete();
+        assertThat(client.getIsActive()).isTrue();
+        assertThatThrownBy(() -> TimeEntry.startTimer(owner, activeProject, null, null, STARTED_AT))
+                .isInstanceOf(InvalidStateException.class);
+        assertThatThrownBy(() -> TimeEntry.createManual(owner, activeProject, null, null,
+                STARTED_AT, STARTED_AT.plusSeconds(60)))
+                .isInstanceOf(InvalidStateException.class);
+        assertThatThrownBy(() -> TimeEntry.createManualWithDurationSeconds(owner, activeProject,
+                null, null, STARTED_AT, 60))
+                .isInstanceOf(InvalidStateException.class);
+    }
+
+    @Test
+    void rejectsMovingEntryToDeletedClientProject() {
+        TimeEntry entry = TimeEntry.createManualWithDurationSeconds(owner, activeProject,
+                null, null, STARTED_AT, 60);
+        client.softDelete();
+        assertThatThrownBy(() -> entry.updateDetails(activeProject, null, "Updated"))
+                .isInstanceOf(InvalidStateException.class);
+        assertThat(entry.getDescription()).isNull();
+    }
+
+    @Test
     @DisplayName("rejects starting a timer for a project that is not active")
     void rejectsTimerForInactiveProject() {
         Project plannedProject = new Project(owner, client, "Planned Project");

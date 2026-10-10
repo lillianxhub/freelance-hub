@@ -18,6 +18,7 @@ import { getErrorMessage } from '../../../api/apiError'
 import { changePassword } from '../../../services/profile'
 import { validateProfileFields } from '../../profile.validators'
 import { useThaiAddress } from '../../useThaiAddress'
+import { hasRequiredPassword } from '../../../Authentication/authentication.validators'
 
 const emptyProfile: ProfileInput = {
   full_name: '',
@@ -101,8 +102,8 @@ function ProfilePage() {
     editableProfileFields.some(
       (field) => fieldValue(profile[field]) !== fieldValue(savedProfile[field]),
     )
-  const passwordTooShort =
-    passwordForm.new_password.length > 0 && passwordForm.new_password.length < 8
+  const passwordInvalidLength =
+    passwordForm.new_password.length > 0 && !hasRequiredPassword(passwordForm.new_password)
   const passwordMismatch =
     passwordForm.confirm_password.length > 0 &&
     passwordForm.new_password !== passwordForm.confirm_password
@@ -113,7 +114,7 @@ function ProfilePage() {
     !passwordForm.current_password ||
     !passwordForm.new_password ||
     !passwordForm.confirm_password ||
-    passwordTooShort ||
+    passwordInvalidLength ||
     passwordMismatch ||
     passwordUnchanged
 
@@ -199,10 +200,10 @@ function ProfilePage() {
 
   const submitPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (passwordForm.new_password.length < 8) {
+    if (!hasRequiredPassword(passwordForm.new_password)) {
       showToast({
         success: false,
-        message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร',
+        message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษรและไม่เกิน 72 ไบต์ UTF-8',
       })
       return
     }
@@ -537,12 +538,12 @@ function ProfilePage() {
                 onChange={updatePassword}
                 autoComplete="new-password"
                 minLength={8}
-                aria-invalid={passwordTooShort || passwordUnchanged}
+                aria-invalid={passwordInvalidLength || passwordUnchanged}
                 required
               />
-              {passwordTooShort ? (
+              {passwordInvalidLength ? (
                 <small className="mt-1 text-xs font-semibold text-destructive">
-                  รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร
+                  รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษรและไม่เกิน 72 ไบต์ UTF-8
                 </small>
               ) : (
                 <small className="text-xs text-muted-foreground">ต้องมีอย่างน้อย 8 ตัวอักษร</small>

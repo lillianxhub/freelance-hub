@@ -9,7 +9,6 @@ export function validateManualTimeField(
   value: ManualTimeForm,
 ): string | undefined {
   if (field === 'project_id' && !value.project_id) return 'กรุณาเลือกโปรเจกต์'
-  if (field === 'task_id' && !value.task_id) return 'กรุณาเลือกงาน'
   if (field === 'entry_date' && !/^\d{4}-\d{2}-\d{2}$/.test(value.entry_date))
     return 'กรุณาเลือกวันที่'
   if (field === 'manual_mode' && !value.manual_mode) return 'กรุณาเลือกวิธีระบุเวลา'
