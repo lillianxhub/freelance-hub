@@ -47,10 +47,14 @@ test('Dashboard activity requests the selected period and returns its data', asy
   try {
     const dashboard = captureDashboard()
     assert.deepEqual(await dashboard.loadActivity('MONTH'), {
-      period: 'MONTH', points: [{ date: '2026-10-01', trackedSeconds: 90 }],
+      period: 'MONTH',
+      points: [{ date: '2026-10-01', trackedSeconds: 90 }],
     })
     assert.equal((await dashboard.loadActivity('YEAR')).period, 'YEAR')
-    assert.deepEqual(paths, ['/api/dashboard/activity?period=MONTH', '/api/dashboard/activity?period=YEAR'])
+    assert.deepEqual(paths, [
+      '/api/dashboard/activity?period=MONTH',
+      '/api/dashboard/activity?period=YEAR',
+    ])
   } finally {
     globalThis.fetch = originalFetch
     setApiToken(null)
@@ -70,39 +74,54 @@ test('Dashboard activity propagates API errors', async () => {
 })
 
 test('Timer card shows an empty state when there is no running timer or recent entry', () => {
-  const html = renderToStaticMarkup(createElement(DashboardTimerCard, {
-    currentTimer: null,
-    recentEntries: undefined,
-    onStop: async () => {},
-  }))
+  const html = renderToStaticMarkup(
+    createElement(DashboardTimerCard, {
+      currentTimer: null,
+      recentEntries: undefined,
+      onStop: async () => {},
+    }),
+  )
   assert.match(html, /ไม่ได้จับเวลา/)
   assert.match(html, /ยังไม่มีรายการเวลา/)
 })
 
 test('Timer card shows the latest entry and accepts a running timer without a task', () => {
-  const recentEntries = [{
-    id: 'entry-1', projectName: 'โปรเจกต์ล่าสุด', taskName: null,
-    description: 'บันทึกงาน', startedAt: '2026-10-01T10:00:00Z', durationSeconds: 90,
-  }]
-  const stoppedHtml = renderToStaticMarkup(createElement(DashboardTimerCard, {
-    currentTimer: null,
-    recentEntries,
-    onStop: async () => {},
-  }))
+  const recentEntries = [
+    {
+      id: 'entry-1',
+      projectName: 'โปรเจกต์ล่าสุด',
+      taskName: null,
+      description: 'บันทึกงาน',
+      startedAt: '2026-10-01T10:00:00Z',
+      durationSeconds: 90,
+    },
+  ]
+  const stoppedHtml = renderToStaticMarkup(
+    createElement(DashboardTimerCard, {
+      currentTimer: null,
+      recentEntries,
+      onStop: async () => {},
+    }),
+  )
   assert.match(stoppedHtml, /โปรเจกต์ล่าสุด/)
   assert.match(stoppedHtml, /ไม่ระบุงาน/)
 
-  const runningHtml = renderToStaticMarkup(createElement(DashboardTimerCard, {
-    currentTimer: {
-      running: true,
-      timeEntry: {
-        id: 'running-1', project: { id: 'project-1', name: 'โปรเจกต์ปัจจุบัน' },
-        task: null, startedAt: new Date().toISOString(), description: null,
+  const runningHtml = renderToStaticMarkup(
+    createElement(DashboardTimerCard, {
+      currentTimer: {
+        running: true,
+        timeEntry: {
+          id: 'running-1',
+          project: { id: 'project-1', name: 'โปรเจกต์ปัจจุบัน' },
+          task: null,
+          startedAt: new Date().toISOString(),
+          description: null,
+        },
       },
-    },
-    recentEntries,
-    onStop: async () => {},
-  }))
+      recentEntries,
+      onStop: async () => {},
+    }),
+  )
   assert.match(runningHtml, /กำลังทำงาน/)
   assert.match(runningHtml, /โปรเจกต์ปัจจุบัน/)
   assert.match(runningHtml, /หยุดจับเวลา/)

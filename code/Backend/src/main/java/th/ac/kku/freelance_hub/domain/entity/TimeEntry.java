@@ -1,5 +1,8 @@
 package th.ac.kku.freelance_hub.domain.entity;
 
+import java.util.Map;
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -152,6 +155,7 @@ public class TimeEntry {
             Instant startedAt,
             Instant endedAt
     ) {
+        requireTrackableProject(owner, project);
         TimeEntry entry = new TimeEntry(
                 owner,
                 project,
@@ -173,9 +177,10 @@ public class TimeEntry {
             Instant startedAt,
             long durationSeconds
     ) {
+        requireTrackableProject(owner, project);
         if (durationSeconds <= 0) {
-            throw new IllegalArgumentException(
-                    "durationSeconds must be greater than zero"
+            throw new InvalidArgumentException(
+                    "ระยะเวลาต้องมากกว่าศูนย์", Map.of("field", "durationSeconds")
             );
         }
 
@@ -201,10 +206,10 @@ public class TimeEntry {
     public void stop(Instant endedAt) {
         requireUnlocked();
         if (entryType != EntryType.TIMER) {
-            throw new IllegalStateException("only a timer entry can be stopped");
+            throw new InvalidStateException("หยุดได้เฉพาะรายการที่สร้างจากตัวจับเวลา", Map.of("rule", "TIMER_ENTRY_REQUIRED"));
         }
         if (!isRunning()) {
-            throw new IllegalStateException("timer is not running");
+            throw new InvalidStateException("ตัวจับเวลาไม่ได้กำลังทำงาน", Map.of("rule", "TIMER_NOT_RUNNING"));
         }
         completeAt(endedAt);
     }
@@ -216,7 +221,7 @@ public class TimeEntry {
             String description
     ) {
         requireUnlocked();
-        this.project = requireOwnedProject(owner, project);
+        this.project = requireTrackableProject(owner, project);
         this.task = requireTaskInProject(task, project);
         this.description = trimToNull(description);
     }
@@ -225,7 +230,7 @@ public class TimeEntry {
     public void updateTimeRange(Instant startedAt, Instant endedAt) {
         requireUnlocked();
         if (isRunning()) {
-            throw new IllegalStateException("a running timer cannot be edited");
+            throw new InvalidStateException("กรุณาหยุดตัวจับเวลาก่อนแก้ไขรายการเวลา", Map.of("rule", "STOP_TIMER_BEFORE_EDIT"));
         }
         this.startedAt = Objects.requireNonNull(startedAt, "startedAt is required");
         completeAt(endedAt);
@@ -238,7 +243,7 @@ public class TimeEntry {
     ) {
         requireUnlocked();
         if (isRunning()) {
-            throw new IllegalStateException("a running timer cannot be edited");
+            throw new InvalidStateException("กรุณาหยุดตัวจับเวลาก่อนแก้ไขรายการเวลา", Map.of("rule", "STOP_TIMER_BEFORE_EDIT"));
         }
         this.startedAt = Objects.requireNonNull(startedAt, "startedAt is required");
         completeWithDurationSeconds(durationSeconds);
@@ -247,10 +252,10 @@ public class TimeEntry {
     /** Locks a completed entry so it can no longer be edited. */
     public void lock(Instant lockedAt) {
         if (isRunning()) {
-            throw new IllegalStateException("a running timer cannot be locked");
+            throw new InvalidStateException("กรุณาหยุดตัวจับเวลาก่อนล็อกรายการเวลา", Map.of("rule", "STOP_TIMER_BEFORE_LOCK"));
         }
         if (isLocked()) {
-            throw new IllegalStateException("time entry is already locked");
+            throw new InvalidStateException("รายการเวลาถูกล็อกแล้ว", Map.of("rule", "ENTRY_ALREADY_LOCKED"));
         }
         this.lockedAt = Objects.requireNonNull(lockedAt, "lockedAt is required");
     }
@@ -269,8 +274,8 @@ public class TimeEntry {
     public void softDelete(Instant deletedAt) {
         requireUnlocked();
         if (isRunning()) {
-            throw new IllegalStateException(
-                    "a running timer must be cancelled"
+            throw new InvalidStateException(
+                    "กรุณายกเลิกตัวจับเวลาก่อนลบรายการเวลา", Map.of("rule", "CANCEL_TIMER_BEFORE_DELETE")
             );
         }
         this.isActive = false;
@@ -283,13 +288,13 @@ public class TimeEntry {
     private void completeAt(Instant endedAt) {
         Instant requiredEnd = Objects.requireNonNull(endedAt, "endedAt is required");
         if (!requiredEnd.isAfter(startedAt)) {
-            throw new IllegalArgumentException("endedAt must be after startedAt");
+            throw new InvalidArgumentException("เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น", Map.of("field", "endedAt"));
         }
 
         long elapsedSeconds = Duration.between(startedAt, requiredEnd).getSeconds();
         if (elapsedSeconds <= 0) {
-            throw new IllegalArgumentException(
-                    "durationSeconds must be greater than zero"
+            throw new InvalidArgumentException(
+                    "ระยะเวลาต้องมากกว่าศูนย์", Map.of("field", "durationSeconds")
             );
         }
 
@@ -299,8 +304,8 @@ public class TimeEntry {
 
     private void completeWithDurationSeconds(long durationSeconds) {
         if (durationSeconds <= 0) {
-            throw new IllegalArgumentException(
-                    "durationSeconds must be greater than zero"
+            throw new InvalidArgumentException(
+                    "ระยะเวลาต้องมากกว่าศูนย์", Map.of("field", "durationSeconds")
             );
         }
         this.endedAt = startedAt.plusSeconds(durationSeconds);
@@ -309,17 +314,17 @@ public class TimeEntry {
 
     private void requireUnlocked() {
         if (isLocked()) {
-            throw new IllegalStateException("locked time entry cannot be changed");
+            throw new InvalidStateException("รายการเวลาถูกล็อกแล้ว ไม่สามารถแก้ไขได้", Map.of("rule", "ENTRY_LOCKED"));
         }
     }
 
     private static Project requireTrackableProject(User owner, Project project) {
         Project requiredProject = requireOwnedProject(owner, project);
         if (!requiredProject.canTrackTime()) {
-            throw new IllegalStateException("project must be active to track time");
+            throw new InvalidStateException("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา", Map.of("rule", "ACTIVE_PROJECT_REQUIRED"));
         }
         if (!Boolean.TRUE.equals(requiredProject.getClient().getIsActive())) {
-            throw new IllegalStateException("client must be active to track time");
+            throw new InvalidStateException("กรุณาคืนสถานะลูกค้าก่อนบันทึกเวลา", Map.of("rule", "ACTIVE_CLIENT_REQUIRED"));
         }
         return requiredProject;
     }
@@ -327,7 +332,7 @@ public class TimeEntry {
     private static Project requireOwnedProject(User owner, Project project) {
         Project requiredProject = Objects.requireNonNull(project, "project is required");
         if (!sameUser(owner, requiredProject.getOwner())) {
-            throw new IllegalArgumentException("project must belong to owner");
+            throw new InvalidArgumentException("โปรเจกต์ไม่ถูกต้อง");
         }
         return requiredProject;
     }
@@ -341,7 +346,7 @@ public class TimeEntry {
         boolean samePersistentId = taskProject.getId() != null
                 && taskProject.getId().equals(project.getId());
         if (!sameInstance && !samePersistentId) {
-            throw new IllegalArgumentException("task must belong to project");
+            throw new InvalidArgumentException("งานไม่อยู่ในโปรเจกต์ที่เลือก");
         }
         return task;
     }

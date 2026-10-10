@@ -8,8 +8,12 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   value: {
     getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => { values.set(key, value) },
-    removeItem: (key: string) => { values.delete(key) },
+    setItem: (key: string, value: string) => {
+      values.set(key, value)
+    },
+    removeItem: (key: string) => {
+      values.delete(key)
+    },
   },
 })
 
@@ -23,7 +27,16 @@ test('api helpers send JSON and attach the in-memory token', async () => {
     const headers = new Headers(init?.headers)
     assert.equal(headers.get('Content-Type'), 'application/json')
     assert.equal(headers.get('Authorization'), 'Bearer test-token')
-    return new Response(JSON.stringify({ success: true, message: 'สร้างสำเร็จ', data: { id: '1' }, meta: null, error: null }), { status: 201 })
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'สร้างสำเร็จ',
+        data: { id: '1' },
+        meta: null,
+        error: null,
+      }),
+      { status: 201 },
+    )
   }
   try {
     assert.deepEqual((await api.post<{ id: string }>('/items', { name: 'Acme' })).data, { id: '1' })
@@ -46,7 +59,10 @@ test('401 rotates the refresh cookie once and retries with the new access token'
     const authorization = new Headers(init?.headers).get('Authorization')
     if (authorization === 'Bearer expired-access') return new Response(null, { status: 401 })
     assert.equal(authorization, 'Bearer renewed-access')
-    return new Response(JSON.stringify({ success: true, message: '', data: { id: '1' }, meta: null, error: null }), { status: 200 })
+    return new Response(
+      JSON.stringify({ success: true, message: '', data: { id: '1' }, meta: null, error: null }),
+      { status: 200 },
+    )
   }
   try {
     assert.deepEqual((await api.get<{ id: string }>('/items')).data, { id: '1' })
@@ -65,11 +81,21 @@ test('multipart wrapper passes FormData and leaves Content-Type to fetch', async
     assert.equal(init?.method, 'PATCH')
     assert.equal(init?.body, formData)
     assert.equal(new Headers(init?.headers).has('Content-Type'), false)
-    return new Response(JSON.stringify({ success: true, message: '', data: { uploaded: true }, meta: null, error: null }), { status: 200 })
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: '',
+        data: { uploaded: true },
+        meta: null,
+        error: null,
+      }),
+      { status: 200 },
+    )
   }
   try {
     const response = await fetchMultipartClient<{ uploaded: boolean }>('/upload', formData, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
     })
     assert.deepEqual(response.data, { uploaded: true })
   } finally {
@@ -79,9 +105,14 @@ test('multipart wrapper passes FormData and leaves Content-Type to fetch', async
 
 test('request wrappers keep ApiError status and handle empty responses', async () => {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({ message: 'Denied' }), { status: 401 })
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ message: 'Denied' }), { status: 401 })
   try {
-    await assert.rejects(fetchClient('/private'), (error: unknown) => error instanceof ApiError && error.status === 401 && error.message === 'Denied')
+    await assert.rejects(
+      fetchClient('/private'),
+      (error: unknown) =>
+        error instanceof ApiError && error.status === 401 && error.message === 'Denied',
+    )
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -101,9 +132,15 @@ test('request wrappers keep ApiError status and handle empty responses', async (
 
 test('error responses ignore fields with unexpected types', async () => {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({ message: { text: 'bad' }, errors: { email: 123 } }), { status: 400 })
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ message: { text: 'bad' }, errors: { email: 123 } }), {
+      status: 400,
+    })
   try {
-    await assert.rejects(fetchClient('/invalid'), (error: unknown) => error instanceof ApiError && error.message === 'API error (400)')
+    await assert.rejects(
+      fetchClient('/invalid'),
+      (error: unknown) => error instanceof ApiError && error.message === 'API error (400)',
+    )
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -111,13 +148,17 @@ test('error responses ignore fields with unexpected types', async () => {
 
 test('response exposes pagination metadata from the shared API format', async () => {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    success: true,
-    message: '',
-    data: [{ id: '1' }],
-    meta: { page: 1, limit: 20, total: 125, totalPages: 7 },
-    error: null,
-  }), { status: 200 })
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        success: true,
+        message: '',
+        data: [{ id: '1' }],
+        meta: { page: 1, limit: 20, total: 125, totalPages: 7 },
+        error: null,
+      }),
+      { status: 200 },
+    )
   try {
     const response = await api.get<Array<{ id: string }>>('/items')
     assert.deepEqual(response.data, [{ id: '1' }])
@@ -131,10 +172,14 @@ test('concurrent identical GETs share one request, then a later GET is fresh', a
   const originalFetch = globalThis.fetch
   let calls = 0
   let finishFirst: ((response: Response) => void) | undefined
-  const success = () => Response.json({ success: true, message: '', data: { id: '1' }, meta: null, error: null })
+  const success = () =>
+    Response.json({ success: true, message: '', data: { id: '1' }, meta: null, error: null })
   globalThis.fetch = async () => {
     calls++
-    if (calls === 1) return new Promise<Response>((resolve) => { finishFirst = resolve })
+    if (calls === 1)
+      return new Promise<Response>((resolve) => {
+        finishFirst = resolve
+      })
     return success()
   }
   try {
@@ -142,7 +187,10 @@ test('concurrent identical GETs share one request, then a later GET is fresh', a
     const second = api.get<{ id: string }>('/shared-items')
     assert.equal(calls, 1)
     finishFirst?.(success())
-    assert.deepEqual((await Promise.all([first, second])).map((response) => response.data.id), ['1', '1'])
+    assert.deepEqual(
+      (await Promise.all([first, second])).map((response) => response.data.id),
+      ['1', '1'],
+    )
     await api.get('/shared-items')
     assert.equal(calls, 2)
   } finally {
@@ -154,11 +202,15 @@ test('a mutation does not reuse an older in-flight GET', async () => {
   const originalFetch = globalThis.fetch
   let getCalls = 0
   let finishFirst: ((response: Response) => void) | undefined
-  const success = () => Response.json({ success: true, message: '', data: {}, meta: null, error: null })
+  const success = () =>
+    Response.json({ success: true, message: '', data: {}, meta: null, error: null })
   globalThis.fetch = async (_input, init) => {
     if (init?.method === 'POST') return success()
     getCalls++
-    if (getCalls === 1) return new Promise<Response>((resolve) => { finishFirst = resolve })
+    if (getCalls === 1)
+      return new Promise<Response>((resolve) => {
+        finishFirst = resolve
+      })
     return success()
   }
   try {
@@ -175,16 +227,22 @@ test('a mutation does not reuse an older in-flight GET', async () => {
 
 test('success false is rejected even when HTTP status is successful', async () => {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    success: false,
-    message: '',
-    data: {},
-    meta: null,
-    error: { code: 'INVALID_REQUEST', message: 'ข้อมูลไม่ถูกต้อง' },
-  }), { status: 200 })
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        success: false,
+        message: '',
+        data: {},
+        meta: null,
+        error: { code: 'INVALID_REQUEST', message: 'ข้อมูลไม่ถูกต้อง' },
+      }),
+      { status: 200 },
+    )
   try {
-    await assert.rejects(api.get('/items'), (error: unknown) =>
-      error instanceof ApiError && error.message === 'ข้อมูลไม่ถูกต้อง')
+    await assert.rejects(
+      api.get('/items'),
+      (error: unknown) => error instanceof ApiError && error.message === 'ข้อมูลไม่ถูกต้อง',
+    )
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -192,13 +250,17 @@ test('success false is rejected even when HTTP status is successful', async () =
 
 test('legacy Spring pages are normalized during API response migration', async () => {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    content: [{ id: 'legacy-1' }],
-    totalElements: 21,
-    totalPages: 2,
-    size: 20,
-    number: 0,
-  }), { status: 200 })
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        content: [{ id: 'legacy-1' }],
+        totalElements: 21,
+        totalPages: 2,
+        size: 20,
+        number: 0,
+      }),
+      { status: 200 },
+    )
   try {
     const response = await api.get<Array<{ id: string }>>('/legacy-items')
     assert.deepEqual(response.data, [{ id: 'legacy-1' }])
@@ -210,11 +272,69 @@ test('legacy Spring pages are normalized during API response migration', async (
 
 test('legacy direct objects are normalized during API response migration', async () => {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({ id: 'legacy-user' }), { status: 200 })
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ id: 'legacy-user' }), { status: 200 })
   try {
     const response = await api.get<{ id: string }>('/legacy-user')
     assert.deepEqual(response.data, { id: 'legacy-user' })
     assert.equal(response.meta, null)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+for (const status of [400, 200]) {
+  test(`error metadata survives ${status === 200 ? 'success=false' : 'HTTP failure'}`, async () => {
+    const originalFetch = globalThis.fetch
+    const metadata = {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      details: { field: 'name' },
+      fieldErrors: { name: 'กรุณาระบุชื่อ' },
+      timestamp: '2026-10-09T10:00:00Z',
+      traceId: 'test-trace',
+    }
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          message: 'ข้อมูลที่ส่งมาไม่ถูกต้อง',
+          data: null,
+          meta: null,
+          error: metadata,
+        }),
+        { status },
+      )
+    try {
+      await assert.rejects(fetchClient('/test'), (error: unknown) => {
+        assert.ok(error instanceof ApiError)
+        assert.equal(error.status, status)
+        assert.equal(error.message, 'ข้อมูลที่ส่งมาไม่ถูกต้อง')
+        assert.equal(error.code, metadata.code)
+        assert.deepEqual(error.details, metadata.details)
+        assert.deepEqual(error.fieldErrors, metadata.fieldErrors)
+        assert.equal(error.timestamp, metadata.timestamp)
+        assert.equal(error.traceId, metadata.traceId)
+        return true
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+}
+
+test('non-JSON error keeps HTTP status and a usable fallback', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response('<html>gateway failure</html>', { status: 502 })
+  try {
+    await assert.rejects(fetchClient('/test'), (error: unknown) => {
+      assert.ok(error instanceof ApiError)
+      assert.equal(error.status, 502)
+      assert.equal(error.message, 'API error (502)')
+      assert.equal(error.details, null)
+      assert.equal(error.code, undefined)
+      return true
+    })
   } finally {
     globalThis.fetch = originalFetch
   }

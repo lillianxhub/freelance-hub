@@ -7,7 +7,10 @@ export type ProjectFilter = 'ALL' | ProjectStatus
 export type BillingFilter = 'ALL' | BillingType
 export type ProjectSort = 'UPDATED_DESC' | 'NAME_ASC' | 'END_ASC'
 
-export type ProjectDraft = Omit<ProjectInput, 'hourly_rate' | 'fixed_price' | 'budget_hours' | 'budget_amount'> & {
+export type ProjectDraft = Omit<
+  ProjectInput,
+  'hourly_rate' | 'fixed_price' | 'budget_hours' | 'budget_amount'
+> & {
   hourly_rate: number | ''
   fixed_price: number | ''
   budget_hours: number | ''

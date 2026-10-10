@@ -7,12 +7,23 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 type Hsv = { hue: number; saturation: number; brightness: number }
 
-const presets = ['#4F6BFF', '#7C3AED', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#64748B']
+const presets = [
+  '#4F6BFF',
+  '#7C3AED',
+  '#0EA5E9',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#EC4899',
+  '#64748B',
+]
 const isHex = (value: string) => /^#[0-9a-f]{6}$/i.test(value)
 const clamp = (value: number) => Math.max(0, Math.min(1, value))
 
 function hexToHsv(hex: string): Hsv {
-  const [red, green, blue] = [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16) / 255)
+  const [red, green, blue] = [1, 3, 5].map(
+    (index) => Number.parseInt(hex.slice(index, index + 2), 16) / 255,
+  )
   const max = Math.max(red, green, blue)
   const min = Math.min(red, green, blue)
   const difference = max - min
@@ -30,16 +41,28 @@ function hexToHsv(hex: string): Hsv {
 
 function hsvToHex({ hue, saturation, brightness }: Hsv): string {
   const chroma = brightness * saturation
-  const intermediate = chroma * (1 - Math.abs((hue / 60) % 2 - 1))
+  const intermediate = chroma * (1 - Math.abs(((hue / 60) % 2) - 1))
   const offset = brightness - chroma
-  const channels = hue < 60 ? [chroma, intermediate, 0]
-    : hue < 120 ? [intermediate, chroma, 0]
-      : hue < 180 ? [0, chroma, intermediate]
-        : hue < 240 ? [0, intermediate, chroma]
-          : hue < 300 ? [intermediate, 0, chroma]
-            : [chroma, 0, intermediate]
+  const channels =
+    hue < 60
+      ? [chroma, intermediate, 0]
+      : hue < 120
+        ? [intermediate, chroma, 0]
+        : hue < 180
+          ? [0, chroma, intermediate]
+          : hue < 240
+            ? [0, intermediate, chroma]
+            : hue < 300
+              ? [intermediate, 0, chroma]
+              : [chroma, 0, intermediate]
 
-  return `#${channels.map((channel) => Math.round((channel + offset) * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase()
+  return `#${channels
+    .map((channel) =>
+      Math.round((channel + offset) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`.toUpperCase()
 }
 
 interface ColorPickerProps {
@@ -50,7 +73,13 @@ interface ColorPickerProps {
   'aria-label'?: string
 }
 
-export function ColorPicker({ id, value, onChange, disabled, 'aria-label': ariaLabel }: ColorPickerProps) {
+export function ColorPicker({
+  id,
+  value,
+  onChange,
+  disabled,
+  'aria-label': ariaLabel,
+}: ColorPickerProps) {
   const selectedColor = isHex(value) ? value.toUpperCase() : '#4F6BFF'
   const [hueForGray, setHueForGray] = useState<number | null>(null)
   const [draftHex, setDraftHex] = useState<string | null>(null)
@@ -67,11 +96,13 @@ export function ColorPicker({ id, value, onChange, disabled, 'aria-label': ariaL
   const updateArea = (event: PointerEvent<HTMLDivElement>) => {
     const rectangle = areaRef.current?.getBoundingClientRect()
     if (!rectangle) return
-    chooseColor(hsvToHex({
-      hue,
-      saturation: clamp((event.clientX - rectangle.left) / rectangle.width),
-      brightness: 1 - clamp((event.clientY - rectangle.top) / rectangle.height),
-    }))
+    chooseColor(
+      hsvToHex({
+        hue,
+        saturation: clamp((event.clientX - rectangle.left) / rectangle.width),
+        brightness: 1 - clamp((event.clientY - rectangle.top) / rectangle.height),
+      }),
+    )
   }
 
   const handleHexChange = (text: string) => {
@@ -83,8 +114,19 @@ export function ColorPicker({ id, value, onChange, disabled, 'aria-label': ariaL
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button id={id} type="button" variant="outline" disabled={disabled} aria-label={ariaLabel ?? 'เลือกสีโปรเจกต์'} className="h-[41px] justify-start gap-2 px-2 font-normal">
-          <span className="size-6 rounded-md border border-black/10" style={{ backgroundColor: selectedColor }} aria-hidden="true" />
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          aria-label={ariaLabel ?? 'เลือกสีโปรเจกต์'}
+          className="h-[41px] justify-start gap-2 px-2 font-normal"
+        >
+          <span
+            className="size-6 rounded-md border border-black/10"
+            style={{ backgroundColor: selectedColor }}
+            aria-hidden="true"
+          />
           <span>{selectedColor}</span>
         </Button>
       </PopoverTrigger>
@@ -99,12 +141,16 @@ export function ColorPicker({ id, value, onChange, disabled, 'aria-label': ariaL
           aria-valuenow={Math.round(hsv.saturation * 100)}
           aria-valuetext={`ความอิ่มตัว ${Math.round(hsv.saturation * 100)}% ความสว่าง ${Math.round(hsv.brightness * 100)}%`}
           className="relative h-40 touch-none cursor-crosshair rounded-lg"
-          style={{ background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(${hue} 100% 50%)` }}
+          style={{
+            background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(${hue} 100% 50%)`,
+          }}
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId)
             updateArea(event)
           }}
-          onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) updateArea(event) }}
+          onPointerMove={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) updateArea(event)
+          }}
           onKeyDown={(event) => {
             const step = event.shiftKey ? 0.1 : 0.01
             const next = { hue, saturation: hsv.saturation, brightness: hsv.brightness }
@@ -117,7 +163,10 @@ export function ColorPicker({ id, value, onChange, disabled, 'aria-label': ariaL
             chooseColor(hsvToHex(next))
           }}
         >
-          <span className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.5)]" style={{ left: `${hsv.saturation * 100}%`, top: `${(1 - hsv.brightness) * 100}%` }} />
+          <span
+            className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.5)]"
+            style={{ left: `${hsv.saturation * 100}%`, top: `${(1 - hsv.brightness) * 100}%` }}
+          />
         </div>
 
         <Slider.Root
@@ -136,29 +185,57 @@ export function ColorPicker({ id, value, onChange, disabled, 'aria-label': ariaL
           <Slider.Thumb className="block size-4 rounded-full border border-border bg-background shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         </Slider.Root>
 
-        <div className="relative h-3 rounded-full" aria-label="ความทึบ 100 เปอร์เซ็นต์" style={{ background: `linear-gradient(to right, transparent, ${selectedColor}), repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 8px 8px` }}>
+        <div
+          className="relative h-3 rounded-full"
+          aria-label="ความทึบ 100 เปอร์เซ็นต์"
+          style={{
+            background: `linear-gradient(to right, transparent, ${selectedColor}), repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 8px 8px`,
+          }}
+        >
           <span className="absolute top-1/2 right-0 size-4 translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background shadow" />
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-20 shrink-0 items-center rounded-md border border-input px-3 text-xs">HEX</span>
+          <span className="flex h-8 w-20 shrink-0 items-center rounded-md border border-input px-3 text-xs">
+            HEX
+          </span>
           <Input
             value={visibleHex}
             onChange={(event) => handleHexChange(event.target.value)}
             onBlur={() => setDraftHex(null)}
             aria-label="รหัสสี HEX"
-            aria-invalid={draftHex !== null && !isHex(draftHex.startsWith('#') ? draftHex : `#${draftHex}`)}
+            aria-invalid={
+              draftHex !== null && !isHex(draftHex.startsWith('#') ? draftHex : `#${draftHex}`)
+            }
             className="h-8 flex-1 px-2 text-xs"
             maxLength={7}
           />
-          <span className="flex h-8 w-[52px] shrink-0 items-center justify-center rounded-md border border-input text-xs" aria-label="ความทึบ 100 เปอร์เซ็นต์">100%</span>
+          <span
+            className="flex h-8 w-[52px] shrink-0 items-center justify-center rounded-md border border-input text-xs"
+            aria-label="ความทึบ 100 เปอร์เซ็นต์"
+          >
+            100%
+          </span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 border-t border-border pt-3" aria-label="สีสำเร็จรูป">
+        <div
+          className="grid grid-cols-4 gap-2 border-t border-border pt-3"
+          aria-label="สีสำเร็จรูป"
+        >
           {presets.map((preset) => (
-            <Button key={preset} type="button" variant="outline" size="icon" className="relative size-10 p-1" aria-label={`เลือกสี ${preset}`} onClick={() => chooseColor(preset)}>
+            <Button
+              key={preset}
+              type="button"
+              variant="outline"
+              size="icon"
+              className="relative size-10 p-1"
+              aria-label={`เลือกสี ${preset}`}
+              onClick={() => chooseColor(preset)}
+            >
               <span className="size-full rounded-md" style={{ backgroundColor: preset }} />
-              {selectedColor === preset && <Check className="absolute size-4 text-white drop-shadow" aria-hidden="true" />}
+              {selectedColor === preset && (
+                <Check className="absolute size-4 text-white drop-shadow" aria-hidden="true" />
+              )}
             </Button>
           ))}
         </div>

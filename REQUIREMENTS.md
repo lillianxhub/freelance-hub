@@ -5,10 +5,10 @@
 | รายการ          | รายละเอียด                                              |
 | --------------- | ------------------------------------------------------- |
 | ชื่อระบบ        | Freelance Hub                                           |
-| เวอร์ชันเอกสาร  | 2.0                                                     |
-| สถานะ           | Draft ที่ปรับตามใบงานรายวิชา CP353002                   |
+| เวอร์ชันเอกสาร  | 2.1                                                     |
+| สถานะ           | ข้อกำหนดและ contract ที่ตรวจเทียบ source `dbcc4b9` วันที่ 10 ตุลาคม 2026                   |
 | กลุ่มผู้ใช้หลัก | Freelancer / ผู้ประกอบอาชีพอิสระ                        |
-| Backend         | Java 17+, Spring Boot 3.x+, Spring MVC, Spring Data JPA |
+| Backend         | Java 17, Spring Boot 4.0.0, Spring MVC, Spring Data JPA |
 | ฐานข้อมูล       | PostgreSQL                                              |
 | Frontend        | React                                                   |
 | เอกสาร API      | Swagger UI / OpenAPI                                    |
@@ -73,7 +73,7 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 - ผู้ใช้ต้องยืนยันตัวตนก่อนเข้าถึงข้อมูลธุรกิจ
 - ผู้ใช้เข้าถึง แก้ไข หรือลบได้เฉพาะข้อมูลของตนเอง
 - ทุก query ที่อ่านข้อมูลธุรกิจต้องจำกัดด้วย `owner_id` ของผู้ใช้ที่เข้าสู่ระบบ
-- endpoint สำหรับสมัครและเข้าสู่ระบบเท่านั้นที่เปิดเป็นสาธารณะ
+- Register/Login/Refresh/Logout เปิดโดยไม่ต้องมี access JWT; Refresh/Logout ตรวจ Origin/Referer และใช้ refresh cookie ตาม flow ส่วน health, OPTIONS และ Swagger/OpenAPI เมื่อเปิด configuration เป็น public routes ตาม SecurityConfig
 
 ---
 
@@ -152,7 +152,6 @@ Income, Expense, Invoice และ Payment รวมถึง payment gateway �
 | BR-02 | timer ที่ยังทำงานจะมี `started_at` แต่ไม่มี `ended_at`; ระบบคำนวณ duration เมื่อหยุด   |
 | BR-03 | time entry ต้องอยู่ภายใต้โปรเจกต์ ส่วน task เป็นข้อมูลที่ไม่บังคับ                     |
 | BR-04 | time entry ใน MVP ไม่คำนวณรายได้และไม่ต้องมี rate                                      |
-| BR-05 | time entry ใน MVP เก็บ duration และข้อมูลบริบทของงาน โดยไม่คำนวณรายได้                 |
 | BR-06 | การ archive ลูกค้าหรือโปรเจกต์ไม่ลบประวัติ และไม่อนุญาตให้เริ่ม timer ใหม่ในรายการนั้น |
 | BR-07 | วันที่และเวลาบันทึกในฐานข้อมูลเป็น UTC เพื่อให้ timestamp ไม่กำกวม                    |
 | BR-08 | analytics ต้องไม่นับ timer ที่ยังไม่หยุดจนกว่าจะระบุเป็นข้อมูลประมาณการอย่างชัดเจน     |
@@ -189,15 +188,14 @@ Acceptance criteria:
 
 ```mermaid
 erDiagram
-    USER ||--|| USER_PROFILE : has
-    USER_PROFILE ||--o| ADDRESS : uses
-    CLIENT ||--o| ADDRESS : uses
+    USER ||--o| USER_PROFILE : has
+    USER ||--o{ REFRESH_TOKEN : authenticates
     USER ||--o{ CLIENT : owns
     USER ||--o{ PROJECT : owns
     CLIENT ||--o{ PROJECT : has
     PROJECT ||--o{ TASK : contains
     PROJECT ||--o{ TIME_ENTRY : records
-    TASK ||--o{ TIME_ENTRY : categorizes
+    TASK o|--o{ TIME_ENTRY : categorizes
 ```
 
 ### 7.1 Entity
@@ -206,15 +204,15 @@ erDiagram
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `User`        | id, email, passwordHash, role, isActive, deletedAt                                                                            |
 | `UserProfile` | userId, displayName, phone, address, subdistrict, district, province, postalCode, taxId, bio, isActive, deletedAt |
-| `Address`     | id, address, subdistrict, district, province, postalCode                                                                      |
-| `Client`      | id, ownerId, name, companyName, email, phone, addressId, taxId, status                                                        |
-| `Project`     | id, ownerId, clientId, name, description, targetHours, status, startDate, endDate                                             |
+| `Address`     | embedded value object: address, subdistrict, district, province, postalCode                                                                      |
+| `Client`      | id, ownerId, name, companyName, email, phone, addressDetails, taxId, isActive, deletedAt; status คำนวณใน response                                                        |
+| `Project`     | id, ownerId, clientId, name, description, targetMinutes, status, startDate, endDate                                             |
 | `Task`        | id, projectId, name, description, status, sortOrder                                                                           |
-| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationMinutes                                              |
+| `TimeEntry`   | id, ownerId, projectId, taskId, description, startedAt, endedAt, durationSeconds, entryType, lockedAt                                              |
 
-ทุก entity ควรมี `created_at`, `updated_at` และใช้ optimistic locking (`version`) กับข้อมูลที่มีโอกาสแก้ไขพร้อมกัน เช่น timer และ project
+User, UserProfile, Client, Project, Task และ TimeEntry มี audit timestamps และ optimistic locking (`version`); RefreshToken เก็บ createdAt/expiresAt/usedAt/revokedAt โดยไม่มี version หรือ updatedAt
 
-ระบบมีตารางหลัก 7 ตาราง ได้แก่ `users`, `user_profiles`, `addresses`, `clients`, `projects`, `tasks` และ `time_entries` โดยมี `User`–`UserProfile` แบบ One-to-One; `user_profiles` เก็บที่อยู่แบบแยกฟิลด์ตาม Data Dictionary ส่วน `Client` ยังคงอ้างอิง `Address` แบบ One-to-One ที่เป็น optional และมีความสัมพันธ์แบบ One-to-Many ระหว่าง `Client`–`Project`, `Project`–`Task` และ `Project`–`TimeEntry` โดยต้องกำหนด Foreign Key, Index, Cascade และ Fetch Type ด้วยเหตุผลที่บันทึกไว้ใน Data Dictionary
+ระบบมี 7 ตารางธุรกิจหลัง Flyway V1–V20: `users`, `user_profiles`, `refresh_tokens`, `clients`, `projects`, `tasks` และ `time_entries` โดย User–UserProfile เป็น 1:0..1 ใน schema (registration สร้าง profile ให้) Address เป็น `@Embedded` ใน UserProfile/Client ไม่มี identity หรือตารางแยกหลัง V13; Foreign Key, index และ constraints ดู [Data Dictionary](doc/data-dictionary.md) และ [ER Diagram](doc/diagrams/er-diagram.md)
 
 สำหรับ Auth/User Profile ที่อยู่เก็บเป็น field ตรงใน `user_profiles` ตาม Data Dictionary และ API รับ/ส่งเป็น flat fields เพื่อให้ contract อ่านง่าย:
 
@@ -232,41 +230,44 @@ erDiagram
 
 ## 8. API ระดับสูง
 
-REST API ใช้ prefix `/api` โดยไม่มี version segment และตอบกลับเป็น JSON ยกเว้น endpoint ดาวน์โหลดไฟล์
+REST API ใช้ prefix `/api` โดยไม่มี version segment ตารางนี้ระบุเส้นหลักที่เปิดจริง CSV สร้างใน browser จาก Project ของหน้ารายงานปัจจุบัน ไม่มี endpoint ดาวน์โหลด Time Entry CSV
 
-| Method           | Endpoint                        | หน้าที่                                             |
-| ---------------- | ------------------------------- | --------------------------------------------------- |
-| POST             | `/api/auth/register`            | สมัครสมาชิกและเริ่ม session คืน access/refresh token |
-| POST             | `/api/auth/login`               | เข้าสู่ระบบ                                         |
-| POST             | `/api/auth/refresh`             | หมุน refresh token และออก access token ใหม่        |
-| POST             | `/api/auth/logout`              | เพิกถอน refresh-token family และล้าง cookie        |
-| GET/PATCH        | `/api/users/me`                 | ดู/แก้โปรไฟล์และค่าตั้งต้น                          |
-| PATCH            | `/api/users/me/password`        | เปลี่ยนรหัสผ่านด้วย `oldPassword` และ `newPassword` |
-| GET/POST         | `/api/clients`                  | รายการ/สร้างลูกค้า                                  |
-| GET/PATCH/DELETE | `/api/clients/{id}`             | ดู/แก้/archive ลูกค้า                               |
-| GET/POST         | `/api/projects`                 | รายการ/สร้างโปรเจกต์                                |
-| GET/PATCH/DELETE | `/api/projects/{id}`            | ดู/แก้/archive โปรเจกต์                             |
-| GET/POST         | `/api/projects/{id}/tasks`      | รายการ/สร้าง task                                   |
-| GET/POST         | `/api/time-entries`             | ค้นหา/เพิ่ม time entry                              |
-| PATCH/DELETE     | `/api/time-entries/{id}`        | แก้/ลบ time entry                                   |
-| POST             | `/api/timer/start`              | เริ่ม timer                                         |
-| POST             | `/api/timer/stop`               | หยุด timer ปัจจุบัน                                 |
-| GET              | `/api/timer/current`            | ดู timer ปัจจุบัน                                   |
-| GET              | `/api/analytics/summary`        | KPI ตามช่วงวันที่                                   |
-| GET              | `/api/analytics/time-breakdown` | วิเคราะห์เวลา                                       |
-| GET              | `/api/reports/time-entries.csv` | ส่งออกเวลาเป็น CSV                                  |
+| Method | Endpoint | หน้าที่ |
+|---|---|---|
+| POST | `/api/auth/register`, `/api/auth/login` | สร้าง session; access JWT ใน JSON และ refresh token ใน HttpOnly cookie |
+| POST | `/api/auth/refresh`, `/api/auth/logout` | หมุน refresh token / เพิกถอน family และล้าง cookie |
+| GET/PATCH | `/api/users/me` | ดู/แก้โปรไฟล์ |
+| PATCH | `/api/users/me/password` | เปลี่ยนรหัสผ่านด้วย oldPassword/newPassword |
+| GET/POST | `/api/clients` | รายการ/สร้างลูกค้า |
+| GET/PUT/PATCH/DELETE | `/api/clients/{id}` | ดู/แทนที่/แก้บางฟิลด์/soft delete ลูกค้า |
+| PATCH | `/api/clients/{id}/status` | Archive หรือเปิด Client ด้วย isActive |
+| GET/POST | `/api/projects` | รายการ/สร้าง Project |
+| GET/PUT/DELETE | `/api/projects/{id}` | ดู/แทนที่รายละเอียด/soft delete Project |
+| PATCH | `/api/projects/{id}/status` | เปลี่ยนสถานะ Project รวม archive/restore |
+| GET/POST | `/api/projects/{projectId}/tasks` | รายการ/สร้าง Task |
+| GET/PUT/DELETE | `/api/tasks/{taskId}` | ดู/แก้/soft delete Task |
+| PATCH | `/api/tasks/{taskId}/status` | เปลี่ยนสถานะ Task |
+| PATCH | `/api/projects/{projectId}/tasks/reorder` | เรียง Task |
+| GET/POST | `/api/time-entries` | ค้นหา/สร้าง manual entry |
+| GET/PUT/DELETE | `/api/time-entries/{id}` | ดู/แทนที่ข้อมูล/soft delete completed entry |
+| GET | `/api/time-entries/summary` | รวมเวลาโดยใช้ filter เดียวกับ list |
+| POST | `/api/timer/start`, `/api/timer/stop` | เริ่ม/หยุด timer |
+| GET/DELETE | `/api/timer/current` | อ่าน/ยกเลิก running timer |
+| GET | `/api/dashboard`, `/api/dashboard/activity` | Dashboard และกราฟ WEEK/MONTH/YEAR |
+| GET | `/api/reports/summary`, `/distribution`, `/projects`, `/work-trend`, `/work-pattern` | Reports ภายใต้ prefix /api/reports; รับ from/to/clientId/projectId/status |
+
+รายละเอียด legacy Task routes, DTO และ guards อยู่ใน [Use Case Description](doc/use-case-description.md) และ [Reports API](doc/reports-summary-api.md)
 
 ข้อกำหนดร่วมของ API:
 
-- list endpoint รองรับ `page`, `size`, `sort` และตัวกรองที่เกี่ยวข้อง
-- validation error ใช้ HTTP 400, ไม่ผ่านการยืนยันตัวตนใช้ 401, ไม่มีสิทธิ์ใช้ 403, ไม่พบข้อมูลใช้ 404 และข้อมูลขัดแย้งใช้ 409
-- error response ใช้ `ApiResult` โดย `success=false`, `message` อยู่ชั้นบน และ `error` มี `code`, `details`, `status`, `timestamp` (UTC), `fieldErrors`, `traceId`; validation errors ใส่ข้อมูลรายฟิลด์ใน `error.fieldErrors` เท่านั้น
-- วันและเวลาใช้ ISO 8601 และบันทึก timestamp เป็น UTC
-- ต้องมี CRUD ครบอย่างน้อย 2 resource หลัก โดยกำหนดให้ `Client` และ `Project` เป็น resource ขั้นต่ำ
-- endpoint ที่สร้างข้อมูลสำเร็จใช้ 201, อ่าน/แก้ไขสำเร็จใช้ 200, ลบหรือ archive ที่ไม่ส่ง body ใช้ 204 และข้อผิดพลาดใช้ 400/404/409/500 ตามกรณี
-- ใช้ `@Valid` และ Bean Validation กับ request DTO ทุก endpoint ที่รับข้อมูล
-- มี `@RestControllerAdvice` และ error response รูปแบบกลาง
-- ต้องเปิด OpenAPI ที่ `/api-docs` และ Swagger UI ที่ `/swagger-ui.html` เฉพาะ local, dev และ staging; production ต้องปิดทั้งสอง endpoint
+- Pagination เริ่ม page ที่ 1; Client ใช้ size หรือ limit (limit มีลำดับความสำคัญ), Project/Time Entry/Reports ใช้ limit; sort parameters ต่างกันตาม endpoint ไม่ใช่ size/sort ชุดเดียวทุกเส้น
+- Validation = 400, authentication = 401, authorization = 403, not found = 404, state conflict = 409 และ login rate limit = 429
+- Error response ใช้ ApiResult โดย success=false, message อยู่ชั้นบน และ error มี code/details/status/timestamp/fieldErrors/traceId; รายช่อง validation อยู่ใน fieldErrors ดู [Error Contract](doc/error-contract.md)
+- Success เส้นหลักใช้ ApiResult; legacy nested Task routes บางเส้นคืน raw DTO หรือ 204 ตาม implementation
+- วันและเวลาใช้ ISO 8601; timestamp เก็บเป็น UTC ส่วนวันใน Dashboard/Reports แปลงตาม Asia/Bangkok
+- Create คืน 201, read/update คืน 200; Client DELETE และ Logout คืน 204 ไม่มี body ส่วน Project/Task/Time Entry DELETE และ cancel timer คืน 200 ApiResult
+- ใช้ request DTO, Bean Validation และ RestControllerAdvice ตาม endpoint ที่มีอยู่
+- OpenAPI JSON อยู่ที่ `/v3/api-docs` และ Swagger UI ที่ `/swagger-ui.html`; ทั้งสองเปิดเมื่อ OPENAPI_ENABLED=true (ค่าเริ่มต้น false) ไม่ได้สลับตามชื่อ environment อัตโนมัติ ต้องตั้ง production ให้ปิด
 
 ### 8.1 Profile, address และการเปลี่ยนรหัสผ่าน
 
@@ -353,7 +354,7 @@ Domain (Entity / Value Object / Enum)
 โครงสร้าง source code ที่กำหนด:
 
 ```text
-code/src/main/java/th/ac/kku/freelance_hub/
+code/Backend/src/main/java/th/ac/kku/freelance_hub/
 ├─ config/
 ├─ controller/         # REST controllers
 ├─ service/
@@ -380,9 +381,8 @@ code/src/main/java/th/ac/kku/freelance_hub/
 ```mermaid
 flowchart LR
     UI[React + Vite UI] --> API[REST Controller]
-    API --> APP
+    API --> APP[Service Layer]
     APP --> REPO[JPA Repositories]
-    APP --> PDF[PDF Service]
     REPO --> DB[(PostgreSQL)]
 ```
 
@@ -437,7 +437,7 @@ Definition of Done ของแต่ละ feature:
 - ระบบเป็น single-user workspace: หนึ่งบัญชีมีเจ้าของคนเดียว ยังไม่รองรับทีม/พนักงานหลายคนใน workspace เดียวกัน
 - MVP ใช้ time tracking เพื่อวิเคราะห์ชั่วโมงและ productivity เท่านั้น ไม่คำนวณรายได้และไม่ออก Invoice
 - Frontend deploy บน Vercel, Backend deploy บน Render และใช้ PostgreSQL บน Supabase
-- เก็บ time entries และ audit logs ไว้ตลอด โดยไม่มีการลบอัตโนมัติตามระยะเวลา (retention purge); การลบรายการเวลาที่ผู้ใช้สั่งยังเป็น soft delete ตามกฎของระบบ
+- Completed time entries ใช้ soft delete และไม่มี retention purge ในโค้ด; cancel timer ลบ running row จริง ยังไม่มี persistent audit-event storage สำหรับทุก flow ตาม NFR
 
 ---
 
@@ -461,39 +461,26 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 ข้อกำหนดในตารางนี้เป็นเงื่อนไขการส่งงานและถือเป็น **Must** ทั้งหมด
 
-| หัวข้อ          | Requirement                                                               |
-| --------------- | ------------------------------------------------------------------------- |
-| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                                 |
-| Build           | Maven Wrapper                                                             |
-| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                                          |
-| ORM             | Spring Data JPA / Hibernate                                               |
-| API             | RESTful API พร้อม OpenAPI และ Swagger UI                                  |
-| Frontend        | Thymeleaf เชื่อมต่อกับ backend และใช้งาน flow หลักได้จริง                 |
-| Testing         | JUnit 5, Mockito และ Spring Boot Test                                     |
-| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                                   |
-| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL                      |
-| Container       | มี `Dockerfile` และ `docker-compose.yml`                                  |
-| หัวข้อ          | Requirement                                                               |
-| --------------- | ---------------------------------------------------------                 |
-| Backend         | Spring Boot 3.x ขึ้นไป และ Java 17 ขึ้นไป                                 |
-| Build           | Maven Wrapper                                                             |
-| Database        | PostgreSQL ซึ่งเป็นฐานข้อมูล SQL                                          |
-| ORM             | Spring Data JPA / Hibernate                                               |
-| API             | RESTful API พร้อม OpenAPI และ Swagger UI                                  |
-| Frontend        | React + Vite เชื่อมต่อกับ Spring Boot REST API และใช้งาน flow หลักได้จริง |
-| Testing         | JUnit 5, Mockito และ Spring Boot Test                                     |
-| Version Control | Git และ GitHub ตาม workflow ในหัวข้อ 20                                   |
-| Deployment      | Deploy สู่ Cloud/Server และเข้าถึงได้ผ่าน public URL                      |
-| Container       | มี `Dockerfile` และ `docker-compose.yml`                                  |
+| หัวข้อ | Implementation ปัจจุบัน |
+|---|---|
+| Backend | Java 17, Spring Boot 4.0.0 |
+| Build | Maven Wrapper |
+| Database / ORM | PostgreSQL, Spring Data JPA / Hibernate, Flyway |
+| API | REST, OpenAPI JSON /v3/api-docs และ Swagger UI เมื่อเปิด OPENAPI_ENABLED |
+| Frontend | React + TypeScript + Vite เชื่อม Spring Boot REST API |
+| Testing | JUnit Jupiter, Mockito, Spring Boot Test และ Node test runner |
+| Version Control | Git/GitHub; integration branch ของ repository คือ dev |
+| Deployment | Docker Backend บน Render, Frontend บน Vercel; PostgreSQL บน Supabase ตามแผน deployment |
+| Container | code/Backend/Dockerfile และ docker-compose.yml |
 
-หมายเหตุ: `pom.xml` ปัจจุบันใช้ Spring Boot `4.2.0-SNAPSHOT` ซึ่งผ่านเงื่อนไข 3.x+ แต่ก่อนพัฒนาจริงควรเปลี่ยนเป็นรุ่น stable ที่รองรับ Java 17 เพื่อลดความเสี่ยงจาก snapshot dependency
+ตารางนี้ระบุสิ่งที่มีใน repository ไม่ถือเป็นหลักฐานว่า deployment, acceptance criteria หรือเกณฑ์รายวิชาทุกข้อผ่านแล้ว ข้อกำหนดที่ยังไม่ครบแยกไว้ในหัวข้อ 23
 
 ## 16. SOLID Principles และหลักฐานประกอบ
 
 | Principle             | Requirement ที่ต้องแสดงในโค้ด                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------- |
 | Single Responsibility | แต่ละ class มีหน้าที่เดียว แยก validation, business logic และ persistence                               |
-| Open/Closed           | รองรับการเพิ่มวิธีคิดค่าจ้างหรือสร้างรายงานด้วย implementation ใหม่โดยไม่เพิ่ม if-else ใน service เดิม  |
+| Open/Closed           | รองรับการเพิ่มพฤติกรรมหรือสร้างรายงานด้วย implementation ใหม่โดยไม่เพิ่ม if-else ใน service เดิม  |
 | Liskov Substitution   | implementation ทุกตัวใช้แทน interface/base type ได้โดยไม่เปลี่ยนผลลัพธ์ที่ผู้เรียกคาดหวัง               |
 | Interface Segregation | แยก interface ตาม use case ไม่สร้าง service interface ขนาดใหญ่ที่ผู้ใช้ต้องพึ่ง method ที่ไม่เกี่ยวข้อง |
 | Dependency Inversion  | Service ขึ้นกับ interface และรับ dependency ผ่าน constructor เท่านั้น                                   |
@@ -510,21 +497,22 @@ MVP ถือว่าพร้อมส่งมอบเมื่อผู้�
 
 เลือกกลุ่ม Behavioral และใช้ไม่น้อยกว่า 3 patterns ที่สัมพันธ์กับ domain ดังนี้:
 
-| Pattern  | การใช้งานที่วางแผนไว้                                                                     | ปัญหาที่แก้                                                        |
+| Pattern  | การใช้งานในโค้ดปัจจุบัน                                                                     | ปัญหาที่แก้                                                        |
 | -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Strategy | `ProductivityMetricStrategy` แยกวิธีคำนวณ utilization, average hours และ project progress | เพิ่ม metric ใหม่ได้โดยไม่แก้ analytics service เดิม               |
+| Strategy | `PasswordEncoder` / `BCryptPasswordEncoder` ของ Spring Security | เปลี่ยนวิธี hash รหัสผ่านโดยไม่แก้ auth use case               |
 | State    | `ProjectState` ควบคุม transition ของ PLANNED, ACTIVE, ON_HOLD, COMPLETED และ ARCHIVED     | ป้องกันการเริ่มจับเวลาหรือแก้ task ในสถานะที่ไม่อนุญาต             |
-| Observer | Spring Application Event เมื่อ timer หยุดหรือโปรเจกต์ถึง 80%/100% ของเป้าหมาย             | แยก analytics update และ notification ออกจาก time tracking service |
+| Observer | Spring Application Event เมื่อ timer หยุดหรือโปรเจกต์ถึง 80%/100% ของเป้าหมาย             | แยกการตรวจ threshold และเขียน log ออกจาก TimerService |
+| Chain of Responsibility | `ErrorHandlerChain` เลือก ErrorHandler ตัวแรกที่รับ exception ได้ | ใช้กฎแปลง error ร่วมกันใน MVC และ Security |
 
 ห้ามเพิ่ม pattern เพียงเพื่อให้ครบจำนวน ทุก pattern ต้องมี use case, test และอธิบายเหตุผลได้ ต้องจัดทำ `doc/design-patterns.md` เป็นตาราง Pattern, ปัญหาที่แก้, ไฟล์/คลาสที่ใช้ พร้อม Class Diagram
 
 ## 18. Database และ Migration Deliverables
 
-- ตารางหลักหลังย้าย JWT lifecycle: users, user_profiles, refresh_tokens, clients, projects, tasks และ time_entries; `revoked_tokens` ถูกลบด้วย forward migration หลังทดสอบ refresh flow กับ PostgreSQL และ HTTP จริงผ่าน
-- มี One-to-One ระหว่าง users กับ user_profiles และ optional One-to-One ระหว่าง clients กับ addresses รวมถึง One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
+- ตารางหลัก: users, user_profiles, refresh_tokens, clients, projects, tasks และ time_entries; V17 สร้าง refresh_tokens และ V18 ลบ revoked_tokens ผล PostgreSQL/cloud verification ต้องมีหลักฐานแยกจากการตรวจ source
+- มี One-to-One ระหว่าง users กับ user_profiles โดย schema อนุญาต profile 0..1 แถว และ Address ฝังใน user_profiles/clients รวมถึง One-to-Many ระหว่าง clients กับ projects, projects กับ tasks และ projects กับ time_entries
 - กำหนด Foreign Key Constraint และ index สำหรับ owner, relation, status และ date fields ที่ใช้ค้นหาบ่อย
 - กำหนด Cascade และ Fetch Type อย่างมีเหตุผล หลีกเลี่ยง `CascadeType.ALL` และ `EAGER` โดยไม่มีความจำเป็น
-- ใช้ Flyway migration ใน `code/src/main/resources/db/migration/`
+- ใช้ Flyway migration ใน `code/Backend/src/main/resources/db/migration/`
 - จัดทำ ER Diagram และ Data Dictionary ใน `doc/`
 
 ## 19. เอกสารและโครงสร้าง Repository ที่ต้องส่ง
@@ -545,8 +533,8 @@ freelance-hub/
 │     ├─ public/
 │     ├─ package.json
 │     ├─ package-lock.json
-│     └─ vite.config.js
-├─ test/                         # การทดสอบทั้งหมด/รายงานผลทดสอบ
+│     └─ vite.config.ts
+├─ test/                         # Test plan/report/evidence; test source อยู่ใต้ code/
 ├─ doc/
 │  ├─ diagrams/
 │  │  ├─ use-case.*
@@ -577,7 +565,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 ## 20. Git และการทำงานเป็นทีม
 
 - สมาชิกไม่เกิน 5 คน และทุกคนต้องมีงานเขียนโค้ดจริง
-- branch หลักประกอบด้วย `main` สำหรับ production และ `develop` สำหรับ integration
+- Repository ใช้ `main` สำหรับ production และ `dev` สำหรับ integration; ใบงานเดิมระบุ `develop` จึงต้องเทียบชื่อ branch กับเกณฑ์รายวิชา โดย workflows ปัจจุบันใช้ dev/main
 - branch ส่วนตัวต้องใช้รูปแบบ `ชื่อ_รหัสนักศึกษา_section` เท่านั้น
 - สมาชิกต้องตั้ง `git config user.name` และ `user.email` ให้ตรงบัญชี GitHub และ commit/push ด้วยบัญชีตนเอง
 - สมาชิกแต่ละคนต้องมี commit ที่มีความหมายอย่างน้อย 15 commits และกระจายตลอดช่วงพัฒนา
@@ -614,7 +602,7 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 - [ ] branch ส่วนตัวทุกคนตั้งชื่อตามรูปแบบและมี commit อย่างน้อย 15 ครั้ง
 - [ ] version ส่งมอบถูก merge เข้า `main` ผ่าน Pull Request และผ่าน review
 - [ ] public Deployment URL เปิดใช้งานได้ในวันนำเสนอ
-- [ ] Swagger UI บน staging เข้าถึงได้ และ production ไม่เปิด `/api-docs` หรือ Swagger UI
+- [ ] Swagger UI บน staging เข้าถึงได้ และ production ไม่เปิด `/v3/api-docs` หรือ Swagger UI
 - [ ] automated tests ผ่านและมี Test Report
 - [ ] diagrams และเอกสาร SOLID/Design Patterns/Data Dictionary ครบ
 - [ ] slide นำเสนออยู่ใน `doc/slide/`
@@ -624,3 +612,16 @@ README ขั้นส่งมอบต้องมีชื่อและค�
 ## 22. แผนงานทีม
 
 รายละเอียดการแบ่งงาน 5 คน, Sprint, Scrum ceremony, Progress ทุกวันเสาร์, Definition of Done และ release checklist อยู่ใน [SCHEDULE.md](SCHEDULE.md)
+
+
+## 23. สถานะเทียบ implementation วันที่ 10 ตุลาคม 2026
+
+ข้อกำหนด FR/NFR และ acceptance criteria ข้างต้นเป็นเป้าหมาย ไม่ใช่การประกาศว่า implement ครบแล้ว ดูรายละเอียดใน [Use Case Description](doc/use-case-description.md)
+
+- FR-CLI-04: Client detail ยังไม่มีเวลาราย Project; FR-CLI-05: DELETE ใช้ soft delete แต่ไม่ตรวจว่ามีธุรกรรมก่อนลบ
+- FR-PRJ-07/FR-ANA-06: threshold 80%/100% มี event และ log แต่ยังไม่มี notification ถึงผู้ใช้
+- FR-TIME-04/05: สร้าง manual ต้องเป็น ACTIVE Project/active Client; PUT ต้องมีทั้ง Project เดิมและปลายทางเป็น ACTIVE และ Client ปลายทาง active การลบยังใช้กฎ locked/running แยกต่างหาก
+- API รองรับ optional Task แต่ฟอร์ม manual ปัจจุบันบังคับเลือก Task และยังมี PLANNED/ON_HOLD ในตัวเลือก Project ซึ่ง Backend ปฏิเสธด้วย 409
+- FR-TIME-09 ยังไม่มี copy operation; FR-ANA-01/04/05/07 ยังมี KPI หรือ Reports UI บางส่วนที่ขาด แม้ work-trend/work-pattern API มีแล้ว
+- FR-ANA-08: CSV เป็น Project เฉพาะหน้าปัจจุบันใน browser ไม่ใช่ Time Entry export endpoint
+- Performance/load, persistent audit events, backup/restore, accessibility และ cloud acceptance ต้องตรวจหรือ implement เพิ่มตามเกณฑ์ที่เกี่ยวข้อง ไม่ยืนยันจาก unit tests หรือเอกสารเพียงอย่างเดียว

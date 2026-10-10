@@ -5,12 +5,21 @@ import { initials } from '../utils/string'
 import type { TopbarProps } from '../types/ui'
 import { FiChevronDown, FiMenu } from 'react-icons/fi'
 import TopbarTimer from '../TimeTracking/components/TopbarTimer'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
 import { Avatar, AvatarFallback } from './ui/avatar'
 
 const labels: Record<string, string> = {
-  dashboard: 'ภาพรวม', clients: 'ลูกค้า', projects: 'โปรเจกต์', 'time-tracker': 'บันทึกเวลา',
-  reports: 'รายงาน', profile: 'โปรไฟล์',
+  dashboard: 'ภาพรวม',
+  clients: 'ลูกค้า',
+  projects: 'โปรเจกต์',
+  'time-tracker': 'บันทึกเวลา',
+  reports: 'รายงาน',
+  profile: 'โปรไฟล์',
 }
 
 function Topbar({ onMenu }: TopbarProps) {
@@ -51,12 +60,20 @@ function Topbar({ onMenu }: TopbarProps) {
               className="flex h-auto gap-2 rounded-lg border-0 bg-transparent px-1 py-1 text-left text-text-primary hover:bg-surface-soft"
               type="button"
             >
-              <Avatar title={user?.email}><AvatarFallback className="bg-primary text-primary-foreground">{initials(displayName)}</AvatarFallback></Avatar>
-            <span className="hidden min-w-28 flex-col lg:flex">
+              <Avatar title={user?.email}>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {initials(displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden min-w-28 flex-col lg:flex">
                 <strong className="block truncate text-sm">{displayName}</strong>
-                <small className="mt-0.5 block truncate text-xs text-text-secondary">{user?.email}</small>
+                <small className="mt-0.5 block truncate text-xs text-text-secondary">
+                  {user?.email}
+                </small>
               </span>
-              <span className="text-text-secondary" aria-hidden="true"><FiChevronDown /></span>
+              <span className="text-text-secondary" aria-hidden="true">
+                <FiChevronDown />
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">

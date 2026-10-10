@@ -13,7 +13,7 @@ public final class ProjectProgressThresholds {
     ) {
         if (trackedMinutes < 0) {
             throw new IllegalArgumentException(
-                    "trackedMinutes must not be negative"
+                    "เวลาที่บันทึกต้องไม่ติดลบ"
             );
         }
 
@@ -23,7 +23,7 @@ public final class ProjectProgressThresholds {
 
         if (targetMinutes <= 0) {
             throw new IllegalArgumentException(
-                    "targetMinutes must be greater than zero"
+                    "เวลาเป้าหมายต้องมากกว่าศูนย์"
             );
         }
 

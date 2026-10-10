@@ -19,39 +19,39 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateClientRequest {
 
-    @Pattern(regexp = ".*\\S.*", message = "Client name must not be blank")
-    @Size(max = 150, message = "Client name must not exceed 150 characters")
+    @Pattern(regexp = ".*\\S.*", message = "กรุณาระบุชื่อลูกค้า")
+    @Size(max = 150, message = "ชื่อลูกค้าต้องไม่เกิน 150 ตัวอักษร")
     private String name;
 
-    @Size(max = 200, message = "Company name must not exceed 200 characters")
+    @Size(max = 200, message = "ชื่อบริษัทต้องไม่เกิน 200 ตัวอักษร")
     private String companyName;
 
-    @Email(message = "Email must be valid")
-    @Size(max = 254, message = "Email must not exceed 254 characters")
+    @Email(message = "รูปแบบอีเมลไม่ถูกต้อง")
+    @Size(max = 254, message = "อีเมลต้องไม่เกิน 254 ตัวอักษร")
     private String email;
 
     @Pattern(
         regexp = "^\\s*$|^\\+?[0-9() .-]{6,30}$",
-        message = "Phone must contain only digits and common phone separators"
+        message = "เบอร์โทรศัพท์ต้องใช้ตัวเลขและตัวคั่นที่รองรับ"
     )
-    @Size(max = 30, message = "Phone must not exceed 30 characters")
+    @Size(max = 30, message = "เบอร์โทรศัพท์ต้องไม่เกิน 30 ตัวอักษร")
     private String phone;
 
     private String address;
 
-    @Size(max = 100, message = "Subdistrict must not exceed 100 characters")
+    @Size(max = 100, message = "ตำบลต้องไม่เกิน 100 ตัวอักษร")
     private String subdistrict;
 
-    @Size(max = 100, message = "District must not exceed 100 characters")
+    @Size(max = 100, message = "อำเภอต้องไม่เกิน 100 ตัวอักษร")
     private String district;
 
-    @Size(max = 100, message = "Province must not exceed 100 characters")
+    @Size(max = 100, message = "จังหวัดต้องไม่เกิน 100 ตัวอักษร")
     private String province;
 
-    @Size(max = 20, message = "Postal code must not exceed 20 characters")
+    @Size(max = 20, message = "รหัสไปรษณีย์ต้องไม่เกิน 20 ตัวอักษร")
     private String postalCode;
 
-    @Size(max = 30, message = "Tax ID must not exceed 30 characters")
+    @Size(max = 30, message = "เลขประจำตัวผู้เสียภาษีต้องไม่เกิน 30 ตัวอักษร")
     private String taxId;
 
     private String notes;

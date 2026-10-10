@@ -1,6 +1,6 @@
 # Use Case Description - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026
+ฉบับรวมสำหรับส่งรายวิชา CP353002 จากเอกสารสมาชิกทั้ง 5 คน ตรวจ endpoint และชื่อไฟล์กับ implementation ณ commit `dbcc4b9` วันที่ 10 ตุลาคม 2026
 
 ## 1. ขอบเขตระบบและ Actor
 
@@ -27,19 +27,28 @@ Spring Security/JWT, repositories และ event listeners เป็นส่�
 
 ## 3. Authentication และ User/Profile
 
+ตรวจเทียบเอกสาร Petpinyo ใน PR #127 กับโค้ดจริง:
+
+| ส่วนงาน | โค้ดอ้างอิง |
+|---|---|
+| HTTP / cookies / origin | [AuthController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java), [RefreshTokenCookie](../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/RefreshTokenCookie.java), [TrustedOriginValidator](../code/Backend/src/main/java/th/ac/kku/freelance_hub/security/TrustedOriginValidator.java) |
+| Login / register / refresh / logout | [AuthServiceImpl](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java), [RefreshTokenService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/RefreshTokenService.java) |
+| Profile / password / PATCH mapping | [UserController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/UserController.java), [UserService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java), [UserMapper](../code/Backend/src/main/java/th/ac/kku/freelance_hub/mapper/UserMapper.java) |
+
 ### Actors
 
 | Actor | หน้าที่ |
 |---|---|
 | Guest | สมัครสมาชิกและเข้าสู่ระบบ |
-| Authenticated User | ออกจากระบบ ดู/แก้ profile และเปลี่ยนรหัสผ่านของตนเอง |
+| Authenticated User | ดู/แก้ profile และเปลี่ยนรหัสผ่านของตนเอง |
+| User with refresh cookie | Refresh session และ logout; logout ยังเรียกโดยไม่มี cookie ได้ภายใต้ origin validation |
 
 ### Use Case Summary
 
 | ID | Use Case | Actor | Endpoint | ผลลัพธ์ |
 |---|---|---|---|---|
-| UC-AUTH-01 | Register | Guest | `POST /api/auth/register` | สร้าง User + UserProfile, hash password และคืน JWT (`201`) |
-| UC-AUTH-02 | Login | Guest | `POST /api/auth/login` | ตรวจ credentials และคืน JWT (`200`) |
+| UC-AUTH-01 | Register | Guest | `POST /api/auth/register` | สร้าง User + UserProfile, hash password, ตั้ง HttpOnly refresh cookie และคืน `ApiResult<AuthResponse>` พร้อม access JWT (`201`) |
+| UC-AUTH-02 | Login | Guest | `POST /api/auth/login` | ตรวจ credentials, ตั้ง HttpOnly refresh cookie และคืน `ApiResult<AuthResponse>` พร้อม access JWT (`200`) |
 | UC-AUTH-03 | Logout | User with refresh cookie | `POST /api/auth/logout` | เพิกถอน refresh-token family และคืน `204` |
 | UC-AUTH-04 | Refresh | User with refresh cookie | `POST /api/auth/refresh` | หมุน cookie และคืน access JWT ใหม่ (`200`) |
 | UC-USER-01 | View My Profile | Authenticated User | `GET /api/users/me` | คืนข้อมูล User + Profile ของตนเอง (`200`) |
@@ -72,7 +81,7 @@ response ห้ามเผย `passwordHash`, profile ต้องเชื่�
 **Main flow:** Controller เรียก `AuthService.login`; `AuthenticationManager` ตรวจ
 credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง access JWT อายุเริ่มต้น 15 นาที
 และ refresh token สุ่มอายุเริ่มต้น 7 วัน ส่ง refresh token ใน HttpOnly cookie;
-คืน `200 AuthResponse` โดยไม่ส่ง refresh token ใน JSON
+คืน `200 ApiResult<AuthResponse>` โดยไม่ส่ง refresh token ใน JSON
 
 **Alternative flow:** validation ไม่ผ่าน = `400`; email/password ไม่ถูกต้อง = `401`;
 เมื่อสะสม login ผิดครบ 10 ครั้งต่อ email ใน 15 นาที หรือครบ 300 ครั้งต่อนาทีต่อ IP คำขอถัดไป = `429`
@@ -82,7 +91,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 
 ### UC-AUTH-03 Logout
 
-**Precondition:** มี refresh cookie หรือเคย login มาก่อน
+**Precondition:** ไม่ต้องมี access JWT หรือ refresh cookie แต่คำขอต้องผ่าน Origin/Referer validation
 
 **Main flow:** Service เพิกถอน refresh-token family จาก cookie, ล้าง cookie และ
 คืน `204 No Content`; logout ไม่เพิกถอน access JWT จึงยังใช้ได้จนหมดอายุ (ค่าเริ่มต้น 15 นาที)
@@ -92,17 +101,15 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 
 ### UC-AUTH-04 Refresh
 
-`POST /api/auth/refresh` อ่าน HttpOnly cookie, หมุน token ใน transaction โดยคง
-`family_id` และวันหมดอายุเดิม หาก token ถูกใช้แล้วให้เพิกถอนทั้ง family และตอบ `401`
-ต้องตรวจ `Origin` หรือ `Referer` ตามเงื่อนไขเดียวกับ logout ก่อนอ่าน cookie
+`POST /api/auth/refresh` รับ HttpOnly cookie ที่ Spring bind ให้ แล้วตรวจ `Origin`/`Referer` ก่อนเรียก service เช่นเดียวกับ logout จากนั้นหมุน token ใน transaction โดยคง `family_id` และวันหมดอายุเดิม สำเร็จตั้ง cookie ใหม่และคืน `200 ApiResult<AuthResponse>` หาก token ถูกใช้แล้วและยังไม่หมดอายุจะเพิกถอนทั้ง family โดย commit การเพิกถอนก่อนตอบ `401`; missing/invalid/expired/revoked token ได้ `401` เมื่อผ่าน origin validation แล้ว
 
 ### UC-USER-02 Update My Profile
 
 1. ผู้ใช้เรียก `PATCH /api/users/me` พร้อม bearer JWT
 2. `JwtAuthenticationFilter` ตรวจ token และใส่ authenticated principal ใน SecurityContext
 3. `UserService` อ่าน user จาก principal ไม่รับ `userId` หรือ `ownerId` จาก body
-4. Service แก้ข้อมูล profile และ field ที่อยู่โดยตรงใน `user_profiles`
-5. Controller คืน `200 UserResponse` โดยแสดงข้อมูลที่อยู่เป็น flat fields
+4. Service โหลด User ผ่าน UserRepository แล้วให้ UserMapper แก้ profile และ embedded Address ใน `user_profiles`; ฟิลด์ที่ไม่ได้ส่งหรือเป็น null คงค่าเดิมตาม PATCH mapping ไม่ได้ใช้ UserProfileRepository ใน flow นี้
+5. Controller คืน `200 ApiResult<UserResponse>` โดยแสดงข้อมูลที่อยู่เป็น flat fields
 
 **Alternative flow:** ไม่มี/malformed JWT = `401`; validation ไม่ผ่าน = `400`
 
@@ -120,7 +127,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 1. ผู้ใช้เรียก `PATCH /api/users/me/password` พร้อม bearer JWT
 2. Service โหลด user จาก authenticated principal และตรวจ `oldPassword` ด้วย `PasswordEncoder`
 3. เมื่อถูกต้อง ระบบ hash และบันทึก `newPassword`; ห้ามบันทึกรหัสผ่านแบบ plain text
-4. คืน `200`; old password ผิด = `401` และ `message: "รหัสผ่านไม่ถูกต้อง"`, validation หรือ new password ซ้ำค่าเดิม = `400`; เมื่อสำเร็จเพิกถอน refresh-token families ทั้งหมด
+4. คืน `200 ApiResult<Void>`; old password ผิด = `401` และ `message: "รหัสผ่านไม่ถูกต้อง"`, validation หรือ new password ซ้ำค่าเดิม = `400`; เมื่อสำเร็จเพิกถอน refresh-token families ทั้งหมด
 
 MVP นี้ไม่มี forgot/reset-password flow และไม่มีการอัปโหลดหรือเปลี่ยนรูปโปรไฟล์
 
@@ -130,12 +137,12 @@ MVP นี้ไม่มี forgot/reset-password flow และไม่มี
 2. `JwtAuthenticationFilter` ใส่ principal ใน SecurityContext
 3. `UserService` อ่าน email จาก context และโหลด User
 4. `UserMapper` รวมข้อมูล UserProfile เป็น `UserResponse`
-5. คืน `200 OK`
+5. คืน `200 ApiResult<UserResponse>`
 
 
 ### Sequence: Login และ protected request
 
-ดู [Sequence 01: Login และ protected request](diagrams/sequence-01-auth.md)
+ดู [Sequence 01: Login และ protected request](diagrams/sequence-diagram.md#scenario-01-login-and-protected-request)
 
 ## 4. Client Management
 
@@ -159,7 +166,7 @@ Error contract หลัง PR #107:
 | `error.fieldErrors` | รายฟิลด์ของ validation เช่น `{ "name": "Client name is required" }`; ไม่ใส่ซ้ำใน details และเป็น null สำหรับ error ที่ไม่ใช่ validation |
 | `error.traceId` | UUID ที่ server สร้าง ตรงกับ response header X-Request-ID |
 
-`ClientExceptionHandler` ใช้ `ApiErrorFactory` สร้าง error ส่วน 401 สร้างผ่าน `JwtAuthenticationEntryPoint` ด้วย factory เดียวกัน; `RequestTraceFilter` สร้าง trace ID ก่อน security/MVC ไม่ใช้ trace ID ที่ผู้เรียกส่งมาเป็นตัวระบุของระบบ
+`GlobalExceptionHandler` และ Security entry points ใช้ `ErrorHandlerChain` เลือก `ErrorDescriptor` แล้วให้ `ApiErrorFactory` สร้าง error ตาม [Error Contract](error-contract.md); `RequestTraceFilter` สร้าง trace ID ก่อน security/MVC ไม่ใช้ trace ID ที่ผู้เรียกส่งมาเป็นตัวระบุของระบบ
 
 ### Use Case Summary
 
@@ -256,11 +263,11 @@ method นี้ยังใช้กติกาเดิมสำหรับ 
 ### UC-CLI-06 Change Client Status
 
 1. Freelancer ส่ง `{"isActive": true}` หรือ `{"isActive": false}` ไปที่ `PATCH /api/clients/{id}/status`
-2. Service ตรวจ owner; ถ้า `isActive=false` ให้ repository โหลด Project ของลูกค้าและ owner นั้นที่ `deletedAt IS NULL` แล้วเรียก `Project.changeStatus(ARCHIVED)` ให้แต่ละรายการมี `status=ARCHIVED` และ `isActive=false` โดยไม่ตั้ง `deletedAt` และไม่เปลี่ยน Task/Time Entry
+2. Service ตรวจ owner; ถ้า `isActive=false` ให้ repository โหลด Project ของลูกค้าและ owner นั้นที่ `deletedAt IS NULL` ตรวจว่าไม่มี timer ของผู้ใช้กำลังทำงานใน Project เหล่านั้นก่อน หากมีให้ตอบ `409`; จากนั้นเรียก `Project.changeStatus(ARCHIVED)` ให้แต่ละรายการมี `status=ARCHIVED` และ `isActive=false` โดยไม่ตั้ง `deletedAt` และไม่เปลี่ยน Task/Time Entry
 3. Service เรียก `Client.setActive(isActive)` และบันทึก Client พร้อม Project ใน transaction เดียวกัน; เมื่อ `isActive=true` จะไม่คืนสถานะ Project อัตโนมัติ
 4. Controller คืน `200 ApiResult<ClientResponse>`; `status` ใน response คำนวณเป็น `ACTIVE` หรือ `ARCHIVED` จาก `isActive`
 
-**Alternative flow:** ไม่ส่ง `isActive` = `400`; ไม่พบ/ไม่ใช่เจ้าของ/ถูก soft delete แล้ว = `404`; ไม่มี JWT = `401`
+**Alternative flow:** มี timer ทำงานใน Project ของลูกค้านี้ขณะจัดเก็บ = `409`; ไม่ส่ง `isActive` = `400`; ไม่พบ/ไม่ใช่เจ้าของ/ถูก soft delete แล้ว = `404`; ไม่มี JWT = `401`
 **Postcondition:** เมื่อจัดเก็บ Client ให้ Project ที่ผูกอยู่และยังไม่ถูก soft delete เป็น `ARCHIVED` ด้วย รวมรายการที่เคย `COMPLETED`; เรียกจัดเก็บซ้ำได้ โดยไม่ลบประวัติและไม่กระทบลูกค้าหรือผู้ใช้อื่น
 
 ใช้ `Project.changeStatus(ARCHIVED)` สำหรับการเปลี่ยนสถานะนี้ ไม่ใช้ `Project.archive()` ซึ่งตั้ง `deletedAt` ด้วย
@@ -278,7 +285,7 @@ method นี้ยังใช้กติกาเดิมสำหรับ 
 
 ### Sequence: Soft-delete Client
 
-ดู [Sequence 04: Soft-delete Client](diagrams/sequence-04-client.md)
+ดู [Sequence 04: Soft-delete Client](diagrams/sequence-diagram.md#scenario-04-soft-delete-client)
 
 Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; RequestTraceFilter สร้าง X-Request-ID/MDC ก่อนหน้าและล้าง MDC เมื่อคำขอจบ ส่วน 401 ถูกตอบจาก security ก่อนถึง controller
 
@@ -428,7 +435,7 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 
 ### Sequence: เปลี่ยนสถานะ Project
 
-ดู [Sequence 03: เปลี่ยนสถานะ Project](diagrams/sequence-03-project-status.md)
+ดู [Sequence 03: เปลี่ยนสถานะ Project](diagrams/sequence-diagram.md#scenario-03-change-project-status)
 
 ### ขอบเขตปัจจุบัน
 
@@ -520,13 +527,13 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 
 1. Freelancer ส่ง `projectId`, optional `taskId`, optional `description`, `startedAt` และเลือกส่งอย่างใดอย่างหนึ่งระหว่าง `endedAt` หรือ `durationSeconds`
 2. Controller validate ว่ามีวิธีกำหนดเวลาสิ้นสุดเพียงแบบเดียวและเวลาสิ้นสุดอยู่หลังเวลาเริ่ม
-3. Service ตรวจ User, Project, Task และ owner relationship
+3. Service ตรวจ User, Project, Task และ owner relationship; Project ต้องเป็น `ACTIVE` และ Client ต้อง active จึงบันทึกเวลาได้
 4. Entity สร้างรายการชนิด `MANUAL`; หากส่ง duration ระบบคำนวณ `endedAt` หรือหากส่งช่วงเวลาระบบคำนวณ duration
 5. หากส่ง Task จะเรียก `Task.start()` ก่อนบันทึก: `OPEN` เปลี่ยนเป็น `IN_PROGRESS`, `IN_PROGRESS` คงเดิม และ `COMPLETED` ถูกปฏิเสธ; การบันทึก Time Entry และการเปลี่ยนสถานะ Task อยู่ใน transaction เดียวกัน
 6. Repository บันทึก แล้ว controller คืน `201 Created` พร้อม `Location` และ `TimeEntryDetailResponse` ใน `ApiResult.data` ซึ่งมี `createdAt`, `updatedAt`, `project.status` และ `task.status` เมื่อมี Task
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
-**Postcondition:** มี completed manual entry ที่ duration มากกว่า 0; Task ที่ส่งมามีสถานะ `IN_PROGRESS`; การบันทึกย้อนหลังไม่บังคับให้ Project เป็น `ACTIVE`
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่เป็น `ACTIVE`, Client ไม่ active หรือ Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
+**Postcondition:** มี completed manual entry ที่ duration มากกว่า 0 บน Project ที่เป็น `ACTIVE`; Task ที่ส่งมามีสถานะ `IN_PROGRESS`
 
 ### UC-TIME-06 List and Filter Time Entries
 
@@ -556,11 +563,11 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 1. Freelancer ส่ง UUID ของรายการใน path และข้อมูลทดแทนผ่าน `PUT` ได้แก่ `projectId`, `startedAt`, optional `taskId`/`description` และอย่างใดอย่างหนึ่งระหว่าง `endedAt` หรือ `durationSeconds`
 2. Controller validate ข้อมูลที่จำเป็นและเวลาที่ส่งมา; `taskId` ที่ไม่ส่งหรือเป็น `null` จะล้าง Task เดิม และ `description` ที่ไม่ส่งหรือเป็น `null` จะล้างคำอธิบายเดิม
 3. Service ค้นหารายการด้วย `entryId` และ `ownerId` แล้วตรวจว่าไม่ถูกล็อก
-4. หากเปลี่ยน Project หรือ Task ระบบตรวจ owner และ task-project relationship อีกครั้ง
+4. ระบบตรวจว่า Project เดิมและ Project ปลายทางเป็น `ACTIVE` และ Client ปลายทาง active; หากเปลี่ยน Project หรือ Task จะตรวจ owner และ task-project relationship อีกครั้ง
 5. Entity แก้ข้อมูลและคำนวณ `durationSeconds` ใหม่ตามช่วงเวลาหรือค่าที่ส่งมา
 6. Controller คืน `200` พร้อม `TimeEntryDetailResponse` ใน `ApiResult.data`
 
-**Alternative flow:** ไม่พบหรือเป็นของผู้ใช้อื่นหรือถูก soft delete = `404`; รายการถูกล็อก = `409`; ช่วงเวลาไม่ถูกต้องหรือ request ไม่ครบ = `400`; พยายามแก้ running timer = `409`; Project/Task ไม่ถูกต้อง = `404`; ไม่มี JWT = `401`
+**Alternative flow:** ไม่พบหรือเป็นของผู้ใช้อื่นหรือถูก soft delete = `404`; รายการถูกล็อก = `409`; Project เดิมหรือปลายทางไม่เป็น `ACTIVE` หรือ Client ปลายทางไม่ active = `409`; ช่วงเวลาไม่ถูกต้องหรือ request ไม่ครบ = `400`; พยายามแก้ running timer = `409`; Project/Task ไม่ถูกต้อง = `404`; ไม่มี JWT = `401`
 **Postcondition:** ข้อมูลที่ส่งมาแทนค่าเดิม; ไม่ส่ง Task จะล้าง Task เดิม
 
 ### UC-TIME-09 Delete Time Entry
@@ -588,27 +595,27 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 1. `ProjectServiceImpl.changeStatus()` ตรวจสิทธิ์เจ้าของและไม่ให้มี running timer ใน Project ก่อนเปลี่ยนสถานะ; เมื่อเปลี่ยนเป็น `COMPLETED` จะเรียก `TimeEntryService.lockByProject(ownerId, projectId)` ใน transaction เดียวกัน โดยไม่มีคำสั่ง lock จากหน้าบ้าน
 2. `TimeEntryServiceImpl` ใช้ `@Transactional(propagation = Propagation.MANDATORY)` เพื่อบังคับว่าผู้เรียกต้องเปิด transaction ไว้แล้ว
 3. Repository ใช้ `findLockedByOwnerIdAndProjectIdAndLockedAtIsNull` พร้อม `PESSIMISTIC_WRITE` เพื่อดึงเฉพาะรายการที่ยังไม่ล็อกของ owner/Project ที่ระบุ รวมรายการที่ soft delete และ timer ที่ยังวิ่งอยู่
-4. Service ตรวจทุกรายการก่อนแก้ข้อมูล; หากพบ running timer จะโยน `IllegalStateException` โดยไม่หยุด timer อัตโนมัติและไม่ตั้ง `lockedAt` ให้รายการใด
+4. Service ตรวจทุกรายการก่อนแก้ข้อมูล; หากพบ running timer จะโยน `InvalidStateException` โดยไม่หยุด timer อัตโนมัติและไม่ตั้ง `lockedAt` ให้รายการใด
 5. หากไม่มี running timer ระบบอ่านเวลาจาก `Clock` ครั้งเดียว แล้วเรียก `TimeEntry.lock(lockedAt)` กับทุกรายการที่พบและ flush ภายใน transaction ของผู้เรียก
 6. รายการที่ล็อกอยู่แล้วไม่ถูกแก้และรักษา `lockedAt` เดิม; ไม่มีรายการที่ต้องล็อกสามารถจบการทำงานได้
 
-**Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `IllegalStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
+**Alternative flow:** ไม่มี transaction = `IllegalTransactionStateException`; ไม่ส่ง owner/project ID = `NullPointerException` ก่อน query; พบ running timer = `InvalidStateException` ซึ่งผู้เรียกต้องปล่อยให้ transaction ย้อนกลับ โดย HTTP response เป็นหน้าที่ของ API ฝั่งผู้เรียก\
 **Postcondition:** เมื่อ transaction commit รายการที่ถูกเลือกมี `lockedAt` ถาวรและไม่สามารถแก้ไขหรือ soft delete ผ่าน Entity/service ปกติได้; การล็อกแถวฐานข้อมูลสิ้นสุดเมื่อ transaction จบ แต่ค่า `lockedAt` ยังอยู่
 
-**สถานะการเชื่อมต่อ:** `ProjectServiceImpl.changeStatus()` เรียกเมธอดล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` แล้ว; integration test ตรวจว่าการเปลี่ยนสถานะผ่าน API ตั้ง `lockedAt` ในฐานข้อมูล และการแก้ไข/ลบ Time Entry หลังจากนั้นได้ `409 TIME_ENTRY_LOCKED` แต่ยังต้องพิจารณาการสร้างหรือย้ายรายการใหม่เข้ามาใน Project ที่ปิดแล้ว
+**สถานะการเชื่อมต่อ:** `ProjectServiceImpl.changeStatus()` เรียกเมธอดล็อกเมื่อ Project เปลี่ยนเป็น `COMPLETED` แล้ว; integration test ตรวจว่าการเปลี่ยนสถานะผ่าน API ตั้ง `lockedAt` ในฐานข้อมูล และการแก้ไข/ลบ Time Entry หลังจากนั้นได้ `409 TIME_ENTRY_LOCKED` การสร้าง manual entry หรือ PUT ย้ายรายการเข้า Project ที่ไม่เป็น `ACTIVE` ถูกปฏิเสธ
 
 ### Sequence: Start และ Stop Timer
 
-ดู [Sequence 02: Start และ Stop Timer](diagrams/sequence-02-timer.md)
+ดู [Sequence 02: Start และ Stop Timer](diagrams/sequence-diagram.md#scenario-02-start-and-stop-timer)
 
 ### ขอบเขตที่ยังไม่เสร็จ
 
 - `FR-TIME-09` การคัดลอกรายการเดิมเพื่อบันทึกซ้ำยังไม่มี endpoint หรือ service operation
-- ตาราง API ใน REQUIREMENTS ยังระบุ PATCH สำหรับแก้ Time Entry และไม่ได้ลงเส้น `/summary` แต่ implementation ปัจจุบันใช้ PUT และมี `/summary` ซึ่ง Client/Project ใช้เทียบยอดด้วย; ทีมต้องปรับ requirement contract ให้ตรง ไม่ใช่อ้างว่าเอกสารนี้เพิ่ม/ลบ endpoint ให้แล้ว
+- Backend รับ optional Task แต่ฟอร์ม manual ใน Frontend บังคับเลือก Task และยังแสดง PLANNED/ON_HOLD ใน Project options; Backend ปฏิเสธการบันทึกบน Project เหล่านี้ด้วย 409 ฟอร์มจึงยังไม่ตรงกับ API ทุกกรณี
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
 - มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันแล้ว แต่ยังต้องจัดการ concurrent creation/reassignment
-- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; ปัจจุบันยังไม่มีการล็อกอัตโนมัติสำหรับ manual entry ที่สร้างใหม่หรือรายการที่ย้ายเข้ามาภายหลังใน Project ที่ `COMPLETED`
+- เมธอดล็อกครอบคลุมรายการที่มีอยู่ขณะเรียกเท่านั้น; การสร้าง manual entry และ PUT ไปยัง Project ที่ไม่เป็น `ACTIVE` จะถูกปฏิเสธ
 - Audit event สำหรับการแก้ไข Time Entry ตาม non-functional requirement ยังไม่ได้แสดงใน implementation นี้
 
 **หลักฐานการทดสอบ:** `TimerControllerTest`, `TimeEntryControllerTest`, `TimerServiceImplTest`, `TimeEntryServiceImplTest` (รวมกลุ่ม `Queries` สำหรับงานอ่าน), `TimeEntryRepositoryTest`, `ProjectServiceImplTest` และ `TimeEntryIntegrationTest` ภายใต้ `code/Backend/src/test/java/th/ac/kku/freelance_hub/`
@@ -633,7 +640,7 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 | UC-ANA-02 | เปลี่ยนช่วงกราฟ Dashboard | `GET /api/dashboard/activity?period=MONTH\|YEAR` | กราฟเดือนหรือปีจากช่วงที่เลือก; `WEEK` ใช้ข้อมูลจาก Dashboard response |
 | UC-ANA-03 | หยุด timer จาก Dashboard | `POST /api/timer/stop` แล้ว refresh current timer และ dashboard | เปลี่ยนจาก timer ที่กำลังทำงานเป็นรายการเวลาล่าสุด |
 | UC-ANA-04 | เปิด Reports | `GET /api/reports/summary`, `/distribution`, `/projects` | KPI, กราฟเวลาตามลูกค้า, กราฟเทียบเป้าหมาย และตารางโปรเจกต์ |
-| UC-ANA-05 | กรอง Reports และเลือกการจัดกลุ่มกราฟเวลา | สามเส้นเดียวกับ UC-ANA-04 พร้อม `from`, `to`, `clientId`, `projectId`; `/distribution` รับ `groupBy=CLIENT\|PROJECT` | แสดงข้อมูลตามตัวกรองและสลับกราฟเวลาตามลูกค้าหรือโปรเจกต์ได้ |
+| UC-ANA-05 | กรอง Reports และเลือกการจัดกลุ่มกราฟเวลา | สามเส้นเดียวกับ UC-ANA-04 พร้อม `from`, `to`, `clientId`, `projectId`, `status`; `/distribution` รับ `groupBy=CLIENT\|PROJECT` | แสดงข้อมูลตามตัวกรองและสลับกราฟเวลาตามลูกค้าหรือโปรเจกต์ได้ |
 | UC-ANA-06 | เปลี่ยนหน้าตาราง Reports | `GET /api/reports/projects?page=N&limit=10` | ใช้ `meta` เพื่อแสดงรายการและกราฟโปรเจกต์ของหน้านั้น |
 | UC-ANA-07 | ส่งออก CSV จาก Reports | ไม่มี request เพิ่ม | ดาวน์โหลดรายการโปรเจกต์ของหน้าตารางปัจจุบัน |
 | UC-ANA-08 | อ่านแนวโน้มเวลารายงานผ่าน API | `GET /api/reports/work-trend` | คืนจุดเวลาแบบ DAY/WEEK/MONTH; ยังไม่มีส่วนแสดงผลบนหน้า Reports |
@@ -694,12 +701,12 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 
 ### UC-ANA-05 กรอง Reports
 
-1. ผู้ใช้เลือกวันที่ทั้งคู่ หรือเว้นว่างทั้งคู่; อาจเลือกลูกค้าและโปรเจกต์
-2. หน้าไม่ส่งค่า `ALL` ไป Backend; เมื่อเปลี่ยนลูกค้าจะล้างโปรเจกต์ที่เคยเลือกและกลับไปหน้า 1
+1. ผู้ใช้เลือกวันที่ทั้งคู่ หรือเว้นว่างทั้งคู่; อาจเลือกลูกค้า โปรเจกต์ และสถานะ Project
+2. หน้าไม่ส่งค่า `ALL` ไป Backend; เมื่อเปลี่ยนลูกค้าหรือสถานะ Project จะล้างโปรเจกต์ที่เคยเลือกและกลับไปหน้า 1; dropdown Project กรองด้วยทั้ง Client และสถานะ
 3. เมื่อเปลี่ยน filter หน้าเรียก summary, distribution และ projects ด้วย filter เดียวกัน; เมื่อกดสลับกราฟตามลูกค้าหรือโปรเจกต์ หน้าเรียกเฉพาะ distribution ด้วย `groupBy=CLIENT` หรือ `PROJECT` ตามที่เลือก
 4. การเปลี่ยนวันที่หรือโปรเจกต์กลับไปหน้า 1 ของตาราง
 
-**Alternative flow:** กรอกวันที่ข้างเดียวหรือวันที่เริ่มหลังสิ้นสุด แสดงข้อความ error และไม่เรียก API ด้วยช่วงที่ผิด; filter UUID ไม่ใช่ของผู้ใช้/ไม่ตรงกัน Backend ตอบ 404
+**Alternative flow:** กรอกวันที่ข้างเดียวหรือวันที่เริ่มหลังสิ้นสุด แสดงข้อความ error และไม่เรียก API ด้วยช่วงที่ผิด; filter UUID ไม่ใช่ของผู้ใช้หรือ Client/Project ไม่ตรงกัน Backend ตอบ 404; status ผิด enum ตอบ 400; Project ที่มีสิทธิ์อ่านแต่ไม่ตรง status ให้ผลว่าง
 
 **Postcondition:** ผลรายงานถูกจำกัดตาม filter ที่เลือกโดยไม่เปลี่ยนข้อมูลต้นทาง
 
@@ -740,17 +747,17 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 | ClientService.summarizeTimeByClient | Time Entry/Project ต้อง active และ deletedAt=null; Task ไม่มีหรือ active และ deletedAt=null; ไม่กรอง Client activation/deletion | ไม่รวมเวลา Project ที่ archive หรือ Task ที่ soft delete แต่ยังอาจคืนกลุ่ม Client ที่ soft delete |
 | Dashboard KPI เวลาและ daily/activity | Time Entry active; Project active; Task ไม่มีหรือ active; projection ไม่อ่าน deletedAt/Client | ไม่รวมเวลา Project ที่ archive/Task ที่ soft delete ตาม flow ปกติ แต่ไม่ใช่ query ตรวจ deletedAt ทุกความสัมพันธ์โดยตรง |
 | Dashboard ยอดเวลาเทียบเป้าหมายและ recent entries | Time Entry active; Project active และ deletedAt=null; Task ไม่มีหรือ active; ไม่กรอง Client.deletedAt | ไม่รวมเวลา Project ที่ archive; ประวัติ Task ที่ soft delete ปกติไม่รวม; recent คืนไม่เกิน 2 รายการ |
-| Reports summary/distribution/projects/work-trend/work-pattern | Time Entry active และ deletedAt=null; Project/Client deletedAt=null; ไม่กรอง Project/Client.isActive หรือ Task | รวม Client/Project ที่ archive และประวัติ Task ที่ soft delete แต่ไม่รวม Project/Client ที่ soft delete |
+| Reports summary/distribution/projects/work-trend/work-pattern | Time Entry active และ deletedAt=null; Project/Client deletedAt=null; ไม่กรอง Project/Client.isActive หรือ Task; กรอง p.status เมื่อระบุ status | รวม Client/Project ที่ archive และประวัติ Task ที่ soft delete แต่ไม่รวม Project/Client ที่ soft delete |
 
 หลักฐาน: `repository/ClientRepository.java`, `repository/TimeEntryRepository.java`, `repository/ReportQueryRepository.java`, `service/impl/TimeEntryServiceImpl.java` และ `service/impl/DashboardServiceImpl.java` หากเทียบตัวเลขข้ามหน้าต้องใช้ชุดเงื่อนไขเดียวกันก่อน ไม่ถือว่ายอดต่างกันเป็นความผิดของ Frontend เสมอ
 
 **ช่วงเวลาและการจัดกลุ่ม:** Time Entry API/Client internal summary ใช้ Instant แบบ `[from,to)` ส่วน Dashboard/Reports แปลงวันด้วย Asia/Bangkok แล้วกรอง startedAt แบบขอบบนไม่รวม เวลาทั้งรายการถูกลงในวัน/ชั่วโมงที่เริ่ม ไม่ได้แบ่ง duration ข้ามเที่ยงคืนหรือหลายชั่วโมง และไม่ตัด duration ให้เหลือเฉพาะส่วนที่ทับซ้อนช่วงที่เลือก
 
-**การเทียบช่วงก่อน:** Dashboard weekTrackedSeconds ใช้วันจันทร์ถึงสิ้นวันนี้ (toExclusive=พรุ่งนี้) เทียบกับสัปดาห์ก่อนครบจันทร์–อาทิตย์ ไม่ใช่เทียบจำนวนวันที่ผ่านไปเท่ากัน; Reports เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่าช่วงวันที่เลือก สูตร `(current-previous)/previous*100` และคืน null หาก previous=0; เมื่อไม่ส่งวันที่ Reports trend เป็น null
+**การเทียบช่วงก่อน:** Dashboard weekTrackedSeconds ใช้วันจันทร์ถึงสิ้นวันนี้ (toExclusive=พรุ่งนี้) เทียบกับสัปดาห์ก่อนครบจันทร์–อาทิตย์ ไม่ใช่เทียบจำนวนวันที่ผ่านไปเท่ากัน; Reports เทียบช่วงก่อนหน้าที่ติดกันและยาวเท่าช่วงวันที่เลือก สูตร `(current-previous)/previous*100`; Dashboard คืน null หาก previous=0 ส่วน Reports คืน 0 เมื่อทั้งสองช่วงเป็น 0 หรือ 100 เมื่อ current>0 และ previous=0; เมื่อไม่ส่งวันที่ Reports trend เป็น null
 
 ### Sequence: โหลด Reports และเปลี่ยน filter
 
-ดู [Sequence 05: Reports และตัวกรอง](diagrams/sequence-05-reports.md)
+ดู [Sequence 05: Reports และตัวกรอง](diagrams/sequence-diagram.md#scenario-05-load-reports-and-change-filters)
 
 ### ขอบเขตที่ยังไม่ครบตาม requirement
 
@@ -762,17 +769,16 @@ Activity API รับเพียง `period=WEEK|MONTH|YEAR` (ค่าเร�
 
 **หลักฐานการทดสอบ:** `code/Frontend/src/lib/dashboard.test.ts`, `dashboard.test.tsx`, `code/Frontend/src/services/report.test.ts`, `code/Backend/src/test/java/th/ac/kku/freelance_hub/integration/DashboardIntegrationTest.java` และ `ReportIntegrationTest.java`
 
-## 8. Diagram และเอกสารต้นฉบับ
+## 8. Diagram และผู้รับผิดชอบ
 
 Sequence และ Activity จากเอกสารสมาชิกถูกรวมไว้ใน [Diagram index](diagrams/README.md) และเพิ่ม [Use Case Diagram](diagrams/use-case-diagram.md), [Domain Model](diagrams/domain-model.md), [State Diagram](diagrams/state-diagram.md) และ [Deployment Diagram](diagrams/deployment-diagram.md) จาก source ณ ca77d74 แล้ว ใช้ actors/IDs และกฎของ implementation ไม่ถือว่าการเพิ่ม diagram implement requirement ที่ยังขาด
 
-| Feature | เอกสารต้นฉบับ |
+| Feature | ผู้รับผิดชอบ |
 |---|---|
-| Authentication/Profile | [Petpinyo](V1/USECASE/petpinyo-usecase.md) |
-| Client | [Thirawat](V1/USECASE/thirawat-usecase.md) |
-| Project/Task | [Kantavit](V1/USECASE/kantavit-usecase.md) |
-| Time Tracking | [Kompat](V1/USECASE/kompat-usecase.md) |
-| Dashboard/Reports | [Nattadol](V1/USECASE/nattadol-usecase.md) |
+| Authentication/Profile | Petpinyo |
+| Client | Thirawat |
+| Project/Task | Kantavit |
+| Time Tracking | Kompat |
+| Dashboard/Reports | Nattadol |
 
 ฉบับรวมคงความหมายและ requirement boundaries ของสมาชิก ไม่ถือว่าการจัดทำเอกสารเป็นการ implement requirement ที่ยังไม่เสร็จ และไม่ใช้ผล test ในเอกสารเก่าแทน Test Report ของ release ปัจจุบัน
-

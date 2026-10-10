@@ -1,6 +1,5 @@
 /**
- * Application exceptions and HTTP exception handlers. Auth/User responses use
- * the shared API result; legacy feature handlers remain until those features
- * adopt the same response contract.
+ * Expected API failures carry their own HTTP status and public metadata.
+ * MVC and Security delegate to the same ordered error chain and response factory.
  */
 package th.ac.kku.freelance_hub.exception;

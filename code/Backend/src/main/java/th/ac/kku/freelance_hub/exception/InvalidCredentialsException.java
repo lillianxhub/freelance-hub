@@ -1,15 +1,10 @@
 package th.ac.kku.freelance_hub.exception;
 
-/**
- * Exception thrown when user credentials are invalid
- */
-public class InvalidCredentialsException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
-    public InvalidCredentialsException() {
-        super("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
-    }
-
+public class InvalidCredentialsException extends ApiException {
+    public InvalidCredentialsException() { this("อีเมลหรือรหัสผ่านไม่ถูกต้อง"); }
     public InvalidCredentialsException(String message) {
-        super(message);
+        super(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", message, null);
     }
 }

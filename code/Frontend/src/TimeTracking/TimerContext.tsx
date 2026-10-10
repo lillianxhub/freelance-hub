@@ -3,7 +3,6 @@ import { TimerContext } from './timer-context'
 import { getCurrentTimer } from '../services/timeTracking'
 import type { ApiCurrentTimer } from '../types/api'
 
-
 export function TimerProvider({ children }: PropsWithChildren) {
   const [currentTimer, setCurrentTimer] = useState<ApiCurrentTimer | null>(null)
 

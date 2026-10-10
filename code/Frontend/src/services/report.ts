@@ -17,6 +17,7 @@ function reportParams(query: ReportSummaryQuery): URLSearchParams {
   }
   if (query.clientId) params.set('clientId', query.clientId)
   if (query.projectId) params.set('projectId', query.projectId)
+  if (query.status) params.set('status', query.status)
   return params
 }
 
@@ -29,13 +30,19 @@ export async function getReportSummary(query: ReportSummaryQuery): Promise<Repor
   return (await api.get<ReportSummaryData>(reportUrl('summary', reportParams(query)))).data
 }
 
-export async function getReportDistribution(query: ReportSummaryQuery, groupBy: 'CLIENT' | 'PROJECT'): Promise<ReportDistributionData> {
+export async function getReportDistribution(
+  query: ReportSummaryQuery,
+  groupBy: 'CLIENT' | 'PROJECT',
+): Promise<ReportDistributionData> {
   const params = reportParams(query)
   params.set('groupBy', groupBy)
   return (await api.get<ReportDistributionData>(reportUrl('distribution', params))).data
 }
 
-export async function getReportProjects(query: ReportSummaryQuery, page = 1): Promise<ReportProjectPage> {
+export async function getReportProjects(
+  query: ReportSummaryQuery,
+  page = 1,
+): Promise<ReportProjectPage> {
   const params = reportParams(query)
   params.set('page', String(page))
   params.set('limit', '10')
@@ -48,12 +55,17 @@ export async function getReportProjects(query: ReportSummaryQuery, page = 1): Pr
   }
 }
 
-export async function getReportWorkTrend(query: ReportSummaryQuery, granularity: 'DAY' | 'WEEK' | 'MONTH'): Promise<ReportWorkTrendData> {
+export async function getReportWorkTrend(
+  query: ReportSummaryQuery,
+  granularity: 'DAY' | 'WEEK' | 'MONTH',
+): Promise<ReportWorkTrendData> {
   const params = reportParams(query)
   params.set('granularity', granularity)
   return (await api.get<ReportWorkTrendData>(reportUrl('work-trend', params))).data
 }
 
-export async function getReportWorkPattern(query: ReportSummaryQuery): Promise<ReportWorkPatternData> {
+export async function getReportWorkPattern(
+  query: ReportSummaryQuery,
+): Promise<ReportWorkPatternData> {
   return (await api.get<ReportWorkPatternData>(reportUrl('work-pattern', reportParams(query)))).data
 }

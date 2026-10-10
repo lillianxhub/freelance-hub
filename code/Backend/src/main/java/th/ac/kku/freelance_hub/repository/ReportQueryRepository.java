@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
 @Repository
 public class ReportQueryRepository {
@@ -62,10 +63,17 @@ public class ReportQueryRepository {
             UUID clientId,
             UUID projectId
     ) {
+        return totals(ownerId, from, toExclusive, clientId, projectId, null);
+    }
+
+    public Totals totals(
+            UUID ownerId, Instant from, Instant toExclusive,
+            UUID clientId, UUID projectId, ProjectStatus status
+    ) {
         Object[] row = entryQuery(
                 "SELECT COALESCE(SUM(t.durationSeconds), 0), COUNT(t)",
                 "",
-                ownerId, from, toExclusive, clientId, projectId
+                ownerId, from, toExclusive, clientId, projectId, status
         ).getSingleResult();
 
         return new Totals(
@@ -81,10 +89,17 @@ public class ReportQueryRepository {
             UUID clientId,
             UUID projectId
     ) {
+        return timeByProject(ownerId, from, toExclusive, clientId, projectId, null);
+    }
+
+    public List<ProjectTime> timeByProject(
+            UUID ownerId, Instant from, Instant toExclusive,
+            UUID clientId, UUID projectId, ProjectStatus status
+    ) {
         return entryQuery(
                 "SELECT p.id, SUM(t.durationSeconds)",
                 " GROUP BY p.id",
-                ownerId, from, toExclusive, clientId, projectId
+                ownerId, from, toExclusive, clientId, projectId, status
         ).getResultList().stream()
                 .map(row -> new ProjectTime(
                         (UUID) row[0],
@@ -124,6 +139,13 @@ public class ReportQueryRepository {
             UUID clientId,
             UUID projectId
     ) {
+        return timeByDay(ownerId, from, toExclusive, clientId, projectId, null);
+    }
+
+    public List<DailyTime> timeByDay(
+            UUID ownerId, Instant from, Instant toExclusive,
+            UUID clientId, UUID projectId, ProjectStatus status
+    ) {
         String select = """
                 EXTRACT(YEAR FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
                 EXTRACT(MONTH FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
@@ -134,7 +156,7 @@ public class ReportQueryRepository {
         List<Object[]> rows = nativeTimeQuery(
                 select,
                 " GROUP BY 1, 2, 3 ORDER BY 1, 2, 3",
-                ownerId, from, toExclusive, clientId, projectId
+                ownerId, from, toExclusive, clientId, projectId, status
         ).getResultList();
 
         return rows.stream()
@@ -156,6 +178,13 @@ public class ReportQueryRepository {
             UUID clientId,
             UUID projectId
     ) {
+        return timeByHour(ownerId, from, toExclusive, clientId, projectId, null);
+    }
+
+    public List<HourlyTime> timeByHour(
+            UUID ownerId, Instant from, Instant toExclusive,
+            UUID clientId, UUID projectId, ProjectStatus status
+    ) {
         String select = """
                 EXTRACT(HOUR FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
                 COALESCE(SUM(t.duration_seconds), 0)
@@ -164,7 +193,7 @@ public class ReportQueryRepository {
         List<Object[]> rows = nativeTimeQuery(
                 select,
                 " GROUP BY 1 ORDER BY 1",
-                ownerId, from, toExclusive, clientId, projectId
+                ownerId, from, toExclusive, clientId, projectId, status
         ).getResultList();
 
         return rows.stream()
@@ -182,7 +211,8 @@ public class ReportQueryRepository {
             Instant from,
             Instant toExclusive,
             UUID clientId,
-            UUID projectId
+            UUID projectId,
+            ProjectStatus status
     ) {
         String jpql = select + """
                  FROM TimeEntry t JOIN t.project p JOIN p.client c
@@ -199,6 +229,7 @@ public class ReportQueryRepository {
         if (toExclusive != null) jpql += " AND t.startedAt < :to";
         if (clientId != null) jpql += " AND c.id = :clientId";
         if (projectId != null) jpql += " AND p.id = :projectId";
+        if (status != null) jpql += " AND p.status = :status";
 
         TypedQuery<Object[]> query = entityManager
                 .createQuery(jpql + suffix, Object[].class)
@@ -208,6 +239,7 @@ public class ReportQueryRepository {
         if (toExclusive != null) query.setParameter("to", toExclusive);
         if (clientId != null) query.setParameter("clientId", clientId);
         if (projectId != null) query.setParameter("projectId", projectId);
+        if (status != null) query.setParameter("status", status);
         return query;
     }
 
@@ -219,7 +251,8 @@ public class ReportQueryRepository {
             Instant from,
             Instant toExclusive,
             UUID clientId,
-            UUID projectId
+            UUID projectId,
+            ProjectStatus status
     ) {
         String sql = "SELECT " + select + """
                  FROM time_entries t
@@ -238,6 +271,7 @@ public class ReportQueryRepository {
         if (toExclusive != null) sql += " AND t.started_at < :to";
         if (clientId != null) sql += " AND c.id = :clientId";
         if (projectId != null) sql += " AND p.id = :projectId";
+        if (status != null) sql += " AND p.status = :status";
 
         Query query = entityManager.createNativeQuery(sql + suffix)
                 .setParameter("ownerId", ownerId);
@@ -246,6 +280,7 @@ public class ReportQueryRepository {
         if (toExclusive != null) query.setParameter("to", toExclusive);
         if (clientId != null) query.setParameter("clientId", clientId);
         if (projectId != null) query.setParameter("projectId", projectId);
+        if (status != null) query.setParameter("status", status.name());
         return query;
     }
 }

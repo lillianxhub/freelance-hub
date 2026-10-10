@@ -1,5 +1,8 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.AuthenticationRequiredException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -46,7 +49,7 @@ public class UserService implements CurrentUserProvider {
         User user = getCurrentUserEntity();
         UserProfile profile = user.getProfile();
         if (profile == null) {
-            throw new IllegalStateException("ไม่พบข้อมูลโปรไฟล์ผู้ใช้");
+            throw new InvalidStateException("ไม่พบข้อมูลโปรไฟล์ผู้ใช้");
         }
         userMapper.updateProfile(request, profile);
         return userMapper.toResponse(userRepository.save(user));
@@ -60,7 +63,7 @@ public class UserService implements CurrentUserProvider {
             throw new InvalidCredentialsException("รหัสผ่านไม่ถูกต้อง");
         }
         if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
+            throw new InvalidArgumentException("รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม");
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -73,7 +76,7 @@ public class UserService implements CurrentUserProvider {
     private String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("ไม่พบผู้ใช้ที่เข้าสู่ระบบ");
+            throw new AuthenticationRequiredException();
         }
         return authentication.getName();
     }

@@ -15,7 +15,9 @@ export function formatChartDuration(totalSeconds: number): string {
 export function weeklyChartPoints(days: DashboardDailyWork[]): ProductivityPoint[] {
   return days.map((item) => ({
     key: item.date,
-    day: new Intl.DateTimeFormat('th-TH', { weekday: 'short' }).format(new Date(`${item.date}T12:00:00+07:00`)),
+    day: new Intl.DateTimeFormat('th-TH', { weekday: 'short' }).format(
+      new Date(`${item.date}T12:00:00+07:00`),
+    ),
     totalSeconds: item.trackedSeconds,
   }))
 }
@@ -26,9 +28,12 @@ export function activityChartPoints(
 ): ProductivityPoint[] {
   return points.map((item) => ({
     key: item.date,
-    day: period === 'YEAR'
-      ? new Intl.DateTimeFormat('th-TH', { month: 'short' }).format(new Date(`${item.date}T12:00:00+07:00`))
-      : String(Number(item.date.slice(8, 10))),
+    day:
+      period === 'YEAR'
+        ? new Intl.DateTimeFormat('th-TH', { month: 'short' }).format(
+            new Date(`${item.date}T12:00:00+07:00`),
+          )
+        : String(Number(item.date.slice(8, 10))),
     totalSeconds: item.trackedSeconds,
   }))
 }

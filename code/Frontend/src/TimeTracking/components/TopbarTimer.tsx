@@ -38,8 +38,16 @@ function TopbarTimer() {
 
   return (
     <>
-      <div className="flex min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#d9e1ff] bg-primary-soft text-primary-dark" aria-label="ตัวจับเวลาที่กำลังทำงาน">
-        <Button variant="ghost" className="h-auto min-w-0 gap-2 bg-transparent px-[9px] py-[5px] text-left text-primary-dark hover:bg-primary/10 max-[560px]:gap-[5px] max-[560px]:px-[7px]" type="button" onClick={() => navigate('/time-tracker')}>
+      <div
+        className="flex min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#d9e1ff] bg-primary-soft text-primary-dark"
+        aria-label="ตัวจับเวลาที่กำลังทำงาน"
+      >
+        <Button
+          variant="ghost"
+          className="h-auto min-w-0 gap-2 bg-transparent px-[9px] py-[5px] text-left text-primary-dark hover:bg-primary/10 max-[560px]:gap-[5px] max-[560px]:px-[7px]"
+          type="button"
+          onClick={() => navigate('/time-tracker')}
+        >
           <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white">
             <FiClock className="size-[14px]" aria-hidden="true" />
           </span>
@@ -55,9 +63,12 @@ function TopbarTimer() {
         </Button>
         <button
           className="ml-1 grid size-8 shrink-0 cursor-pointer place-items-center self-center border-0 bg-transparent p-0 text-destructive hover:text-destructive/80 focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30 disabled:cursor-wait disabled:opacity-65"
-          type="button" onClick={() => void stopTimer()}
+          type="button"
+          onClick={() => void stopTimer()}
           disabled={stopping}
-          aria-label="หยุดและบันทึกเวลา" title="หยุดและบันทึกเวลา">
+          aria-label="หยุดและบันทึกเวลา"
+          title="หยุดและบันทึกเวลา"
+        >
           <FiSquare aria-hidden="true" />
         </button>
       </div>

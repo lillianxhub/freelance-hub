@@ -41,28 +41,28 @@ public class TimeEntryFilterRequest {
     private Instant to;
 
     @Builder.Default
-    @Min(value = 1, message = "Page must be at least 1")
+    @Min(value = 1, message = "หมายเลขหน้าต้องไม่น้อยกว่า 1")
     private int page = 1;
 
     @Builder.Default
-    @Min(value = 1, message = "Limit must be at least 1")
-    @Max(value = 100, message = "Limit must not exceed 100")
+    @Min(value = 1, message = "จำนวนรายการต่อหน้าต้องไม่น้อยกว่า 1")
+    @Max(value = 100, message = "จำนวนรายการต่อหน้าต้องไม่เกิน 100")
     private int limit = 20;
 
     /** Allow only known TimeEntry properties as sort keys. */
     @Builder.Default
-    @NotBlank(message = "Sort field is required")
+    @NotBlank(message = "กรุณาระบุฟิลด์ที่ใช้เรียงลำดับ")
     @Pattern(
             regexp = "startedAt|endedAt|durationSeconds|createdAt|updatedAt",
-            message = "Sort field is not supported"
+            message = "ฟิลด์ที่ใช้เรียงลำดับไม่ถูกต้อง"
     )
     private String sortBy = "startedAt";
 
     @Builder.Default
-    @NotNull(message = "Sort direction is required")
+    @NotNull(message = "กรุณาระบุทิศทางการเรียงลำดับ")
     private Sort.Direction direction = Sort.Direction.DESC;
 
-    @AssertTrue(message = "From time must be before to time")
+    @AssertTrue(message = "เวลาเริ่มต้นต้องอยู่ก่อนเวลาสิ้นสุด")
     @JsonIgnore
     public boolean isTimeRangeValid() {
         return from == null || to == null || from.isBefore(to);

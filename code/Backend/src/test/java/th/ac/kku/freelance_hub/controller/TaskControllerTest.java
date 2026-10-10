@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -63,7 +65,7 @@ class TaskControllerTest {
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new TaskController(taskService, userService))
-                .setControllerAdvice(new GlobalExceptionHandler(new ApiErrorFactory()))
+                .setControllerAdvice(th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.advice())
                 .setValidator(validator)
                 .setCustomArgumentResolvers(
                         new PageableHandlerMethodArgumentResolver()
@@ -373,7 +375,7 @@ class TaskControllerTest {
         stubCurrentUser();
         when(taskService.reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
                 any(ReorderTaskRequest.class)))
-                .thenThrow(new IllegalArgumentException("Invalid sort order"));
+                .thenThrow(new InvalidArgumentException("Invalid sort order"));
 
         mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -386,7 +388,7 @@ class TaskControllerTest {
         stubCurrentUser();
         when(taskService.reorder(eq(OWNER_ID), eq(PROJECT_ID), eq(TASK_ID),
                 any(ReorderTaskRequest.class)))
-                .thenThrow(new IllegalStateException("Project cannot edit tasks"));
+                .thenThrow(new InvalidStateException("Project cannot edit tasks"));
 
         mockMvc.perform(patch(BASE + "/reorder", PROJECT_ID)
                         .contentType(MediaType.APPLICATION_JSON)

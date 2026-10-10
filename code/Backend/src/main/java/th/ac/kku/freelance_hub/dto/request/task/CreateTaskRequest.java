@@ -15,16 +15,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateTaskRequest {
 
-    @NotBlank(message = "Task name is required")
+    @NotBlank(message = "กรุณาระบุชื่องาน")
     @Size(
             max = 180,
-            message = "Task name must not exceed 180 characters"
+            message = "ชื่องานต้องไม่เกิน 180 ตัวอักษร"
     )
     private String name;
 
     private String description;
 
-    @NotNull(message = "Sort order is required")
-    @PositiveOrZero(message = "Sort order must not be negative")
+    @NotNull(message = "กรุณาระบุลำดับงาน")
+    @PositiveOrZero(message = "ลำดับงานต้องไม่ติดลบ")
     private Integer sortOrder;
 }

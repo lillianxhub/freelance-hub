@@ -37,14 +37,15 @@ class ApiResultTest {
     @Test
     void errorUsesTheSameEnvelope() throws Exception {
         JsonNode json = objectMapper.readTree(objectMapper.writeValueAsString(
-                new ApiErrorFactory().body(HttpStatus.BAD_REQUEST, "ไม่ถูกต้อง", "INVALID_ARGUMENT", "จำเป็น")));
+                new ApiErrorFactory().body(new th.ac.kku.freelance_hub.exception.handling.ErrorDescriptor(
+                        HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", "ไม่ถูกต้อง", java.util.Map.of("field", "name"), null, null))));
 
         assertThat(json.path("success").asBoolean()).isFalse();
         assertThat(json.path("message").asText()).isEqualTo("ไม่ถูกต้อง");
         assertThat(json.path("data").isNull()).isTrue();
         assertThat(json.path("meta").isNull()).isTrue();
         assertThat(json.path("error").path("code").asText()).isEqualTo("INVALID_ARGUMENT");
-        assertThat(json.path("error").path("details").asText()).isEqualTo("จำเป็น");
+        assertThat(json.path("error").path("details").path("field").asText()).isEqualTo("name");
         assertThat(json.path("error").path("status").asInt()).isEqualTo(400);
         assertThat(java.time.Instant.parse(json.path("error").path("timestamp").asText())).isNotNull();
     }

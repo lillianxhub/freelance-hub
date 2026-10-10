@@ -20,13 +20,13 @@ flowchart LR
     F["«actor»<br/>Authenticated Freelancer"]
     S["«actor»<br/>User with refresh cookie"]
     subgraph AUTH["Freelance Hub: Authentication / Profile"]
-        A1(["UC-AUTH-01 สมัครบัญชี"])
-        A2(["UC-AUTH-02 เข้าสู่ระบบ"])
-        A3(["UC-AUTH-03 ออกจากระบบ"])
+        A1(["UC-AUTH-01 Register"])
+        A2(["UC-AUTH-02 Login"])
+        A3(["UC-AUTH-03 Logout"])
         A4(["UC-AUTH-04 Refresh session"])
-        U1(["UC-USER-01 ดูโปรไฟล์ตนเอง"])
-        U2(["UC-USER-02 แก้โปรไฟล์ตนเอง"])
-        U3(["UC-USER-03 เปลี่ยนรหัสผ่าน"])
+        U1(["UC-USER-01 View My Profile"])
+        U2(["UC-USER-02 Update My Profile"])
+        U3(["UC-USER-03 Change Password"])
     end
     G --- A1
     G --- A2
@@ -45,13 +45,13 @@ Logout เป็น public route ที่อ่าน refresh cookie และ�
 flowchart LR
     F["«actor»<br/>Authenticated Freelancer"]
     subgraph CLI["Freelance Hub: Client Management"]
-        C1(["UC-CLI-01 สร้างลูกค้า"])
-        C2(["UC-CLI-02 ค้นหาและดูรายชื่อลูกค้า"])
-        C3(["UC-CLI-03 ดูรายละเอียดลูกค้า"])
-        C4(["UC-CLI-04 แทนที่ข้อมูลลูกค้า PUT"])
-        C5(["UC-CLI-05 แก้ข้อมูลบางส่วน PATCH"])
-        C6(["UC-CLI-06 เปลี่ยนสถานะลูกค้า"])
-        C7(["UC-CLI-07 Soft-delete ลูกค้า"])
+        C1(["UC-CLI-01 Create Client"])
+        C2(["UC-CLI-02 List and Search Clients"])
+        C3(["UC-CLI-03 View Client Details"])
+        C4(["UC-CLI-04 Replace Client Details PUT"])
+        C5(["UC-CLI-05 Update Client Details PATCH"])
+        C6(["UC-CLI-06 Change Client Status"])
+        C7(["UC-CLI-07 Soft-delete Client"])
     end
     F --- C1
     F --- C2
@@ -71,20 +71,20 @@ flowchart LR
     F["«actor»<br/>Authenticated Freelancer"]
     subgraph WORK["Freelance Hub: Project / Task Management"]
         subgraph PROJECT["Project"]
-            P1(["UC-PRJ-01 สร้าง Project"])
-            P2(["UC-PRJ-02 ค้นหาและดูรายการ Project"])
-            P3(["UC-PRJ-03 ดู Project รายตัว"])
-            P4(["UC-PRJ-04 แก้รายละเอียด Project"])
-            P5(["UC-PRJ-05 เปลี่ยนสถานะ Project"])
+            P1(["UC-PRJ-01 Create Project"])
+            P2(["UC-PRJ-02 List and Search Projects"])
+            P3(["UC-PRJ-03 View Project"])
+            P4(["UC-PRJ-04 Update Project Details"])
+            P5(["UC-PRJ-05 Change Project Status"])
             P6(["UC-PRJ-06 Soft-delete Project"])
         end
         subgraph TASK["Task"]
-            T1(["UC-TSK-01 สร้าง Task"])
-            T2(["UC-TSK-02 ดูรายการ Task ใน Project"])
-            T3(["UC-TSK-03 ดู Task รายตัว"])
-            T4(["UC-TSK-04 แก้ Task"])
-            T5(["UC-TSK-05 เปลี่ยนสถานะ Task"])
-            T6(["UC-TSK-06 เรียงลำดับ Task"])
+            T1(["UC-TSK-01 Create Task"])
+            T2(["UC-TSK-02 List Project Tasks"])
+            T3(["UC-TSK-03 View Task"])
+            T4(["UC-TSK-04 Update Task"])
+            T5(["UC-TSK-05 Change Task Status"])
+            T6(["UC-TSK-06 Reorder Tasks"])
             T7(["UC-TSK-07 Soft-delete Task"])
         end
     end
@@ -111,16 +111,16 @@ flowchart LR
 flowchart LR
     F["«actor»<br/>Authenticated Freelancer"]
     subgraph TIME["Freelance Hub: Time Tracking"]
-        R1(["UC-TIME-01 เริ่ม Timer"])
-        R2(["UC-TIME-02 ดู Timer ปัจจุบัน"])
-        R3(["UC-TIME-03 หยุด Timer"])
-        R4(["UC-TIME-04 ยกเลิก Timer"])
-        E1(["UC-TIME-05 บันทึกเวลาย้อนหลัง"])
-        E2(["UC-TIME-06 ดูและกรองรายการเวลา"])
-        E3(["UC-TIME-07 สรุปเวลาที่บันทึก"])
-        E4(["UC-TIME-08 แก้รายการเวลา"])
-        E5(["UC-TIME-09 Soft-delete รายการเวลา"])
-        E6(["UC-TIME-10 ดูรายละเอียดรายการเวลา"])
+        R1(["UC-TIME-01 Start Timer"])
+        R2(["UC-TIME-02 View Current Timer"])
+        R3(["UC-TIME-03 Stop Timer"])
+        R4(["UC-TIME-04 Cancel Timer"])
+        E1(["UC-TIME-05 Create Manual Time Entry"])
+        E2(["UC-TIME-06 List and Filter Time Entries"])
+        E3(["UC-TIME-07 Summarize Tracked Time"])
+        E4(["UC-TIME-08 Update Time Entry"])
+        E5(["UC-TIME-09 Soft-delete Time Entry"])
+        E6(["UC-TIME-10 View Time Entry"])
     end
     F --- R1
     F --- R2
@@ -142,15 +142,15 @@ UC-TIME-11 lockByProject เป็น operation ภายในจาก Project
 flowchart LR
     F["«actor»<br/>Authenticated Freelancer"]
     subgraph ANALYTICS["Freelance Hub: Dashboard / Reports"]
-        D1(["UC-ANA-01 เปิด Dashboard"])
-        D2(["UC-ANA-02 เปลี่ยนช่วงกราฟ Dashboard"])
-        D3(["UC-ANA-03 หยุด Timer จาก Dashboard"])
-        A1(["UC-ANA-04 เปิด Reports"])
-        A2(["UC-ANA-05 กรองและจัดกลุ่ม Reports"])
-        A3(["UC-ANA-06 เปลี่ยนหน้าตาราง Reports"])
-        A4(["UC-ANA-07 ส่งออก CSV ของหน้าปัจจุบัน"])
-        A5(["UC-ANA-08 อ่าน Work Trend ผ่าน API"])
-        A6(["UC-ANA-09 อ่าน Work Pattern ผ่าน API"])
+        D1(["UC-ANA-01 View Dashboard"])
+        D2(["UC-ANA-02 Change Dashboard Chart Period"])
+        D3(["UC-ANA-03 Stop Timer from Dashboard"])
+        A1(["UC-ANA-04 View Reports"])
+        A2(["UC-ANA-05 Filter and Group Reports"])
+        A3(["UC-ANA-06 Paginate Report Table"])
+        A4(["UC-ANA-07 Export Current Page to CSV"])
+        A5(["UC-ANA-08 Read Work Trend API"])
+        A6(["UC-ANA-09 Read Work Pattern API"])
     end
     F --- D1
     F --- D2

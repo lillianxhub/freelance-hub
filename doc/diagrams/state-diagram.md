@@ -1,6 +1,6 @@
 # State Diagrams - Freelance Hub
 
-ตรวจจาก Project State classes, entities และ service guards ณ `ca77d74` วันที่ 9 ตุลาคม 2026 แยก workflow status ออกจาก activation/soft deletion โดยชื่อ SoftDeleted ในภาพเป็น lifecycle classification ไม่ใช่ enum ใหม่ในฐานข้อมูล
+ตรวจจาก Project State classes, entities และ service guards ณ `dbcc4b9` วันที่ 10 ตุลาคม 2026 แยก workflow status ออกจาก activation/soft deletion โดยชื่อ SoftDeleted ในภาพเป็น lifecycle classification ไม่ใช่ enum ใหม่ในฐานข้อมูล
 
 ## Project lifecycle
 
@@ -45,7 +45,7 @@ stateDiagram-v2
 - ACTIVE → COMPLETED ตรวจ Task ที่ยังใช้งานเท่านั้น; ไม่มี Task ที่ยังใช้งานก็ผ่านเงื่อนไขนี้ได้ เมื่อเข้าสู่ COMPLETED ครั้งใหม่เรียก lockByProject; ส่ง COMPLETED ซ้ำไม่ล็อกซ้ำ
 - ทุก State อนุญาตส่งสถานะเดิมซ้ำ ไม่มี transition COMPLETED → ACTIVE โดยตรง; ต้อง ARCHIVED แล้วคืน ACTIVE/PLANNED ภายใต้ Client guard
 - PLANNED/ACTIVE/ON_HOLD แก้ Task ได้; COMPLETED/ARCHIVED แก้ Task ไม่ได้ เริ่ม Timer ได้เฉพาะ ACTIVE และต้องผ่าน Client.isActive guard เพิ่ม
-- Client archive cascade เรียก Project.changeStatus(ARCHIVED) โดยตรง ไม่ผ่าน ProjectService running-timer guard และไม่ตั้ง deletedAt; จึงต่างจาก PATCH/DELETE Project API
+- ClientService ตรวจ running timer ของผู้ใช้ก่อน archive Client; หาก timer อยู่ใน Project ของลูกค้านั้นให้ตอบ 409 จากนั้น cascade ด้วย Project.changeStatus(ARCHIVED) โดยไม่ตั้ง deletedAt
 - deletedAt ถูกตรวจตอนค้นหา Project เพื่อแก้/คืนสถานะ ไม่ควรตีความว่าแค่ PATCH status จะกู้ Project ที่ soft delete ได้
 
 หลักฐาน: Project.changeStatus/archive, ProjectStates และ PlannedState/ActiveState/OnHoldState/CompletedState/ArchivedState รวมถึง ProjectServiceImpl.changeStatus/archive
@@ -114,7 +114,7 @@ stateDiagram-v2
     [*] --> CompletedUnlocked: POST manual entry
     RunningTimer --> CompletedUnlocked: POST timer/stop
     RunningTimer --> [*]: DELETE timer/current / hard delete running row
-    CompletedUnlocked --> CompletedUnlocked: PUT entry / recalculate duration
+    CompletedUnlocked --> CompletedUnlocked: PUT entry [source and target Projects ACTIVE]
     CompletedUnlocked --> CompletedLocked: Project completion / lockByProject
     CompletedUnlocked --> DeletedUnlocked: DELETE entry / soft delete
     DeletedUnlocked --> DeletedLocked: lockByProject includes deleted entries
@@ -136,6 +136,7 @@ stateDiagram-v2
 - stop ใช้ server Clock และต้องได้ durationSeconds > 0; cancel ลบ running row จริงและไม่ publish TimerStoppedEvent
 - lockByProject ใช้ transaction ของผู้เรียก รวมรายการที่ soft delete, รักษา lockedAt เดิม และปฏิเสธ batch ที่มี running timerก่อนเปลี่ยนแถวใด
 - Time Entry ที่ locked แล้วไม่มีเส้นกลับ unlocked; PostgreSQL row lock จบเมื่อ transaction จบ แต่ lockedAt ยังอยู่
-- การสร้าง Manual Entry ใหม่หรือย้ายรายการเข้า Project ที่ COMPLETED ยังไม่ล็อกอัตโนมัติ; ไม่วาดเส้นอัตโนมัติที่โค้ดยังไม่มี
+- สร้าง Manual Entry ต้องเป็น ACTIVE Project และ active Client; PUT ต้องมี Project เดิมและปลายทางเป็น ACTIVE พร้อม active Client ปลายทาง การสร้าง/ย้ายเข้า COMPLETED ถูกปฏิเสธ ไม่ใช่สร้างแล้วล็อกอัตโนมัติ
+- การลบ completed entry ตรวจ locked/running แต่ไม่ได้บังคับ Project เป็น ACTIVE ต่างจากการสร้าง/แก้ไข
 
-ดู [Use Cases](../use-case-description.md), [Project State Class Diagram](class-diagram.md#project-state-pattern), [Project Status Sequence](sequence-03-project-status.md) และ [Timer Sequence](sequence-02-timer.md) สำหรับ preconditions/HTTP responses และ transaction boundaries
+ดู [Use Cases](../use-case-description.md), [Project State Class Diagram](class-diagram.md#project-state-pattern), [Project Status Sequence](sequence-diagram.md#scenario-03-change-project-status) และ [Timer Sequence](sequence-diagram.md#scenario-02-start-and-stop-timer) สำหรับ preconditions/HTTP responses และ transaction boundaries

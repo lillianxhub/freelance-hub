@@ -1,6 +1,6 @@
 # Design Patterns - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `131305f` วันที่ 9 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
+ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `dbcc4b9` วันที่ 10 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
 
 ## 1. Enterprise / Architectural Patterns
 
@@ -9,7 +9,7 @@
 | Layered Architecture | ไม่ให้ HTTP handler รับผิดชอบ business logic และ persistence พร้อมกัน | `controller/` → `service/` / `service/impl/` → `repository/` → `domain/` | [Application layers](diagrams/class-diagram.md#application-layers) |
 | MVC / REST Presentation | แยก routing/status/validation ออกจาก business use cases และ React View | AuthController, ClientController, ProjectController, TimerController, DashboardController, ReportController; `code/Frontend/src/` | [Component view](diagrams/component.md) |
 | Repository | ซ่อน JPA data access, derived queries, JPQL, Specification และ aggregate projections จาก controller | UserRepository, ClientRepository, ProjectRepository, TaskRepository, TimeEntryRepository, ReportQueryRepository | [Application layers](diagrams/class-diagram.md#application-layers) |
-| Service Layer | รวม owner checks, กฎสถานะ, transaction และการประสานงานหลาย entity | AuthServiceImpl, ClientServiceImpl, ProjectServiceImpl, TaskServiceImpl, TimerServiceImpl, TimeEntryServiceImpl, DashboardServiceImpl, ReportServiceImpl | [Project status sequence](diagrams/sequence-03-project-status.md) |
+| Service Layer | รวม owner checks, กฎสถานะ, transaction และการประสานงานหลาย entity | AuthServiceImpl, ClientServiceImpl, ProjectServiceImpl, TaskServiceImpl, TimerServiceImpl, TimeEntryServiceImpl, DashboardServiceImpl, ReportServiceImpl | [Project status sequence](diagrams/sequence-diagram.md#scenario-03-change-project-status) |
 | DTO + Mapper | กำหนด API contract ไม่ส่ง JPA entities หรือ password/token hashes ออกไป | `dto/request/`, `dto/response/`; UserMapper, ClientMapper, ProjectMapper, TaskMapper, TimeEntryMapper | [Domain model และ layers](diagrams/class-diagram.md) |
 | Dependency Injection | เปลี่ยน dependency/test double โดยไม่สร้าง repository หรือ clock ใน use case | Constructor injection ใน services/controllers; PasswordEncoder bean; Clock จาก TimeConfiguration; CurrentUserProvider | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 
@@ -17,15 +17,16 @@
 
 ## 2. GoF Patterns: กลุ่ม Behavioral
 
-ระบบใช้ Behavioral group โดยมี Strategy, Template Method และ Chain of Responsibility ผ่าน abstractions ของ Spring Security และมี State กับ Observer ใน domain/workflow ของ Project/Time Tracking แยกหลักฐาน framework reuse ออกจาก pattern ที่ทีมเขียนเองดังนี้
+ระบบใช้ Behavioral group โดยมี Strategy, Template Method และ Chain of Responsibility ผ่าน abstractions ของ Spring Security และมี Chain สำหรับแปลง error ที่ทีมเขียนเอง รวมถึง State กับ Observer ใน domain/workflow ของ Project/Time Tracking แยกหลักฐาน framework reuse ออกจาก pattern ที่ทีมเขียนเองดังนี้
 
 | Pattern | ปัญหาที่แก้ | Implementation และที่มา | Class Diagram / Flow |
 |---|---|---|---|
 | Strategy | Auth/Profile เปลี่ยน password encoding โดยไม่เปลี่ยน use case | AuthServiceImpl และ UserService พึ่ง PasswordEncoder; SecurityConfig กำหนด BCryptPasswordEncoder เป็น implementation ปัจจุบัน **เป็นการใช้ strategy ของ framework ไม่ใช่ระบบ metric strategies ที่ทีมสร้าง** | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | Template Method | ใช้ filter lifecycle ที่ framework จัดไว้และกำหนดเฉพาะขั้นตรวจ JWT | JwtAuthenticationFilter สืบทอด OncePerRequestFilter และ override doFilterInternal | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
 | Chain of Responsibility | ส่ง HTTP request ผ่าน security filters ก่อน Controller | SecurityConfig สร้าง SecurityFilterChain และวาง JwtAuthenticationFilter ด้วย addFilterBefore โดยอ้างตำแหน่ง UsernamePasswordAuthenticationFilter; ไม่ได้เปิด form login จึงไม่ถือว่า filter อ้างอิงนี้ต้องมี instance ใน chain; JWT filter ส่งต่อผ่าน FilterChain หรือคืน error ตามหน้าที่ | [Authentication patterns](diagrams/class-diagram.md#authentication-patterns) |
+| Chain of Responsibility (Error) | รวมการแปลง exception ของ MVC และ Security | ErrorHandlerChain เรียง ErrorHandler ตาม order และหยุดที่ตัวแรกที่คืน descriptor; fallback ตัวเดียวท้ายสุด; ApiErrorFactory ประกอบ response | [Error flow และ source](error-contract.md#flow) |
 | State | แยกกฎ transition และสิทธิ์ของ Project แต่ละสถานะ | ProjectState, PlannedState, ActiveState, OnHoldState, CompletedState, ArchivedState; ProjectStates.from เลือก state ตาม ProjectStatus ที่เก็บใน DB | [Project State](diagrams/class-diagram.md#project-state-pattern) |
-| Observer | เมื่อ timer หยุด ให้ workflow ความคืบหน้าตอบสนองโดยไม่ฝัง logic ใน TimerService | TimerServiceImpl เผยแพร่ TimerStoppedEvent; TimerStoppedProgressListener รับหลัง commit และเผยแพร่ ProjectProgressThresholdEvent; ProjectProgressThresholdListener เขียน log | [Observer sequence](diagrams/sequence-06-progress-events.md) |
+| Observer | เมื่อ timer หยุด ให้ workflow ความคืบหน้าตอบสนองโดยไม่ฝัง logic ใน TimerService | TimerServiceImpl เผยแพร่ TimerStoppedEvent; TimerStoppedProgressListener รับหลัง commit และเผยแพร่ ProjectProgressThresholdEvent; ProjectProgressThresholdListener เขียน log | [Observer sequence](diagrams/sequence-diagram.md#scenario-06-progress-threshold-events) |
 
 ### ขอบเขตของ State
 
@@ -58,9 +59,17 @@ Project API ตรวจ running timer ก่อนเปลี่ยนสถ�
 | Time Tracking | Inject Clock สำหรับเวลา UTC; unique running-timer index และ pessimistic write lock คุม concurrency; แยก TimerService กับ TimeEntryService |
 | Dashboard/Reports | Service ประกอบ read models; repository/query projections รวมเวลา; React Context/hook/component composition; CSV และการแปลงจุดกราฟเป็น utilities แยกต่างหาก |
 
+### Authentication/Profile: ขอบเขต dependency ตาม PR #127
+
+[AuthController](../code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/AuthController.java) รับ AuthService, RefreshTokenCookie และ TrustedOriginValidator แยก HTTP/cookie/origin validation ออกจาก use case ส่วน [AuthServiceImpl](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/impl/AuthServiceImpl.java) รับ AuthenticationManager, LoginAttemptLimiter และ PlatformTransactionManager เพิ่มจาก repository/encoder/mapper/token components
+
+[UserService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/UserService.java) โหลด/บันทึก User และ Profile ผ่าน UserRepository กับ cascade ของ User.profile; UserProfileRepository มีอยู่แต่ไม่ได้ถูกเรียกใน flow นี้ [RefreshTokenService](../code/Backend/src/main/java/th/ac/kku/freelance_hub/service/RefreshTokenService.java) พึ่ง RefreshTokenRepository และจัด issue/rotate/revoke ภายใน token lifecycle
+
+[SecurityConfig](../code/Backend/src/main/java/th/ac/kku/freelance_hub/config/SecurityConfig.java) กำหนด DaoAuthenticationProvider ที่พึ่ง CustomUserDetailsService และ PasswordEncoder; ไม่ใช่ AuthServiceImpl เรียก UserDetailsService โดยตรง หลักฐานเหล่านี้แสดงใน [Authentication Class Diagram](diagrams/class-diagram.md#authentication-patterns) และ [Login Sequence](diagrams/sequence-diagram.md#scenario-01-login-and-protected-request) ไม่ได้นับ token rotation หรือ limiter เป็น GoF pattern เพิ่ม
+
 ### Client: archive ไม่ใช่ soft delete
 
-`PATCH /api/clients/{id}/status` ใช้ isActive; เมื่อ false จะเปลี่ยน Project ของ Client ที่ยังไม่ถูก soft delete เป็น ARCHIVED โดยเรียก Project.changeStatus และไม่ตั้ง deletedAt การเปิด Client กลับมาไม่คืนสถานะ Project อัตโนมัติ
+`PATCH /api/clients/{id}/status` ใช้ isActive; เมื่อ false จะตรวจว่าไม่มี timer ทำงานใน Project ของลูกค้านั้น (หากมีคืน 409) แล้วเปลี่ยน Project ของ Client ที่ยังไม่ถูก soft delete เป็น ARCHIVED โดยเรียก Project.changeStatus และไม่ตั้ง deletedAt การเปิด Client กลับมาไม่คืนสถานะ Project อัตโนมัติ
 
 `DELETE /api/clients/{id}` ตั้งเฉพาะ Client.deletedAt คง isActive เดิม และคืน 204 โดยไม่มี body เส้นนี้ไม่เปลี่ยนสถานะ Project และไม่ผ่าน running-timer guard ของ Project API
 
@@ -77,10 +86,9 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 ## 4. รูปแบบที่ไม่ควรนับเป็น GoF เพิ่ม
 
 - Static factories เช่น TimeEntry.startTimer/createManual ไม่ใช่ GoF Factory Method ที่มี creator hierarchy
-- ApiErrorFactory เป็น shared error-construction component ไม่ใช่หลักฐาน GoF Factory Method
+- ApiErrorFactory เป็น Factory สำหรับสร้าง error envelope จาก ErrorDescriptor โดยไม่ตัดสิน mapping; ไม่ใช่ GoF Factory Method ที่ใช้ subclass override การสร้าง object ดู [Error Contract](error-contract.md)
 - JPA Specification, row locks, optimistic locking, DTO projections และ soft delete เป็น API/กลไกออกแบบ ไม่ใช่ GoF Strategy/State โดยอัตโนมัติ
 - Refresh-token rotation, rate limiter และ ClientStatus ไม่ถูกนับเป็น State/Strategy เพิ่มเพื่อให้ครบจำนวน
-- ยังไม่มี ProductivityMetricStrategy หลาย implementations ตามแผนใน REQUIREMENTS จึงไม่อ้างว่า feature นี้เสร็จแล้ว
 
 ## 5. หลักฐานการทดสอบ
 
@@ -93,13 +101,13 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 
 อ้างอิง test source ที่มีอยู่ ไม่ใช่ผลรันใหม่หรือ Test Report ของการส่งมอบ
 
-## 6. แหล่งที่มาของฉบับรวม
+## 6. ผู้รับผิดชอบและเอกสารประกอบ
 
-- [Petpinyo - Authentication/Profile](V1/DESIGN/petpinyo-design.md)
-- [Thirawat - Client](V1/DESIGN/thirawat-design.md)
-- [Kantavit - Project/Task และ Progress](V1/DESIGN/kantavit-design.md)
-- [Kompat - Time Tracking](V1/DESIGN/kompat-design.md)
-- [Nattadol - Dashboard/Reports](V1/DESIGN/nattadol-design.md)
+- Petpinyo - Authentication/Profile
+- Thirawat - Client
+- Kantavit - Project/Task และ Progress
+- Kompat - Time Tracking
+- Nattadol - Dashboard/Reports
 
-Diagram จากต้นฉบับถูกตรวจชื่อ method/path ใน [diagrams/](diagrams/README.md) โดยคงเอกสารสมาชิกเดิมไว้ และเพิ่ม Conceptual Domain/Use Case/Deployment/State diagrams จาก implementation แล้ว สไลด์ยังไม่สร้างตามขอบเขตงาน ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
+Diagram ใน [diagrams/](diagrams/README.md) ตรวจชื่อ method/path จาก implementation แล้ว รวมถึง Conceptual Domain/Use Case/Deployment/State diagrams สไลด์ยังไม่สร้างตามขอบเขตงาน ผลรันทดสอบจริงดู [Test Report](../test/test-report.md) แยกจากรายชื่อ test source ในเอกสารนี้
 

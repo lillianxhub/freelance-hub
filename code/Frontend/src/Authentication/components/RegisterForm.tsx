@@ -5,7 +5,13 @@ import AuthInput from './AuthInput'
 import { Button } from '../../components/ui/button'
 import { useAuth } from '../useAuthentication'
 import { getErrorMessage } from '../../api/apiError'
-import { hasRequiredPassword, isValidEmail, isValidPhone, normalizePhone, passwordsMatch } from '../authentication.validators'
+import {
+  hasRequiredPassword,
+  isValidEmail,
+  isValidPhone,
+  normalizePhone,
+  passwordsMatch,
+} from '../authentication.validators'
 import type { RegisterFieldErrors, RegisterFormValues } from '../../types/auth'
 
 function RegisterForm() {
@@ -33,7 +39,8 @@ function RegisterForm() {
     if (!value) return 'กรุณากรอกข้อมูลในช่องนี้'
     if (name === 'email' && !isValidEmail(values.email)) return 'กรุณากรอกอีเมลให้ถูกต้อง'
     if (name === 'phone' && !isValidPhone(values.phone)) return 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก'
-    if (name === 'password' && !hasRequiredPassword(values.password)) return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'
+    if (name === 'password' && !hasRequiredPassword(values.password))
+      return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'
     if (name === 'confirmPassword' && !passwordsMatch(values.password, values.confirmPassword)) {
       return 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน'
     }
@@ -109,7 +116,10 @@ function RegisterForm() {
         phone: form.phone,
         password: form.password,
       })
-      navigate('/login', { replace: true, state: { message: 'สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ' } })
+      navigate('/login', {
+        replace: true,
+        state: { message: 'สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ' },
+      })
     } catch (err) {
       setError(getErrorMessage(err, 'สมัครสมาชิกไม่สำเร็จ'))
     } finally {
@@ -120,18 +130,89 @@ function RegisterForm() {
   return (
     <AuthenticationLayout>
       <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-brand"><img src="/logo-light.svg" alt="" /><strong>freelance hub</strong></div>
+        <div className="auth-brand">
+          <img src="/logo-light.svg" alt="" />
+          <strong>freelance hub</strong>
+        </div>
         <h1>สมัครสมาชิก</h1>
         <p className="auth-description">สร้าง พื้นที่ทำงานสำหรับจัดการงานฟรีแลนซ์ของคุณ</p>
         {error && <p className="auth-error">{error}</p>}
 
-        <AuthInput label="ชื่อที่แสดง" type="text" name="displayName" value={form.displayName} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.displayName} autoComplete="nickname" />
-        <AuthInput label="ชื่อ" type="text" name="firstName" value={form.firstName} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.firstName} autoComplete="given-name" />
-        <AuthInput label="นามสกุล" type="text" name="lastName" value={form.lastName} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.lastName} autoComplete="family-name" />
-        <AuthInput label="อีเมล" type="email" name="email" value={form.email} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.email} autoComplete="email" />
-        <AuthInput label="เบอร์โทรศัพท์" type="tel" name="phone" value={form.phone} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.phone} autoComplete="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} />
-        <AuthInput label="รหัสผ่าน" type="password" name="password" value={form.password} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.password} autoComplete="new-password" minLength={8} />
-        <AuthInput label="ยืนยันรหัสผ่าน" type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} onBlur={handleBlur} error={fieldErrors.confirmPassword} autoComplete="new-password" minLength={8} />
+        <AuthInput
+          label="ชื่อที่แสดง"
+          type="text"
+          name="displayName"
+          value={form.displayName}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.displayName}
+          autoComplete="nickname"
+        />
+        <AuthInput
+          label="ชื่อ"
+          type="text"
+          name="firstName"
+          value={form.firstName}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.firstName}
+          autoComplete="given-name"
+        />
+        <AuthInput
+          label="นามสกุล"
+          type="text"
+          name="lastName"
+          value={form.lastName}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.lastName}
+          autoComplete="family-name"
+        />
+        <AuthInput
+          label="อีเมล"
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.email}
+          autoComplete="email"
+        />
+        <AuthInput
+          label="เบอร์โทรศัพท์"
+          type="tel"
+          name="phone"
+          value={form.phone}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.phone}
+          autoComplete="tel"
+          inputMode="numeric"
+          pattern="[0-9]{10}"
+          maxLength={10}
+        />
+        <AuthInput
+          label="รหัสผ่าน"
+          type="password"
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.password}
+          autoComplete="new-password"
+          minLength={8}
+        />
+        <AuthInput
+          label="ยืนยันรหัสผ่าน"
+          type="password"
+          name="confirmPassword"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          error={fieldErrors.confirmPassword}
+          autoComplete="new-password"
+          minLength={8}
+        />
 
         <Button className="min-h-10 w-full" type="submit" disabled={loading}>
           {loading ? 'กำลังสมัคร...' : 'สมัครสมาชิก'}
