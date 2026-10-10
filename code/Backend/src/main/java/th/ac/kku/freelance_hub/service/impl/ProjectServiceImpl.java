@@ -339,7 +339,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new InvalidStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
         }
         if (project.getStatus() == ProjectStatus.COMPLETED) {
-            throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
+            throw new InvalidStateException("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
         }
         Client client = findOwnedClient(ownerId, request.getClientId());
 

@@ -62,7 +62,7 @@ Spring Security/JWT, repositories และ event listeners เป็นส่�
 **Main flow:**
 
 1. ส่ง email, password, display name และข้อมูล profile ที่รองรับในการสมัคร
-2. Controller ตรวจ `@Valid RegisterRequest`
+2. Controller ตรวจ `@Valid RegisterRequest`; password ต้องมีอย่างน้อย 8 ตัวอักษรและไม่เกิน 72 ไบต์ UTF-8
 3. Service normalize email ด้วย trim/lowercase แล้วตรวจ `existsByEmail`
 4. `PasswordEncoder` hash password
 5. `UserMapper` สร้าง `UserProfile` และ `User.setProfile` link แบบ bidirectional
@@ -124,7 +124,7 @@ credentials ผ่าน `DaoAuthenticationProvider`; service สร้าง ac
 }
 ```
 
-1. ผู้ใช้เรียก `PATCH /api/users/me/password` พร้อม bearer JWT
+1. ผู้ใช้เรียก `PATCH /api/users/me/password` พร้อม bearer JWT; รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษรและไม่เกิน 72 ไบต์ UTF-8
 2. Service โหลด user จาก authenticated principal และตรวจ `oldPassword` ด้วย `PasswordEncoder`
 3. เมื่อถูกต้อง ระบบ hash และบันทึก `newPassword`; ห้ามบันทึกรหัสผ่านแบบ plain text
 4. คืน `200 ApiResult<Void>`; old password ผิด = `401` และ `message: "รหัสผ่านไม่ถูกต้อง"`, validation หรือ new password ซ้ำค่าเดิม = `400`; เมื่อสำเร็จเพิกถอน refresh-token families ทั้งหมด
@@ -483,11 +483,11 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 2. Controller validate `StartTimerRequest` และอ่าน owner ID จากผู้ใช้ที่เข้าสู่ระบบ
 3. Service ตรวจว่า User และ Project มีอยู่จริง โดย Project ต้องเป็นของ owner
 4. หากส่ง Task ระบบตรวจว่า Task อยู่ใน Project และเป็นของ owner คนเดียวกัน
-5. Entity ตรวจว่า Project สามารถจับเวลาได้ (`canTrackTime()`) และ Client มี `isActive = true` โดยใช้เวลาจาก server ผ่าน `Clock`
+5. Entity ตรวจว่า Project สามารถจับเวลาได้ (`canTrackTime()`) และ Client มี `isActive = true`, `deletedAt = null` โดยใช้เวลาจาก server ผ่าน `Clock`
 6. Service ตรวจว่า owner ยังไม่มี running timer แล้วบันทึกรายการชนิด `TIMER`; หากมี Task จะเรียก `Task.start()` โดย `OPEN` เปลี่ยนเป็น `IN_PROGRESS`, `IN_PROGRESS` คงเดิม และ `COMPLETED` ถูกปฏิเสธ การบันทึก Timer และการเปลี่ยนสถานะ Task อยู่ใน transaction เดียวกัน
 7. Controller คืน `201 Created`, `ApiResult<StartedTimerResponse>` และ `Location: /api/time-entries/{id}` โดย `data` มี `project` และ `task` พร้อม `status` ของแต่ละรายการ
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่สามารถจับเวลาได้หรือ Client มี `isActive` ไม่ใช่ `true` = `409`; Task เป็น `COMPLETED` = `409` และ transaction ย้อนกลับ; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`\
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่สามารถจับเวลาได้หรือ Client inactive/ถูก soft delete = `409`; Task เป็น `COMPLETED` = `409` และ transaction ย้อนกลับ; มี running timer อยู่แล้ว = `409`; request ไม่ถูกต้อง = `400`\
 **Postcondition:** มี Time Entry ชนิด `TIMER` ที่มี `startedAt` แต่ยังไม่มี `endedAt` และ `durationSeconds`; owner มี running timer ได้ไม่เกินหนึ่งรายการ; Task ที่ส่งมามีสถานะ `IN_PROGRESS`
 
 ### UC-TIME-02 View Current Timer
@@ -527,12 +527,12 @@ Response ที่มี `project` หรือ `task` ส่งสถานะ�
 
 1. Freelancer ส่ง `projectId`, optional `taskId`, optional `description`, `startedAt` และเลือกส่งอย่างใดอย่างหนึ่งระหว่าง `endedAt` หรือ `durationSeconds`
 2. Controller validate ว่ามีวิธีกำหนดเวลาสิ้นสุดเพียงแบบเดียวและเวลาสิ้นสุดอยู่หลังเวลาเริ่ม
-3. Service ตรวจ User, Project, Task และ owner relationship; Project ต้องเป็น `ACTIVE` และ Client ต้อง active จึงบันทึกเวลาได้
+3. Service ตรวจ User, Project, Task และ owner relationship; Project ต้องเป็น `ACTIVE` และ Client ต้อง active และไม่ถูก soft delete จึงบันทึกเวลาได้
 4. Entity สร้างรายการชนิด `MANUAL`; หากส่ง duration ระบบคำนวณ `endedAt` หรือหากส่งช่วงเวลาระบบคำนวณ duration
 5. หากส่ง Task จะเรียก `Task.start()` ก่อนบันทึก: `OPEN` เปลี่ยนเป็น `IN_PROGRESS`, `IN_PROGRESS` คงเดิม และ `COMPLETED` ถูกปฏิเสธ; การบันทึก Time Entry และการเปลี่ยนสถานะ Task อยู่ใน transaction เดียวกัน
 6. Repository บันทึก แล้ว controller คืน `201 Created` พร้อม `Location` และ `TimeEntryDetailResponse` ใน `ApiResult.data` ซึ่งมี `createdAt`, `updatedAt`, `project.status` และ `task.status` เมื่อมี Task
 
-**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่เป็น `ACTIVE`, Client ไม่ active หรือ Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
+**Alternative flow:** ไม่มี JWT = `401`; Project/Task ไม่พบหรือไม่ใช่ของ owner = `404`; Project ไม่เป็น `ACTIVE`, Client inactive/ถูก soft delete หรือ Task เป็น `COMPLETED` = `409` และไม่บันทึกรายการ; ไม่ส่งหรือส่งทั้ง `endedAt` และ `durationSeconds` = `400`; duration ไม่เป็นบวกหรือช่วงเวลาไม่ถูกต้อง = `400`
 **Postcondition:** มี completed manual entry ที่ duration มากกว่า 0 บน Project ที่เป็น `ACTIVE`; Task ที่ส่งมามีสถานะ `IN_PROGRESS`
 
 ### UC-TIME-06 List and Filter Time Entries
@@ -563,7 +563,7 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 1. Freelancer ส่ง UUID ของรายการใน path และข้อมูลทดแทนผ่าน `PUT` ได้แก่ `projectId`, `startedAt`, optional `taskId`/`description` และอย่างใดอย่างหนึ่งระหว่าง `endedAt` หรือ `durationSeconds`
 2. Controller validate ข้อมูลที่จำเป็นและเวลาที่ส่งมา; `taskId` ที่ไม่ส่งหรือเป็น `null` จะล้าง Task เดิม และ `description` ที่ไม่ส่งหรือเป็น `null` จะล้างคำอธิบายเดิม
 3. Service ค้นหารายการด้วย `entryId` และ `ownerId` แล้วตรวจว่าไม่ถูกล็อก
-4. ระบบตรวจว่า Project เดิมและ Project ปลายทางเป็น `ACTIVE` และ Client ปลายทาง active; หากเปลี่ยน Project หรือ Task จะตรวจ owner และ task-project relationship อีกครั้ง
+4. ระบบตรวจว่า Project เดิมและ Project ปลายทางเป็น `ACTIVE` และ Client ปลายทาง active และไม่ถูก soft delete; หากเปลี่ยน Project หรือ Task จะตรวจ owner และ task-project relationship อีกครั้ง
 5. Entity แก้ข้อมูลและคำนวณ `durationSeconds` ใหม่ตามช่วงเวลาหรือค่าที่ส่งมา
 6. Controller คืน `200` พร้อม `TimeEntryDetailResponse` ใน `ApiResult.data`
 
@@ -610,8 +610,6 @@ List ยังรวม running timer ที่เข้า filter ด้วย 
 
 ### ขอบเขตที่ยังไม่เสร็จ
 
-- `FR-TIME-09` การคัดลอกรายการเดิมเพื่อบันทึกซ้ำยังไม่มี endpoint หรือ service operation
-- Backend รับ optional Task แต่ฟอร์ม manual ใน Frontend บังคับเลือก Task และยังแสดง PLANNED/ON_HOLD ใน Project options; Backend ปฏิเสธการบันทึกบน Project เหล่านี้ด้วย 409 ฟอร์มจึงยังไม่ตรงกับ API ทุกกรณี
 - `FR-TIME-06` รองรับรายวันและรายสัปดาห์ผ่านการส่งขอบเขต `from/to` แต่ยังไม่มี endpoint ที่จัดกลุ่มผลลัพธ์เป็นวันหรือสัปดาห์โดยตรง
 - `BR-07` ใช้ `Instant` สำหรับเวลา UTC แต่การแสดงผลตาม timezone ของผู้ใช้เป็นหน้าที่ของ client และยังไม่มี user-timezone conversion ใน Time Tracking API
 - มี `TimeEntryService.lockByProject()` สำหรับล็อกถาวรตาม Project รวม soft-deleted แล้ว โดยไม่มี API ให้หน้าบ้านสั่ง lock; ฝั่ง Project เรียกเมธอดนี้เมื่อเปลี่ยนเป็น `COMPLETED` ใน transaction เดียวกันแล้ว แต่ยังต้องจัดการ concurrent creation/reassignment

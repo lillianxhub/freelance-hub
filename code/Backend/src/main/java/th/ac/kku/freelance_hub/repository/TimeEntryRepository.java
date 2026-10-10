@@ -70,9 +70,11 @@ public interface TimeEntryRepository
           AND entry.isActive = true
           AND entry.endedAt IS NOT NULL
           AND entry.durationSeconds IS NOT NULL
-          AND project.isActive = true
+          AND entry.deletedAt IS NULL
           AND project.deletedAt IS NULL
-          AND (task IS NULL OR task.isActive = true)
+          AND project.client.deletedAt IS NULL
+          AND project.client.isActive = true
+          AND project.status <> th.ac.kku.freelance_hub.domain.enums.ProjectStatus.ARCHIVED
         ORDER BY entry.startedAt DESC, entry.id DESC
         """)
     List<TimeEntry> findRecentCompletedForDashboard(
@@ -148,6 +150,29 @@ public interface TimeEntryRepository
             Class<T> projectionType
     );
 
+    /** Reads completed history for Dashboard without excluding deleted tasks. */
+    @Query("""
+        SELECT entry.startedAt AS startedAt, entry.durationSeconds AS durationSeconds
+        FROM TimeEntry entry
+        JOIN entry.project project
+        WHERE entry.owner.id = :ownerId
+          AND entry.isActive = true
+          AND entry.deletedAt IS NULL
+          AND entry.endedAt IS NOT NULL
+          AND entry.durationSeconds IS NOT NULL
+          AND project.deletedAt IS NULL
+          AND project.client.deletedAt IS NULL
+          AND project.client.isActive = true
+          AND project.status <> th.ac.kku.freelance_hub.domain.enums.ProjectStatus.ARCHIVED
+          AND entry.startedAt >= :fromInclusive
+          AND entry.startedAt < :toExclusive
+        """)
+    List<StartedAtDurationView> findCompletedTimeForDashboard(
+            @Param("ownerId") UUID ownerId,
+            @Param("fromInclusive") Instant fromInclusive,
+            @Param("toExclusive") Instant toExclusive
+    );
+
     interface ProjectTotalView {
     UUID getProjectId();
     Long getTotalSeconds();
@@ -157,14 +182,15 @@ public interface TimeEntryRepository
         SELECT t.project.id AS projectId,
                SUM(t.durationSeconds) AS totalSeconds
         FROM TimeEntry t
-        LEFT JOIN t.task task
         WHERE t.owner.id = :ownerId
           AND t.isActive = true
           AND t.endedAt IS NOT NULL
           AND t.durationSeconds IS NOT NULL
-          AND t.project.isActive = true
+          AND t.deletedAt IS NULL
           AND t.project.deletedAt IS NULL
-          AND (task IS NULL OR task.isActive = true)
+          AND t.project.client.deletedAt IS NULL
+          AND t.project.client.isActive = true
+          AND t.project.status <> th.ac.kku.freelance_hub.domain.enums.ProjectStatus.ARCHIVED
         GROUP BY t.project.id
         """)
     List<ProjectTotalView> sumCompletedSecondsByProject(

@@ -8,6 +8,7 @@ import { listTimerTasks } from '../services/timerOptions'
 import type { Task } from '../types/task'
 import type { TimerWorkspace } from '../types/timerWorkspace'
 import { useCurrentTimer } from './useCurrentTimer'
+import { canTrackProject } from './timeTracking.utils'
 
 interface UseTimerOptions {
   loadTaskOptions?: boolean
@@ -30,13 +31,7 @@ export function useTimer(
     error: string
   } | null>(null)
   const { currentTimer, refreshCurrentTimer } = useCurrentTimer()
-  const activeProjects = useMemo(
-    () =>
-      data.projects.filter(
-        (project) => project.status !== 'COMPLETED' && project.status !== 'ARCHIVED',
-      ),
-    [data.projects],
-  )
+  const activeProjects = useMemo(() => data.projects.filter(canTrackProject), [data.projects])
   const currentEntry = currentTimer?.running ? currentTimer.timeEntry : null
   const runningEntry = useMemo(
     () =>

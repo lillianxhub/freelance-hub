@@ -1,5 +1,8 @@
 package th.ac.kku.freelance_hub.dto.request.auth;
 
+import java.nio.charset.StandardCharsets;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -34,6 +37,12 @@ public class RegisterRequest {
     @NotBlank(message = "กรุณาระบุรหัสผ่าน")
     @Size(min = 8, max = 100, message = "รหัสผ่านต้องมี 8–100 ตัวอักษร")
     private String password;
+
+    @AssertTrue(message = "รหัสผ่านต้องไม่เกิน 72 ไบต์ UTF-8")
+    @JsonIgnore
+    public boolean isPasswordWithinByteLimit() {
+        return password == null || password.getBytes(StandardCharsets.UTF_8).length <= 72;
+    }
 
     @NotBlank(message = "กรุณาระบุชื่อที่แสดง")
     @Size(max = 255, message = "ชื่อที่แสดงต้องไม่เกิน 255 ตัวอักษร")

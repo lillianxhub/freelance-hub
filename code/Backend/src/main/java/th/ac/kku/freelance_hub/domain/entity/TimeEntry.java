@@ -323,7 +323,8 @@ public class TimeEntry {
         if (!requiredProject.canTrackTime()) {
             throw new InvalidStateException("โปรเจกต์ต้องอยู่ในสถานะกำลังทำก่อนบันทึกเวลา", Map.of("rule", "ACTIVE_PROJECT_REQUIRED"));
         }
-        if (!Boolean.TRUE.equals(requiredProject.getClient().getIsActive())) {
+        if (requiredProject.getClient().getDeletedAt() != null
+                || !Boolean.TRUE.equals(requiredProject.getClient().getIsActive())) {
             throw new InvalidStateException("กรุณาคืนสถานะลูกค้าก่อนบันทึกเวลา", Map.of("rule", "ACTIVE_CLIENT_REQUIRED"));
         }
         return requiredProject;
