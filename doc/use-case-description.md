@@ -291,9 +291,9 @@ Sequence นี้แสดง flow หลังผ่าน JWT แล้ว; R
 
 ### หลักฐานข้าม feature: BR-06
 
-การเริ่ม timer ใหม่เมื่อ Client ถูก archive ถูกป้องกันใน `TimeEntry.startTimer()` ผ่าน `requireTrackableProject()` ที่ตรวจ Client isActive; มี test `rejectsTimerForArchivedClient` ใน `domain/entity/TimeEntryTest.java` และ `service/TimerServiceImplTest.java` แล้ว เป็นหลักฐานจาก Time Tracking ไม่ใช่การอ้างว่า Client endpoint ตรวจการเริ่ม timer เอง
+การเริ่ม timer ใหม่เมื่อ Client ถูก archive หรือ soft delete ถูกป้องกันใน `TimeEntry.startTimer()` ผ่าน `requireTrackableProject()` ที่ตรวจว่า Client มี `isActive=true` และ `deletedAt=null`; มี test `rejectsTimerForArchivedClient` ใน `domain/entity/TimeEntryTest.java` และ `service/TimerServiceImplTest.java` สำหรับกรณี archive แล้ว เป็นหลักฐานจาก Time Tracking ไม่ใช่การอ้างว่า Client endpoint ตรวจการเริ่ม timer เอง
 
-ขอบเขตสำคัญ: guard นี้ไม่ตรวจ Client.deletedAt โดยตรง และ Client soft delete คง isActive เดิม/ไม่ archive Project จึงยังไม่อ้างว่าห้ามเริ่ม timer บน Project ของ Client ที่ soft delete ได้ครบ การ archive Client ก็ไม่หยุด running timer ที่มีอยู่โดยอัตโนมัติ
+ขอบเขตสำคัญ: guard นี้ตรวจ `Client.deletedAt` โดยตรง จึงปฏิเสธการเริ่ม timer บน Project ของ Client ที่ถูก soft delete แม้ Client ยังมี `isActive=true` อยู่ Client soft delete ยังคง isActive เดิมและไม่ archive Project หรือหยุด running timer ที่มีอยู่ ส่วนการ archive Client ตรวจ running timer และปฏิเสธด้วย `409` หากยังมี timer ทำงาน ไม่หยุด timer ให้อัตโนมัติ
 
 ### ขอบเขตที่ยังไม่เสร็จ
 
