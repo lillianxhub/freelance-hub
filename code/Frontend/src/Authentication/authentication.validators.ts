@@ -3,7 +3,7 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function hasRequiredPassword(password: string): boolean {
-  return password.length >= 8
+  return password.length >= 8 && new TextEncoder().encode(password).length <= 72
 }
 
 export function passwordsMatch(password: string, confirmation: string): boolean {

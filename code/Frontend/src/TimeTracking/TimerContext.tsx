@@ -1,33 +1,36 @@
-import { useCallback, useEffect, useState, type PropsWithChildren } from 'react'
+import { useCallback, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { TimerContext } from './timer-context'
 import { getCurrentTimer } from '../services/timeTracking'
 import type { ApiCurrentTimer } from '../types/api'
 
 export function TimerProvider({ children }: PropsWithChildren) {
   const [currentTimer, setCurrentTimer] = useState<ApiCurrentTimer | null>(null)
+  const requestId = useRef(0)
+  const invalidateRequest = useCallback(() => {
+    requestId.current++
+  }, [])
 
   const refreshCurrentTimer = useCallback(async () => {
+    const currentRequest = ++requestId.current
     try {
-      setCurrentTimer(await getCurrentTimer())
+      const timer = await getCurrentTimer()
+      if (currentRequest === requestId.current) setCurrentTimer(timer)
     } catch {
-      setCurrentTimer(null)
+      if (currentRequest === requestId.current) setCurrentTimer(null)
     }
   }, [])
 
   useEffect(() => {
-    let active = true
+    const currentRequest = ++requestId.current
     getCurrentTimer()
       .then((timer) => {
-        if (active) setCurrentTimer(timer)
+        if (currentRequest === requestId.current) setCurrentTimer(timer)
       })
       .catch(() => {
-        if (active) setCurrentTimer(null)
+        if (currentRequest === requestId.current) setCurrentTimer(null)
       })
-
-    return () => {
-      active = false
-    }
-  }, [])
+    return invalidateRequest
+  }, [invalidateRequest])
 
   return (
     <TimerContext.Provider value={{ currentTimer, refreshCurrentTimer }}>

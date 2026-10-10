@@ -1,6 +1,14 @@
-import { api, refreshApiToken, setApiToken } from '../api/apiClient'
+import {
+  api,
+  getApiToken,
+  refreshApiToken,
+  setApiToken,
+  subscribeToSessionInvalidation,
+} from '../api/apiClient'
 import { ApiError } from '../api/apiError'
 import type { AuthResponse, AuthSession, AuthUser, BackendUser, RegisterInput } from '../types/auth'
+
+const authSender = crypto.randomUUID()
 
 function toAuthUser(user: BackendUser): AuthUser {
   return {
@@ -12,12 +20,14 @@ function toAuthUser(user: BackendUser): AuthUser {
 
 export async function getCurrentSession(): Promise<AuthSession | null> {
   if (!(await refreshApiToken())) return null
+  const token = getApiToken()
   try {
     const response = await api.get<BackendUser>('/users/me')
+    if (getApiToken() !== token) return null
     return { user: toAuthUser(response.data) }
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      setApiToken(null)
+      if (getApiToken() === token) setApiToken(null)
       return null
     }
     throw error
@@ -29,7 +39,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   setApiToken(response.data.token)
   if (typeof BroadcastChannel !== 'undefined') {
     const channel = new BroadcastChannel('freelance-hub-auth')
-    channel.postMessage('login')
+    channel.postMessage({ action: 'login', sender: authSender })
     channel.close()
   }
   return { user: toAuthUser(response.data.user) }
@@ -47,32 +57,35 @@ export async function signUp(input: RegisterInput): Promise<void> {
 }
 
 export async function signOut(): Promise<void> {
-  try {
-    await api.post<void>('/auth/logout')
-  } finally {
-    setApiToken(null)
-    if (typeof BroadcastChannel !== 'undefined') {
-      const channel = new BroadcastChannel('freelance-hub-auth')
-      channel.postMessage('logout')
-      channel.close()
-    }
+  setApiToken(null)
+  if (typeof BroadcastChannel !== 'undefined') {
+    const channel = new BroadcastChannel('freelance-hub-auth')
+    channel.postMessage({ action: 'logout', sender: authSender })
+    channel.close()
   }
+  await api.post<void>('/auth/logout')
 }
 
 export function subscribeToAuthChanges(
   callback: (session: AuthSession | null) => void,
 ): () => void {
-  if (typeof BroadcastChannel === 'undefined') return () => {}
+  const unsubscribe = subscribeToSessionInvalidation(() => callback(null))
+  if (typeof BroadcastChannel === 'undefined') return unsubscribe
   const channel = new BroadcastChannel('freelance-hub-auth')
-  channel.onmessage = (event: MessageEvent) => {
-    if (event.data === 'logout') {
+  channel.onmessage = (event: MessageEvent<string | { action: string; sender: string }>) => {
+    const message = event.data
+    if (typeof message !== 'string' && message?.sender === authSender) return
+    const action = typeof message === 'string' ? message : message?.action
+    if (action === 'logout') {
       setApiToken(null)
-      callback(null)
-    } else if (event.data === 'login') {
+    } else if (action === 'login') {
       getCurrentSession()
         .then(callback)
         .catch(() => callback(null))
     }
   }
-  return () => channel.close()
+  return () => {
+    unsubscribe()
+    channel.close()
+  }
 }

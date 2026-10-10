@@ -597,6 +597,34 @@ class TimeEntryIntegrationTest {
         return responseJson(result).path("data").path("token").asText();
     }
 
+    @Test
+    void deletedClientBlocksNewTimerAndManualEntries() throws Exception {
+        String token = registerAndGetToken("deleted-client-time@example.com");
+        UUID projectId = createActiveProject(token, "Deleted client project");
+        var project = mockMvc.perform(get("/api/projects/{id}", projectId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk()).andReturn();
+        String clientId = responseJson(project).path("data").path("client").path("id").asText();
+        mockMvc.perform(delete("/api/clients/{id}", clientId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/timer/start")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of("projectId", projectId))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+        mockMvc.perform(post("/api/time-entries")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(manualEntryJson(projectId, "Blocked")))
+                .andExpect(status().isConflict());
+        mockMvc.perform(get("/api/timer/current")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.running").value(false));
+    }
+
     private UUID createActiveProject(String token, String projectName)
             throws Exception {
         MvcResult client = mockMvc.perform(post("/api/clients")

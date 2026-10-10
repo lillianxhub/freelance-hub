@@ -21,6 +21,7 @@ export function useProjectTimeEntries(projectId: string) {
     ])
       .then(([result, summary]) => {
         if (!active) return
+        setError('')
         setEntries(result.entries)
         setTotal(result.meta.total)
         setTrackedSeconds(summary.totalSeconds)
