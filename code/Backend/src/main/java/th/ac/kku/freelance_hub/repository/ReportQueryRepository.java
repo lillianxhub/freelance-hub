@@ -1,286 +1,75 @@
 package th.ac.kku.freelance_hub.repository;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import org.springframework.stereotype.Repository;
-
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import th.ac.kku.freelance_hub.domain.entity.Client;
 import th.ac.kku.freelance_hub.domain.entity.Project;
-import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
-import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
 
-@Repository
-public class ReportQueryRepository {
-    private final EntityManager entityManager;
+/**
+ * Read-only report queries registered against TimeEntry as the primary entity.
+ * Explicit queries also read related entities; the service calculates reports.
+ */
+@Transactional(readOnly = true)
+public interface ReportQueryRepository extends Repository<TimeEntry, UUID> {
 
-    public ReportQueryRepository(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
+    @Query("""
+            SELECT c FROM Client c
+            WHERE c.owner.id = :ownerId AND c.deletedAt IS NULL
+            """)
+    List<Client> findClients(@Param("ownerId") UUID ownerId);
 
-    public record Totals(long trackedSeconds, long entryCount) {}
-    public record ProjectTime(UUID projectId, long trackedSeconds) {}
-    public record TaskProgress(
-            UUID projectId,
-            long totalTasks,
-            long completedTasks
-    ) {}
-    public record DailyTime(LocalDate date, long trackedSeconds) {}
-    public record HourlyTime(int hour, long trackedSeconds) {}
+    @Query("""
+            SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Client c
+            WHERE c.id = :id AND c.owner.id = :ownerId AND c.deletedAt IS NULL
+            """)
+    boolean clientExists(@Param("id") UUID id, @Param("ownerId") UUID ownerId);
 
-    public List<Client> findVisibleClients(UUID ownerId) {
-        return entityManager.createQuery("""
-                SELECT c FROM Client c
-                WHERE c.owner.id = :ownerId
-                  AND c.deletedAt IS NULL
-                ORDER BY c.name, c.id
-                """, Client.class)
-                .setParameter("ownerId", ownerId)
-                .getResultList();
-    }
+    @Query("""
+            SELECT p FROM Project p JOIN FETCH p.client c
+            WHERE p.owner.id = :ownerId AND p.deletedAt IS NULL AND c.deletedAt IS NULL
+            """)
+    List<Project> findProjects(@Param("ownerId") UUID ownerId);
 
-    public List<Project> findVisibleProjects(UUID ownerId) {
-        return entityManager.createQuery("""
-                SELECT p FROM Project p JOIN FETCH p.client c
-                WHERE p.owner.id = :ownerId
-                  AND p.deletedAt IS NULL
-                  AND c.deletedAt IS NULL
-                ORDER BY p.name, p.id
-                """, Project.class)
-                .setParameter("ownerId", ownerId)
-                .getResultList();
-    }
+    @Query("""
+            SELECT p FROM Project p JOIN FETCH p.client c
+            WHERE p.id = :id AND p.owner.id = :ownerId
+              AND p.deletedAt IS NULL AND c.deletedAt IS NULL
+            """)
+    Optional<Project> findProject(@Param("id") UUID id, @Param("ownerId") UUID ownerId);
 
-    public Totals totals(
-            UUID ownerId,
-            Instant from,
-            Instant toExclusive,
-            UUID clientId,
-            UUID projectId
-    ) {
-        return totals(ownerId, from, toExclusive, clientId, projectId, null);
-    }
+    @Query("""
+            SELECT t FROM Task t JOIN FETCH t.project p
+            WHERE p.owner.id = :ownerId AND p.id IN :projectIds
+              AND t.isActive = true AND t.deletedAt IS NULL
+            """)
+    List<Task> findTasks(@Param("ownerId") UUID ownerId, @Param("projectIds") List<UUID> projectIds);
 
-    public Totals totals(
-            UUID ownerId, Instant from, Instant toExclusive,
-            UUID clientId, UUID projectId, ProjectStatus status
-    ) {
-        Object[] row = entryQuery(
-                "SELECT COALESCE(SUM(t.durationSeconds), 0), COUNT(t)",
-                "",
-                ownerId, from, toExclusive, clientId, projectId, status
-        ).getSingleResult();
+    @Query("""
+            SELECT e FROM TimeEntry e JOIN FETCH e.project p
+            WHERE e.owner.id = :ownerId AND p.id IN :projectIds
+              AND e.isActive = true AND e.deletedAt IS NULL
+              AND e.endedAt IS NOT NULL AND e.durationSeconds IS NOT NULL
+            """)
+    List<TimeEntry> findEntries(@Param("ownerId") UUID ownerId, @Param("projectIds") List<UUID> projectIds);
 
-        return new Totals(
-                ((Number) row[0]).longValue(),
-                ((Number) row[1]).longValue()
-        );
-    }
-
-    public List<ProjectTime> timeByProject(
-            UUID ownerId,
-            Instant from,
-            Instant toExclusive,
-            UUID clientId,
-            UUID projectId
-    ) {
-        return timeByProject(ownerId, from, toExclusive, clientId, projectId, null);
-    }
-
-    public List<ProjectTime> timeByProject(
-            UUID ownerId, Instant from, Instant toExclusive,
-            UUID clientId, UUID projectId, ProjectStatus status
-    ) {
-        return entryQuery(
-                "SELECT p.id, SUM(t.durationSeconds)",
-                " GROUP BY p.id",
-                ownerId, from, toExclusive, clientId, projectId, status
-        ).getResultList().stream()
-                .map(row -> new ProjectTime(
-                        (UUID) row[0],
-                        ((Number) row[1]).longValue()
-                ))
-                .toList();
-    }
-
-    public List<TaskProgress> taskProgress(UUID ownerId) {
-        List<Object[]> rows = entityManager.createQuery("""
-                SELECT t.project.id, COUNT(t),
-                       SUM(CASE WHEN t.status = :done THEN 1 ELSE 0 END)
-                FROM Task t
-                WHERE t.project.owner.id = :ownerId
-                  AND t.project.deletedAt IS NULL
-                  AND t.isActive = true
-                  AND t.deletedAt IS NULL
-                GROUP BY t.project.id
-                """, Object[].class)
-                .setParameter("ownerId", ownerId)
-                .setParameter("done", TaskStatus.COMPLETED)
-                .getResultList();
-
-        return rows.stream()
-                .map(row -> new TaskProgress(
-                        (UUID) row[0],
-                        ((Number) row[1]).longValue(),
-                        ((Number) row[2]).longValue()
-                ))
-                .toList();
-    }
-
-    public List<DailyTime> timeByDay(
-            UUID ownerId,
-            Instant from,
-            Instant toExclusive,
-            UUID clientId,
-            UUID projectId
-    ) {
-        return timeByDay(ownerId, from, toExclusive, clientId, projectId, null);
-    }
-
-    public List<DailyTime> timeByDay(
-            UUID ownerId, Instant from, Instant toExclusive,
-            UUID clientId, UUID projectId, ProjectStatus status
-    ) {
-        String select = """
-                EXTRACT(YEAR FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
-                EXTRACT(MONTH FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
-                EXTRACT(DAY FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
-                COALESCE(SUM(t.duration_seconds), 0)
-                """;
-
-        List<Object[]> rows = nativeTimeQuery(
-                select,
-                " GROUP BY 1, 2, 3 ORDER BY 1, 2, 3",
-                ownerId, from, toExclusive, clientId, projectId, status
-        ).getResultList();
-
-        return rows.stream()
-                .map(row -> new DailyTime(
-                        LocalDate.of(
-                                ((Number) row[0]).intValue(),
-                                ((Number) row[1]).intValue(),
-                                ((Number) row[2]).intValue()
-                        ),
-                        ((Number) row[3]).longValue()
-                ))
-                .toList();
-    }
-
-    public List<HourlyTime> timeByHour(
-            UUID ownerId,
-            Instant from,
-            Instant toExclusive,
-            UUID clientId,
-            UUID projectId
-    ) {
-        return timeByHour(ownerId, from, toExclusive, clientId, projectId, null);
-    }
-
-    public List<HourlyTime> timeByHour(
-            UUID ownerId, Instant from, Instant toExclusive,
-            UUID clientId, UUID projectId, ProjectStatus status
-    ) {
-        String select = """
-                EXTRACT(HOUR FROM t.started_at AT TIME ZONE 'Asia/Bangkok'),
-                COALESCE(SUM(t.duration_seconds), 0)
-                """;
-
-        List<Object[]> rows = nativeTimeQuery(
-                select,
-                " GROUP BY 1 ORDER BY 1",
-                ownerId, from, toExclusive, clientId, projectId, status
-        ).getResultList();
-
-        return rows.stream()
-                .map(row -> new HourlyTime(
-                        ((Number) row[0]).intValue(),
-                        ((Number) row[1]).longValue()
-                ))
-                .toList();
-    }
-
-    private TypedQuery<Object[]> entryQuery(
-            String select,
-            String suffix,
-            UUID ownerId,
-            Instant from,
-            Instant toExclusive,
-            UUID clientId,
-            UUID projectId,
-            ProjectStatus status
-    ) {
-        String jpql = select + """
-                 FROM TimeEntry t JOIN t.project p JOIN p.client c
-                 WHERE t.owner.id = :ownerId
-                   AND t.isActive = true
-                   AND t.deletedAt IS NULL
-                   AND t.endedAt IS NOT NULL
-                   AND t.durationSeconds IS NOT NULL
-                   AND p.deletedAt IS NULL
-                   AND c.deletedAt IS NULL
-                """;
-
-        if (from != null) jpql += " AND t.startedAt >= :from";
-        if (toExclusive != null) jpql += " AND t.startedAt < :to";
-        if (clientId != null) jpql += " AND c.id = :clientId";
-        if (projectId != null) jpql += " AND p.id = :projectId";
-        if (status != null) jpql += " AND p.status = :status";
-
-        TypedQuery<Object[]> query = entityManager
-                .createQuery(jpql + suffix, Object[].class)
-                .setParameter("ownerId", ownerId);
-
-        if (from != null) query.setParameter("from", from);
-        if (toExclusive != null) query.setParameter("to", toExclusive);
-        if (clientId != null) query.setParameter("clientId", clientId);
-        if (projectId != null) query.setParameter("projectId", projectId);
-        if (status != null) query.setParameter("status", status);
-        return query;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Query nativeTimeQuery(
-            String select,
-            String suffix,
-            UUID ownerId,
-            Instant from,
-            Instant toExclusive,
-            UUID clientId,
-            UUID projectId,
-            ProjectStatus status
-    ) {
-        String sql = "SELECT " + select + """
-                 FROM time_entries t
-                 JOIN projects p ON p.id = t.project_id
-                 JOIN clients c ON c.id = p.client_id
-                 WHERE t.owner_id = :ownerId
-                   AND t.is_active = true
-                   AND t.deleted_at IS NULL
-                   AND t.ended_at IS NOT NULL
-                   AND t.duration_seconds IS NOT NULL
-                   AND p.deleted_at IS NULL
-                   AND c.deleted_at IS NULL
-                """;
-
-        if (from != null) sql += " AND t.started_at >= :from";
-        if (toExclusive != null) sql += " AND t.started_at < :to";
-        if (clientId != null) sql += " AND c.id = :clientId";
-        if (projectId != null) sql += " AND p.id = :projectId";
-        if (status != null) sql += " AND p.status = :status";
-
-        Query query = entityManager.createNativeQuery(sql + suffix)
-                .setParameter("ownerId", ownerId);
-
-        if (from != null) query.setParameter("from", from);
-        if (toExclusive != null) query.setParameter("to", toExclusive);
-        if (clientId != null) query.setParameter("clientId", clientId);
-        if (projectId != null) query.setParameter("projectId", projectId);
-        if (status != null) query.setParameter("status", status.name());
-        return query;
-    }
+    @Query("""
+            SELECT e FROM TimeEntry e JOIN FETCH e.project p
+            WHERE e.owner.id = :ownerId AND p.id IN :projectIds
+              AND e.isActive = true AND e.deletedAt IS NULL
+              AND e.endedAt IS NOT NULL AND e.durationSeconds IS NOT NULL
+              AND e.startedAt >= :fromInclusive AND e.startedAt < :toExclusive
+            """)
+    List<TimeEntry> findEntries(
+            @Param("ownerId") UUID ownerId,
+            @Param("projectIds") List<UUID> projectIds,
+            @Param("fromInclusive") Instant fromInclusive,
+            @Param("toExclusive") Instant toExclusive);
 }
