@@ -1,5 +1,20 @@
 # Test Report - Freelance Hub
 
+## ผลล่าสุด: 10 ตุลาคม 2026
+
+รันบน source `0ecd483`; โค้ดและ workflows ตรงกับ `dbcc4b9` ของ branch ปัจจุบัน สภาพแวดล้อม local: OpenJDK 21 (compile target 17), Node 26.10.0 และ npm 11.19.1
+
+| การตรวจ | ผล |
+|---|---|
+| Backend `./mvnw --offline --batch-mode --no-transfer-progress verify` | ผ่าน 471 tests, ไม่พบ failure/error/skipped |
+| Frontend `npm test` | ผ่าน 11 test files |
+| Frontend `node --import tsx <test-file>` ทีละไฟล์ | ผ่าน 33 test cases รวม 11 ไฟล์ |
+| Frontend `npm run lint`, `npm run typecheck`, `npm run build` | ผ่านทั้งหมด |
+
+Node 26 รายงาน `npm test` เป็นจำนวนไฟล์ จึงรันแต่ละไฟล์แยกเพื่อยืนยันจำนวน test cases รอบนี้ไม่ได้เก็บ coverage หรือทดสอบ PostgreSQL, browser และ cloud
+
+## ผลเดิม: 9 ตุลาคม 2026
+
 ผลทดสอบจริงวันที่ 9 ตุลาคม 2026 บน source `ca77d74` (`thirawat_673380039-7_02`) ก่อนเพิ่มเอกสารชุดนี้ Working tree ไม่มี production-code changes ไม่ใช้ผลจาก branch/commit อื่นแทนผล release นี้
 
 ## 1. สภาพแวดล้อม
