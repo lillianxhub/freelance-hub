@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 
-@Data
-@Builder
+@Data //ให้ Lombok สร้าง getter/setter
+@Builder //ช่วยสร้าง object
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChangeProjectStatusRequest {
