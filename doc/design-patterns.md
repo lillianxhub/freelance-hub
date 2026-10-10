@@ -1,6 +1,6 @@
 # Design Patterns - Freelance Hub
 
-ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `5f55faf` วันที่ 9 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
+ฉบับรวมสำหรับส่งรายวิชา CP353002 ตรวจจาก implementation ณ commit `dbcc4b9` วันที่ 10 ตุลาคม 2026 ขอบเขตคือ Authentication/Profile, Client, Project/Task, Time Tracking และ Dashboard/Reports; ไม่รวม Finance, Invoice หรือ Payment
 
 ## 1. Enterprise / Architectural Patterns
 
@@ -69,7 +69,7 @@ Project API ตรวจ running timer ก่อนเปลี่ยนสถ�
 
 ### Client: archive ไม่ใช่ soft delete
 
-`PATCH /api/clients/{id}/status` ใช้ isActive; เมื่อ false จะเปลี่ยน Project ของ Client ที่ยังไม่ถูก soft delete เป็น ARCHIVED โดยเรียก Project.changeStatus และไม่ตั้ง deletedAt การเปิด Client กลับมาไม่คืนสถานะ Project อัตโนมัติ
+`PATCH /api/clients/{id}/status` ใช้ isActive; เมื่อ false จะตรวจว่าไม่มี timer ทำงานใน Project ของลูกค้านั้น (หากมีคืน 409) แล้วเปลี่ยน Project ของ Client ที่ยังไม่ถูก soft delete เป็น ARCHIVED โดยเรียก Project.changeStatus และไม่ตั้ง deletedAt การเปิด Client กลับมาไม่คืนสถานะ Project อัตโนมัติ
 
 `DELETE /api/clients/{id}` ตั้งเฉพาะ Client.deletedAt คง isActive เดิม และคืน 204 โดยไม่มี body เส้นนี้ไม่เปลี่ยนสถานะ Project และไม่ผ่าน running-timer guard ของ Project API
 
@@ -89,7 +89,6 @@ Dashboard และ Reports ไม่สร้างตารางสรุป�
 - ApiErrorFactory เป็น Factory สำหรับสร้าง error envelope จาก ErrorDescriptor โดยไม่ตัดสิน mapping; ไม่ใช่ GoF Factory Method ที่ใช้ subclass override การสร้าง object ดู [Error Contract](error-contract.md)
 - JPA Specification, row locks, optimistic locking, DTO projections และ soft delete เป็น API/กลไกออกแบบ ไม่ใช่ GoF Strategy/State โดยอัตโนมัติ
 - Refresh-token rotation, rate limiter และ ClientStatus ไม่ถูกนับเป็น State/Strategy เพิ่มเพื่อให้ครบจำนวน
-- ยังไม่มี ProductivityMetricStrategy หลาย implementations ตามแผนใน REQUIREMENTS จึงไม่อ้างว่า feature นี้เสร็จแล้ว
 
 ## 5. หลักฐานการทดสอบ
 
