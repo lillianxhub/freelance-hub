@@ -6,6 +6,7 @@ Dashboard และ Productivity Insights คำนวณจาก `time_entries
 
 ```mermaid
 erDiagram
+direction LR
     USERS {
         uuid id PK
         varchar email UK
@@ -141,9 +142,9 @@ erDiagram
 
 ## Enum Values
 
-| Field | Values |
-|---|---|
-| `users.role` | `USER`, `ADMIN` |
-| `projects.status` | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
-| `tasks.status` | `OPEN`, `IN_PROGRESS`, `COMPLETED` |
-| `time_entries.entry_type` | `TIMER`, `MANUAL` |
+| Field                     | Values                                                  |
+| ------------------------- | ------------------------------------------------------- |
+| `users.role`              | `USER`, `ADMIN`                                         |
+| `projects.status`         | `PLANNED`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED` |
+| `tasks.status`            | `OPEN`, `IN_PROGRESS`, `COMPLETED`                      |
+| `time_entries.entry_type` | `TIMER`, `MANUAL`                                       |
