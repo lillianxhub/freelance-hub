@@ -18,8 +18,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import th.ac.kku.freelance_hub.domain.entity.Project;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
@@ -48,20 +46,17 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final TaskMapper taskMapper;
-    private final EntityManager entityManager;
     private final TimeEntryService timeEntryService;
 
     public TaskServiceImpl(
             TaskRepository taskRepository,
             ProjectRepository projectRepository,
             TaskMapper taskMapper,
-            EntityManager entityManager,
             TimeEntryService timeEntryService
     ) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.taskMapper = taskMapper;
-        this.entityManager = entityManager;
         this.timeEntryService = timeEntryService;
     }
 
@@ -194,7 +189,7 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new TaskNotFoundException(taskId));
 
         findEditableProjectForUpdate(ownerId, task.getProject().getId());
-        entityManager.refresh(task);
+        taskRepository.refresh(task);
         requireStartedBeforeCompletion(task, request.getStatus());
         task.changeStatus(request.getStatus(), Instant.now());
 
@@ -313,7 +308,7 @@ public class TaskServiceImpl implements TaskService {
         Project project = findOwnedProject(ownerId, projectId);
 
         // ล็อก Project เพื่อให้การสร้าง/ย้ายลำดับ Task ไม่ชนกัน
-        entityManager.refresh(project, LockModeType.PESSIMISTIC_WRITE);
+        projectRepository.refreshForUpdate(project);
 
         if(!project.canEditTasks()) {
             throw new InvalidStateException(

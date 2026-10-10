@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 import th.ac.kku.freelance_hub.domain.entity.Task;
 import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 
-public interface TaskRepository extends JpaRepository<Task, UUID> {
+public interface TaskRepository extends JpaRepository<Task, UUID>, TaskRepositoryCustom {
 
     @Query("""
             SELECT t FROM Task t

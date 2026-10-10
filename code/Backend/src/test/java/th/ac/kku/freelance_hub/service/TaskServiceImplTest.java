@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +72,39 @@ class TaskServiceImplTest {
         project = projectRepository.saveAndFlush(
                 new Project(owner, client, "Website")
         );
+    }
+
+    @Test
+    void createReloadsProjectStateBeforeCheckingWhetherTasksCanBeEdited() {
+        // Simulate a database update while the persistence context holds stale state.
+        entityManager.createQuery("update Project p set p.status = :status where p.id = :id")
+                .setParameter("status", ProjectStatus.COMPLETED)
+                .setParameter("id", project.getId())
+                .executeUpdate();
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.PLANNED);
+
+        assertThatThrownBy(() -> taskService.create(
+                owner.getId(), project.getId(), request("New task", 0)))
+                .isInstanceOf(InvalidStateException.class);
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+    }
+
+    @Test
+    void changeStatusReloadsTaskAfterLockingProject() {
+        Task task = taskRepository.saveAndFlush(new Task(project, "Started elsewhere", 0));
+        entityManager.createQuery("update Task t set t.status = :status where t.id = :id")
+                .setParameter("status", TaskStatus.IN_PROGRESS)
+                .setParameter("id", task.getId())
+                .executeUpdate();
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
+
+        TaskResponse response = taskService.changeStatus(owner.getId(), task.getId(),
+                ChangeTaskStatusRequest.builder().status(TaskStatus.COMPLETED).build());
+
+        assertThat(response.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        // Hibernate may promote the write lock for a versioned entity during refresh.
+        assertThat(entityManager.getLockMode(project))
+                .isIn(LockModeType.PESSIMISTIC_WRITE, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
     }
 
     @Test

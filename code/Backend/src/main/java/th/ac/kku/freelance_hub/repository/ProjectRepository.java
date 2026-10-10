@@ -19,7 +19,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProjectRepository
         extends JpaRepository<Project, UUID>,
-                JpaSpecificationExecutor<Project> {
+                JpaSpecificationExecutor<Project>, ProjectRepositoryCustom {
 
     @Override
     @EntityGraph(attributePaths = "client")
