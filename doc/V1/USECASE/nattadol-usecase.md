@@ -2,7 +2,7 @@
 
 **เจ้าของ feature:** `nattadol_673380511-9_02`  
 **ขอบเขต:** Dashboard/Reports API และหน้า `/dashboard`, `/reports` ของผู้ใช้ที่เข้าสู่ระบบ รวม KPI, กราฟ, ตัวกรอง, pagination และ CSV เฉพาะหน้าตาราง; current timer เป็นข้อมูลจาก feature อื่นที่ Dashboard นำมาแสดง
-**อ้างอิง requirement:** `FR-ANA-01` ถึง `FR-ANA-08` ใน `REQUIREMENTS.md`; ตารางด้านล่างแยกสิ่งที่ UI ปัจจุบันทำได้จริงจาก requirement ที่ยังไม่ครบ
+**อ้างอิง requirement:** `FR-ANA-01` ถึง `FR-ANA-08` ใน `REQUIREMENTS.md`
 
 ## Actor และเงื่อนไขร่วม
 

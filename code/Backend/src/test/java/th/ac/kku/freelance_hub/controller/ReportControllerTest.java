@@ -54,6 +54,8 @@ class ReportControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new ReportController(reportService, currentUserProvider)
                 )
+                .setControllerAdvice(new th.ac.kku.freelance_hub.exception.GlobalExceptionHandler(
+                        new th.ac.kku.freelance_hub.common.response.ApiErrorFactory()))
                 .setValidator(validator)
                 .build();
     }
@@ -173,6 +175,36 @@ class ReportControllerTest {
         verify(reportService, never()).getSummary(
                 any(), any()
         );
+    }
+
+    @Test
+    void distributionPassesOptionalStatusToService() throws Exception {
+        when(currentUserProvider.currentUserId()).thenReturn(OWNER_ID);
+        when(reportService.getDistribution(eq(OWNER_ID), any(), eq(ReportGroupBy.CLIENT)))
+                .thenReturn(new ReportDistributionResponse(ReportGroupBy.CLIENT, List.of()));
+        mockMvc.perform(get("/api/reports/distribution").param("status", "ACTIVE"))
+                .andExpect(status().isOk());
+        verify(reportService).getDistribution(eq(OWNER_ID),
+                org.mockito.ArgumentMatchers.argThat(filter ->
+                        filter.getStatus() == th.ac.kku.freelance_hub.domain.enums.ProjectStatus.ACTIVE),
+                eq(ReportGroupBy.CLIENT));
+    }
+
+    @Test
+    void invalidProjectStatusDoesNotCallService() throws Exception {
+        mockMvc.perform(get("/api/reports/summary").param("status", "UNKNOWN"))
+                .andExpect(status().isBadRequest());
+        verify(reportService, never()).getSummary(any(), any());
+    }
+
+    @Test
+    void missingProjectReturnsSharedErrorEnvelope() throws Exception {
+        when(currentUserProvider.currentUserId()).thenReturn(OWNER_ID);
+        when(reportService.getSummary(eq(OWNER_ID), any()))
+                .thenThrow(new th.ac.kku.freelance_hub.exception.ProjectNotFoundException(CLIENT_ID));
+        mockMvc.perform(get("/api/reports/summary").param("projectId", CLIENT_ID.toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("PROJECT_NOT_FOUND"));
     }
 
     @Test

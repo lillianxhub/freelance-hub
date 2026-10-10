@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.AssertTrue;
 import lombok.Data;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
@@ -18,6 +19,7 @@ public class ReportFilterRequest {
 
     private UUID clientId;
     private UUID projectId;
+    private ProjectStatus status;
 
     @AssertTrue(message = "กรุณาระบุวันที่เริ่มและวันที่สิ้นสุดให้ครบ และวันที่เริ่มต้องไม่เกินวันที่สิ้นสุด")
     @JsonIgnore

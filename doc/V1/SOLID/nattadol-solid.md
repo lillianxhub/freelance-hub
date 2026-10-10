@@ -7,7 +7,7 @@
 
 | Principle | หลักฐานในโค้ด | เหตุผลและขอบเขต |
 |---|---|---|
-| Single Responsibility | `DashboardController`, `ReportController`, `DashboardServiceImpl`, `ReportServiceImpl`, `ReportQueryRepository` | Controller รับ HTTP, service สรุปผลตามกติกา Analytics, repository ทำ aggregate query; ไม่คำนวณ KPI ใน controller |
+| Single Responsibility | `DashboardController`, `ReportController`, `DashboardServiceImpl`, `ReportServiceImpl`, `repository/ReportQueryRepository.java` | Controller รับ HTTP, repository อ่านข้อมูลตาม owner และช่วงวันที่, service กรองสถานะ รวมเวลา จัดกลุ่ม คำนวณ KPI เรียงและแบ่งหน้ารายงาน; ไม่คำนวณ KPI ใน controller |
 | Single Responsibility | `Analytics/DashboardContext.tsx`, `Analytics/useDashboard.ts`, `Analytics/pages/Dashboard/page.tsx` | Context โหลดข้อมูลและให้ `refresh/loadActivity`; hook ให้ทางเข้าใช้งาน; page จัด state ของช่วงกราฟและประกอบ UI |
 | Single Responsibility | `Analytics/components/ProductivityChart.tsx`, `Analytics/dashboardChart.ts` | Component วาดกราฟ Recharts ส่วน utility แปลงข้อมูลจุดกราฟและจัดหน่วยเวลา จึงทดสอบกติกาแสดงผลได้แยกจาก DOM |
 | Single Responsibility | `services/report.ts`, `Analytics/pages/Reports/page.tsx`, `types/analytics.ts` | Service สร้าง URL และอ่าน response, page จัด filter/loading/การแสดงผล, type ระบุรูปข้อมูลที่ใช้ |

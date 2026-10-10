@@ -12,7 +12,7 @@
 |---|---|---|
 | Layered Architecture / MVC | แยก HTTP, กติกาสรุปผล, query และการแสดงผล | `DashboardController`, `ReportController`, service, repository, response DTO และ React pages |
 | Service Layer | เก็บสูตร KPI และการประกอบ response ในที่เดียว | `DashboardServiceImpl`, `ReportServiceImpl` |
-| Repository / Summary Query | จำกัดข้อมูลและรวมเวลาใน Backend โดยไม่ดึง Time Entry ทุกแถวไปบวกใน browser; Reports ใช้ aggregate query ส่วน Dashboard รวมข้อมูลรายวันใน service หลังอ่าน projection | `ReportQueryRepository`, `DashboardServiceImpl`, `TimeEntryServiceImpl` |
+| Repository / Report Source Data | Reports ใช้ ReportQueryRepository สำหรับอ่านข้อมูลตามเจ้าของและช่วงวันที่ แล้วให้ service กรองและรวมเวลา จัดกลุ่ม เรียงและแบ่งหน้า ส่วน Dashboard รวมข้อมูลรายวันใน service หลังอ่าน projection | `repository/ReportQueryRepository.java`, `ReportServiceImpl`, `DashboardServiceImpl`, `TimeEntryServiceImpl` |
 | DTO / Read Model | ส่งข้อมูลที่หน้า Dashboard/Reports ต้องแสดง โดยไม่เผย JPA entity ตรง ๆ | `dto/response/dashboard/*`, `dto/response/report/*`, `types/dashboard.ts`, `types/analytics.ts` |
 | Context Provider | ให้หน้า Dashboard อ่านและ refresh ข้อมูลผ่าน hook เดียว | `DashboardContext.tsx`, `dashboard-context.ts`, `useDashboard.ts` |
 | Component Composition | ประกอบ SummaryCard, Card, Table, Chart และ ViewState ที่มีอยู่ให้เป็นสองหน้าที่ responsive | `Analytics/pages/Dashboard/page.tsx`, `Analytics/pages/Reports/page.tsx` |
@@ -61,7 +61,7 @@ classDiagram
 | `GET /api/reports/work-trend` | แนวโน้มเวลาแบบ DAY/WEEK/MONTH | มี API แต่หน้า Reports ยังไม่ใช้ |
 | `GET /api/reports/work-pattern` | วันและชั่วโมงที่ทำงานมากที่สุด | มี API แต่หน้า Reports ยังไม่ใช้ |
 
-`ReportController` ตรวจ request และห่อ response ด้วย `ApiResult`; `ReportServiceImpl` เลือกข้อมูลและคำนวณ KPI; `ReportQueryRepository` ใช้ aggregate query โดยจำกัด owner และไม่รวม Time Entry ที่ยังไม่จบหรือถูกลบ `ReportFilterRequest` รับช่วงวันที่แบบ optional: ว่างทั้งคู่หมายถึงทุกช่วงเวลา ส่วนส่งข้างเดียวหรือสลับวันเป็นข้อผิดพลาด
+`ReportController` ตรวจ request และห่อ response ด้วย `ApiResult`; Repository ใน `repository/ReportQueryRepository.java` อ่านข้อมูลสำหรับ Report โดยเฉพาะ จำกัด owner และไม่รวม Time Entry ที่ยังไม่จบหรือถูกลบ; `ReportServiceImpl` กรอง client/project/status รวมยอด จัดกลุ่มวัน/ชั่วโมงใน Asia/Bangkok คำนวณ KPI แล้วเรียงและแบ่งหน้าใน Java `ReportFilterRequest` รับช่วงวันที่แบบ optional: ว่างทั้งคู่หมายถึงทุกช่วงเวลา ส่วนส่งข้างเดียวหรือสลับวันเป็นข้อผิดพลาด
 
 Response แยก DTO ตาม endpoint เพื่อให้หน้าบ้านรับข้อมูลเฉพาะที่ต้องใช้ `/projects` คืน `meta` ของ pagination และเปอร์เซ็นต์ความคืบหน้าจาก task; ไม่เก็บค่า progress ซ้ำใน Project entity สำหรับรายงาน
 
