@@ -113,9 +113,7 @@ function TimeEntryForm({
           <FieldError id="manual-project-error" message={fieldErrors.project_id} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <FormLabel htmlFor="manual-task" required>
-            งาน
-          </FormLabel>
+          <FormLabel htmlFor="manual-task">งาน</FormLabel>
           <NativeSelect
             id="manual-task"
             name="task_id"
@@ -125,7 +123,7 @@ function TimeEntryForm({
             aria-invalid={Boolean(fieldErrors.task_id)}
             aria-describedby={fieldErrors.task_id ? 'manual-task-error' : undefined}
           >
-            <option value="">เลือกงาน</option>
+            <option value="">ไม่ระบุงาน</option>
             {tasks
               .filter((task) => task.project_id === value.project_id && task.status !== 'COMPLETED')
               .map((task) => (

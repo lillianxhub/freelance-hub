@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import {
   getCurrentSession,
   signIn,
@@ -12,21 +12,26 @@ import { AuthContext } from './useAuthentication'
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [loading, setLoading] = useState(true)
+  const sessionVersion = useRef(0)
 
   useEffect(() => {
     let active = true
+    const version = sessionVersion.current
     getCurrentSession()
       .then((currentSession) => {
-        if (active) setSession(currentSession)
+        if (active && version === sessionVersion.current) setSession(currentSession)
       })
       .catch(() => {
-        if (active) setSession(null)
+        if (active && version === sessionVersion.current) setSession(null)
       })
       .finally(() => {
         if (active) setLoading(false)
       })
 
-    const unsubscribe = subscribeToAuthChanges((nextSession) => setSession(nextSession))
+    const unsubscribe = subscribeToAuthChanges((nextSession) => {
+      sessionVersion.current++
+      setSession(nextSession)
+    })
     return () => {
       active = false
       unsubscribe()
@@ -39,15 +44,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
       user: session?.user || null,
       loading,
       async login(email: string, password: string) {
+        const version = ++sessionVersion.current
         const result = await signIn(email, password)
-        setSession({ user: result.user })
+        if (version === sessionVersion.current) setSession({ user: result.user })
       },
       async register(input: RegisterInput) {
         await signUp(input)
       },
       async logout() {
         await signOut()
-        setSession(null)
       },
     }),
     [loading, session],

@@ -40,7 +40,7 @@ function RegisterForm() {
     if (name === 'email' && !isValidEmail(values.email)) return 'กรุณากรอกอีเมลให้ถูกต้อง'
     if (name === 'phone' && !isValidPhone(values.phone)) return 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก'
     if (name === 'password' && !hasRequiredPassword(values.password))
-      return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'
+      return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษรและไม่เกิน 72 ไบต์ UTF-8'
     if (name === 'confirmPassword' && !passwordsMatch(values.password, values.confirmPassword)) {
       return 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน'
     }
