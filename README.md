@@ -195,7 +195,7 @@ freelance-hub/
 │   ├── design-patterns.md
 │   ├── use-case-description.md
 │   ├── diagrams/               # รวม Sequence 6 scenarios ใน sequence-diagram.md
-│   └── slide/                  # ปัจจุบันมี README; ยังไม่ได้จัดทำสไลด์นำเสนอ
+│   └── slide/                  # สไลด์นำเสนอ PDF และ README
 ├── test/                         # Test plan และหลักฐาน
 ├── img/                          # รูปภาพประกอบ
 ├── README.md
