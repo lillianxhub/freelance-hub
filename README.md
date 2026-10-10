@@ -1,6 +1,6 @@
 # Freelance Hub
 
-<p align="center"><img src="code/Frontend/public/logo-light.svg" alt="Freelance Hub logo" width="220" /></p>
+<p align="center"><img src="img/logo-light.svg" alt="Freelance Hub logo" width="220" /></p>
 
 Freelance Hub เป็นเว็บแอปสำหรับ Freelancer ที่จัดการลูกค้า โปรเจกต์ และงานย่อยในที่เดียว
 ผู้ใช้จับเวลาทำงานหรือบันทึกย้อนหลัง แล้วดูเวลาที่ใช้เทียบกับเป้าหมายของแต่ละโปรเจกต์ได้
