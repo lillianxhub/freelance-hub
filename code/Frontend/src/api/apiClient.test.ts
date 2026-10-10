@@ -1,9 +1,133 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ApiError } from './apiError'
-import { api, fetchClient, fetchMultipartClient, setApiToken } from './apiClient'
+import {
+  api,
+  fetchClient,
+  fetchMultipartClient,
+  getApiToken,
+  refreshApiToken,
+  setApiToken,
+  subscribeToSessionInvalidation,
+} from './apiClient'
+
+test('a delayed refresh cannot restore a logged-out session or overwrite a new login', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    for (const nextToken of [null, 'new-login-token']) {
+      setApiToken('old-token')
+      let finish!: (response: Response) => void
+      globalThis.fetch = async () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve
+        })
+      const pending = refreshApiToken()
+      setApiToken(nextToken)
+      finish(Response.json({ data: { token: 'stale-refresh-token' } }))
+      assert.equal(await pending, false)
+      assert.equal(getApiToken(), nextToken)
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+    setApiToken(null)
+  }
+})
+
+test('refresh failures invalidate the session and subscribers can unsubscribe', async () => {
+  const originalFetch = globalThis.fetch
+  let invalidations = 0
+  const unsubscribe = subscribeToSessionInvalidation(() => {
+    invalidations++
+  })
+  try {
+    for (const response of [new Response(null, { status: 401 }), Response.json({ data: {} })]) {
+      setApiToken('expired-token')
+      globalThis.fetch = async () => response
+      assert.equal(await refreshApiToken(), false)
+      assert.equal(getApiToken(), null)
+    }
+    assert.equal(invalidations, 2)
+    unsubscribe()
+    setApiToken(null)
+    assert.equal(invalidations, 2)
+  } finally {
+    unsubscribe()
+    globalThis.fetch = originalFetch
+    setApiToken(null)
+  }
+})
+
+test('failed stale refresh does not invalidate a newer session', async () => {
+  const originalFetch = globalThis.fetch
+  let fail!: (reason: Error) => void
+  globalThis.fetch = async () =>
+    new Promise<Response>((_resolve, reject) => {
+      fail = reject
+    })
+  try {
+    setApiToken('old-token')
+    const pending = refreshApiToken()
+    setApiToken('new-token')
+    fail(new Error('Network failed'))
+    assert.equal(await pending, false)
+    assert.equal(getApiToken(), 'new-token')
+  } finally {
+    globalThis.fetch = originalFetch
+    setApiToken(null)
+  }
+})
+
+test('401 received after logout does not start a refresh', async () => {
+  const originalFetch = globalThis.fetch
+  let finish!: (response: Response) => void
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls++
+    return new Promise<Response>((resolve) => {
+      finish = resolve
+    })
+  }
+  try {
+    setApiToken('old-token')
+    const pending = api.get('/delayed-private')
+    setApiToken(null)
+    finish(new Response(null, { status: 401 }))
+    await assert.rejects(
+      pending,
+      (error: unknown) => error instanceof ApiError && error.status === 401,
+    )
+    assert.equal(calls, 1)
+  } finally {
+    globalThis.fetch = originalFetch
+    setApiToken(null)
+  }
+})
 
 const values = new Map<string, string>()
+
+test('a new session refresh is independent of the previous session in flight', async () => {
+  const originalFetch = globalThis.fetch
+  const finishes: ((response: Response) => void)[] = []
+  globalThis.fetch = async () =>
+    new Promise<Response>((resolve) => {
+      finishes.push(resolve)
+    })
+  try {
+    setApiToken('old-access')
+    const old = refreshApiToken()
+    setApiToken('new-login')
+    const current = refreshApiToken()
+    finishes[0](Response.json({ data: { token: 'stale-token' } }))
+    assert.equal(await old, false)
+    assert.equal(refreshApiToken(), current)
+    finishes[1](Response.json({ data: { token: 'new-access' } }))
+    assert.equal(await current, true)
+    assert.equal(getApiToken(), 'new-access')
+  } finally {
+    globalThis.fetch = originalFetch
+    setApiToken(null)
+  }
+})
 Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   value: {

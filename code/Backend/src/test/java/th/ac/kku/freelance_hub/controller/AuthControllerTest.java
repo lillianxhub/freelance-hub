@@ -54,6 +54,27 @@ class AuthControllerTest {
         private LoginRequest loginRequest;
 
         @Test
+        void rejectsPasswordsOverBcryptByteLimitBeforeEncoding() throws Exception {
+                for (String password : new String[] {"a".repeat(73), "ก".repeat(25)}) {
+                        registerRequest.setPassword(password);
+                        mockMvc.perform(post("/api/auth/register")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(registerRequest)))
+                                        .andExpect(status().isBadRequest())
+                                        .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+                }
+                registerRequest.setPassword("password123");
+                String token = registerAndGetToken();
+                mockMvc.perform(patch("/api/users/me/password")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                        "oldPassword", "password123", "newPassword", "ก".repeat(25)))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        }
+
+        @Test
         @DisplayName("OpenAPI documents Auth success responses with the common envelope")
         void shouldDocumentAuthResponseEnvelope() throws Exception {
                 String document = mockMvc.perform(get("/v3/api-docs"))

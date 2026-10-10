@@ -4,6 +4,9 @@ import { ApiError } from './apiError'
 const apiBase = (import.meta.env?.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 let accessToken: string | null = null
 let refreshInFlight: Promise<boolean> | null = null
+let refreshRevision = 0
+let tokenRevision = 0
+const sessionInvalidationListeners = new Set<() => void>()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -125,43 +128,58 @@ export function getApiToken(): string | null {
 }
 
 export function setApiToken(token: string | null): void {
+  tokenRevision++
   accessToken = token
+  if (token === null) sessionInvalidationListeners.forEach((listener) => listener())
 }
 
-async function rotateAccessToken(): Promise<boolean> {
+export function subscribeToSessionInvalidation(listener: () => void): () => void {
+  sessionInvalidationListeners.add(listener)
+  return () => {
+    sessionInvalidationListeners.delete(listener)
+  }
+}
+
+async function rotateAccessToken(revision: number): Promise<boolean> {
+  if (revision !== tokenRevision) return false
   const response = await fetch(`${apiBase}/auth/refresh`, {
     method: 'POST',
     credentials: 'same-origin',
   })
+  if (revision !== tokenRevision) return false
   if (!response.ok) {
     setApiToken(null)
     return false
   }
   const body: unknown = await response.json()
+  if (revision !== tokenRevision) return false
   if (!isRecord(body) || !isRecord(body.data) || typeof body.data.token !== 'string') {
     setApiToken(null)
     return false
   }
-  setApiToken(body.data.token)
+  accessToken = body.data.token
   return true
 }
 
 export function refreshApiToken(): Promise<boolean> {
-  if (!refreshInFlight) {
+  if (!refreshInFlight || refreshRevision !== tokenRevision) {
+    const revision = tokenRevision
+    refreshRevision = revision
     const rotate = async () => {
       if (typeof navigator !== 'undefined' && navigator.locks) {
-        return navigator.locks.request('freelance-hub-refresh', rotateAccessToken)
+        return navigator.locks.request('freelance-hub-refresh', () => rotateAccessToken(revision))
       }
-      return rotateAccessToken()
+      return rotateAccessToken(revision)
     }
-    refreshInFlight = rotate()
+    const pending = rotate()
       .catch(() => {
-        setApiToken(null)
+        if (revision === tokenRevision) setApiToken(null)
         return false
       })
       .finally(() => {
-        refreshInFlight = null
+        if (refreshInFlight === pending) refreshInFlight = null
       })
+    refreshInFlight = pending
   }
   return refreshInFlight
 }
@@ -171,6 +189,7 @@ async function request<T>(
   init: RequestInit,
   multipart = false,
 ): Promise<ApiResponse<T>> {
+  const revision = tokenRevision
   const headers = new Headers(init.headers)
   if (multipart) headers.delete('Content-Type')
   else if (typeof init.body === 'string' && !headers.has('Content-Type'))
@@ -183,7 +202,12 @@ async function request<T>(
     headers,
     credentials: 'same-origin',
   })
-  if (response.status === 401 && !path.startsWith('/auth/') && (await refreshApiToken())) {
+  if (
+    response.status === 401 &&
+    !path.startsWith('/auth/') &&
+    revision === tokenRevision &&
+    (await refreshApiToken())
+  ) {
     headers.set('Authorization', `Bearer ${getApiToken()}`)
     response = await fetch(`${apiBase}${path}`, {
       ...init,

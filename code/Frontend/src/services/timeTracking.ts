@@ -128,8 +128,9 @@ export async function saveTimeEntry(entry: TimeEntryInput): Promise<TimeEntry> {
     taskId: entry.task_id || null,
     description: entry.description || '',
     startedAt: entry.started_at,
-    endedAt: entry.ended_at || undefined,
-    durationSeconds: entry.duration_minutes ? entry.duration_minutes * 60 : undefined,
+    ...(entry.ended_at
+      ? { endedAt: entry.ended_at }
+      : { durationSeconds: entry.duration_minutes ? entry.duration_minutes * 60 : undefined }),
   })
 }
 

@@ -340,6 +340,21 @@ class ProjectControllerTest {
         );
     }
 
+    @Test
+    void completedProjectUpdateReturnsConflictWithDomainMessage() throws Exception {
+        when(userService.currentUserId()).thenReturn(OWNER_ID);
+        when(projectService.update(eq(OWNER_ID), eq(PROJECT_ID), any(UpdateProjectRequest.class)))
+                .thenThrow(new InvalidStateException("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้"));
+        mockMvc.perform(put("/api/projects/{id}", PROJECT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"clientId":"%s","name":"Updated"}
+                                """.formatted(CLIENT_ID)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"))
+                .andExpect(jsonPath("$.message").value("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้"));
+    }
+
         @Test
     void changeStatusUsesPatchAndReturnsCommonResponse() throws Exception {
         when(userService.currentUserId())
