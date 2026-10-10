@@ -49,6 +49,8 @@ import type {
 } from '../../../types/analytics'
 import { downloadCsv } from '../../../utils/csv'
 import { formatDurationSeconds } from '../../../utils/duration'
+import type { ProjectStatus } from '../../../types/project'
+import { projectStatusLabels } from '../../../ProjectManagement/components/projectStatusOptions'
 
 const emptyReport: ReportSummaryData = {
   generatedAt: '',
@@ -118,17 +120,19 @@ function ReportsPage() {
   const [range, setRange] = useState({ from: '', to: '' })
   const [clientId, setClientId] = useState('ALL')
   const [projectId, setProjectId] = useState('ALL')
+  const [status, setStatus] = useState<'ALL' | ProjectStatus>('ALL')
   const [groupBy, setGroupBy] = useState<'CLIENT' | 'PROJECT'>('CLIENT')
   const [page, setPage] = useState(1)
-  const queryKey = `${range.from}:${range.to}:${clientId}:${projectId}`
+  const queryKey = `${range.from}:${range.to}:${clientId}:${projectId}:${status}`
   const query: ReportSummaryQuery = useMemo(
     () => ({
       from: range.from,
       to: range.to,
       clientId: clientId === 'ALL' ? undefined : clientId,
       projectId: projectId === 'ALL' ? undefined : projectId,
+      status: status === 'ALL' ? undefined : status,
     }),
-    [range.from, range.to, clientId, projectId],
+    [range.from, range.to, clientId, projectId, status],
   )
   const hasDateRange = Boolean(range.from && range.to)
   const validRange = hasDateRange && range.from <= range.to
@@ -171,10 +175,10 @@ function ReportsPage() {
   }
   const availableProjects = useMemo(
     () =>
-      data.filters.projects.filter(
-        (project) => clientId === 'ALL' || project.clientId === clientId,
-      ),
-    [clientId, data.filters.projects],
+      data.filters.projects
+        .filter((project) => clientId === 'ALL' || project.clientId === clientId)
+        .filter((project) => status === 'ALL' || project.status === status),
+    [clientId, status, data.filters.projects],
   )
 
   const { summary } = data
@@ -259,7 +263,7 @@ function ReportsPage() {
       />
 
       <Card>
-        <CardContent className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+        <CardContent className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-5">
           <div className="flex min-w-0 flex-col gap-1.5">
             <Label htmlFor="report-from">จากวันที่</Label>
             <DatePicker
@@ -271,6 +275,26 @@ function ReportsPage() {
                 setPage(1)
               }}
             />
+          </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="report-status">สถานะโปรเจกต์</Label>
+            <NativeSelect
+              id="report-status"
+              value={status}
+              disabled={!canLoad}
+              onChange={(event) => {
+                setStatus(event.target.value as 'ALL' | ProjectStatus)
+                setProjectId('ALL')
+                setPage(1)
+              }}
+            >
+              <option value="ALL">ทุกสถานะ</option>
+              {Object.entries(projectStatusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
           <div className="flex min-w-0 flex-col gap-1.5">
             <Label htmlFor="report-to">ถึงวันที่</Label>

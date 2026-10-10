@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 
 import static org.hamcrest.Matchers.nullValue;
@@ -57,7 +58,7 @@ class TaskDetailControllerTest {
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new TaskDetailController(taskService, userService))
-                .setControllerAdvice(new GlobalExceptionHandler(new ApiErrorFactory()))
+                .setControllerAdvice(th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.advice())
                 .setValidator(validator)
                 .build();
     }
@@ -164,7 +165,7 @@ class TaskDetailControllerTest {
     void updateReturns409WhenProjectStateForbidsEditing() throws Exception {
         stubCurrentUser();
         when(taskService.update(eq(OWNER_ID), eq(TASK_ID), any(UpdateTaskRequest.class)))
-                .thenThrow(new IllegalStateException("Cannot change tasks"));
+                .thenThrow(new InvalidStateException("Cannot change tasks"));
 
         mockMvc.perform(put("/api/tasks/{taskId}", TASK_ID)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -229,7 +230,7 @@ class TaskDetailControllerTest {
     void changeStatusReturns409ForForbiddenTransition() throws Exception {
         stubCurrentUser();
         when(taskService.changeStatus(eq(OWNER_ID), eq(TASK_ID), any(ChangeTaskStatusRequest.class)))
-                .thenThrow(new IllegalStateException("only an open task can be started"));
+                .thenThrow(new InvalidStateException("only an open task can be started"));
 
         mockMvc.perform(patch("/api/tasks/{taskId}/status", TASK_ID)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -268,7 +269,7 @@ class TaskDetailControllerTest {
     @Test
     void deleteReturns409WhenProjectForbidsEditing() throws Exception {
         stubCurrentUser();
-        doThrow(new IllegalStateException("Cannot change tasks"))
+        doThrow(new InvalidStateException("Cannot change tasks"))
                 .when(taskService).delete(OWNER_ID, TASK_ID);
 
         mockMvc.perform(delete("/api/tasks/{taskId}", TASK_ID))

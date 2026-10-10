@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.service.impl;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +29,8 @@ import th.ac.kku.freelance_hub.mapper.ClientMapper;
 import th.ac.kku.freelance_hub.repository.ClientRepository;
 import th.ac.kku.freelance_hub.repository.UserRepository;
 import th.ac.kku.freelance_hub.service.ClientService;
+import th.ac.kku.freelance_hub.service.TimerService;
+import th.ac.kku.freelance_hub.dto.response.timeentry.TimeEntryResponse;
 import th.ac.kku.freelance_hub.dto.request.client.ClientFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.client.CreateClientRequest;
 import th.ac.kku.freelance_hub.dto.request.client.UpdateClientRequest;
@@ -43,14 +47,17 @@ public class ClientServiceImpl implements ClientService {
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
     private final ClientMapper clientMapper;
+    private final TimerService timerService;
 
     public ClientServiceImpl(
             ClientRepository clientRepository,
             UserRepository userRepository,
-            ClientMapper clientMapper) {
+            ClientMapper clientMapper,
+            TimerService timerService) {
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.clientMapper = clientMapper;
+        this.timerService = timerService;
     }
 
     @Override
@@ -106,10 +113,10 @@ public class ClientServiceImpl implements ClientService {
         int pageSize = filter.getLimit() != null ? filter.getLimit() : filter.getSize();
         if (filter.getPage() < 1 || filter.getSize() < 1 || filter.getSize() > 100
                 || pageSize < 1 || pageSize > 100) {
-            throw new IllegalArgumentException("Invalid client page, size, or limit");
+            throw new InvalidArgumentException("หมายเลขหน้าหรือจำนวนลูกค้าต่อหน้าไม่ถูกต้อง");
         }
         if (!SORT_FIELDS.contains(filter.getSortBy()) || filter.getDirection() == null) {
-            throw new IllegalArgumentException("Invalid client sort field or direction");
+            throw new InvalidArgumentException("ฟิลด์หรือทิศทางการเรียงลูกค้าไม่ถูกต้อง");
         }
 
         Specification<Client> specification = (root, query, cb) -> {
@@ -155,7 +162,7 @@ public class ClientServiceImpl implements ClientService {
             UUID ownerId, Instant fromInclusive, Instant toExclusive) {
         Objects.requireNonNull(ownerId, "ownerId is required");
         if (fromInclusive == null || toExclusive == null || !fromInclusive.isBefore(toExclusive)) {
-            throw new IllegalArgumentException("ช่วงเวลาที่ใช้สรุปต้องมีจุดเริ่มต้นก่อนจุดสิ้นสุด");
+            throw new InvalidArgumentException("ช่วงเวลาที่ใช้สรุปต้องมีจุดเริ่มต้นก่อนจุดสิ้นสุด");
         }
         return clientRepository.sumCompletedTimeByClient(ownerId, fromInclusive, toExclusive)
                 .stream()
@@ -185,9 +192,18 @@ public class ClientServiceImpl implements ClientService {
     public ClientResponse changeStatus(UUID ownerId, UUID clientId, boolean isActive) {
         Client client = findOwnedClient(ownerId, clientId);
         if (!isActive) {
+            List<th.ac.kku.freelance_hub.domain.entity.Project> projects =
+                    clientRepository.findProjectsForClientStatusChange(ownerId, clientId);
+            timerService.getCurrentTimer(ownerId)
+                    .map(TimeEntryResponse::getProjectId)
+                    .filter(projectId -> projects.stream().anyMatch(project ->
+                            project.getId().equals(projectId)))
+                    .ifPresent(projectId -> {
+                        throw new InvalidStateException(
+                                "กรุณาหยุดจับเวลาก่อนเก็บถาวรลูกค้า");
+                    });
             // JPA persists these managed projects with the Client in this transaction.
-            clientRepository.findProjectsForClientStatusChange(ownerId, clientId)
-                    .forEach(project -> project.changeStatus(ProjectStatus.ARCHIVED));
+            projects.forEach(project -> project.changeStatus(ProjectStatus.ARCHIVED));
         }
         client.setActive(isActive);
         return clientMapper.toResponse(clientRepository.save(client));

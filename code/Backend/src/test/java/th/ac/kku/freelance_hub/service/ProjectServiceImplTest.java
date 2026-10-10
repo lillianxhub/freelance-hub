@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.service;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -255,7 +256,7 @@ class ProjectServiceImplTest {
                 OWNER_ID,
                 PROJECT_ID,
                 ChangeProjectStatusRequest.builder().status(nextStatus).build()
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(InvalidStateException.class)
                 .hasMessage("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
@@ -309,7 +310,7 @@ class ProjectServiceImplTest {
                 ChangeProjectStatusRequest.builder()
                         .status(ProjectStatus.COMPLETED)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("ยังมีงานย่อยที่ไม่เสร็จ");
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
@@ -403,7 +404,7 @@ class ProjectServiceImplTest {
                         .build()));
 
         assertThatThrownBy(() -> service.archive(OWNER_ID, PROJECT_ID))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InvalidStateException.class)
                 .hasMessage("กรุณาหยุดจับเวลาก่อนเปลี่ยนสถานะโปรเจกต์");
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
@@ -424,7 +425,7 @@ class ProjectServiceImplTest {
 
         assertThatThrownBy(() ->
                 service.changeStatus(OWNER_ID, PROJECT_ID, request)
-        ).isInstanceOf(IllegalStateException.class);
+        ).isInstanceOf(InvalidStateException.class);
 
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.PLANNED);
         verify(projectRepository, never()).save(any(Project.class));
@@ -654,11 +655,63 @@ class ProjectServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> service.update(OWNER_ID, PROJECT_ID, request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("โปรเจกต์ที่จัดเก็บแล้ว");
         assertThat(project.getName()).isEqualTo("Website");
         verifyNoInteractions(clientRepository);
         verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void cannotUpdateCompletedProject() {
+        Project project = new Project(owner, client, "Website");
+        project.changeStatus(ProjectStatus.ACTIVE);
+        project.changeStatus(ProjectStatus.COMPLETED);
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+
+        UpdateProjectRequest request = UpdateProjectRequest.builder()
+                .clientId(CLIENT_ID)
+                .name("Updated website")
+                .targetMinutes(240)
+                .build();
+
+        assertThatThrownBy(() -> service.update(OWNER_ID, PROJECT_ID, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
+        assertThat(project.getName()).isEqualTo("Website");
+        assertThat(project.getTargetMinutes()).isNull();
+        assertThat(project.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        verifyNoInteractions(clientRepository);
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProjectStatus.class, names = {"PLANNED", "ACTIVE", "ON_HOLD"})
+    void updatesProjectDetailsInEditableStatuses(ProjectStatus status) {
+        Project project = new Project(owner, client, "Website");
+        ReflectionTestUtils.setField(project, "id", PROJECT_ID);
+        if (status != ProjectStatus.PLANNED) {
+            project.changeStatus(ProjectStatus.ACTIVE);
+            project.changeStatus(status);
+        }
+        when(projectRepository.findByIdAndOwnerId(PROJECT_ID, OWNER_ID))
+                .thenReturn(Optional.of(project));
+        when(clientRepository.findByIdAndOwnerId(CLIENT_ID, OWNER_ID))
+                .thenReturn(Optional.of(client));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        var response = service.update(OWNER_ID, PROJECT_ID,
+                UpdateProjectRequest.builder()
+                        .clientId(CLIENT_ID)
+                        .name("Updated website")
+                        .targetMinutes(240)
+                        .build());
+
+        assertThat(response.getName()).isEqualTo("Updated website");
+        assertThat(project.getTargetMinutes()).isEqualTo(240);
+        assertThat(project.getStatus()).isEqualTo(status);
+        verify(projectRepository).save(project);
     }
 
     @Test
@@ -675,7 +728,7 @@ class ProjectServiceImplTest {
                 ChangeProjectStatusRequest.builder()
                         .status(ProjectStatus.ACTIVE)
                         .build()
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("ลูกค้าถูกจัดเก็บ");
         assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
         verify(projectRepository, never()).save(any(Project.class));

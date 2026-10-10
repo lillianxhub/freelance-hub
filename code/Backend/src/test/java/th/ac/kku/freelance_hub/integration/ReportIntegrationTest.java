@@ -433,6 +433,7 @@ class ReportIntegrationTest {
         project.updateDetails(
                 name, null, null, null, null, targetMinutes
         );
+        project.changeStatus(ProjectStatus.ACTIVE);
         return projects.saveAndFlush(project);
     }
 

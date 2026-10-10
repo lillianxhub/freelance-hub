@@ -2,6 +2,8 @@
 
 แผนนี้แยกออกจาก `REQUIREMENTS.md` เพื่อให้ `REQUIREMENTS.md` ใช้ระบุ requirement ของ MVP เท่านั้น
 
+> แผนงานและ checklist ไม่ใช่ผลส่งมอบจริง โครงสร้าง/schema/workflow ตรวจเทียบ source `dbcc4b9` วันที่ 10 ตุลาคม 2026; สถานะ feature และผลทดสอบดู doc/ และ test/
+
 ## 1. เป้าหมาย
 
 ส่งมอบ MVP และนำเสนอวันที่ **10 ตุลาคม 2026** ภายในเวลา 3 สัปดาห์ โดย MVP มี 5 โมดูล:
@@ -39,7 +41,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 ### Epic A: Foundation และ Authentication
 
 - A1: ตั้งค่า package Layered Architecture, profile config, error response และ logging
-- A2: ออกแบบ migration 7 ตาราง: users, user_profiles, addresses, clients, projects, tasks, time_entries
+- A2: ออกแบบ migration 7 ตาราง: users, user_profiles, refresh_tokens, clients, projects, tasks, time_entries; Address เป็น embedded value object หลัง V13
 - A3: register/login/logout, password hashing และ validation
 - A4: owner isolation และ security test ว่าผู้ใช้ A อ่านข้อมูลผู้ใช้ B ไม่ได้
 - A5: เพิ่ม OpenAPI/Swagger configuration และ health endpoint
@@ -108,8 +110,8 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 
 ## 6. Git/PR และหลักฐานคะแนนเต็ม
 
-- `main` = production, `develop` = integration, branch ส่วนตัว = `ชื่อ_รหัสนักศึกษา_section`
-- ทุก PR ต้องมี linked issue, test evidence, reviewer อย่างน้อย 1 คน และ merge เข้า `develop` ก่อน
+- `main` = production, `dev` = integration ตาม workflows; ใบงานเดิมเรียก integration branch ว่า `develop`, branch ส่วนตัว = `ชื่อ_รหัสนักศึกษา_section`
+- ทุก PR ต้องมี linked issue, test evidence, reviewer อย่างน้อย 1 คน และ merge เข้า `dev` ก่อน
 - ผู้เขียนห้าม approve PR ของตนเอง; สมาชิกแต่ละคน review เพื่อนอย่างน้อย 2 PR
 - Git history ของแต่ละคนต้องมีอย่างน้อย 15 commits ที่มีความหมายและกระจายตลอดช่วงเวลา
 - ห้ามฝาก commit/push, outsource หรือคัดลอกโค้ดจากกลุ่มอื่น
@@ -122,7 +124,7 @@ Income, Expense, Invoice และ Payment ไม่อยู่ในแผน�
 - [ ] Authentication และ owner isolation ผ่าน security tests
 - [ ] Time tracking มี start/stop/manual/timezone/duplicate guard
 - [ ] Dashboard มี tracked hours, utilization, project progress และ productivity insights
-- [ ] PostgreSQL migration มี 7 ตาราง รวม `addresses`, FK, index, One-to-One และ One-to-Many
+- [ ] PostgreSQL migration V1–V20 มี 7 business tables รวม `refresh_tokens`; Address ฝังใน Profile/Client, FK, index, One-to-One และ One-to-Many
 - [ ] Swagger UI, Global Exception Handler และ React frontend ใช้งานได้
 - [ ] JUnit/Mockito/Spring Boot tests ผ่านและมี report
 - [ ] Docker Compose ทำงานได้ และ public deployment URL เปิดได้

@@ -25,7 +25,7 @@ class JwtAuthenticationFilterTest {
         JwtTokenProvider tokenProvider = mock(JwtTokenProvider.class);
         CustomUserDetailsService userDetailsService = mock(CustomUserDetailsService.class);
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
-                tokenProvider, userDetailsService, new ApiErrorFactory());
+                tokenProvider, userDetailsService, th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.security());
         String email = "disabled@example.com";
         String jwt = "valid-token";
         when(tokenProvider.validateToken(jwt)).thenReturn(true);

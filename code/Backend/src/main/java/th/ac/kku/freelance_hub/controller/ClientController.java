@@ -1,5 +1,7 @@
 package th.ac.kku.freelance_hub.controller;
 
+import java.util.Map;
+import th.ac.kku.freelance_hub.exception.InvalidArgumentException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -100,7 +102,7 @@ public class ClientController {
                         includeProjects = true;
                         includeTasks = true;
                     }
-                    default -> throw new IllegalArgumentException("ไม่รองรับ include: " + path);
+                    default -> throw new InvalidArgumentException("ไม่รองรับข้อมูลเพิ่มเติมที่ร้องขอ", Map.of("field", "include"));
                 }
             }
         }

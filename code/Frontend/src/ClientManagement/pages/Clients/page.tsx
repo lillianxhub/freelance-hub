@@ -18,6 +18,7 @@ import { getErrorMessage } from '../../../api/apiError'
 import { listClientsPage, type ClientListFilters } from '../../../services/client'
 import type { ApiMeta } from '../../../types/api'
 import PaginationControls from '../../../components/PaginationControls'
+import { toast } from 'sonner'
 
 const clientPageLimit = 10
 
@@ -182,9 +183,13 @@ function ClientsPage() {
   }
 
   const archiveClients = async (client: Client) => {
-    if (client.status === 'ARCHIVED') await saveClient({ ...client, status: 'ACTIVE' })
-    else await archiveClient(client.id)
-    setPageRequestKey((current) => current + 1)
+    try {
+      if (client.status === 'ARCHIVED') await saveClient({ ...client, status: 'ACTIVE' })
+      else await archiveClient(client.id)
+      setPageRequestKey((current) => current + 1)
+    } catch (reason: unknown) {
+      toast.error(getErrorMessage(reason, 'ไม่สามารถเก็บถาวรลูกค้าได้'))
+    }
   }
 
   if (loading || pageLoading) return <LoadingState label="กำลังโหลดรายชื่อลูกค้า..." />
@@ -242,7 +247,7 @@ function ClientsPage() {
         >
           <option value="UPDATED_DESC">อัปเดตล่าสุด</option>
           <option value="NAME_ASC">ชื่อ A–Z</option>
-          <option value="CREATED_ASC">เพิ่มก่อนสุด</option>
+          <option value="CREATED_ASC">เก่าที่สุด</option>
         </NativeSelect>
       </FilterBar>
 

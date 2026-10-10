@@ -1,6 +1,6 @@
 # Sequence Diagrams - Freelance Hub
 
-รวม 6 scenarios ของระบบไว้ไฟล์เดียว ตรวจ controllers/services/events กับ source ณ `5f55faf` วันที่ 9 ตุลาคม 2026 และนำเอกสาร Auth/Profile ที่เพื่อนปรับใน PR #127 มาเทียบกับโค้ดจริง ข้อความในภาพใช้ภาษาอังกฤษ ส่วนคำอธิบายรอบภาพคงภาษาไทย
+รวม 6 scenarios ของระบบไว้ไฟล์เดียว ตรวจ controllers/services/events กับ source ณ `dbcc4b9` วันที่ 10 ตุลาคม 2026 และนำเอกสาร Auth/Profile ที่เพื่อนปรับใน PR #127 มาเทียบกับโค้ดจริง ข้อความในภาพใช้ภาษาอังกฤษ ส่วนคำอธิบายรอบภาพคงภาษาไทย
 
 ทุกภาพเป็น flow ที่ย่อขั้นตอนเพื่ออ่านง่าย ไม่ใช่ทุก method/error path ของระบบ รายละเอียด validation, ownership, HTTP contracts และข้อจำกัดดู [Use Case Description](../use-case-description.md)
 
@@ -106,7 +106,7 @@ sequenceDiagram
     S->>B: publishEvent(TimerStoppedEvent)
     Note over S,B: Event is published inside the transaction, progress listener runs AFTER_COMMIT
     S-->>C: TimeEntryResponse (after transaction commit)
-    C-->>F: 200 ApiResult TimeEntryResponse
+    C-->>F: 200 ApiResult StoppedTimerResponse
 ```
 
 Partial unique index ของ PostgreSQL กัน timer ซ้อนของ owner เดียวแม้สองคำขอแข่งกัน; service แปลง constraint violation นี้เป็น conflict ไม่ใช่ป้องกันด้วย pre-check อย่างเดียว Cancel timer ลบ running row จริงและไม่ publish TimerStoppedEvent
@@ -140,9 +140,9 @@ sequenceDiagram
     S->>T: getCurrentTimer(ownerId)
     T-->>S: Optional running timer
     break Running timer belongs to this Project
-        S-->>C: IllegalStateException (transaction rollback)
+        S-->>C: InvalidStateException (transaction rollback)
         C-->>M: Propagate exception
-        M->>H: Resolve IllegalStateException
+        M->>H: Resolve InvalidStateException
         H-->>M: 409 ApiResult
         M-->>F: 409 Conflict
     end
@@ -150,9 +150,9 @@ sequenceDiagram
         S->>TR: summarizeProgressByProjectIds(ownerId, [id], COMPLETED)
         TR-->>S: Active Task count and completed count
         break An active Task is incomplete
-            S-->>C: IllegalStateException (transaction rollback)
+            S-->>C: InvalidStateException (transaction rollback)
             C-->>M: Propagate exception
-            M->>H: Resolve IllegalStateException
+            M->>H: Resolve InvalidStateException
             H-->>M: 409 ApiResult
             M-->>F: 409 Conflict, status unchanged
         end
@@ -175,10 +175,10 @@ sequenceDiagram
         C-->>M: 200 ApiResult
         M-->>F: 200 ApiResult
     else Invalid transition or failed restore guard
-        P-->>S: IllegalStateException
+        P-->>S: InvalidStateException
         S-->>C: Exception (transaction rollback)
         C-->>M: Propagate exception
-        M->>H: Resolve IllegalStateException
+        M->>H: Resolve InvalidStateException
         H-->>M: 409 ApiResult
         M-->>F: 409 Conflict
     end
@@ -199,7 +199,8 @@ sequenceDiagram
     participant S as ClientServiceImpl
     participant R as ClientRepository
     participant E as Client
-    participant H as ClientExceptionHandler
+    participant H as GlobalExceptionHandler
+    participant Chain as ErrorHandlerChain
     participant A as ApiErrorFactory
 
     F->>M: DELETE /api/clients/{id} with Bearer JWT
@@ -219,7 +220,9 @@ sequenceDiagram
         S-->>C: ClientNotFoundException
         C-->>M: Propagate exception
         M->>H: Resolve ClientNotFoundException
-        H->>A: response(404, message, CLIENT_NOT_FOUND, null)
+        H->>Chain: resolve(exception, MVC context)
+        Chain-->>H: ErrorDescriptor(404, CLIENT_NOT_FOUND, details.id)
+        H->>A: response(descriptor)
         A-->>H: ApiResult with error metadata
         H-->>M: 404 ApiResult
         M-->>F: 404 ApiResult and X-Request-ID
@@ -238,7 +241,8 @@ sequenceDiagram
     participant API as ReportController
     participant Logic as ReportServiceImpl
 
-    User->>Page: Open page or change filters
+    User->>Page: Open page or change date, Client, Project or status filters
+    Note over Page,Logic: status is the current Project status. ALL is omitted from API queries
     par Summary
         Page->>Service: getReportSummary(query)
         Service->>API: GET /api/reports/summary with query

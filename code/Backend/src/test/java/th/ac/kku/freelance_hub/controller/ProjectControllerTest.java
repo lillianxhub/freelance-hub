@@ -1,5 +1,6 @@
 package th.ac.kku.freelance_hub.controller;
 
+import th.ac.kku.freelance_hub.exception.InvalidStateException;
 import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -66,7 +67,7 @@ class ProjectControllerTest {
                 .standaloneSetup(
                         new ProjectController(projectService, userService)
                 )
-                .setControllerAdvice(new GlobalExceptionHandler(new ApiErrorFactory()))
+                .setControllerAdvice(th.ac.kku.freelance_hub.support.ErrorHandlingTestSupport.advice())
                 .setValidator(validator)
                 .setCustomArgumentResolvers(
                         new PageableHandlerMethodArgumentResolver()
@@ -242,7 +243,7 @@ class ProjectControllerTest {
                 eq(OWNER_ID),
                 eq(PROJECT_ID),
                 any(ChangeProjectStatusRequest.class)
-        )).thenThrow(new IllegalStateException(
+        )).thenThrow(new InvalidStateException(
                 "cannot change project status"
         ));
 

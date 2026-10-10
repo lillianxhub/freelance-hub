@@ -1,6 +1,5 @@
 package th.ac.kku.freelance_hub.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,8 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import th.ac.kku.freelance_hub.common.response.ApiErrorFactory;
-import org.springframework.http.HttpStatus;
+import th.ac.kku.freelance_hub.exception.handling.ErrorContext;
 
 /**
  * JWT authentication filter
@@ -28,8 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService userDetailsService;
-    private final ApiErrorFactory errorFactory;
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final SecurityErrorResponseWriter errors;
 
     @Override
     protected void doFilterInternal(
@@ -55,8 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     logger.debug("Ignoring access token for an unknown user");
                     userDetails = null;
                 } catch (RuntimeException authenticationDependencyFailure) {
-                    logger.error("Could not load user for access token", authenticationDependencyFailure);
-                    writeInternalServerError(response);
+                    SecurityContextHolder.clearContext();
+                    errors.write(authenticationDependencyFailure,
+                            new ErrorContext(
+                                    ErrorContext.Source.FILTER_DEPENDENCY,
+                                    request.getRequestURI()), response);
                     return;
                 }
 
@@ -75,18 +75,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private void writeInternalServerError(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getWriter(), errorFactory.body(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "เกิดข้อผิดพลาดภายในระบบ",
-                "INTERNAL_SERVER_ERROR",
-                null
-        ));
     }
 
     /**
