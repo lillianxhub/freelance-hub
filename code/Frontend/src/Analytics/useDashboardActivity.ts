@@ -15,13 +15,16 @@ export function useDashboardActivity(
   loadActivity: (period: DashboardChartPeriod) => Promise<DashboardActivity>,
 ): DashboardActivityState {
   const [requestKey, setRequestKey] = useState(0)
-  const key = useMemo(() => ({ period, requestKey, loadActivity }), [period, requestKey, loadActivity])
+  const key = useMemo(
+    () => ({ period, requestKey, loadActivity }),
+    [period, requestKey, loadActivity],
+  )
   const load = useCallback(async () => {
     if (period === 'WEEK') return null
     try {
       return await loadActivity(period)
     } catch (reason: unknown) {
-      throw new Error(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้'))
+      throw new Error(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้'), { cause: reason })
     }
   }, [period, loadActivity])
   const state = useAsyncData<DashboardActivity | null>(load, null, key)
