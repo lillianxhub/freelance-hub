@@ -338,6 +338,9 @@ public class ProjectServiceImpl implements ProjectService {
         if (project.getStatus() == ProjectStatus.ARCHIVED) {
             throw new InvalidStateException("ไม่สามารถแก้ไขโปรเจกต์ที่จัดเก็บแล้วได้");
         }
+        if (project.getStatus() == ProjectStatus.COMPLETED) {
+            throw new IllegalStateException("ไม่สามารถแก้ไขโปรเจกต์ที่เสร็จสิ้นแล้วได้");
+        }
         Client client = findOwnedClient(ownerId, request.getClientId());
 
         project.changeClient(client);
@@ -353,6 +356,8 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.toResponse(projectRepository.save(project));
     }
 
+
+    //Method Change status
     @Override
     @Transactional
     public ProjectResponse changeStatus(
@@ -365,6 +370,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findOwnedProject(ownerId, projectId);
         ProjectStatus previousStatus = project.getStatus();
         requireNoRunningTimer(ownerId, projectId);
+        
         if (previousStatus == ProjectStatus.ACTIVE
                 && request.getStatus() == ProjectStatus.COMPLETED) {
             List<TaskRepository.TaskProgressSummary> summaries =
