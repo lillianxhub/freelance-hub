@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { getErrorMessage } from '../api/apiError'
+import { useAsyncData } from '../hooks/useAsyncData'
 import type { DashboardActivity, DashboardChartPeriod } from '../types/dashboard'
 
 interface DashboardActivityState {
@@ -13,32 +14,25 @@ export function useDashboardActivity(
   period: DashboardChartPeriod,
   loadActivity: (period: DashboardChartPeriod) => Promise<DashboardActivity>,
 ): DashboardActivityState {
-  const [activity, setActivity] = useState<DashboardActivity | null>(null)
-  const [loading, setLoading] = useState(() => period !== 'WEEK')
-  const [error, setError] = useState('')
   const [requestKey, setRequestKey] = useState(0)
-
-  useEffect(() => {
-    if (period === 'WEEK') {
-      return undefined
+  const key = useMemo(
+    () => ({ period, requestKey, loadActivity }),
+    [period, requestKey, loadActivity],
+  )
+  const load = useCallback(async () => {
+    if (period === 'WEEK') return null
+    try {
+      return await loadActivity(period)
+    } catch (reason: unknown) {
+      throw new Error(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้'), { cause: reason })
     }
+  }, [period, loadActivity])
+  const state = useAsyncData<DashboardActivity | null>(load, null, key)
 
-    let active = true
-    loadActivity(period)
-      .then((result) => {
-        if (active) setActivity(result)
-      })
-      .catch((reason: unknown) => {
-        if (active) setError(getErrorMessage(reason, 'ไม่สามารถโหลดกราฟได้'))
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [loadActivity, period, requestKey])
-
-  return { activity, loading, error, retry: () => setRequestKey((key) => key + 1) }
+  return {
+    activity: state.data,
+    loading: period !== 'WEEK' && state.loading,
+    error: period === 'WEEK' ? '' : state.error,
+    retry: () => setRequestKey((value) => value + 1),
+  }
 }

@@ -69,14 +69,17 @@ class HttpStatusContractIntegrationTest {
         String token = registerAndGetToken();
         UUID missingId = UUID.randomUUID();
 
-        for (var request : new org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder[] {
+        var requests = new org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder[] {
                 get("/api/reports/summary").param("clientId", missingId.toString()),
                 get("/api/reports/projects").param("projectId", missingId.toString())
-        }) {
+        };
+        String[] codes = {"CLIENT_NOT_FOUND", "PROJECT_NOT_FOUND"};
+        for (int i = 0; i < requests.length; i++) {
+            var request = requests[i];
             var response = mockMvc.perform(request.header("Authorization", bearer(token)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.error.code").value("NOT_FOUND"))
+                    .andExpect(jsonPath("$.error.code").value(codes[i]))
                     .andExpect(jsonPath("$.error.status").value(404))
                     .andReturn().getResponse();
             JsonNode body = objectMapper.readTree(response.getContentAsString());
