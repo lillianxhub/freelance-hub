@@ -75,12 +75,25 @@ Backend ยังมี `GET /api/reports/work-trend` และ `GET /api/report
 - จำนวน totalProjects จำกัดด้วย clientId/projectId/status; totalClients เมื่อระบุ status นับ Client ที่มี Project เข้าเงื่อนไข แม้ไม่มีเวลาในช่วงนั้น วันที่จำกัดยอดเวลาและจำนวนรายการที่มีเวลา แต่ไม่ซ่อน Project ที่ไม่มีเวลา
 - status ใช้สถานะปัจจุบันของ Project ไม่ใช่สถานะ ณ วันที่บันทึกเวลา และใช้กับทั้งช่วงปัจจุบัน/ช่วงก่อนหน้าของ trend; status ผิด enum ได้ 400 ส่วน Project ที่มีสิทธิ์อ่านแต่ไม่ตรง status ให้ผลว่าง ไม่ใช่ 404
 - ยอด Reports ไม่จำเป็นต้องเท่ากับ Dashboard/Client GET: ดู [ตารางขอบเขตยอดเวลา](use-case-description.md#ตารางขอบเขตยอดเวลา) ก่อนเทียบตัวเลข
-- Backend รวมยอดด้วย query แบบ aggregate ไม่ดึง time entry หรือ task ทีละโปรเจกต์
-- ตารางและ CSV ใช้ Project ของหน้า pagination ปัจจุบัน กราฟเปรียบเทียบใช้เฉพาะแถวในหน้านั้นที่ trackedSeconds > 0 หรือ taskProgressPercent > 0
+- Repository อ่าน entity ของ Time Entry และ Task ตามเจ้าของและตัวกรอง แล้ว Service รวมยอดใน Java โดยดึงเป็นชุด ไม่ดึงทีละโปรเจกต์
+- ตารางและกราฟเปรียบเทียบโปรเจกต์แสดงเฉพาะหน้า pagination ปัจจุบัน ปุ่ม CSV จึงส่งออกเฉพาะหน้านั้น
 - `getProjects` ใน Backend ยังโหลดโปรเจกต์ที่มองเห็นทั้งหมดเพื่อเรียงและตัดหน้าในหน่วยความจำ หากจำนวนโปรเจกต์มากควรย้าย pagination ไปที่ฐานข้อมูล
-- ReportQueryRepository ใช้ JPQL ผ่าน EntityManager สำหรับยอดรวม และ native SQL ของ PostgreSQL สำหรับแบ่งวัน/ชั่วโมง ไม่ใช่ Spring Data derived query ทั้งหมด
+- `ReportQueryRepository` เป็น Spring Data interface ใช้ @Query อ่านข้อมูลสำหรับ Report โดยเฉพาะ; Service กรอง client/project/status และจัดกลุ่มวัน/ชั่วโมงใน Asia/Bangkok
 
 ## ตำแหน่งโค้ด
 
 - Frontend: `code/Frontend/src/Analytics/pages/Reports/page.tsx`, `code/Frontend/src/services/report.ts`, `code/Frontend/src/types/analytics.ts`
 - Backend: `code/Backend/src/main/java/th/ac/kku/freelance_hub/controller/ReportController.java`, `service/impl/ReportServiceImpl.java`, `repository/ReportQueryRepository.java`
+
+
+## Backend report query contract
+
+- `ReportServiceImpl` uses one report-only Spring Data `ReportQueryRepository` interface with @Query read methods. Shared Client/Project/Task/TimeEntry repositories are unchanged.
+- Repository extends Repository<TimeEntry, UUID> and reads entities using explicit JPQL @Query methods; project reads fetch the client and task/entry reads fetch the project. Service selects project IDs and handles calculations, grouping, sorting and pagination. Owner, soft deletion, completed-entry and date constraints remain in database reads.
+- `ReportServiceImpl` aggregates totals, groups days/hours/projects, counts completed tasks, sorts the mapped responses, and slices the requested page. `ReportMapper` converts service-calculated project metrics to API responses. Usage sorting uses the displayed two-decimal value; missing/zero targets sort last in both directions. Ties use project ID, and pages beyond the end retain the total count.
+- Distribution filters client/project/status in the service using visible owned projects. Each endpoint loads project metadata once (apart from a targeted ownership check for a supplied project ID), and reuses the selection for current/previous entries. Summary returns complete dropdown options.
+- Work trend requires both dates and permits at most 366 buckets for DAY/WEEK/MONTH. A larger range returns HTTP 400; choose a coarser granularity or shorter range.
+- Work trend/work pattern attribute each completed entry's entire stored duration to its start date/hour in Asia/Bangkok. They do not split sessions across midnight or hourly boundaries. Date filters also select by start time. This keeps time totals consistent with the entry-based summary.
+- Previous-period comparison is null when the previous total is zero, including when both totals are zero; an undefined percentage is not reported as 100%.
+- Controller integration tests exercise the actual security filter chain and shared error handler. Database integration tests use H2; PostgreSQL execution plans still need validation against the deployment database.
+- This design processes every matching source row in Java. All-time reports therefore use memory proportional to the user's matching entries/tasks; database aggregation may be preferable if data volume grows significantly. It does not add frontend API requests.

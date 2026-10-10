@@ -70,6 +70,9 @@ function DashboardPage() {
       await stopTimer()
       await refreshCurrentTimer()
       await refresh()
+      if (period !== 'WEEK') {
+        retryActivity()
+      }
     } catch (reason: unknown) {
       toast.error(getErrorMessage(reason, 'ไม่สามารถหยุดตัวจับเวลาได้'))
     }

@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ import th.ac.kku.freelance_hub.repository.ProjectRepository;
 import th.ac.kku.freelance_hub.repository.TaskRepository;
 import th.ac.kku.freelance_hub.repository.TimeEntryRepository;
 import th.ac.kku.freelance_hub.service.DashboardService;
-import th.ac.kku.freelance_hub.service.TimeEntryService;
 import th.ac.kku.freelance_hub.dto.request.dashboard.DashboardActivityPeriod;
 import th.ac.kku.freelance_hub.dto.response.dashboard.ActiveProjectResponse;
 import th.ac.kku.freelance_hub.dto.response.dashboard.DailyWorkResponse;
@@ -47,72 +45,58 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final TimeEntryRepository timeEntryRepository;
-    private final TimeEntryService timeEntryService;
     private final Clock clock;
 
     public DashboardServiceImpl(
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             TimeEntryRepository timeEntryRepository,
-            TimeEntryService timeEntryService,
             Clock clock
     ) {
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.timeEntryRepository = timeEntryRepository;
-        this.timeEntryService = timeEntryService;
         this.clock = clock;
     }
 
     @Override
     public DashboardResponse getDashboard(UUID ownerId) {
         Objects.requireNonNull(ownerId, "ownerId is required");
-
         Instant now = clock.instant();
         LocalDate today = LocalDate.ofInstant(now, THAILAND);
-        LocalDate tomorrow = today.plusDays(1);
-        LocalDate weekStart = today.with(
-                TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)
-        );
-        LocalDate previousWeekStart = weekStart.minusWeeks(1);
 
-        long weekSeconds = timeEntryService.sumCompletedSeconds(
-                ownerId, weekStart, tomorrow
-        );
-        long previousWeekSeconds = timeEntryService.sumCompletedSeconds(
-                ownerId, previousWeekStart, weekStart
-        );
-
-        List<DailyWorkResponse> dailyWork =
-                timeEntryService.sumDailySeconds(
-                        ownerId, today.minusDays(6), tomorrow
-                ).stream()
-                .map(day -> new DailyWorkResponse(
-                        day.day(), day.totalSeconds()
-                ))
-                .toList();
-
-        List<Project> projects =
-                projectRepository.findVisibleByOwnerId(ownerId);
+        List<Project> projects = projectRepository.findVisibleByOwnerId(ownerId);
         List<Project> activeProjects = projects.stream()
                 .filter(project -> project.getStatus() == ProjectStatus.ACTIVE)
                 .toList();
+        List<Task> tasks = loadTasks(ownerId, projects);
+        List<DailyWorkResponse> dailyWork = loadDailyWork(ownerId, today);
 
-        List<UUID> projectIds = projects.stream()
-                .map(Project::getId)
-                .toList();
+        return new DashboardResponse(
+                now,
+                buildSummary(ownerId, today, activeProjects, tasks, dailyWork),
+                dailyWork,
+                buildActiveProjects(activeProjects, tasks),
+                buildOpenTasks(tasks),
+                loadRecentTimeEntries(ownerId)
+        );
+    }
 
-        // Repository เดิมมี method นี้อยู่แล้ว
-        List<Task> tasks = projectIds.isEmpty()
+    private List<Task> loadTasks(UUID ownerId, List<Project> projects) {
+        List<UUID> projectIds = projects.stream().map(Project::getId).toList();
+        return projectIds.isEmpty()
                 ? List.of()
-                : taskRepository.findActiveByProjectIds(
-                        ownerId, projectIds
-                );
+                : taskRepository.findActiveByProjectIds(ownerId, projectIds);
+    }
 
-        Map<UUID, List<Task>> tasksByProject = tasks.stream()
-                .collect(Collectors.groupingBy(
-                        task -> task.getProject().getId()
-                ));
+    private DashboardSummaryResponse buildSummary(
+            UUID ownerId, LocalDate today, List<Project> activeProjects, List<Task> tasks,
+            List<DailyWorkResponse> dailyWork
+    ) {
+        LocalDate weekStart = startOfWeek(today);
+        long weekSeconds = dailyWork.stream().mapToLong(DailyWorkResponse::trackedSeconds).sum();
+        long previousWeekSeconds = loadDailyWork(ownerId, weekStart.minusWeeks(1), weekStart)
+                .stream().mapToLong(DailyWorkResponse::trackedSeconds).sum();
 
         Map<UUID, Long> secondsByProject =
                 timeEntryRepository.sumCompletedSecondsByProject(ownerId)
@@ -143,7 +127,7 @@ public class DashboardServiceImpl implements DashboardService {
                 )
                 .sum();
 
-        DashboardSummaryResponse summary = new DashboardSummaryResponse(
+        return new DashboardSummaryResponse(
                 weekSeconds,
                 percentChange(weekSeconds, previousWeekSeconds),
                 activeProjects.size(),
@@ -156,9 +140,37 @@ public class DashboardServiceImpl implements DashboardService {
                 totalTasks,
                 percent(completedTasks, totalTasks)
         );
+    }
 
-        List<ActiveProjectResponse> visibleProjects =
-                activeProjects.stream()
+    private List<DailyWorkResponse> loadDailyWork(UUID ownerId, LocalDate today) {
+        return loadDailyWork(ownerId, startOfWeek(today), today.plusDays(1));
+    }
+
+    private List<DailyWorkResponse> loadDailyWork(UUID ownerId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Long> secondsByDay = new LinkedHashMap<>();
+        for (LocalDate day = from; day.isBefore(to); day = day.plusDays(1)) {
+            secondsByDay.put(day, 0L);
+        }
+        timeEntryRepository.findCompletedTimeForDashboard(
+                ownerId, from.atStartOfDay(THAILAND).toInstant(), to.atStartOfDay(THAILAND).toInstant()
+        ).forEach(entry -> secondsByDay.merge(
+                entry.getStartedAt().atZone(THAILAND).toLocalDate(), entry.getDurationSeconds(), Long::sum
+        ));
+        return secondsByDay.entrySet().stream()
+                .map(day -> new DailyWorkResponse(day.getKey(), day.getValue()))
+                .toList();
+    }
+
+    private LocalDate startOfWeek(LocalDate date) {
+        return date.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+    }
+
+    private List<ActiveProjectResponse> buildActiveProjects(
+            List<Project> activeProjects, List<Task> tasks
+    ) {
+        Map<UUID, List<Task>> tasksByProject = tasks.stream()
+                .collect(Collectors.groupingBy(task -> task.getProject().getId()));
+        return activeProjects.stream()
                 .map(project -> toActiveProject(
                         project,
                         tasksByProject.getOrDefault(
@@ -171,10 +183,11 @@ public class DashboardServiceImpl implements DashboardService {
                         )
                         .reversed()
                         .thenComparing(ActiveProjectResponse::name))
-                .limit(5)
                 .toList();
+    }
 
-        List<OpenTaskResponse> openTasks = tasks.stream()
+    private List<OpenTaskResponse> buildOpenTasks(List<Task> tasks) {
+        return tasks.stream()
                 .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
                 .sorted(Comparator
                         .comparing(
@@ -193,9 +206,10 @@ public class DashboardServiceImpl implements DashboardService {
                         task.getStatus()
                 ))
                 .toList();
+    }
 
-        List<RecentTimeEntryResponse> recentTimeEntries =
-                timeEntryRepository.findRecentCompletedForDashboard(
+    private List<RecentTimeEntryResponse> loadRecentTimeEntries(UUID ownerId) {
+        return timeEntryRepository.findRecentCompletedForDashboard(
                         ownerId, PageRequest.of(0, 2)
                 ).stream()
                 .map(entry -> new RecentTimeEntryResponse(
@@ -207,10 +221,6 @@ public class DashboardServiceImpl implements DashboardService {
                         entry.getDurationSeconds()
                 ))
                 .toList();
-
-        return new DashboardResponse(
-                now, summary, dailyWork, visibleProjects, openTasks, recentTimeEntries
-        );
     }
 
     @Override
@@ -223,7 +233,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         LocalDate today = LocalDate.ofInstant(clock.instant(), THAILAND);
         LocalDate from = switch (period) {
-            case WEEK -> today.minusDays(6);
+            case WEEK -> startOfWeek(today);
             case MONTH -> today.withDayOfMonth(1);
             case YEAR -> today.withDayOfYear(1);
         };
@@ -233,15 +243,14 @@ public class DashboardServiceImpl implements DashboardService {
             case YEAR -> from.plusYears(1);
         };
 
-        List<TimeEntryService.DailySeconds> daily =
-                timeEntryService.sumDailySeconds(ownerId, from, to);
+        List<DailyWorkResponse> daily = loadDailyWork(ownerId, from, to);
 
         if (period != DashboardActivityPeriod.YEAR) {
             return new DashboardActivityResponse(
                     period,
                     daily.stream()
                             .map(day -> new DashboardActivityPointResponse(
-                                    day.day(), day.totalSeconds()
+                                    day.date(), day.trackedSeconds()
                             ))
                             .toList()
             );
@@ -251,8 +260,8 @@ public class DashboardServiceImpl implements DashboardService {
         for (LocalDate month = from; month.isBefore(to); month = month.plusMonths(1)) {
             monthly.put(month, 0L);
         }
-        for (TimeEntryService.DailySeconds day : daily) {
-            monthly.merge(day.day().withDayOfMonth(1), day.totalSeconds(), Long::sum);
+        for (DailyWorkResponse day : daily) {
+            monthly.merge(day.date().withDayOfMonth(1), day.trackedSeconds(), Long::sum);
         }
         return new DashboardActivityResponse(
                 period,

@@ -20,14 +20,17 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import th.ac.kku.freelance_hub.exception.ReportRequestException;
 
-import th.ac.kku.freelance_hub.domain.entity.Client;
-import th.ac.kku.freelance_hub.domain.entity.Project;
+import th.ac.kku.freelance_hub.mapper.ReportMapper;
+import th.ac.kku.freelance_hub.repository.ReportQueryRepository;
+import th.ac.kku.freelance_hub.domain.entity.Task;
+import th.ac.kku.freelance_hub.domain.entity.TimeEntry;
+import org.springframework.data.domain.PageRequest;
+import th.ac.kku.freelance_hub.domain.enums.ProjectStatus;
+import th.ac.kku.freelance_hub.domain.enums.TaskStatus;
 import th.ac.kku.freelance_hub.dto.request.report.ReportFilterRequest;
 import th.ac.kku.freelance_hub.dto.request.report.ReportGranularity;
 import th.ac.kku.freelance_hub.dto.request.report.ReportGroupBy;
@@ -37,19 +40,23 @@ import th.ac.kku.freelance_hub.dto.response.report.ReportProjectResponse;
 import th.ac.kku.freelance_hub.dto.response.report.ReportSummaryResponse;
 import th.ac.kku.freelance_hub.dto.response.report.ReportWorkPatternResponse;
 import th.ac.kku.freelance_hub.dto.response.report.ReportWorkTrendResponse;
-import th.ac.kku.freelance_hub.repository.ReportQueryRepository;
 import th.ac.kku.freelance_hub.service.ReportService;
+import th.ac.kku.freelance_hub.exception.ClientNotFoundException;
+import th.ac.kku.freelance_hub.exception.ProjectNotFoundException;
+import th.ac.kku.freelance_hub.exception.ReportRequestException;
 
 @Service
 public class ReportServiceImpl implements ReportService {
     private static final ZoneId BANGKOK = ZoneId.of("Asia/Bangkok");
 
-    private final ReportQueryRepository queries;
+    private final ReportQueryRepository repository;
     private final Clock clock;
+    private final ReportMapper mapper;
 
-    public ReportServiceImpl(ReportQueryRepository queries, Clock clock) {
-        this.queries = queries;
+    public ReportServiceImpl(ReportQueryRepository repository, Clock clock, ReportMapper mapper) {
+        this.repository = repository;
         this.clock = clock;
+        this.mapper = mapper;
     }
 
     @Override
@@ -59,38 +66,32 @@ public class ReportServiceImpl implements ReportService {
             ReportFilterRequest filter
     ) {
         Context context = context(ownerId, filter);
-        List<Client> allClients = queries.findVisibleClients(ownerId);
-        List<Project> allProjects = queries.findVisibleProjects(ownerId);
-        validateSelection(filter, allClients, allProjects);
+        validateSelection(ownerId, filter);
+        List<ClientInfo> allClients = repository.findClients(ownerId).stream()
+                .filter(client -> Boolean.TRUE.equals(client.getIsActive()))
+                .map(client -> new ClientInfo(client.getId(), client.getName()))
+                .sorted(Comparator.comparing(ClientInfo::name).thenComparing(ClientInfo::id)).toList();
+        List<ProjectInfo> allProjects = visibleProjects(ownerId).stream()
+                .sorted(Comparator.comparing(ProjectInfo::name).thenComparing(ProjectInfo::id)).toList();
 
-        List<Project> selected = selectProjects(allProjects, filter);
-        ReportQueryRepository.Totals current = totals(ownerId, filter, context);
-        BigDecimal trend = null;
-        if (filter.getFrom() != null) {
-            long days = ChronoUnit.DAYS.between(filter.getFrom(), filter.getTo()) + 1;
-            Instant previousFrom = filter.getFrom().minusDays(days)
-                    .atStartOfDay(BANGKOK).toInstant();
-            ReportQueryRepository.Totals previous = reportTotals(
-                    ownerId, previousFrom, context.from(), filter
-            );
-            trend = percentChange(current.trackedSeconds(), previous.trackedSeconds());
-        }
+        List<ProjectInfo> selected = selectProjects(allProjects, filter);
+        List<EntryInfo> entries = entries(ownerId, context, selected);
+        Totals current = totals(entries);
+        BigDecimal trend = previousTrend(ownerId, filter, context, current.trackedSeconds(), selected);
 
-        Map<UUID, Long> byProject = projectSeconds(ownerId, filter, context);
+        Map<UUID, Long> byProject = projectSeconds(entries);
         Map<UUID, Long> byClient = selected.stream()
                 .collect(Collectors.groupingBy(
-                        p -> p.getClient().getId(),
+                        p -> p.clientId(),
                         Collectors.summingLong(p ->
-                                byProject.getOrDefault(p.getId(), 0L))
+                                byProject.getOrDefault(p.id(), 0L))
                 ));
 
-        long totalClients = filter.getClientId() != null
-                && filter.getStatus() == null
+        long totalClients = filter.getClientId() != null && filter.getStatus() == null
                 ? 1
-                : filter.getClientId() != null || filter.getProjectId() != null
-                        || filter.getStatus() != null
+                : filter.getProjectId() != null || filter.getClientId() != null || filter.getStatus() != null
                     ? selected.stream()
-                            .map(p -> p.getClient().getId())
+                            .map(p -> p.clientId())
                             .distinct().count()
                     : allClients.size();
 
@@ -109,15 +110,15 @@ public class ReportServiceImpl implements ReportService {
                 new ReportSummaryResponse.Filters(
                         allClients.stream()
                                 .map(c -> new ReportSummaryResponse.ClientOption(
-                                        c.getId(), c.getName()
+                                        c.id(), c.name()
                                 ))
                                 .toList(),
                         allProjects.stream()
                                 .map(p -> new ReportSummaryResponse.ProjectOption(
-                                        p.getId(),
-                                        p.getName(),
-                                        p.getClient().getId(),
-                                        p.getStatus()
+                                        p.id(),
+                                        p.name(),
+                                        p.clientId(),
+                                        p.status()
                                 ))
                                 .toList()
                 );
@@ -136,18 +137,23 @@ public class ReportServiceImpl implements ReportService {
         validateSelection(ownerId, filter);
         Objects.requireNonNull(granularity, "granularity is required");
         if (filter.getFrom() == null) {
-            throw new ReportRequestException(
-                    HttpStatus.BAD_REQUEST, "กรุณาระบุช่วงวันที่สำหรับกราฟแนวโน้ม"
+            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "กรุณาระบุช่วงวันที่สำหรับกราฟแนวโน้ม"
             );
         }
 
+        long buckets = switch (granularity) {
+            case DAY -> ChronoUnit.DAYS.between(filter.getFrom(), filter.getTo()) + 1;
+            case WEEK -> ChronoUnit.WEEKS.between(periodStart(filter.getFrom(), granularity), periodStart(filter.getTo(), granularity)) + 1;
+            case MONTH -> ChronoUnit.MONTHS.between(periodStart(filter.getFrom(), granularity), periodStart(filter.getTo(), granularity)) + 1;
+        };
+        if (buckets > 366) throw new ReportRequestException(HttpStatus.BAD_REQUEST, "กรุณาลดช่วงวันที่หรือเลือกกลุ่มสัปดาห์/เดือน (สูงสุด 366 จุด)");
+
         Map<LocalDate, Long> totals = new HashMap<>();
-        for (ReportQueryRepository.DailyTime day : reportTimeByDay(
-                ownerId, context.from(), context.toExclusive(), filter
-        )) {
+        List<ProjectInfo> selected = selectProjects(visibleProjects(ownerId), filter);
+        for (EntryInfo entry : entries(ownerId, context, selected)) {
             totals.merge(
-                    periodStart(day.date(), granularity),
-                    day.trackedSeconds(),
+                    periodStart(entry.startedAt().atZone(BANGKOK).toLocalDate(), granularity),
+                    entry.durationSeconds(),
                     Long::sum
             );
         }
@@ -182,25 +188,23 @@ public class ReportServiceImpl implements ReportService {
         validateSelection(ownerId, filter);
         Objects.requireNonNull(groupBy, "groupBy is required");
 
-        List<Project> projects = selectProjects(
-                queries.findVisibleProjects(ownerId), filter
-        );
-        Map<UUID, Long> byProject = projectSeconds(ownerId, filter, context);
+        List<ProjectInfo> projects = selectProjects(visibleProjects(ownerId), filter);
+        Map<UUID, Long> byProject = projectSeconds(entries(ownerId, context, projects));
         Map<UUID, Long> totals = new HashMap<>();
         Map<UUID, String> names = new HashMap<>();
 
-        for (Project project : projects) {
+        for (ProjectInfo project : projects) {
             UUID id = groupBy == ReportGroupBy.CLIENT
-                    ? project.getClient().getId()
-                    : project.getId();
+                    ? project.clientId()
+                    : project.id();
             String name = groupBy == ReportGroupBy.CLIENT
-                    ? project.getClient().getName()
-                    : project.getName();
+                    ? project.clientName()
+                    : project.name();
 
             names.put(id, name);
             totals.merge(
                     id,
-                    byProject.getOrDefault(project.getId(), 0L),
+                    byProject.getOrDefault(project.id(), 0L),
                     Long::sum
             );
         }
@@ -240,17 +244,12 @@ public class ReportServiceImpl implements ReportService {
         long[] weekday = new long[7];
         long[] hourly = new long[24];
 
-        for (ReportQueryRepository.DailyTime day : reportTimeByDay(
-                ownerId, context.from(), context.toExclusive(), filter
-        )) {
-            weekday[day.date().getDayOfWeek().getValue() - 1]
-                    += day.trackedSeconds();
-        }
-
-        for (ReportQueryRepository.HourlyTime hour : reportTimeByHour(
-                ownerId, context.from(), context.toExclusive(), filter
-        )) {
-            hourly[hour.hour()] += hour.trackedSeconds();
+        List<ProjectInfo> selected = selectProjects(visibleProjects(ownerId), filter);
+        List<EntryInfo> entries = entries(ownerId, context, selected);
+        for (EntryInfo entry : entries) {
+            var start = entry.startedAt().atZone(BANGKOK);
+            weekday[start.getDayOfWeek().getValue() - 1] += entry.durationSeconds();
+            hourly[start.getHour()] += entry.durationSeconds();
         }
 
         List<ReportWorkPatternResponse.DayTotal> days = new ArrayList<>();
@@ -278,21 +277,9 @@ public class ReportServiceImpl implements ReportService {
             }
         }
 
-        BigDecimal trend = null;
-        if (filter.getFrom() != null) {
-            long periodDays = ChronoUnit.DAYS.between(
-                    filter.getFrom(), filter.getTo()
-            ) + 1;
-            Instant previousFrom = filter.getFrom().minusDays(periodDays)
-                    .atStartOfDay(BANGKOK).toInstant();
-
-            long currentSeconds = totals(ownerId, filter, context)
-                    .trackedSeconds();
-            long previousSeconds = reportTotals(
-                    ownerId, previousFrom, context.from(), filter
-            ).trackedSeconds();
-            trend = percentChange(currentSeconds, previousSeconds);
-        }
+        BigDecimal trend = filter.getFrom() == null ? null
+                : previousTrend(ownerId, filter, context,
+                        totals(entries).trackedSeconds(), selected);
 
         return new ReportWorkPatternResponse(
                 bestDay,
@@ -313,99 +300,58 @@ public class ReportServiceImpl implements ReportService {
         Context context = context(ownerId, filter);
         validateSelection(ownerId, filter);
 
-        Map<UUID, Long> byProject = projectSeconds(ownerId, filter, context);
-        Map<UUID, ReportQueryRepository.TaskProgress> progress =
-                queries.taskProgress(ownerId).stream()
-                        .collect(Collectors.toMap(
-                                ReportQueryRepository.TaskProgress::projectId,
-                                item -> item
-                        ));
-
-        List<ReportProjectResponse> rows = selectProjects(
-                queries.findVisibleProjects(ownerId), filter
-        ).stream()
-                .map(project -> projectRow(
-                        project,
-                        byProject.getOrDefault(project.getId(), 0L),
-                        progress.get(project.getId())
-                ))
-                .sorted(projectComparator(request))
-                .toList();
-
-        int fromIndex = Math.min(
-                (int) Math.min(
-                        (long) (request.getPage() - 1) * request.getLimit(),
-                        rows.size()
-                ),
-                rows.size()
-        );
-        int toIndex = Math.min(fromIndex + request.getLimit(), rows.size());
-
-        return new PageImpl<>(
-                rows.subList(fromIndex, toIndex),
-                PageRequest.of(request.getPage() - 1, request.getLimit()),
-                rows.size()
-        );
-    }
-
-    private ReportProjectResponse projectRow(
-            Project project,
-            long trackedSeconds,
-            ReportQueryRepository.TaskProgress progress
-    ) {
-        Long targetSeconds = project.getTargetMinutes() == null
-                ? null
-                : project.getTargetMinutes().longValue() * 60;
-
-        BigDecimal usagePercent = targetSeconds == null
-                || targetSeconds == 0
-                ? null
-                : percentage(trackedSeconds, targetSeconds);
-
-        long totalTasks = progress == null ? 0 : progress.totalTasks();
-        long completedTasks = progress == null ? 0 : progress.completedTasks();
-
-        return new ReportProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getClient().getId(),
-                project.getClient().getName(),
-                project.getColor(),
-                targetSeconds,
-                trackedSeconds,
-                usagePercent,
-                percentage(completedTasks, totalTasks),
-                project.getStatus()
-        );
-    }
-
-    private Comparator<ReportProjectResponse> projectComparator(
-            ReportProjectsRequest request
-    ) {
-        Comparator<ReportProjectResponse> comparator =
-                switch (request.getSortBy()) {
-                    case "clientName" -> Comparator.comparing(
-                            ReportProjectResponse::clientName,
-                            String.CASE_INSENSITIVE_ORDER
-                    );
-                    case "trackedSeconds" -> Comparator.comparingLong(
-                            ReportProjectResponse::trackedSeconds
-                    );
-                    case "usagePercent" -> Comparator.comparing(
-                            ReportProjectResponse::usagePercent,
-                            Comparator.nullsLast(Comparator.naturalOrder())
-                    );
-                    default -> Comparator.comparing(
-                            ReportProjectResponse::projectName,
-                            String.CASE_INSENSITIVE_ORDER
-                    );
-                };
-
-        if ("desc".equalsIgnoreCase(request.getDirection())) {
-            comparator = comparator.reversed();
+        Objects.requireNonNull(request, "request is required");
+        if (request.getPage() < 1 || request.getLimit() < 1 || request.getLimit() > 100) {
+            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "page ต้องไม่น้อยกว่า 1 และ limit ต้องอยู่ระหว่าง 1 ถึง 100");
         }
+        Comparator<ReportProjectResponse> order = projectOrder(request);
+        List<ProjectInfo> projects = selectProjects(visibleProjects(ownerId), filter);
+        Map<UUID, Long> seconds = projectSeconds(entries(ownerId, context, projects));
+        Map<UUID, long[]> taskCounts = new HashMap<>();
+        List<UUID> projectIds = projects.stream().map(ProjectInfo::id).toList();
+        List<Task> taskRows = projectIds.isEmpty() ? List.of()
+                : repository.findTasks(ownerId, projectIds);
+        for (var task : taskRows) {
+            long[] counts = taskCounts.computeIfAbsent(task.getProject().getId(), id -> new long[2]);
+            counts[0]++;
+            if (task.getStatus() == TaskStatus.COMPLETED) counts[1]++;
+        }
+        List<ReportProjectResponse> rows = projects.stream().map(project -> {
+            long[] counts = taskCounts.getOrDefault(project.id(), new long[2]);
+            Long targetSeconds = project.targetMinutes() == null
+                    ? null : project.targetMinutes().longValue() * 60;
+            long trackedSeconds = seconds.getOrDefault(project.id(), 0L);
+            BigDecimal usagePercent = targetSeconds == null || targetSeconds == 0
+                    ? null : percentage(trackedSeconds, targetSeconds);
+            BigDecimal taskProgressPercent = percentage(counts[1], counts[0]);
+            return mapper.toProjectResponse(new ReportMapper.ProjectMetrics(
+                    project.id(), project.name(), project.clientId(), project.clientName(),
+                    project.color(), targetSeconds, trackedSeconds,
+                    usagePercent, taskProgressPercent, project.status()));
+        }).sorted(order).toList();
+        var pageable = PageRequest.of(request.getPage() - 1, request.getLimit());
+        long offset = pageable.getOffset();
+        if (offset >= rows.size()) return new PageImpl<>(List.of(), pageable, rows.size());
+        int start = Math.toIntExact(offset);
+        int end = (int) Math.min(offset + request.getLimit(), rows.size());
+        return new PageImpl<>(rows.subList(start, end), pageable, rows.size());
+    }
 
-        return comparator.thenComparing(ReportProjectResponse::projectId);
+    private Comparator<ReportProjectResponse> projectOrder(ReportProjectsRequest request) {
+        boolean descending;
+        if ("asc".equalsIgnoreCase(request.getDirection())) descending = false;
+        else if ("desc".equalsIgnoreCase(request.getDirection())) descending = true;
+        else throw new ReportRequestException(HttpStatus.BAD_REQUEST, "direction ต้องเป็น asc หรือ desc");
+        Comparator<ReportProjectResponse> order = switch (request.getSortBy()) {
+            case "projectName" -> Comparator.comparing(row -> row.projectName().toLowerCase(java.util.Locale.ROOT));
+            case "clientName" -> Comparator.comparing(row -> row.clientName().toLowerCase(java.util.Locale.ROOT));
+            case "trackedSeconds" -> Comparator.comparingLong(ReportProjectResponse::trackedSeconds);
+            case "usagePercent" -> Comparator.comparing(ReportProjectResponse::usagePercent,
+                    Comparator.nullsLast(descending ? Comparator.<BigDecimal>reverseOrder() : Comparator.<BigDecimal>naturalOrder()));
+            default -> throw new ReportRequestException(HttpStatus.BAD_REQUEST, "sortBy ไม่ถูกต้อง");
+        };
+        if (descending && !"usagePercent".equals(request.getSortBy())) order = order.reversed();
+        return order.thenComparing(ReportProjectResponse::projectId);
     }
 
     private Context context(UUID ownerId, ReportFilterRequest filter) {
@@ -416,8 +362,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate to = filter.getTo();
 
         if ((from == null) != (to == null)) {
-            throw new ReportRequestException(
-                    HttpStatus.BAD_REQUEST, "กรุณาระบุวันที่เริ่มและวันที่สิ้นสุดให้ครบ"
+            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "กรุณาระบุวันที่เริ่มและวันที่สิ้นสุดให้ครบ"
             );
         }
 
@@ -426,9 +371,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if (from.isAfter(to)) {
-            throw new ReportRequestException(
-                    HttpStatus.BAD_REQUEST,
-                    "วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด"
+            throw new ReportRequestException(HttpStatus.BAD_REQUEST, "วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด"
             );
         }
 
@@ -439,111 +382,63 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private void validateSelection(UUID ownerId, ReportFilterRequest filter) {
-        if (filter.getClientId() == null && filter.getProjectId() == null) {
-            return;
-        }
-
-        validateSelection(
-                filter,
-                filter.getClientId() == null
-                        ? List.of()
-                        : queries.findVisibleClients(ownerId),
-                queries.findVisibleProjects(ownerId)
-        );
-    }
-
-    private void validateSelection(
-            ReportFilterRequest filter,
-            List<Client> clients,
-            List<Project> projects
-    ) {
         UUID clientId = filter.getClientId();
         UUID projectId = filter.getProjectId();
-
-        if (clientId != null && clients.stream()
-                .noneMatch(c -> c.getId().equals(clientId))) {
-            throw new ReportRequestException(
-                    HttpStatus.NOT_FOUND, "ไม่พบลูกค้า"
-            );
+        if (clientId != null && !repository.clientExists(clientId, ownerId)) {
+            throw new ClientNotFoundException(clientId);
         }
-
-        if (projectId != null && projects.stream()
-                .noneMatch(p -> p.getId().equals(projectId)
-                        && (clientId == null
-                        || p.getClient().getId().equals(clientId)))) {
-            throw new ReportRequestException(
-                    HttpStatus.NOT_FOUND, "ไม่พบโปรเจกต์"
-            );
+        if (projectId != null) {
+            var project = repository.findProject(projectId, ownerId)
+                    .orElseThrow(() -> new ProjectNotFoundException(projectId));
+            if (clientId != null && !clientId.equals(project.getClient().getId())) {
+                throw new ProjectNotFoundException(projectId);
+            }
         }
     }
 
-    private List<Project> selectProjects(
-            List<Project> projects,
+    private List<ProjectInfo> selectProjects(
+            List<ProjectInfo> projects,
             ReportFilterRequest filter
     ) {
         return projects.stream()
                 .filter(p -> filter.getClientId() == null
-                        || p.getClient().getId()
+                        || p.clientId()
                                 .equals(filter.getClientId()))
                 .filter(p -> filter.getProjectId() == null
-                        || p.getId().equals(filter.getProjectId()))
-                .filter(p -> filter.getStatus() == null
-                        || p.getStatus() == filter.getStatus())
+                        || p.id().equals(filter.getProjectId()))
+                .filter(p -> filter.getStatus() == null || p.status() == filter.getStatus())
                 .toList();
     }
 
-    private Map<UUID, Long> projectSeconds(
-            UUID ownerId,
-            ReportFilterRequest filter,
-            Context context
-    ) {
-        List<ReportQueryRepository.ProjectTime> rows = filter.getStatus() == null
-                ? queries.timeByProject(ownerId, context.from(), context.toExclusive(),
-                        filter.getClientId(), filter.getProjectId())
-                : queries.timeByProject(ownerId, context.from(), context.toExclusive(),
-                        filter.getClientId(), filter.getProjectId(), filter.getStatus());
-        return rows.stream().collect(Collectors.toMap(
-                ReportQueryRepository.ProjectTime::projectId,
-                ReportQueryRepository.ProjectTime::trackedSeconds
-        ));
+    private Map<UUID, Long> projectSeconds(List<EntryInfo> entries) {
+        return entries.stream().collect(Collectors.groupingBy(
+                EntryInfo::projectId, Collectors.summingLong(EntryInfo::durationSeconds)));
     }
 
-    private ReportQueryRepository.Totals totals(
-            UUID ownerId,
-            ReportFilterRequest filter,
-            Context context
-    ) {
-        return reportTotals(ownerId, context.from(), context.toExclusive(), filter);
+    private List<EntryInfo> entries(UUID ownerId, Context context, List<ProjectInfo> selected) {
+        List<UUID> ids = selected.stream().map(ProjectInfo::id).toList();
+        if (ids.isEmpty()) return List.of();
+        List<TimeEntry> rows = context.from() == null
+                ? repository.findEntries(ownerId, ids)
+                : repository.findEntries(
+                        ownerId, ids, context.from(), context.toExclusive());
+        return rows.stream().map(row -> new EntryInfo(row.getProject().getId(),
+                row.getStartedAt(), row.getDurationSeconds())).toList();
     }
 
-    private ReportQueryRepository.Totals reportTotals(
-            UUID ownerId, Instant from, Instant to, ReportFilterRequest filter) {
-        if (filter.getStatus() == null) {
-            return queries.totals(ownerId, from, to,
-                    filter.getClientId(), filter.getProjectId());
-        }
-        return queries.totals(ownerId, from, to,
-                filter.getClientId(), filter.getProjectId(), filter.getStatus());
+    private Totals totals(List<EntryInfo> entries) {
+        return new Totals(entries.stream().mapToLong(EntryInfo::durationSeconds).sum(), entries.size());
     }
 
-    private List<ReportQueryRepository.DailyTime> reportTimeByDay(
-            UUID ownerId, Instant from, Instant to, ReportFilterRequest filter) {
-        if (filter.getStatus() == null) {
-            return queries.timeByDay(ownerId, from, to,
-                    filter.getClientId(), filter.getProjectId());
-        }
-        return queries.timeByDay(ownerId, from, to,
-                filter.getClientId(), filter.getProjectId(), filter.getStatus());
-    }
-
-    private List<ReportQueryRepository.HourlyTime> reportTimeByHour(
-            UUID ownerId, Instant from, Instant to, ReportFilterRequest filter) {
-        if (filter.getStatus() == null) {
-            return queries.timeByHour(ownerId, from, to,
-                    filter.getClientId(), filter.getProjectId());
-        }
-        return queries.timeByHour(ownerId, from, to,
-                filter.getClientId(), filter.getProjectId(), filter.getStatus());
+    private BigDecimal previousTrend(UUID ownerId, ReportFilterRequest filter,
+            Context context, long currentSeconds, List<ProjectInfo> selected) {
+        if (filter.getFrom() == null) return null;
+        long days = ChronoUnit.DAYS.between(filter.getFrom(), filter.getTo()) + 1;
+        Instant previousFrom = filter.getFrom().minusDays(days)
+                .atStartOfDay(BANGKOK).toInstant();
+        long previousSeconds = totals(entries(ownerId, new Context(previousFrom, context.from()), selected))
+                .trackedSeconds();
+        return percentChange(currentSeconds, previousSeconds);
     }
 
     private LocalDate periodStart(
@@ -568,9 +463,7 @@ public class ReportServiceImpl implements ReportService {
 
     private BigDecimal percentChange(long current, long previous) {
         if (previous == 0) {
-            return current == 0
-                    ? BigDecimal.ZERO
-                    : BigDecimal.valueOf(100);
+            return null;
         }
         return BigDecimal.valueOf(current - previous)
                 .multiply(BigDecimal.valueOf(100))
@@ -581,5 +474,18 @@ public class ReportServiceImpl implements ReportService {
                 );
     }
 
+    private List<ProjectInfo> visibleProjects(UUID ownerId) {
+        return repository.findProjects(ownerId).stream()
+                .filter(p -> p.getStatus() != ProjectStatus.ARCHIVED
+                        && Boolean.TRUE.equals(p.getClient().getIsActive()))
+                .map(p -> new ProjectInfo(p.getId(), p.getName(), p.getClient().getId(),
+                        p.getClient().getName(), p.getStatus(), p.getColor(), p.getTargetMinutes())).toList();
+    }
+
+    private record ClientInfo(UUID id, String name) {}
+    private record ProjectInfo(UUID id, String name, UUID clientId, String clientName,
+            ProjectStatus status, String color, Integer targetMinutes) {}
+    private record EntryInfo(UUID projectId, Instant startedAt, long durationSeconds) {}
     private record Context(Instant from, Instant toExclusive) {}
+    private record Totals(long trackedSeconds, long entryCount) {}
 }

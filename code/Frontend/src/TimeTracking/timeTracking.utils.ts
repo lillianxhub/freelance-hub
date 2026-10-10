@@ -1,4 +1,9 @@
 import type { ManualTimeForm } from '../types/timeTrackerPage'
+import type { Project } from '../types/project'
+
+export function canTrackProject(project: Pick<Project, 'status'>): boolean {
+  return project.status === 'ACTIVE'
+}
 
 export function localDateValue(date: Date = new Date()): string {
   const adjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000)

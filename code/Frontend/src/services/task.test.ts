@@ -1,7 +1,42 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { ApiTask } from '../types/api'
-import { changeTaskStatus, deleteTask, reorderTask, toTask } from './task'
+import { changeTaskStatus, deleteTask, listTasks, reorderTask, saveTask, toTask } from './task'
+import { success } from '../test-support/api'
+
+test('task listing loads every page and saving handles creation, completion and reorder', async () => {
+  const originalFetch = globalThis.fetch
+  const calls: { url: string; method?: string; body: Record<string, unknown> }[] = []
+  const task = { id: 't1', projectId: 'p1', name: 'Task', status: 'OPEN' as const, sortOrder: 0 }
+  globalThis.fetch = async (url, options) => {
+    calls.push({
+      url: String(url),
+      method: options?.method,
+      body: options?.body ? JSON.parse(String(options.body)) : {},
+    })
+    if (!options?.method || options.method === 'GET') {
+      const page = Number(new URL(String(url), 'http://localhost').searchParams.get('page'))
+      return success([{ ...task, id: `t${page}` }], { page, limit: 100, total: 101, totalPages: 2 })
+    }
+    return success(task)
+  }
+  try {
+    assert.deepEqual(
+      (await listTasks('p1')).map((item) => item.id),
+      ['t1', 't2'],
+    )
+    const input = { ...toTask(task), id: undefined }
+    await assert.rejects(saveTask({ ...input, project_id: '' }), /project_id/)
+    await saveTask(input)
+    assert.equal(calls[2].method, 'POST')
+    await saveTask({ ...input, id: 't1', status: 'COMPLETED' })
+    assert.equal(calls[4].url, '/api/projects/p1/tasks/t1/complete')
+    await saveTask({ ...input, id: 't1', sort_order: 2 })
+    assert.deepEqual(calls[6].body, { sortOrder: 2 })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
 
 test('task mapper translates backend status and field names', () => {
   const source = {
